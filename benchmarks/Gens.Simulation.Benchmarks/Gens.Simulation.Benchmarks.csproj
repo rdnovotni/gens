@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.15.2" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <ProjectReference Include="../../src/Gens.Simulation/Gens.Simulation.csproj" />
   </ItemGroup>
 </Project>
