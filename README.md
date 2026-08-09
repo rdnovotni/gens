@@ -35,6 +35,11 @@ dotnet test Gens.slnx
 | `docs/design/` | Game design, setting references, and content plans |
 | `docs/engineering/` | Technical architecture and implementation policy |
 
+The initial simulation framework provides ordered monthly systems, named and
+persistable random streams, validated command handling, save-format contracts,
+and asynchronous artwork-provider boundaries. These are intentionally small
+building blocks for feature systems rather than gameplay implementations.
+
 ## Documentation and contributions
 
 Start with the [documentation map](docs/README.md). Contributions should follow
