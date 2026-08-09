@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/definitions.schema.json",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id"],
+    "properties": {
+      "id": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$" }
+    },
+    "additionalProperties": true
+  }
+}
+

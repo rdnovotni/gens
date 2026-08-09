@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/Source/">
+    <Project Path="src/Gens.Simulation/Gens.Simulation.csproj" />
+    <Project Path="tools/Gens.ContentCompiler/Gens.ContentCompiler.csproj" />
+    <Project Path="benchmarks/Gens.Simulation.Benchmarks/Gens.Simulation.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/Gens.Simulation.Tests/Gens.Simulation.Tests.csproj" />
+  </Folder>
+</Solution>

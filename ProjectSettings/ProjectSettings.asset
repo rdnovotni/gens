@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 28
+  productGUID: b88bf67441e54ed5a16107939cb2e2e0
+  companyName: Gens
+  productName: Gens
+  scriptingBackend:
+    Standalone: 0
+  il2cppCompilerConfiguration: {}
+  apiCompatibilityLevelPerPlatform:
+    Standalone: 6
+
