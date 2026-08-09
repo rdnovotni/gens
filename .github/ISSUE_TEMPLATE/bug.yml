@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible problem in Gens.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve Gens. Please avoid including sensitive data.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Start...\n2. Select...\n3. Observe..."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      description: Release version or Git commit where the problem occurs.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Unity version, .NET version, and any other relevant details.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Attach useful output. Drag files here instead of pasting very large logs.
