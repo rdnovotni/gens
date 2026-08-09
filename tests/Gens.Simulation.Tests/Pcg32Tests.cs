@@ -19,7 +19,7 @@ public sealed class Pcg32Tests
         }));
     }
 
-    [Property]
+    [FsCheck.NUnit.Property]
     public Property CapturedStateContinuesTheSameStream(ulong seed, ulong stream)
     {
         var original = new Pcg32(seed, stream);
@@ -28,7 +28,7 @@ public sealed class Pcg32Tests
         return (original.NextUInt() == restored.NextUInt()).ToProperty();
     }
 
-    [Property]
+    [FsCheck.NUnit.Property]
     public Property BoundedValuesRemainInRange(PositiveInt upperBound, ulong seed)
     {
         var random = new Pcg32(seed, 1);

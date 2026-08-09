@@ -8,21 +8,35 @@ unrelated refactors with functional changes.
 
 ## Local setup
 
-Install the versions identified by `global.json` and
-`ProjectSettings/ProjectVersion.txt`, as well as Git LFS. Then restore and validate
-the standalone solution:
+Install Git LFS, the exact .NET SDK identified by `global.json`, and the exact
+Unity editor identified by `ProjectSettings/ProjectVersion.txt` (including Linux
+Build Support when working on Linux). Then validate the toolchain and repository:
 
 ```sh
+./scripts/check-sdk.sh
+git lfs install
+git lfs pull
 dotnet restore Gens.slnx
-dotnet test Gens.slnx --configuration Release
+dotnet format Gens.slnx --no-restore --verify-no-changes
+dotnet build Gens.slnx --no-restore --configuration Release
+dotnet test Gens.slnx --no-restore --no-build --configuration Release
 dotnet run --project tools/Gens.ContentCompiler -- \
   content/schemas/definitions.schema.json \
   content/source/catalog.json \
   artifacts/content/catalog.json
+dotnet run --project benchmarks/Gens.Simulation.Benchmarks -- --job Dry
+./scripts/verify-deterministic-build.sh
 ```
 
-Open the repository root in Unity Hub when a change touches Unity assets or project
-settings. Do not commit generated Unity directories such as `Library`, `Temp`, or
+For Unity changes, open the root in Unity Hub or run the assembly compilation smoke
+check with an already activated editor:
+
+```sh
+UNITY_EDITOR_PATH=/absolute/path/to/Unity ./scripts/unity-smoke.sh
+```
+
+Licensed Unity tests and builds are deferred until CI credential and runner policy
+is approved. Do not commit generated directories such as `Library`, `Temp`, or
 `Logs`.
 
 ## Repository conventions
@@ -39,4 +53,6 @@ settings. Do not commit generated Unity directories such as `Library`, `Temp`, o
 ## Pull requests
 
 Complete the pull-request template, call out save/content compatibility concerns,
-and report the exact validation commands run. CI must pass before merge.
+and report the exact validation commands run. Protect `main` by requiring the
+**Standalone validation / standalone** and **Standalone validation / content**
+checks on pull requests; the independent jobs expose both test and content failures.

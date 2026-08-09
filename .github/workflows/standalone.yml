@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  standalone:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,5 +19,25 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet restore Gens.slnx
-      - run: dotnet test Gens.slnx --no-restore --configuration Release
-      - run: dotnet run --project tools/Gens.ContentCompiler --no-restore -- content/schemas/definitions.schema.json content/source/catalog.json artifacts/content/catalog.json
+      - run: dotnet format Gens.slnx --no-restore --verify-no-changes
+      - run: dotnet build Gens.slnx --no-restore --configuration Release
+      - run: dotnet test Gens.slnx --no-restore --no-build --configuration Release
+      - name: Run skeleton benchmark
+        run: dotnet run --project benchmarks/Gens.Simulation.Benchmarks --no-restore --configuration Release -- --job Dry
+      - run: ./scripts/verify-deterministic-build.sh
+      - run: ./scripts/check-clean-worktree.sh
+
+  content:
+    # Independent so content errors are reported even when tests fail.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore tools/Gens.ContentCompiler/Gens.ContentCompiler.csproj
+      - name: Validate schema and compile content
+        run: dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- content/schemas/definitions.schema.json content/source/catalog.json artifacts/content/catalog.json
+      - run: ./scripts/check-clean-worktree.sh
