@@ -1,0 +1,15 @@
+name: Unity smoke
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile:
+    # Activate on a runner with the pinned editor. Licensed test/build jobs are
+    # deferred until the credential and runner policy is established.
+    runs-on: [self-hosted, unity]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - run: ./scripts/unity-smoke.sh
