@@ -1,0 +1,8 @@
+{
+  "name": "com.gens.simulation",
+  "version": "0.1.0",
+  "displayName": "Gens Simulation",
+  "description": "Engine-independent deterministic domain model for Gens.",
+  "unity": "6000.3"
+}
+

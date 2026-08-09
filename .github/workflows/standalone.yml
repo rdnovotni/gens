@@ -1,0 +1,23 @@
+name: Standalone validation
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet restore Gens.slnx
+      - run: dotnet test Gens.slnx --no-restore --configuration Release
+      - run: dotnet run --project tools/Gens.ContentCompiler --no-restore -- content/schemas/definitions.schema.json content/source/catalog.json artifacts/content/catalog.json
