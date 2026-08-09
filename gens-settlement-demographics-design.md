@@ -1,0 +1,249 @@
+# GENS — System Design: Settlement Demographics (§6.26)
+*The background population of a growing settlement — distinct from the Familia roster, tracked in aggregate, and modeled as genuine Victoria-style pop groups that grow, migrate, and shift between classes. This polish pass adds a Veterans pop group, fixes a real gap in the housing model, and gives "bread and circuses" its proper mechanical teeth.*
+
+---
+
+## Contents
+
+1. Scope & Role
+2. The Automation Principle, Applied to People
+3. Pop Groups — The Core Model
+4. Employment & the Background Economy
+5. Social Mobility — Promotion & Demotion Pathways
+6. Needs, Consumption & Contentment
+7. Housing & Capacity
+8. Migration — Immigration & Emigration
+9. The Non-Household Enslaved Population
+10. Legal Status & Assimilation
+11. Promotion Into Familia — Resolving an Open Question
+12. Settlement Stage Thresholds — Resolving Another Open Question
+13. Illustrative Composition
+14. Cross-System Integration
+15. Data Model
+16. Open Questions
+
+---
+
+## 1. Scope & Role
+
+Familia §7 draws the essential line: every member of the player's own household keeps a full stat block forever. **Everyone else living in the settlement** — independent colonists, freedmen who set up their own shop, tenant farmers, veteran land-grant holders, the wider town's own laborers and merchants, and people enslaved by households other than the player's — is this document's responsibility, tracked in aggregate.
+
+This resolves four dependencies other documents named directly: Estate & Settlement's population thresholds, the Buildings doc's Insulae/Domus mechanism, Familia's background-colonist promotion rule, and Resources & Goods' consumption placeholder. Built as genuine Victoria II/III-style pop groups — distinct occupation/class cohorts that grow, migrate, and shift category — with a real labor-market dynamic underneath, deliberately restrained: no per-person pathfinding, monthly-tick resolution, results surfaced through the Monthly Report.
+
+---
+
+## 2. The Automation Principle, Applied to People
+
+Pop groups grow, migrate, and shift class every month-tick on their own, off conditions the player has already set through building investment, policy, and market health. The player builds the Market that creates a job opening; the demographic simulation fills it. This is Resources & Goods §2.1's promised foundation, now built on top of.
+
+---
+
+## 3. Pop Groups — The Core Model
+
+Eight groups, each named with a real Latin term:
+
+| Pop Group | Real Term | Sector | Class Tier | Notes |
+|---|---|---|---|---|
+| **Tenant Farmers** | **Coloni** | Agriculture | Lower | The largest group in most settlements, especially early. |
+| **Urban Laborers** | **Operarii** | General/cross-sector | Lower | Unskilled labor filling background job openings across Industry, Commerce, and Civic construction — the most mobile group. |
+| **Artisans/Craftsmen** | **Opifices** | Industry | Middle-Lower | Skilled workers running independent workshops distinct from the player's own Industry buildings. |
+| **Shopkeepers/Merchants** | **Negotiatores** | Commerce | Middle | Run their own stalls and shops, distinct from the player's own Institor-staffed Market buildings. |
+| **Temple Staff** | **Aeditui** | Religion | Middle-Lower | Small and stable; scales with Temple/Shrine presence rather than general population. |
+| **Local Notables** | **Curiales** | — | Upper | The pool marriage candidates, political allies, and Court Position recruits are drawn from. |
+| **Veterans** *(new)* | **Veterani** | — | Lower-Middle | Discharged soldiers settled on granted land — see §3.1. |
+| **Non-Household Enslaved** | *(no special term needed)* | Cross-sector | — | See §9. |
+
+Each pop group carries: a **size**, a **Legal Status distribution** (§10), an **Employment Ratio** (§4), and a **Contentment** value (§6).
+
+### 3.1 Why Veterans Are Their Own Group
+
+Real Roman veteran colonies (*coloniae*) were a distinct settlement pattern — discharged soldiers granted land as a term-of-service benefit, not ordinary tenant farmers who never served. Folding them into Coloni would lose two things worth keeping separate: they're the concrete population source Military & Combat (§6.7) currently lacks — "recruit from slaves or free citizens" names no actual pool — and discharged auxiliaries historically gained Roman citizenship on completion of service, giving this group a fast lane through Assimilation (§10) no other pop group has. Veterans start with an above-average Legal Status distribution and, left alone, drift toward Coloni over time as they settle fully into farming life — but a Military & Combat recruitment drive can call a portion of them back to active service, and discharge feeds new Veterans back in behind it. This is Military & Combat's recruitment pool made concrete rather than an unsourced abstraction.
+
+---
+
+## 4. Employment & the Background Economy
+
+### 4.1 Where Jobs Come From
+
+**Background Economic Capacity** per sector is generated by the player's own building investment: Agriculture buildings create Coloni capacity, Industry creates Opifices capacity, Commerce creates Negotiatores capacity (plus a baseline of Operarii), Temple/Shrine specifically creates Aeditui capacity, and Curiales capacity scales with total population and settlement Dignitas/stage rather than any single building category. This deliberately avoids background pops literally staffing the player's own buildings — the player is building the city, not personally hiring its every shopkeeper, and Companions & Court Positions' Familia-staffs-everything assumption stays intact.
+
+### 4.2 The Employment Ratio
+
+Available background job slots in a sector divided by that pop group's own size — the single number driving both migration (§8) and mobility (§5). Well above 1.0 pulls population in and promotes people upward; well below 1.0 pushes people out or down.
+
+---
+
+## 5. Social Mobility — Promotion & Demotion Pathways
+
+```
+Coloni ⇄ Operarii            (rural-to-urban migration, driven by relative Employment Ratios)
+Operarii ⇄ Opifices          (skill-based mobility)
+Opifices ⇄ Negotiatores      (business success or failure)
+Negotiatores/Opifices → Curiales   (wealth accumulation; the upward ceiling)
+Curiales → Operarii/Coloni   (rare — bankruptcy, scandal)
+Non-Household Enslaved → Operarii/Opifices  (manumission by other owners, §9)
+Coloni/Operarii → Veterans   (via Military & Combat service, then discharge — not a direct shift)
+Veterans → Coloni            (the default drift, absent a recruitment drive)
+Veterans → Active Military   (a temporary call-up, not a permanent pop-group change — handled by Military & Combat directly)
+```
+
+**Aeditui** stay excluded from this flow — small and stable rather than mobile.
+
+**The military loop is the one genuine two-step path in the model:** nobody becomes a Veteran directly from civilian life. Coloni or Operarii enter active service (Military & Combat's own recruitment), and *discharge* — not enlistment — is what actually creates a new Veteran. This gives service an honest demographic cost while it's happening (a temporarily smaller civilian labor pool) and a real payoff afterward (a higher-status, more assimilated pop group than before).
+
+**New population** from births or migration enters overwhelmingly as Coloni or Operarii, except for veteran land-grant waves (§8.1), which populate Veterans directly.
+
+---
+
+## 6. Needs, Consumption & Contentment
+
+### 6.1 Consumption
+
+Coloni and Operarii default toward Meager/Adequate consumption through the Tavern; Negotiatores, Opifices, and Curiales default toward Adequate/Generous. Veterans sit slightly above Coloni by default, reflecting land-grant baseline wealth. This is also the background population's demand-side contribution to Resources & Goods' Market Dynamics.
+
+### 6.2 Contentment
+
+A lighter cousin of Labor & Slavery's Unrest math, deliberately not the same system. Driven by Employment Ratio, needs satisfaction, Policies & Edicts (once designed), and Natural Disasters/Disease. Low Contentment feeds Emigration (§8.2) and eventually Politics & Patronage's local political mechanics — this document supplies the number, not the political consequences.
+
+### 6.3 Bread and Circuses — Two Concrete Levers
+
+Worth naming explicitly rather than leaving buried inside "policy," since these are arguably the two most historically iconic tools of Roman urban politics:
+
+- **The Annona (grain dole):** a policy lever (once Policies & Edicts exists) that draws down the settlement's Horreum/Granary reserve (Resources & Goods §8) to directly boost Operarii and Coloni Contentment during hard times — a real, felt tradeoff between the settlement's famine buffer and its political temperature, not a free action.
+- **Funded Games (Games & Spectacle, §6.22):** a sponsored spectacle gives a direct, immediate Contentment spike concentrated on Operarii and Coloni specifically — the "circuses" half of the phrase — distinct from and faster-acting than the slower, structural effects of employment and policy.
+
+Both are deliberately targeted at the lower classes specifically rather than lifting Contentment across every pop group evenly, matching who these tools were actually aimed at historically.
+
+---
+
+## 7. Housing & Capacity
+
+### 7.1 Urban Housing — Insulae and Domus
+
+Applies specifically to **Operarii, Opifices, Negotiatores, Aeditui, and Curiales** — the settlement's actual urban residents. Insulae support a larger population at lower cost but skew the mix toward Operarii; Domus support fewer people per building but skew toward Negotiatores/Opifices/Curiales, giving Buildings §4.10's existing claim that Domus raises "average social standing" an actual mechanism: a Domus-heavy settlement's population *is* higher-class on average, not just symbolically associated with wealth.
+
+### 7.2 Rural Capacity — Coloni and Veterans
+
+A genuine gap in the previous pass: Coloni and Veterans don't live in Insulae or Domus at all — they live on the land they work. Their capacity instead scales with **unclaimed Agriculture-suitable plots** (Fertile Plain primarily) within the settlement's territory that the player's own Estate & Settlement buildings haven't already occupied. This creates a real, felt tension: the player's own agricultural expansion and the background rural population's growth room are competing for the same land, not two independent numbers.
+
+### 7.3 Overcrowding
+
+Population pressing against either capacity (urban or rural) reduces Contentment across the affected groups and raises Disease & Public Health risk, mirroring how goods overflow works in Resources & Goods.
+
+---
+
+## 8. Migration — Immigration & Emigration
+
+### 8.1 Immigration
+
+Ambient, automatic pull driven by Contentment, available capacity (§7), and favorable Employment Ratios. **Event-driven spikes** layer on top, and now split into two distinct flavors: an ordinary refugee wave or land grant (Events §6.8) feeds Coloni/Operarii per the usual pattern, while a **veteran settlement wave** — a Scenario Start's "newly settled veteran colony," or a deliberate land grant issued after a campaign — populates Veterans directly rather than routing through the ordinary bottom-of-the-ladder entry point.
+
+### 8.2 Emigration
+
+Sustained low Contentment, famine, disease, or war pushes population out, shrinking the tax base and labor pool — a real, felt consequence of neglect.
+
+---
+
+## 9. The Non-Household Enslaved Population
+
+*(Unchanged from the previous pass.)* Feeds Slave Market transaction volume, Legal & Court caseload, and Games & Spectacle's wider labor pool; shrinks via ambient manumission by other owners feeding the free Operarii/Opifices pool. Deliberately doesn't get its own Regimen, Punishment ladder, or flight mechanic — that depth stays Labor & Slavery's alone. Depicted with the same frank, non-exploitative tone that system established, including its content-intensity toggle.
+
+---
+
+## 10. Legal Status & Assimilation
+
+Each pop group carries a Legal Status distribution (Roman Citizen / Latin Rights / Peregrine / Freedman, reusing Familia §2.5's categories). Assimilation shifts a pop group's distribution toward higher status over time, sped by Education & Culture and Diplomacy with Non-Roman Peoples success, slowed or reversed by conflict or a poor Reputation Duality.
+
+**New this pass:** military service is the single fastest Assimilation path available. A Peregrine or Latin-Rights individual who serves and is discharged doesn't just join the Veterans pop group — they typically emerge with full Roman Citizenship, a real historical benefit of auxiliary service. This makes the military recruitment loop (§5) a genuine social-mobility engine on the frontier specifically, not just a manpower pipeline.
+
+---
+
+## 11. Promotion Into Familia — Resolving an Open Question
+
+Unchanged: a deliberate hire into a Labor Duty Slot, Overseer post, or Court Position; a marriage proposal targeting a named Curiales individual; a Travel or Events encounter singling someone out; or a direct Slave Market purchase from the Non-Household Enslaved cohort. Each converts one aggregate entry into a full, individually-tracked Familia record.
+
+---
+
+## 12. Settlement Stage Thresholds — Resolving Another Open Question
+
+Unchanged: the relevant population figure for Estate & Settlement's Vicus/Town/City advancement is total background population across all eight pop groups, explicitly excluding the player's own Familia roster.
+
+---
+
+## 13. Illustrative Composition
+
+Not a balance pass — this project's established numbers-later convention still applies — but a rough sense of proportion is worth stating so the model doesn't read as eight equally-weighted boxes. In a typical mid-size settlement: **Coloni and Operarii together should dominate**, plausibly 55–70% of background population between them; **Opifices and Negotiatores** form a meaningful middle tier, maybe 20–30% combined; **Curiales** stay genuinely rare, rarely more than 5–10% even in a prestigious City-stage settlement; **Veterans** scale with how martial the estate's identity and region are (a frontier, Military-leaning estate could plausibly see a much larger Veterans share than an Italian heartland Agrarian one); and the **Non-Household Enslaved** cohort's share depends heavily on setting and era rather than any universal ratio. These are directional, not targets to hit.
+
+---
+
+## 14. Cross-System Integration
+
+- **Familia:** §1 and §11 implement §7's Scale & Abstraction Rule and resolve its promotion-trigger question.
+- **Estate & Settlement:** §12 resolves the stage-threshold question; §4.1 and §7.2 both tie Civic/Agriculture building investment and land-use directly to demographic capacity.
+- **Buildings doc:** §7.1 resolves the Insulae/Domus open question with an actual mechanism.
+- **Resources & Goods:** §2, §6.1 build on that document's forward-looking note and consumption placeholder; §6.3's Annona lever gives the Horreum a genuine political function beyond famine insurance.
+- **Labor & Slavery:** §9 tracks a parallel, lighter-fidelity enslaved population without duplicating Regimen/Punishment/Flight depth.
+- **Companions & Court Positions:** §4.1 preserves that document's Familia-staffs-everything assumption.
+- **Military & Combat:** §3.1 and §5's military loop finally give that system's recruitment a real, named population source instead of an unsourced abstraction — this is the most consequential new cross-reference this pass creates.
+- **Education & Culture, Diplomacy with Non-Roman Peoples:** §10's Assimilation mechanic gives both a concrete long-term payoff; military service is now the fastest of the available paths.
+- **Games & Spectacle:** §6.3 gives funded games a direct, named Contentment effect rather than a vague "Politics & Patronage investment."
+- **Policies & Edicts (future):** §6.2–6.3 and §9 all wait on that system for actual policy levers; this document supplies the population that responds to them.
+- **Politics & Patronage (future):** Contentment and the Curiales pop group are the data that system will need; political mechanics stay out of scope here.
+- **Legal & Court, Games & Spectacle, Slave Market:** §9 gives all three a background participant pool beyond the player's own transactions.
+- **Events (§6.8):** §8.1 is the natural hook for population-shock events, now split between ordinary refugee/land-grant waves and veteran-specific settlement waves.
+
+---
+
+## 15. Data Model
+
+```
+PopGroup {
+  settlementId,
+  groupType,              // "coloni" | "operarii" | "opifices" | "negotiatores" |
+                           // "aeditui" | "curiales" | "veterans" | "nonHouseholdEnslaved"
+  size,
+  legalStatusDistribution: { citizen, latinRights, peregrine, freedman },
+  employmentRatio,
+  contentment,
+}
+
+BackgroundEconomicCapacity {
+  settlementId,
+  sector,                  // "agriculture" | "industry" | "commerce" | "religion"
+  availableSlots,
+}
+
+HousingAndLandCapacity {    // §7 — split this pass
+  settlementId,
+  urbanCapacity: { insulae, domus },      // §7.1 — Operarii/Opifices/Negotiatores/Aeditui/Curiales
+  ruralCapacity: { unclaimedFertilePlots }, // §7.2 — Coloni/Veterans
+}
+
+MilitaryDemographicInterface {   // NEW — §5, §10
+  settlementId,
+  activeServiceDrawFromColoniOperarii,   // current enlistment drawing down the civilian pool
+  pendingDischarges,                     // feeds new Veterans, with citizenship upgrade per §10
+}
+
+SettlementDemographics {
+  settlementId,
+  popGroups: [PopGroup, ...],
+  totalBackgroundPopulation,
+  housingAndLand: HousingAndLandCapacity,
+  migrationPressure,
+}
+```
+
+---
+
+## 16. Open Questions
+
+- **Mobility/migration rates, Employment Ratio thresholds, Contentment formula weighting, Assimilation rate.** All carried forward, numerically unsized per this project's established convention.
+- **Veteran call-up sizing.** §5 establishes that Military & Combat can draw from the Veterans pool; what fraction is available for call-up at once, and how quickly discharge replenishes it, isn't specified.
+- **Annona draw-down rate.** §6.3 establishes the grain-dole mechanic; how much Horreum stock a meaningful Contentment boost actually costs isn't specified.
+- **Rural capacity vs. player expansion tuning.** §7.2 establishes the land-competition tension exists; how tightly it should bind (does a player's own aggressive expansion meaningfully cap rural population growth, or only at the margins) isn't specified.
+- **Multi-settlement interaction.** Unchanged open question — whether population can flow between a player's own two settlements isn't decided.
+- **Rival Houses' contribution to Background Economic Capacity.** If a rival gens holds its own buildings within the same settlement, whether their investment also grows background job capacity (making the settlement's demographic health a genuinely shared, contested resource) or stays a purely player-driven figure is flagged but not resolved — depends on how deep Rival Houses' own economic modeling eventually goes.
+- **Curiales-to-marriage-market integration depth.** Unchanged — the actual UI/selection mechanism belongs to Familia's or Politics & Patronage's future refinement.
+- **Whether Aeditui should be allowed any mobility after all.** Unchanged, worth revisiting once Religion gets its own full pass.
+- **Background economy vs. player economy price competition.** Unchanged — whether independent Opifices' own production adds to shared local supply, competing with the player's own goods, isn't resolved.
