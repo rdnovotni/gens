@@ -1,6 +1,9 @@
 using System.Text.Json;
 using Json.Schema;
 
+var indentedJson = new JsonSerializerOptions { WriteIndented = true };
+var compactJson = new JsonSerializerOptions { WriteIndented = false };
+
 if (args is not [var schemaPath, var sourcePath, var outputPath])
 {
     Console.Error.WriteLine("Usage: gens-content <schema.json> <source.json> <output.json>");
@@ -12,7 +15,7 @@ using var document = JsonDocument.Parse(await File.ReadAllTextAsync(sourcePath))
 var result = schema.Evaluate(document.RootElement, new EvaluationOptions { OutputFormat = OutputFormat.List });
 if (!result.IsValid)
 {
-    Console.Error.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
+    Console.Error.WriteLine(JsonSerializer.Serialize(result, indentedJson));
     return 1;
 }
 
@@ -29,5 +32,5 @@ foreach (var definition in document.RootElement.EnumerateArray())
 
 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
 await using var output = File.Create(outputPath);
-await JsonSerializer.SerializeAsync(output, document.RootElement, new JsonSerializerOptions { WriteIndented = false });
+await JsonSerializer.SerializeAsync(output, document.RootElement, compactJson);
 return 0;
