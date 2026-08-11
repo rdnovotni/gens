@@ -1,5 +1,5 @@
 using FsCheck;
-using FsCheck.NUnit;
+using FsCheck.Fluent;
 using Gens.Simulation.Random;
 using NUnit.Framework;
 
@@ -20,7 +20,7 @@ public sealed class Pcg32Tests
     }
 
     [FsCheck.NUnit.Property]
-    public Property CapturedStateContinuesTheSameStream(ulong seed, ulong stream)
+    public FsCheck.Property CapturedStateContinuesTheSameStream(ulong seed, ulong stream)
     {
         var original = new Pcg32(seed, stream);
         original.NextUInt();
@@ -29,7 +29,7 @@ public sealed class Pcg32Tests
     }
 
     [FsCheck.NUnit.Property]
-    public Property BoundedValuesRemainInRange(PositiveInt upperBound, ulong seed)
+    public FsCheck.Property BoundedValuesRemainInRange(PositiveInt upperBound, ulong seed)
     {
         var random = new Pcg32(seed, 1);
         var bound = (uint)upperBound.Get;

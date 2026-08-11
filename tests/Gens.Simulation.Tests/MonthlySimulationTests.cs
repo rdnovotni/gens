@@ -7,6 +7,9 @@ namespace Gens.Simulation.Tests;
 
 public sealed class MonthlySimulationTests
 {
+    private static readonly string[] ExpectedState = { "population:10", "economy:10" };
+    private static readonly string[] ExpectedSystemIds = { "population", "economy" };
+
     [Test]
     public void SystemsAndEventsUseRegistrationOrder()
     {
@@ -19,9 +22,9 @@ public sealed class MonthlySimulationTests
 
         var events = simulation.Tick(state, new GameDate(10), new RandomStreamSet());
 
-        Assert.That(state, Is.EqualTo(new[] { "population:10", "economy:10" }));
+        Assert.That(state, Is.EqualTo(ExpectedState));
         Assert.That(events.Cast<SystemRan>().Select(static item => item.Id),
-            Is.EqualTo(new[] { "population", "economy" }));
+            Is.EqualTo(ExpectedSystemIds));
     }
 
     [Test]

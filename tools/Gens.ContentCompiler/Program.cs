@@ -12,7 +12,7 @@ using var document = JsonDocument.Parse(await File.ReadAllTextAsync(sourcePath))
 var result = schema.Evaluate(document.RootElement, new EvaluationOptions { OutputFormat = OutputFormat.List });
 if (!result.IsValid)
 {
-    Console.Error.WriteLine(JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true }));
+    Console.Error.WriteLine(JsonSerializer.Serialize(result, JsonOptions.Indented));
     return 1;
 }
 
@@ -29,5 +29,11 @@ foreach (var definition in document.RootElement.EnumerateArray())
 
 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath))!);
 await using var output = File.Create(outputPath);
-await JsonSerializer.SerializeAsync(output, document.RootElement, new JsonSerializerOptions { WriteIndented = false });
+await JsonSerializer.SerializeAsync(output, document.RootElement, JsonOptions.Compact);
 return 0;
+
+internal static class JsonOptions
+{
+    public static readonly JsonSerializerOptions Indented = new() { WriteIndented = true };
+    public static readonly JsonSerializerOptions Compact = new() { WriteIndented = false };
+}
