@@ -1,6 +1,6 @@
 # ADR 0004 — Deterministic Collection Ordering
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

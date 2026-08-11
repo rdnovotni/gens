@@ -1,6 +1,6 @@
 # ADR 0001 — Stable Typed IDs
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 
