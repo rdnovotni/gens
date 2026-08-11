@@ -1,0 +1,29 @@
+# ADR 0011 — Save Migrations
+
+**Status:** Proposed
+
+## Context
+
+Non-negotiable rule 11: "Every save-breaking change ships with a migration and permanent fixture. Deterministic replay from selected golden saves is a merge gate." `tech-stack.md` states the same requirement for the save format specifically: "Breaking changes require a migration and a permanent fixture." Roadmap Phase 3, item 3 requires building "a migration registry and permanent fixtures beginning with save version 1," and the first-24-work-packages list (item 15) puts this immediately after canonical save serialization: "Add migration registry and version-1 golden save fixture." Phase 3's exit gate requires "a compiled content pack can bootstrap, save, load, replay, migrate, and reproduce the same state hash" and that "Invalid references and schema violations fail before Unity starts."
+
+`SaveFormat.CurrentVersion = 1` (`src/Gens.Simulation/Saves/SaveFormat.cs`) already exists as a bare constant with nothing reading or acting on it yet — this ADR is what gives that integer an actual meaning and a runner.
+
+## Decision
+
+- **A migration is a pure function** `MigrateVN_to_VNplus1(JsonDocument oldWorld) -> JsonDocument newWorld`, operating on the canonical JSON DOM (ADR 0010) rather than on live `WorldState` objects — this keeps a migration valid and testable independent of whatever the *current* in-memory model looks like, which matters because a migration written to fix version 3→4 must still run correctly long after the version-4-era `WorldState` classes have themselves moved on.
+- **Migrations chain strictly sequentially.** Loading a version-2 save into a version-5-current build always runs `2→3`, then `3→4`, then `4→5`, in that fixed order — there is no direct `2→5` shortcut migration, even where one would be simpler to write, because a shortcut doubles the number of migration paths that need testing and fixture coverage for no player-facing benefit.
+- **A migration registry** (`IReadOnlyDictionary<int, Func<JsonDocument, JsonDocument>>` keyed by *from*-version) is the single lookup table every load path consults; a missing entry between the save's version and `SaveFormat.CurrentVersion` is a hard load failure with a clear "no migration path from vX" error, never a best-effort attempt to load anyway.
+- **Every migration ships with a permanent fixture**: a golden `.gens` save at the *pre*-migration version, checked into the test project, plus the expected post-migration canonical `world.json` (or its checksum, per ADR 0010) to diff against. CI runs every registered migration against its fixture on every build — this is the literal mechanism behind rule 11's "deterministic replay from selected golden saves is a merge gate."
+- **Default migration policy is additive-preferring**, per rule 10's "content is data, rules are code" spirit applied to save shape: adding a new optional field with a defined default requires no migration function at all (old saves simply get the default on load). A migration function is required specifically for: renaming a field, changing a field's type or scale (e.g., a future change to `Fixed64`'s denominator, per ADR 0002), removing a field whose data must be redistributed elsewhere, or changing `GameDate`'s epoch (ADR 0003, flagged there as exactly this kind of breaking change). "Additive only until v1 ships" is the concrete near-term policy: pre-v1, schema fields may still be added freely without a migration, since no real campaign saves exist yet to protect; the first migration this registry needs to actually exercise in CI is deliberately manufactured (a trivial `1→2` fixture) before any real breaking change occurs, so the registry and CI wiring are proven before they're needed for real.
+
+## Consequences
+
+- A breaking change to any persisted record (Character, Plot, DebtRecord, PopGroup — anything in the field ledger) cannot merge without its paired migration function and fixture, per rule 11's "merge gate" language — this is enforced by CI, not by review discipline alone.
+- Migration functions accumulate indefinitely and are never deleted, even long after no plausible save at that version still exists in the wild — deleting one would silently break the sequential-chain guarantee for any save still older than the deletion point.
+- Because migrations operate on the JSON DOM rather than live objects, a migration written years apart from the current codebase still compiles and runs unchanged, isolating migration correctness from unrelated `WorldState` refactors.
+
+## Alternatives Considered
+
+- **In-place mutation of live `WorldState` objects during load, rather than JSON-DOM migration.** Rejected: couples every historical migration to whatever the *current* class shapes happen to be, meaning an unrelated refactor of `Character` could silently break a `3→4` migration that has nothing to do with the refactor; JSON-DOM migration has no such coupling.
+- **Best-effort loading of saves with no registered migration path (skip unknown fields, default the rest).** Rejected outright by rule 11's explicit "ships with a migration" requirement — a best-effort load is exactly the kind of silent, unverified state transition rule 2 and rule 11 both exist to prevent, and risks loading a campaign into a state that was never actually tested.
+- **Versioning at the individual-record level (each entity kind has its own version number) instead of one whole-save version.** Considered, since it would let unrelated systems evolve independently, but rejected for v1: it multiplies the number of migration-path combinations that need testing (every pair of entity-kind versions that could co-occur) for a benefit this project's current phase does not need; a single whole-save version, chained sequentially, is simpler to reason about and matches `SaveFormat.CurrentVersion`'s existing single-integer shape.
