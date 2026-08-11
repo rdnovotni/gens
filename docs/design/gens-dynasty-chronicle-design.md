@@ -1,6 +1,8 @@
 # GENS — System Design: Dynasty Chronicle (§6.11)
 *The single most-referenced undesigned system in this project — nearly every document built so far has flagged a specific moment as "Chronicle-worthy" without this document existing to catch it. This is where all of that actually lands, organized, tiered, and readable as an actual household record rather than a raw event log.*
 
+**Distinct from:** two other systems share the word "Dynasty" but are not duplicates of this one — [The Dynasty Legacy Tree](gens-dynasty-legacy-tree-design.md) is a spendable-Renown progression system, and [Succession & Dynasty](gens-succession-dynasty-design.md) governs inheritance and generational transition. This document is the household's own record/log.
+
 ---
 
 ## Contents

@@ -1,6 +1,8 @@
 # GENS — System Design: Events (§6.8)
 *The shared engine nearly every other document has already been quietly plugging into: Religion's Omens, Natural Disasters' hazard rolls, Travel's en-route Events, Characters' Scheme discovery beats, Rival Houses' living-world texture, Settlement Demographics' migration spikes, and Succession & Dynasty's own disputes are all, mechanically, Events. This final pass closes out the Wider Empire layer completely: a real, bounded historical range (133 BC – AD 235, deliberately bookended on the Gracchi at one end), a concrete era breakdown, a curated table of illustrative Starting Years, an explicit statement that player foreknowledge of real history is a feature this design leans into rather than something to protect against, and a fully resolved Divergence frequency commitment. What was five open structural questions is now two — both genuinely just authoring/implementation work, not design gaps.*
 
+**Correction:** the 133 BC – AD 235 range stated above as "now fixed" is superseded — this project's confirmed range is 133 BC – AD 565. See [The Late Antique Timeline](gens-events-historical-timeline-late-antiquity-content.md), which reconciles this and two other documents to the real range.
+
 ---
 
 ## Contents

@@ -1,6 +1,8 @@
 # GENS — System Design: Romance & Seduction (§6.19)
 *Two tracks at once, exactly as the core doc frames it — a genuine relationship system with its own tracked emotional life, and a political tool that hands leverage to Espionage and alliance-building to Politics & Patronage. Built almost entirely on infrastructure Characters, Familia, and the Villa doc already put in place specifically for this. This pass adds an explicit, direct treatment of consent and power imbalance for any relationship touching Enslaved status, states plainly that seduction odds can never override genuine unwillingness, and makes the affair-to-Fertility pregnancy pipeline explicit rather than assumed.*
 
+**Superseded by:** [Romance, Sexuality & Lineage](gens-romance-sexuality-lineage-design.md), which absorbs this document in its entirety and is the current authority for this system.
+
 ---
 
 ## Contents

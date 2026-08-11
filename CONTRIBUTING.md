@@ -46,6 +46,8 @@ is approved. Do not commit generated directories such as `Library`, `Temp`, or
 - Treat `content/source` as authored input and `content/schemas` as its contract.
 - Put game-design documents in `docs/design` and engineering guidance in
   `docs/engineering`.
+- When adding, removing, or renaming a file under `docs/design`, update
+  `docs/design/README.md` in the same pull request.
 - Update documentation in the same pull request when commands, structure, or
   behavior change.
 - Use concise, imperative commit subjects.

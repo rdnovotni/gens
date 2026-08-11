@@ -2,6 +2,8 @@
 
 *Built on CK3's own Dynasty Legacy model, per direction, and adapted to reuse rather than reinvent: the "spendable Renown" this system needs already exists in this project under a different, better-fitting name — **Memoria**, Ancestor Veneration & Funerary Customs' own third household axis, "what the household's own dead think, and how much of their memory the living have actually preserved." That document gave Memoria real weight but no real spend; this document is Memoria's first genuine sink, and the payoff is permanent, structural, and literally generation-spanning — Design Pillar #7 made mechanical a second time, in a genuinely different way than Policies & Edicts' own Household Doctrine already made it mechanical once. The two systems are deliberately not the same thing, and §1 says so directly before anything else.*
 
+**Distinct from:** two other systems share the word "Dynasty" but are not duplicates of this one — [Dynasty Chronicle](gens-dynasty-chronicle-design.md) is the household's own record/log, and [Succession & Dynasty](gens-succession-dynasty-design.md) governs inheritance and generational transition. This document is a spendable-Renown progression tree.
+
 ---
 
 ## Contents

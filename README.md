@@ -29,8 +29,8 @@ dotnet test Gens.slnx
 | `src/Gens.Simulation/` | Engine-independent deterministic simulation package |
 | `tests/` | Standalone automated tests |
 | `benchmarks/` | Simulation performance benchmarks |
-| `content/source/` | Authored content inputs |
-| `content/schemas/` | Content validation contracts |
+| `content/source/` | Authored content inputs (currently a placeholder — `catalog.json` holds a single stub entry, not real content) |
+| `content/schemas/` | Content validation contracts (currently minimal/generic, not yet fleshed out for real content) |
 | `tools/` | Standalone development and content tooling |
 | `docs/design/` | Game design, setting references, and content plans |
 | `docs/engineering/` | Technical architecture and implementation policy |

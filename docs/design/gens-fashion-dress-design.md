@@ -1,6 +1,8 @@
 # GENS — System Design: Fashion & Dress
 *The Free Cities-style "dress your household" layer: what a Character actually wears, how it reads mechanically, and how far the player's own authority over it extends — from an absolute hand over an enslaved wardrobe down to a real, consent-aware request where a free spouse or adult child is concerned. This document covers structure and mechanics only; the full itemized garment roster (the actual named pieces, by region and era) is the next, companion document. This pass adds Hair, Cosmetics & Grooming as a distinct fashion layer, Era-Appropriate Fashion Drift across the game's own 133 BC–AD 235 range, a Disguise & Deception mechanic tying dress to Flight, Espionage, and Travel, a direct Marriage Market/Dowry Trousseau tie, and a worked illustrative example.*
 
+**Related document:** the actual named garments, organized by region and occasion, live in the companion catalog, [Fashion & Dress — The Garment Roster](gens-fashion-dress-garment-roster-design.md).
+
 ---
 
 ## Contents

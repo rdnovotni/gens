@@ -1,6 +1,8 @@
 # GENS — System Design: Education & Culture (§6.14)
 *Two distinct halves exactly as the core doc frames them — a real childhood Pedagogy investment pipeline following the real Roman age-based curriculum, and an adult/household Cultural Patronage layer with a Symposium mechanic and Maecenas-flavored Literary Patronage — built on Culture as a tracked, CK3-style Character identity. This pass adds the piece a CK3 comparison calls for directly: real, named foreign Institutions of Renown — Athens, Rhodes, Alexandria, Pergamon, and Massilia — sending a Character abroad via Travel for superior training, a lasting credential, and the single sharpest available lever on Hellenization, plus a reverse "Renown attracts Renown" mechanic once a household's own Academy becomes prestigious enough to draw foreign students in turn.*
 
+**Related document:** the dateable ritual scaffolding of a Roman childhood (naming day, toga virilis, tirocinium) built on top of this document's Pedagogy pipeline lives in [Coming of Age & Childhood Education](gens-coming-of-age-education-design.md).
+
 ---
 
 ## Contents

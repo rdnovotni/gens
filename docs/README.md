@@ -5,7 +5,9 @@ Project documentation is organized by audience and purpose:
 - [`design/`](design/README.md) contains the game vision, system specifications,
   setting references, and authored-content plans.
 - [`engineering/`](engineering/) records implementation constraints and technical
-  decisions that contributors must preserve.
+  decisions that contributors must preserve, including the technical baseline
+  ([`tech-stack.md`](engineering/tech-stack.md)) and the
+  [comprehensive build roadmap](engineering/gens-comprehensive-build-roadmap.md).
 
 The design documents describe intent. The implementation, automated tests, and
 content schemas remain authoritative for current runtime behavior. When a change
