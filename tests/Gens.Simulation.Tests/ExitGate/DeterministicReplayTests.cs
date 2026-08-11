@@ -30,12 +30,15 @@ public sealed class DeterministicReplayTests
     public void RejectedCommandLeavesStateHashAndRngUnchanged()
     {
         var (state, streams, pipeline) = SetupHarness();
+        // Issuing the CommandId to build the command is bookkeeping outside the pipeline's control
+        // (ADR 0006 only makes the *sequence number* acceptance-only) — capture "before" only once
+        // the command itself exists, so the comparison isolates what Execute does, not what
+        // constructing its argument did.
+        var command = new CreateCharacterCommand(state.CommandIds.Issue(), "system", state.Date, null, ShouldFail: true);
         var beforeHash = StateHasher.Hash(state);
         var beforeStreamState = streams.CaptureStates();
 
-        var result = pipeline.Execute(
-            state,
-            new CreateCharacterCommand(state.CommandIds.Issue(), "system", state.Date, null, ShouldFail: true));
+        var result = pipeline.Execute(state, command);
 
         Assert.That(result.Accepted, Is.False);
         Assert.That(StateHasher.Hash(state), Is.EqualTo(beforeHash));
