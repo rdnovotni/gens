@@ -7,14 +7,17 @@ for the rest of the project documentation.
 
 ## Reading order
 
-1. Start with the core design for the overall vision and vocabulary.
+1. Start with [About Gens](gens-about.md) for the pitch, then the core design for the overall vision and vocabulary.
 2. Read the foundational catalogs for shared character concepts.
 3. Consult individual system specifications as a feature is planned.
 4. Use world references and starting-region documents for authored content.
+5. Use the [Feature Roadmap](gens-feature-roadmap.md), the [Canonical Object & Data Registry](../gens-canonical-registry-design.md), and the [Design Authority Registry](../gens-design-authority-registry.md) to see how systems and content fit together and in what order they should be built.
 
 ## Foundation
 
+- [About Gens](gens-about.md)
 - [Characters](gens-characters-design.md)
+- [Feature Roadmap](gens-feature-roadmap.md)
 - [GENS](gens-core-design.md)
 - [Traits (Full Catalog)](gens-traits-design.md)
 
