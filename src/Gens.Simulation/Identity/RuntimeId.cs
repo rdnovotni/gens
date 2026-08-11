@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace Gens.Simulation.Identity;
@@ -34,6 +35,9 @@ public readonly record struct RuntimeId<T> : IComparable<RuntimeId<T>>
 
     public override string ToString() => ToTaggedString();
 
+    [SuppressMessage("Design", "CA1000:Do not declare static members on generic types",
+        Justification = "T is a phantom type fixed by the caller's context (e.g. a save reader for " +
+        "RuntimeId<Character>); an instance-based factory would need an unused instance to call it on.")]
     public static RuntimeId<T> Parse(string taggedString)
     {
         if (string.IsNullOrEmpty(taggedString))
@@ -73,6 +77,10 @@ public sealed class RuntimeIdCounter<T>
         return id;
     }
 
+    [SuppressMessage("Design", "CA1000:Do not declare static members on generic types",
+        Justification = "T is a phantom type fixed by the caller's context (a save reader restoring " +
+        "the counter for a specific entity kind); an instance-based factory would need an unused " +
+        "instance to call it on.")]
     public static RuntimeIdCounter<T> Restore(long next)
     {
         if (next < 0)

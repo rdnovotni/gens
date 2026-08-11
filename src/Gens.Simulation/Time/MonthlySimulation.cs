@@ -102,16 +102,16 @@ public sealed class MonthlySimulation<TState>
         return events;
     }
 
-    private static IReadOnlyList<IMonthlySystem<TState>> TopologicalSortWithinPhase(
-        IReadOnlyList<IMonthlySystem<TState>> phaseSystems,
-        IReadOnlyDictionary<string, IMonthlySystem<TState>> byId)
+    private static List<IMonthlySystem<TState>> TopologicalSortWithinPhase(
+        IMonthlySystem<TState>[] phaseSystems,
+        Dictionary<string, IMonthlySystem<TState>> byId)
     {
         var remaining = new SortedDictionary<string, IMonthlySystem<TState>>(StringComparer.Ordinal);
         foreach (var system in phaseSystems)
             remaining[system.Id] = system;
 
         var resolved = new HashSet<string>(StringComparer.Ordinal);
-        var ordered = new List<IMonthlySystem<TState>>(phaseSystems.Count);
+        var ordered = new List<IMonthlySystem<TState>>(phaseSystems.Length);
 
         while (remaining.Count > 0)
         {
