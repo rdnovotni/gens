@@ -1,6 +1,6 @@
 # ADR 0003 — Epoch and GameDate
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

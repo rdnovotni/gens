@@ -1,6 +1,6 @@
 # ADR 0005 — Monthly Tick Phases
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

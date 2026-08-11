@@ -21,6 +21,15 @@ public sealed class RandomStreamSet
             throw new ArgumentException($"A random stream named '{name}' already exists.", nameof(name));
     }
 
+    /// <summary>Registers a stream whose (seed, stream) pair is deterministically derived from a
+    /// campaign root seed and this stream's name (<see cref="SeedDerivation"/>), so adding a new,
+    /// unrelated stream never perturbs any existing stream's draws.</summary>
+    public void AddDerived(string name, ulong rootSeed)
+    {
+        var (seed, stream) = SeedDerivation.Derive(rootSeed, name);
+        Add(name, seed, stream);
+    }
+
     public uint NextUInt(string name)
     {
         var random = Get(name);

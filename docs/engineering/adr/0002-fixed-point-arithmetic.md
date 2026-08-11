@@ -1,6 +1,6 @@
 # ADR 0002 — Fixed-Point and Integer Arithmetic
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

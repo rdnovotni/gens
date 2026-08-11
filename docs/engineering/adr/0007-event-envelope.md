@@ -1,6 +1,6 @@
 # ADR 0007 — Domain Event Envelope
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

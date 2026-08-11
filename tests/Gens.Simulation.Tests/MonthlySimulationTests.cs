@@ -1,4 +1,5 @@
 using Gens.Simulation.Commands;
+using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
 using Gens.Simulation.Time;
 using NUnit.Framework;
@@ -7,11 +8,13 @@ namespace Gens.Simulation.Tests;
 
 public sealed class MonthlySimulationTests
 {
-    private static readonly string[] ExpectedState = { "population:10", "economy:10" };
-    private static readonly string[] ExpectedSystemIds = { "population", "economy" };
+    // No declared prerequisites and the same phase, so the final tiebreak is ordinal system ID
+    // (ADR 0004/0005) — "economy" sorts before "population" regardless of registration order.
+    private static readonly string[] ExpectedState = { "economy:10", "population:10" };
+    private static readonly string[] ExpectedSystemIds = { "economy", "population" };
 
     [Test]
-    public void SystemsAndEventsUseRegistrationOrder()
+    public void SamePhaseNoPrerequisiteSystemsSortByOrdinalId()
     {
         var state = new List<string>();
         var simulation = new MonthlySimulation<List<string>>(new[]
@@ -35,16 +38,96 @@ public sealed class MonthlySimulationTests
         Assert.That(() => new MonthlySimulation<List<string>>(systems), Throws.ArgumentException);
     }
 
-    private sealed class RecordingSystem(string id) : IMonthlySystem<List<string>>
+    [Test]
+    public void PhaseOrderDominatesPrerequisiteAndIdOrder()
     {
-        public string Id => id;
+        var simulation = new MonthlySimulation<List<string>>(new[]
+        {
+            new RecordingSystem("zzz-reports", TickPhase.Reports),
+            new RecordingSystem("aaa-production", TickPhase.Production),
+        });
+
+        var ids = simulation.OrderedSystems.Select(system => system.Id);
+
+        Assert.That(ids, Is.EqualTo(new[] { "aaa-production", "zzz-reports" }));
+    }
+
+    [Test]
+    public void PrerequisiteOrdersSystemsWithinAPhase()
+    {
+        var simulation = new MonthlySimulation<List<string>>(new[]
+        {
+            new RecordingSystem("second", TickPhase.Lifecycle, prerequisites: new[] { "first" }),
+            new RecordingSystem("first", TickPhase.Lifecycle),
+        });
+
+        var ids = simulation.OrderedSystems.Select(system => system.Id);
+
+        Assert.That(ids, Is.EqualTo(new[] { "first", "second" }));
+    }
+
+    [Test]
+    public void UnknownPrerequisiteThrows()
+    {
+        var systems = new[] { new RecordingSystem("only", prerequisites: new[] { "missing" }) };
+
+        Assert.That(() => new MonthlySimulation<List<string>>(systems), Throws.InvalidOperationException);
+    }
+
+    [Test]
+    public void CyclicPrerequisiteThrows()
+    {
+        var systems = new[]
+        {
+            new RecordingSystem("a", prerequisites: new[] { "b" }),
+            new RecordingSystem("b", prerequisites: new[] { "a" }),
+        };
+
+        Assert.That(() => new MonthlySimulation<List<string>>(systems), Throws.InvalidOperationException);
+    }
+
+    [Test]
+    public void PrerequisiteInALaterPhaseThrows()
+    {
+        var systems = new[]
+        {
+            new RecordingSystem("early", TickPhase.Lifecycle, prerequisites: new[] { "late" }),
+            new RecordingSystem("late", TickPhase.Reports),
+        };
+
+        Assert.That(() => new MonthlySimulation<List<string>>(systems), Throws.InvalidOperationException);
+    }
+
+    private sealed class RecordingSystem : IMonthlySystem<List<string>>
+    {
+        private static readonly RuntimeIdCounter<DomainEventEntity> EventIds = new();
+
+        public RecordingSystem(string id, TickPhase phase = TickPhase.Lifecycle, IReadOnlyCollection<string>? prerequisites = null)
+        {
+            Id = id;
+            Phase = phase;
+            Prerequisites = prerequisites ?? Array.Empty<string>();
+        }
+
+        public string Id { get; }
+        public TickPhase Phase { get; }
+        public IReadOnlyCollection<string> Reads => Array.Empty<string>();
+        public IReadOnlyCollection<string> Writes => Array.Empty<string>();
+        public IReadOnlyCollection<string> Prerequisites { get; }
 
         public IReadOnlyList<IDomainEvent> Tick(List<string> state, MonthlyTickContext context)
         {
             state.Add($"{Id}:{context.Date.TotalMonths}");
-            return new IDomainEvent[] { new SystemRan(Id) };
+            return new IDomainEvent[] { new SystemRan(EventIds.Issue(), context.Date, Id) };
         }
     }
 
-    private sealed record SystemRan(string Id) : IDomainEvent;
+    private sealed record SystemRan(RuntimeId<DomainEventEntity> EventId, GameDate OccurredDate, string Id) : IDomainEvent
+    {
+        public string Type => "test.systemRan";
+        public int SchemaVersion => 1;
+        public IReadOnlyList<string> SubjectIds => Array.Empty<string>();
+        public Visibility Visibility => Visibility.Public;
+        public string? CausationId => null;
+    }
 }

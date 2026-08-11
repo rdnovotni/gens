@@ -1,6 +1,6 @@
 # ADR 0006 — Command Envelope and Atomicity
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 
