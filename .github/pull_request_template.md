@@ -8,6 +8,7 @@
 - [ ] Content compilation succeeds when content or schemas changed
 - [ ] Relevant Unity checks were run when assets or project settings changed
 - [ ] Documentation and tests were added or updated as needed
+- [ ] `docs/design/README.md` updated if design docs were added, removed, or renamed
 
 ## Compatibility
 

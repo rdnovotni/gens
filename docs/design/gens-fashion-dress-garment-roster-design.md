@@ -1,6 +1,8 @@
 # GENS — System Design: Fashion & Dress — The Garment Roster
 *The companion catalog Fashion & Dress deliberately deferred: every named garment, accessory, hairstyle, and cosmetic a Character can actually hold as a Garment Slot or Outfit Tier component, organized by function, status, region, and occasion. This document adds no new mechanics — every entry plugs directly into the parent document's existing Wardrobe, Outfit Tier, Garment Slot, and Occasion structure. Where an item carries a real, specific piece of Roman (or provincial) history worth knowing, it's named here rather than left generic. This pass significantly expands coverage: dinner and philosopher's dress, bathing and athletic gear, arena and racing dress tied directly to Games & Spectacle's own named gladiator types, priestly dancing-and-augury regalia, funeral ancestor masks, the freedman's cap, the rarest Roman military honor, several individually broken-out regional entries (Armenia, Arabia Felix, Nubia, Judaea, Sicily), a Phrygian cap for Mithraic devotees, and — the centerpiece of this pass — a full layered-paperdoll rendering model (§16) explaining exactly how a Character's Wardrobe drives their generated portrait, in the same procedural spirit as Free Cities' own model system.*
 
+**Related document:** structure and mechanics (Wardrobe, Outfit Tier, Garment Slot, Occasion) live in the parent document, [Fashion & Dress](gens-fashion-dress-design.md).
+
 ---
 
 ## Contents

@@ -1,6 +1,8 @@
 # GENS — System Design: Religion (§6.6)
 *The Culture & Belief pillar's own entry, upgraded per direction from a pure flavor layer into a real mid-weight system: a single household Favor meter with a chosen Patron Deity, a sacred calendar Religion itself owns, a passive-plus-active Omens/Auspices pair, a lightweight state Priesthood track running alongside Politics & Patronage's magistracy ladder, and a foreign-cult/syncretism mechanic sized to matter without becoming its own religious-simulation subsystem.*
 
+**Related document:** the foreign-cult/syncretism mechanic here is expanded into a full catalog in [Religions of the Known World](gens-religions-of-the-known-world-design.md).
+
 ---
 
 ## Contents

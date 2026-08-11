@@ -1,6 +1,8 @@
 # GENS — Authored Content: The Historical Timeline (133 BC – AD 235)
 *Now enriched with real, vivid, genuinely fun detail on top of the prior pass's structural density: Elagabalus's own wild reign (a teenage Syrian sun-god priest attempting to overturn Jupiter's own primacy — real history, and a direct, empire-scale echo of Education & Culture's own Hellenization tension), Commodus fighting as a gladiator, Pliny the Elder dying while observing Vesuvius up close, the real Antioch earthquake that nearly killed Trajan mid-campaign, Nero's extravagant Domus Aurea, the Baths of Caracalla, and the honest detail that Rome abandoned the Antonine Wall within twenty years of building it. A real gap in the Severan succession (Macrinus and Elagabalus, both previously skipped) is also closed.*
 
+**Extended by:** this document covers 133 BC – AD 235 only. [The Late Antique Timeline](gens-events-historical-timeline-late-antiquity-content.md) continues the authored history through AD 565, the project's actual confirmed range.
+
 ---
 
 ## Contents

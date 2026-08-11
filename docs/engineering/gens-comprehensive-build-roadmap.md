@@ -50,7 +50,7 @@ The merged [framework pull request](https://github.com/rdnovotni/gens/pull/5) ad
 - a first content compiler and JSON Schema;
 - three small test files and a random-number benchmark.
 
-The [design index](https://github.com/rdnovotni/gens/blob/bc8dfd5090c38727d9cecdb00317a5a3db74ead0/docs/design/README.md) contains 81 design documents, approximately 259,000 words and 18,100 lines. Seventy-nine documents contain a data-model section, 75 contain cross-system integration notes, and the corpus contains approximately 528 explicit open-question bullets. Eighty documents' open questions mention unresolved formulas, values, thresholds, caps, rates, or tuning. The design is broad and rich; it is not yet an engineering contract.
+The [design index](../design/README.md) links 110 design documents (111 files under `docs/design/` including the index itself), totaling approximately 384,000 words and 24,800 lines as of this revision (excluding the index file itself). The design is broad and rich; it is not yet an engineering contract.
 
 ### What does not exist yet
 
@@ -60,7 +60,7 @@ The authored content catalog contains only `status.placeholder`. The JSON Schema
 
 ### Immediate red condition
 
-The latest framework PR's [standalone validation run](https://github.com/rdnovotni/gens/actions/runs/31341592576) failed during test compilation. `Property` is ambiguous between NUnit and FsCheck in `Pcg32Tests.cs` lines 22 and 31. Content compilation was then skipped. This is small to fix, but it means the present foundation is not verified.
+The originally reported ambiguity between NUnit's and FsCheck's `Property` attribute in `Pcg32Tests.cs` is resolved in source: both property tests now fully qualify the attribute as `[FsCheck.NUnit.Property]`. Standalone CI on `main` is nonetheless still red as of this revision ([latest run](https://github.com/rdnovotni/gens/actions/runs/31523750160)): the `standalone` job fails `dotnet build` on unrelated analyzer/compile errors (`CA1869`, `CA1861`, `CA1050`, and a `CS1061` on `.ToProperty()` that suggests the FsCheck API surface used no longer matches the referenced package version), and the `content` job fails at content-schema validation. Re-check current CI status before treating either job as fixed; both need their own diagnosis distinct from the original `Property`-ambiguity report.
 
 The current workflow also runs only standalone .NET validation. It does not yet perform the Unity EditMode, PlayMode, UI, content-migration, save-fixture, deterministic-replay, or Unity-build checks promised by the technical baseline.
 
@@ -485,7 +485,7 @@ Construction order:
 
 These are the recommended first issues or narrowly scoped pull requests, in order:
 
-1. Fix ambiguous FsCheck `Property` attributes and restore green standalone CI.
+1. Diagnose and fix the current `standalone` and `content` job build failures and restore green CI (see "Immediate red condition" above; the original `Property`-ambiguity report is already resolved, but other build/analyzer errors remain).
 2. Split tests and content compilation into independent required CI jobs.
 3. Add design-authority registry and supersession markers.
 4. Add ADRs for IDs, time, fixed point, tick phases, command atomicity, event envelopes, knowledge, and fidelity tiers.

@@ -1,6 +1,8 @@
 # GENS — System Design: Succession & Dynasty (§6.9)
 *The mechanism behind "no forced ending" — every death, retirement, and generational transition has somewhere real to go. Adoption folds in here per the core doc's own note; Legitimacy's eligibility gate, Economy & Finance's inheritance, Military & Combat's battlefield-death handoff, and Rival Houses' extinction trigger and succession reuse all resolve against what this document builds.*
 
+**Distinct from:** two other systems share the word "Dynasty" but are not duplicates of this one — [Dynasty Chronicle](gens-dynasty-chronicle-design.md) is the household's own record/log, and [The Dynasty Legacy Tree](gens-dynasty-legacy-tree-design.md) is a spendable-Renown progression system. This document governs inheritance and generational transition.
+
 ---
 
 ## Contents
