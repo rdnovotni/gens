@@ -78,13 +78,15 @@ public sealed class Fixed64Tests
     public void ComparisonOperatorsOrderByRawValue()
     {
         var small = Fixed64.FromInt(1);
+        var alsoSmall = Fixed64.FromInt(1);
         var large = Fixed64.FromInt(2);
+        var alsoLarge = Fixed64.FromInt(2);
         Assert.Multiple(() =>
         {
             Assert.That(small < large, Is.True);
             Assert.That(large > small, Is.True);
-            Assert.That(small <= small, Is.True);
-            Assert.That(large >= large, Is.True);
+            Assert.That(small <= alsoSmall, Is.True);
+            Assert.That(large >= alsoLarge, Is.True);
         });
     }
 
