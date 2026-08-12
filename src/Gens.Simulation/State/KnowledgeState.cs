@@ -39,6 +39,22 @@ public sealed class KnowledgeState
     /// <summary>Every entry, in deterministic (ADR 0004) key order.</summary>
     public IEnumerable<KeyValuePair<KnowledgeKey, KnowledgeEntry>> All() => _entries;
 
+    /// <summary>Rebuilds knowledge state from persisted save data (ADR 0010). <paramref name="entries"/>
+    /// may arrive in any order — the backing <see cref="SortedDictionary{TKey,TValue}"/> re-establishes
+    /// deterministic key order regardless.</summary>
+    public static KnowledgeState Restore(IEnumerable<KeyValuePair<KnowledgeKey, KnowledgeEntry>> entries)
+    {
+        if (entries is null)
+            throw new ArgumentNullException(nameof(entries));
+
+        var state = new KnowledgeState();
+        foreach (var entry in entries)
+            state.Set(entry.Key, entry.Value);
+
+        state.Version = 0;
+        return state;
+    }
+
     private sealed class KnowledgeKeyComparer : IComparer<KnowledgeKey>
     {
         public static readonly KnowledgeKeyComparer Instance = new();
