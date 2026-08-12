@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/presentation.schema.json",
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "iconKey"
+      ],
+      "properties": {
+        "iconKey": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "roman-state-religion",
+    "status": "active",
+    "nameKey": "religions.roman-state-religion.name",
+    "descriptionKey": "religions.roman-state-religion.description",
+    "kind": "civic-polytheism"
+  }
+]

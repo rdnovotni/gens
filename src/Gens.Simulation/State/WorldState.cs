@@ -18,6 +18,45 @@ public sealed class WorldState
         Date = date;
     }
 
+    /// <summary>Reconstructs a <see cref="WorldState"/> from persisted save data (ADR 0010). Every
+    /// counter, ordered partition, and the command sequence number are restored exactly as captured —
+    /// this constructor performs no validation of cross-entity consistency beyond what each restored
+    /// component already enforces (e.g. <see cref="RuntimeIdCounter{T}.Restore"/> rejecting a negative
+    /// counter).</summary>
+    internal WorldState(
+        GameDate date,
+        RuntimeIdCounter<Region> regionIds,
+        RuntimeIdCounter<Settlement> settlementIds,
+        RuntimeIdCounter<Plot> plotIds,
+        RuntimeIdCounter<Household> householdIds,
+        RuntimeIdCounter<Actor> actorIds,
+        RuntimeIdCounter<Character> characterIds,
+        RuntimeIdCounter<Building> buildingIds,
+        RuntimeIdCounter<Contract> contractIds,
+        RuntimeIdCounter<Activity> activityIds,
+        RuntimeIdCounter<Command> commandIds,
+        RuntimeIdCounter<DomainEventEntity> eventIds,
+        OrderedRegistry<RuntimeId<Character>, object> characters,
+        KnowledgeState knowledge,
+        long nextCommandSequenceNumber)
+    {
+        Date = date;
+        RegionIds = regionIds;
+        SettlementIds = settlementIds;
+        PlotIds = plotIds;
+        HouseholdIds = householdIds;
+        ActorIds = actorIds;
+        CharacterIds = characterIds;
+        BuildingIds = buildingIds;
+        ContractIds = contractIds;
+        ActivityIds = activityIds;
+        CommandIds = commandIds;
+        EventIds = eventIds;
+        Characters = characters;
+        Knowledge = knowledge;
+        _nextCommandSequenceNumber = nextCommandSequenceNumber;
+    }
+
     public RuntimeIdCounter<Region> RegionIds { get; } = new();
     public RuntimeIdCounter<Settlement> SettlementIds { get; } = new();
     public RuntimeIdCounter<Plot> PlotIds { get; } = new();

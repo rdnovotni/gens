@@ -1,0 +1,9 @@
+[
+  {
+    "id": "roman",
+    "status": "active",
+    "nameKey": "cultures.roman.name",
+    "descriptionKey": "cultures.roman.description",
+    "category": "default"
+  }
+]

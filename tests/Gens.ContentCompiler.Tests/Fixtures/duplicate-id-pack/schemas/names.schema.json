@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/names.schema.json",
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "pool",
+        "value"
+      ],
+      "properties": {
+        "pool": {
+          "type": "string",
+          "enum": [
+            "praenomen",
+            "nomen",
+            "cognomen"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[
+  {
+    "id": "bountiful-harvest",
+    "status": "active",
+    "nameKey": "events.bountiful-harvest.name",
+    "descriptionKey": "events.bountiful-harvest.description",
+    "weight": 1.0,
+    "chain": "harvest-cycle"
+  }
+]

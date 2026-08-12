@@ -17,5 +17,8 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Gens.Simulation/Gens.Simulation.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Saves/Fixtures/**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
 
