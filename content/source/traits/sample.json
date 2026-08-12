@@ -1,0 +1,18 @@
+[
+  {
+    "id": "strong",
+    "status": "active",
+    "nameKey": "traits.strong.name",
+    "descriptionKey": "traits.strong.description",
+    "axis": "boldness",
+    "opposes": "weak"
+  },
+  {
+    "id": "weak",
+    "status": "active",
+    "nameKey": "traits.weak.name",
+    "descriptionKey": "traits.weak.description",
+    "axis": "boldness",
+    "opposes": "strong"
+  }
+]

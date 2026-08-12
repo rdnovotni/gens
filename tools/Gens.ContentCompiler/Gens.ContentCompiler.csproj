@@ -6,5 +6,8 @@
   <ItemGroup>
     <PackageReference Include="JsonSchema.Net" Version="9.4.0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../src/Gens.Simulation/Gens.Simulation.csproj" />
+  </ItemGroup>
 </Project>
 

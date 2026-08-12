@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/cultures.schema.json",
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "category"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "default",
+            "provincial",
+            "frontier",
+            "client",
+            "great-power",
+            "trade-contact-only"
+          ]
+        }
+      }
+    }
+  ]
+}

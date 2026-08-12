@@ -1,0 +1,8 @@
+[
+  {
+    "id": "goods-grain-icon",
+    "status": "active",
+    "nameKey": "presentation.goods-grain-icon.name",
+    "iconKey": "icons/goods/grain.svg"
+  }
+]

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "mos-maiorum",
+    "status": "active",
+    "nameKey": "policies.mos-maiorum.name",
+    "descriptionKey": "policies.mos-maiorum.description",
+    "cooldownMonths": 12
+  }
+]

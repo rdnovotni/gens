@@ -38,6 +38,19 @@ jobs:
         with:
           global-json-file: global.json
       - run: dotnet restore tools/Gens.ContentCompiler/Gens.ContentCompiler.csproj
-      - name: Validate schema and compile content
-        run: dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- content/schemas/definitions.schema.json content/source/catalog.json artifacts/content/catalog.json
+      - name: Validate every content family (schema, duplicate IDs, references, localization)
+        run: dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- validate content
+      - name: Compile the golden content pack
+        run: dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- compile content artifacts/content/catalog.json
+      - name: Exit-gate smoke test — bootstrap, save, verify, migrate, reload, compare hashes
+        run: |
+          set -euo pipefail
+          dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- \
+            run-campaign --seed 1 --months 12 --out artifacts/saves/smoke.gens --content-hash smoke
+          dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- \
+            verify-save artifacts/saves/smoke.gens
+          dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- \
+            migrate-save artifacts/saves/smoke.gens --out artifacts/saves/smoke-migrated.gens
+          dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- \
+            replay artifacts/saves/smoke.gens
       - run: ./scripts/check-clean-worktree.sh

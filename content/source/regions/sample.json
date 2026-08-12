@@ -1,0 +1,9 @@
+[
+  {
+    "id": "latium",
+    "status": "active",
+    "nameKey": "regions.latium.name",
+    "descriptionKey": "regions.latium.description",
+    "primaryCulture": "roman"
+  }
+]

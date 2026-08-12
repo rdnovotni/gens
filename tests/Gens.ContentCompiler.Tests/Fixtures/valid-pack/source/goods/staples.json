@@ -1,0 +1,18 @@
+[
+  {
+    "id": "grain",
+    "status": "active",
+    "nameKey": "goods.grain.name",
+    "descriptionKey": "goods.grain.description",
+    "category": "raw-materials",
+    "basePrice": 0.3
+  },
+  {
+    "id": "bread",
+    "status": "active",
+    "nameKey": "goods.bread.name",
+    "descriptionKey": "goods.bread.description",
+    "category": "intermediate",
+    "basePrice": 0.6
+  }
+]

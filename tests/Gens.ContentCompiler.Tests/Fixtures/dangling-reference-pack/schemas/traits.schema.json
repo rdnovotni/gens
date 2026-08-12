@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/traits.schema.json",
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "axis"
+      ],
+      "properties": {
+        "axis": {
+          "type": "string",
+          "enum": [
+            "honor",
+            "compassion",
+            "greed",
+            "zealotry",
+            "vengefulness",
+            "boldness",
+            "rationality"
+          ]
+        },
+        "opposes": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        }
+      }
+    }
+  ]
+}

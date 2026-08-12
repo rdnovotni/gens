@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/regions.schema.json",
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "primaryCulture"
+      ],
+      "properties": {
+        "primaryCulture": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        }
+      }
+    }
+  ]
+}

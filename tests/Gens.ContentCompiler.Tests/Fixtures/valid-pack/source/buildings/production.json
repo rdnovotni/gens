@@ -1,0 +1,17 @@
+[
+  {
+    "id": "pistrinum",
+    "status": "active",
+    "nameKey": "buildings.pistrinum.name",
+    "descriptionKey": "buildings.pistrinum.description",
+    "constructionMonths": 2,
+    "recipe": {
+      "inputs": [
+        { "good": "grain", "quantity": 1 }
+      ],
+      "outputs": [
+        { "good": "bread", "quantity": 1 }
+      ]
+    }
+  }
+]
