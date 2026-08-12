@@ -7,11 +7,12 @@ namespace Gens.ContentCompiler.Commands;
 
 /// <summary>
 /// <c>run-campaign --seed &lt;n&gt; --months &lt;n&gt; --out &lt;path&gt; [--content-hash &lt;hash&gt;]</c>:
-/// the minimal headless proof this phase can offer without a real gameplay system (Phase 4 builds the
-/// actual bootstrap/scheduler). Constructs an empty <see cref="WorldState"/>, advances its clock for
-/// the requested number of months (no monthly systems are registered — none exist yet outside test
-/// scaffolding), saves the result, and prints the final <see cref="StateHasher"/> hash so a second run
-/// with the same seed can be checked for reproducibility by hand or by <c>verify-save</c>.
+/// a minimal, content-free clock-advance smoke test — no <see cref="Gens.Simulation.Campaign.CampaignConfig"/>,
+/// no bootstrap, no monthly systems (not even <see cref="Gens.Simulation.Campaign.ScheduledActionSystem"/>).
+/// Constructs a bare <see cref="WorldState"/>, advances its clock for the requested number of months,
+/// saves the result, and prints the final <see cref="StateHasher"/> hash so a second run with the same
+/// seed can be checked for reproducibility by hand or by <c>verify-save</c>. For an actual bootstrapped
+/// campaign, use <c>new-campaign</c> and <c>advance</c> instead (Phase 4).
 /// </summary>
 public static class RunCampaignCommand
 {
@@ -30,14 +31,11 @@ public static class RunCampaignCommand
         for (var i = 0; i < months; i++)
             state.AdvanceMonth();
 
-        SaveWriter.Write(outPath, state, streams, GameVersion(), contentHash);
+        SaveWriter.Write(outPath, state, streams, GameVersionInfo.Current, contentHash);
 
         var hash = StateHasher.Hash(state);
         Console.WriteLine($"Advanced {months} month(s) from seed {seed}. Final date: {state.Date.ToDisplayYearLabel()}. " +
             $"State hash: {hash:x16}. Saved to '{outPath}'.");
         return 0;
     }
-
-    private static string GameVersion() =>
-        typeof(RunCampaignCommand).Assembly.GetName().Version?.ToString() ?? "0.0.0";
 }

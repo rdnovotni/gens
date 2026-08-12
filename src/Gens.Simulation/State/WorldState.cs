@@ -36,7 +36,9 @@ public sealed class WorldState
         RuntimeIdCounter<Activity> activityIds,
         RuntimeIdCounter<Command> commandIds,
         RuntimeIdCounter<DomainEventEntity> eventIds,
+        RuntimeIdCounter<ScheduledAction> scheduledActionIds,
         OrderedRegistry<RuntimeId<Character>, object> characters,
+        OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -52,7 +54,9 @@ public sealed class WorldState
         ActivityIds = activityIds;
         CommandIds = commandIds;
         EventIds = eventIds;
+        ScheduledActionIds = scheduledActionIds;
         Characters = characters;
+        ScheduledActions = scheduledActions;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -68,11 +72,18 @@ public sealed class WorldState
     public RuntimeIdCounter<Activity> ActivityIds { get; } = new();
     public RuntimeIdCounter<Command> CommandIds { get; } = new();
     public RuntimeIdCounter<DomainEventEntity> EventIds { get; } = new();
+    public RuntimeIdCounter<ScheduledAction> ScheduledActionIds { get; } = new();
 
     /// <summary>Worked-example ordered-index partition (ADR 0004) proving the pattern; replaced with a
     /// typed <c>OrderedRegistry&lt;RuntimeId&lt;Character&gt;, Character&gt;</c> once Phase 5+ defines
     /// the real Character record.</summary>
     public OrderedRegistry<RuntimeId<Character>, object> Characters { get; } = new();
+
+    /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
+    /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
+    /// commands add/remove entries directly through this partition's own API, matching how
+    /// <see cref="Characters"/> and <see cref="Knowledge"/> are mutated.</summary>
+    public OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> ScheduledActions { get; } = new();
 
     public KnowledgeState Knowledge { get; } = new();
 
@@ -103,7 +114,9 @@ public sealed class WorldState
         ["activityIds"] = ActivityIds.Peek,
         ["commandIds"] = CommandIds.Peek,
         ["eventIds"] = EventIds.Peek,
+        ["scheduledActionIds"] = ScheduledActionIds.Peek,
         ["characters"] = Characters.Version,
+        ["scheduledActions"] = ScheduledActions.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

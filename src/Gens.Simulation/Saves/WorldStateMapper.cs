@@ -32,11 +32,14 @@ public static class WorldStateMapper
                 ActivityIds = state.ActivityIds.Peek,
                 CommandIds = state.CommandIds.Peek,
                 EventIds = state.EventIds.Peek,
+                ScheduledActionIds = state.ScheduledActionIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
             // Already deterministic key order (ADR 0004) via KnowledgeState.All.
             Knowledge = state.Knowledge.All().Select(ToKnowledgeDto).ToArray(),
+            // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            ScheduledActions = state.ScheduledActions.InAscendingOrder().Select(entry => ToScheduledActionDto(entry.Value)).ToArray(),
         };
     }
 
@@ -51,6 +54,9 @@ public static class WorldStateMapper
 
         var knowledge = KnowledgeState.Restore(dto.Knowledge.Select(FromKnowledgeDto));
 
+        var scheduledActions = OrderedRegistry<ScheduledActionKey, ScheduledActionEntry>.Restore(
+            dto.ScheduledActions.Select(FromScheduledActionDto));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -64,7 +70,9 @@ public static class WorldStateMapper
             activityIds: RuntimeIdCounter<Activity>.Restore(dto.Counters.ActivityIds),
             commandIds: RuntimeIdCounter<Command>.Restore(dto.Counters.CommandIds),
             eventIds: RuntimeIdCounter<DomainEventEntity>.Restore(dto.Counters.EventIds),
+            scheduledActionIds: RuntimeIdCounter<ScheduledAction>.Restore(dto.Counters.ScheduledActionIds),
             characters: characters,
+            scheduledActions: scheduledActions,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -88,5 +96,23 @@ public static class WorldStateMapper
         var key = new KnowledgeKey(dto.ObserverId, dto.SubjectId, dto.Topic);
         var entry = new KnowledgeEntry(value, confidence, new GameDate(dto.AsOfDateTotalMonths), dto.ProvenanceEventId);
         return new KeyValuePair<KnowledgeKey, KnowledgeEntry>(key, entry);
+    }
+
+    private static ScheduledActionEntryDto ToScheduledActionDto(ScheduledActionEntry entry) => new()
+    {
+        ActionId = entry.ActionId.ToTaggedString(),
+        DueDateTotalMonths = entry.DueDate.TotalMonths,
+        ActorId = entry.ActorId,
+        ActionType = entry.ActionType,
+        PayloadJson = entry.PayloadJson,
+        CausationId = entry.CausationId,
+    };
+
+    private static KeyValuePair<ScheduledActionKey, ScheduledActionEntry> FromScheduledActionDto(ScheduledActionEntryDto dto)
+    {
+        var actionId = RuntimeId<ScheduledAction>.Parse(dto.ActionId);
+        var dueDate = new GameDate(dto.DueDateTotalMonths);
+        var entry = new ScheduledActionEntry(actionId, dueDate, dto.ActorId, dto.ActionType, dto.PayloadJson, dto.CausationId);
+        return new KeyValuePair<ScheduledActionKey, ScheduledActionEntry>(new ScheduledActionKey(dueDate, actionId), entry);
     }
 }

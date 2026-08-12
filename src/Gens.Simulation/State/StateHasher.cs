@@ -34,6 +34,7 @@ public static class StateHasher
         hash = MixLong(hash, state.ActivityIds.Peek);
         hash = MixLong(hash, state.CommandIds.Peek);
         hash = MixLong(hash, state.EventIds.Peek);
+        hash = MixLong(hash, state.ScheduledActionIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         // Worked-example partition (WorldState.Characters is a typed placeholder — see its own
@@ -41,6 +42,17 @@ public static class StateHasher
         // exists to fold content from.
         foreach (var entry in state.Characters.InAscendingOrder())
             hash = MixLong(hash, entry.Key.Value);
+
+        // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ScheduledActions.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.ActionId.Value);
+            hash = MixLong(hash, entry.Value.DueDate.TotalMonths);
+            hash = MixString(hash, entry.Value.ActorId);
+            hash = MixString(hash, entry.Value.ActionType);
+            hash = MixString(hash, entry.Value.PayloadJson);
+            hash = MixString(hash, entry.Value.CausationId ?? string.Empty);
+        }
 
         foreach (var entry in state.Knowledge.All())
         {

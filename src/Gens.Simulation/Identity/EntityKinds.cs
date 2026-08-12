@@ -98,6 +98,15 @@ public sealed class DomainEventEntity
     }
 }
 
+/// <summary>Phantom type for scheduled-action IDs (Phase 4 item 4: "scheduled actions and a calendar
+/// queue for future-dated work"). Not one of the roadmap's listed content/runtime kinds.</summary>
+public sealed class ScheduledAction
+{
+    private ScheduledAction()
+    {
+    }
+}
+
 /// <summary>Maps each entity-kind phantom type to its short save-file tag, e.g. <c>Character</c> → <c>char</c>.</summary>
 internal static class RuntimeIdTagRegistry
 {
@@ -115,6 +124,7 @@ internal static class RuntimeIdTagRegistry
         [typeof(Activity)] = "activity",
         [typeof(Command)] = "cmd",
         [typeof(DomainEventEntity)] = "event",
+        [typeof(ScheduledAction)] = "action",
     };
 
     public static string Resolve(Type type) =>

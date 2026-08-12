@@ -22,6 +22,15 @@ public sealed record WorldSaveDocument
 
     [JsonPropertyOrder(4)]
     public required IReadOnlyList<KnowledgeEntryDto> Knowledge { get; init; }
+
+    /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Already in
+    /// ascending (due date, action ID) order (ADR 0004) via <see
+    /// cref="Identity.OrderedRegistry{TId,TEntity}.InAscendingOrder"/>. Not <c>required</c>, and
+    /// defaults to empty: ADR 0011's "additive only until v1 ships" policy means the permanent
+    /// <c>v1-empty-campaign.gens</c> fixture — written before this field existed — must still load at
+    /// <see cref="SaveFormat.CurrentVersion"/> without a migration.</summary>
+    [JsonPropertyOrder(5)]
+    public IReadOnlyList<ScheduledActionEntryDto> ScheduledActions { get; init; } = Array.Empty<ScheduledActionEntryDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -60,6 +69,11 @@ public sealed record CounterSetDto
 
     [JsonPropertyOrder(10)]
     public required long EventIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: see <see cref="WorldSaveDocument.ScheduledActions"/>'s
+    /// doc comment for why this field must tolerate a pre-Phase-4 save with no scheduled actions.</summary>
+    [JsonPropertyOrder(11)]
+    public long ScheduledActionIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -89,4 +103,27 @@ public sealed record KnowledgeEntryDto
 
     [JsonPropertyOrder(6)]
     public string? ProvenanceEventId { get; init; }
+}
+
+/// <summary>One <see cref="State.ScheduledActionEntry"/>, in the same tagged-string-ID convention as
+/// every other cross-referenced runtime ID (ADR 0001).</summary>
+public sealed record ScheduledActionEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActionId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int DueDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string ActionType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string PayloadJson { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? CausationId { get; init; }
 }
