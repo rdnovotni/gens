@@ -1,4 +1,5 @@
 using Gens.Simulation.State;
+using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 
@@ -49,11 +50,13 @@ public sealed class WorldStateTests
         var state = new WorldState(new GameDate(0));
         var second = state.CharacterIds.Issue();
         var first = state.CharacterIds.Issue();
-        state.Characters.Add(second, "second");
-        state.Characters.Add(first, "first");
+        var secondCharacter = CharacterTestFixtures.Minimal(second, praenomen: "Second");
+        var firstCharacter = CharacterTestFixtures.Minimal(first, praenomen: "First");
+        state.Characters.Add(second, secondCharacter);
+        state.Characters.Add(first, firstCharacter);
 
         var order = state.Characters.InAscendingOrder().Select(entry => entry.Value).ToArray();
 
-        Assert.That(order, Is.EqualTo(new[] { "second", "first" }));
+        Assert.That(order, Is.EqualTo(new[] { secondCharacter, firstCharacter }));
     }
 }

@@ -1,9 +1,17 @@
+using Gens.Simulation.Characters;
+
 namespace Gens.Simulation.Identity;
 
 // Phantom marker types for RuntimeId<T> and DefinitionId<T>. Never instantiated — only used as a
 // compile-time tag so, e.g., a RuntimeId<Character> can never be passed where a RuntimeId<Plot> is
 // expected (ADR 0001). Runtime-instantiated kinds (created during a campaign) get RuntimeId<T>;
 // content-authored kinds (defined ahead of time, never runtime-generated) get DefinitionId<T>.
+//
+// Character (Phase 5 item 1) is the first entity kind whose real record now exists
+// (Characters.Character) — RuntimeId<T>'s tag parameter is unconstrained, so that real record serves
+// directly as its own RuntimeId/DefinitionId tag rather than needing a separate, never-instantiated
+// marker class here. Every other kind below still uses a local phantom marker until its own real
+// record lands.
 
 public sealed class Campaign
 {
@@ -47,9 +55,12 @@ public sealed class Actor
     }
 }
 
-public sealed class Character
+/// <summary>Phantom type for content-authored culture definitions (Phase 5 item 1). Content-authored
+/// only — never runtime-instantiated, so it uses <see cref="DefinitionId{T}"/> rather than <see
+/// cref="RuntimeId{T}"/> and needs no <see cref="RuntimeIdTagRegistry"/> entry.</summary>
+public sealed class Culture
 {
-    private Character()
+    private Culture()
     {
     }
 }

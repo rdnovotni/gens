@@ -1,3 +1,4 @@
+using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using NUnit.Framework;
 

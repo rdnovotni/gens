@@ -1,0 +1,30 @@
+using Gens.Simulation.Characters;
+using Gens.Simulation.Identity;
+using Gens.Simulation.Time;
+
+namespace Gens.Simulation.Tests.Characters;
+
+/// <summary>Shared builder for a minimally valid <see cref="Character"/>, used by every test across
+/// the suite that only needs "a" Character rather than a specific one (mirrors how other partitions'
+/// tests previously used a bare placeholder value).</summary>
+public static class CharacterTestFixtures
+{
+    public static Character Minimal(RuntimeId<Character> id, string praenomen = "Marcus", string nomen = "Aurelius") =>
+        Character.Create(
+            id: id,
+            praenomen: praenomen,
+            nomen: nomen,
+            cognomen: null,
+            sex: Sex.Male,
+            birthDate: new GameDate(0),
+            status: LegalStatus.RomanCitizen,
+            socialClass: SocialClass.Plebeian,
+            culture: new DefinitionId<Culture>("roman"),
+            location: default(RuntimeId<Settlement>),
+            household: null,
+            attributes: new CoreAttributes(10, 10, 10, 10, 10),
+            skills: new LaborSkills(10, 10, 10, 10, 10),
+            condition: new Condition(80, 0, 50, 20, 50),
+            source: CharacterSource.Familia,
+            instantiatedAtMonth: 0);
+}

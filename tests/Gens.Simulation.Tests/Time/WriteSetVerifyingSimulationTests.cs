@@ -1,6 +1,7 @@
 using Gens.Simulation.Commands;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
+using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 
@@ -42,7 +43,7 @@ public sealed class WriteSetVerifyingSimulationTests
         public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
         {
             var id = state.CharacterIds.Issue();
-            state.Characters.Add(id, new object());
+            state.Characters.Add(id, CharacterTestFixtures.Minimal(id));
             return Array.Empty<IDomainEvent>();
         }
     }

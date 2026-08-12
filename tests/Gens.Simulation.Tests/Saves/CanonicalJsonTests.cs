@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Random;

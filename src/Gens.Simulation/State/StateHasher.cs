@@ -1,4 +1,5 @@
 using System.Text;
+using Gens.Simulation.Characters;
 
 namespace Gens.Simulation.State;
 
@@ -37,11 +38,8 @@ public static class StateHasher
         hash = MixLong(hash, state.ScheduledActionIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
-        // Worked-example partition (WorldState.Characters is a typed placeholder — see its own
-        // doc comment); only the ordered ID sequence is hashed until a real Character record
-        // exists to fold content from.
         foreach (var entry in state.Characters.InAscendingOrder())
-            hash = MixLong(hash, entry.Key.Value);
+            hash = MixCharacter(hash, entry.Value);
 
         // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.ScheduledActions.InAscendingOrder())
@@ -64,6 +62,41 @@ public static class StateHasher
             hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
         }
 
+        return hash;
+    }
+
+    /// <summary>Folds every <see cref="Character"/> field (Phase 5 item 1) into the hash, in the
+    /// record's declared field order, so a divergent Character anywhere flips the campaign hash.</summary>
+    private static ulong MixCharacter(ulong hash, Character character)
+    {
+        hash = MixLong(hash, character.Id.Value);
+        hash = MixString(hash, character.Praenomen);
+        hash = MixString(hash, character.Nomen);
+        hash = MixString(hash, character.Cognomen ?? string.Empty);
+        hash = MixLong(hash, (long)character.Sex);
+        hash = MixLong(hash, character.BirthDate.TotalMonths);
+        hash = MixLong(hash, (long)character.LegalStatus);
+        hash = MixLong(hash, character.SocialClass is null ? -1L : (long)character.SocialClass.Value);
+        hash = MixString(hash, character.Culture.Value);
+        hash = MixLong(hash, character.Location.Value);
+        hash = MixLong(hash, character.Household is null ? -1L : character.Household.Value.Value);
+        hash = MixLong(hash, character.Attributes.Diplomacy);
+        hash = MixLong(hash, character.Attributes.Martial);
+        hash = MixLong(hash, character.Attributes.Stewardship);
+        hash = MixLong(hash, character.Attributes.Intrigue);
+        hash = MixLong(hash, character.Attributes.Learning);
+        hash = MixLong(hash, character.Skills.Fieldwork);
+        hash = MixLong(hash, character.Skills.DomesticService);
+        hash = MixLong(hash, character.Skills.Craft);
+        hash = MixLong(hash, character.Skills.Culinary);
+        hash = MixLong(hash, character.Skills.Medicine);
+        hash = MixLong(hash, character.Condition.Health);
+        hash = MixLong(hash, character.Condition.Fatigue);
+        hash = MixLong(hash, character.Condition.Loyalty);
+        hash = MixLong(hash, character.Condition.Ambition);
+        hash = MixLong(hash, character.Condition.Fertility);
+        hash = MixLong(hash, (long)character.Source);
+        hash = MixLong(hash, character.InstantiatedAtMonth);
         return hash;
     }
 

@@ -1,6 +1,7 @@
 using Gens.Simulation.Random;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
+using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 
@@ -140,7 +141,7 @@ public sealed class SaveWriterReaderTests
     {
         var state = new WorldState(new GameDate(7));
         var firstCharacter = state.CharacterIds.Issue();
-        state.Characters.Add(firstCharacter, new object());
+        state.Characters.Add(firstCharacter, CharacterTestFixtures.Minimal(firstCharacter));
         state.PlotIds.Issue();
         state.IssueCommandSequenceNumber();
         state.Knowledge.Set(
