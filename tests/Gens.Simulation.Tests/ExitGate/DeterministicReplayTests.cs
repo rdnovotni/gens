@@ -2,6 +2,7 @@ using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
+using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 
@@ -119,7 +120,7 @@ public sealed class DeterministicReplayTests
         {
             streams.NextUInt("commands");
             var id = worldState.CharacterIds.Issue();
-            worldState.Characters.Add(id, new object());
+            worldState.Characters.Add(id, CharacterTestFixtures.Minimal(id));
             return new IDomainEvent[]
             {
                 new CharacterCreatedEvent(worldState.EventIds.Issue(), worldState.Date, id.ToTaggedString()),
@@ -230,7 +231,7 @@ public sealed class DeterministicReplayTests
                 return Array.Empty<IDomainEvent>();
 
             var id = state.CharacterIds.Issue();
-            state.Characters.Add(id, new object());
+            state.Characters.Add(id, CharacterTestFixtures.Minimal(id));
             return new IDomainEvent[]
             {
                 new CharacterCreatedEvent(state.EventIds.Issue(), context.Date, id.ToTaggedString()),

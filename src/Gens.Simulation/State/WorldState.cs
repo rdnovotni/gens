@@ -1,3 +1,4 @@
+using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Time;
 
@@ -7,9 +8,10 @@ namespace Gens.Simulation.State;
 /// The sole authoritative campaign truth container (ADR 0004). Holds one <see
 /// cref="RuntimeIdCounter{T}"/> per runtime-instantiated entity kind (ADR 0001) — itself campaign
 /// state, saved and restored like any other field — plus the ordered-index partitions those IDs
-/// key into, the knowledge/visibility partition (ADR 0008), and the campaign clock. Entity record
-/// partitions are typed placeholders until each entity kind's real record lands in the phase that
-/// designs it (Phase 5 onward); Phase 2 only establishes the container shape.
+/// key into, the knowledge/visibility partition (ADR 0008), and the campaign clock. The <c>Characters</c>
+/// partition holds the real <see cref="Character"/> record (Phase 5 item 1); every other entity
+/// record partition remains a typed placeholder until its own real record lands in the phase that
+/// designs it.
 /// </summary>
 public sealed class WorldState
 {
@@ -37,7 +39,7 @@ public sealed class WorldState
         RuntimeIdCounter<Command> commandIds,
         RuntimeIdCounter<DomainEventEntity> eventIds,
         RuntimeIdCounter<ScheduledAction> scheduledActionIds,
-        OrderedRegistry<RuntimeId<Character>, object> characters,
+        OrderedRegistry<RuntimeId<Character>, Character> characters,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
@@ -74,10 +76,9 @@ public sealed class WorldState
     public RuntimeIdCounter<DomainEventEntity> EventIds { get; } = new();
     public RuntimeIdCounter<ScheduledAction> ScheduledActionIds { get; } = new();
 
-    /// <summary>Worked-example ordered-index partition (ADR 0004) proving the pattern; replaced with a
-    /// typed <c>OrderedRegistry&lt;RuntimeId&lt;Character&gt;, Character&gt;</c> once Phase 5+ defines
-    /// the real Character record.</summary>
-    public OrderedRegistry<RuntimeId<Character>, object> Characters { get; } = new();
+    /// <summary>Every named Character (Phase 5 item 1), in ascending-<see cref="RuntimeId{T}"/> order
+    /// (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<Character>, Character> Characters { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and

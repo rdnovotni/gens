@@ -31,6 +31,15 @@ public sealed record WorldSaveDocument
     /// <see cref="SaveFormat.CurrentVersion"/> without a migration.</summary>
     [JsonPropertyOrder(5)]
     public IReadOnlyList<ScheduledActionEntryDto> ScheduledActions { get; init; } = Array.Empty<ScheduledActionEntryDto>();
+
+    /// <summary>Every Character's full record (Phase 5 item 1), already in ascending-<see
+    /// cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty, for the same
+    /// additive-only reason as <see cref="ScheduledActions"/> above: <see cref="CharacterIds"/> alone
+    /// still fully describes a pre-Phase-5 save (its Characters partition was always empty), so no
+    /// migration is needed for this field to appear. <see cref="CharacterIds"/> itself is kept,
+    /// redundantly derivable from this list's IDs, purely for that same backward compatibility.</summary>
+    [JsonPropertyOrder(6)]
+    public IReadOnlyList<CharacterDto> Characters { get; init; } = Array.Empty<CharacterDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -126,4 +135,114 @@ public sealed record ScheduledActionEntryDto
 
     [JsonPropertyOrder(5)]
     public string? CausationId { get; init; }
+}
+
+/// <summary>One <see cref="Characters.Character"/>'s full record (Phase 5 item 1), in the same
+/// declared-field order the record itself uses.</summary>
+public sealed record CharacterDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Praenomen { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Nomen { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? Cognomen { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Sex { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int BirthDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string LegalStatus { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? SocialClass { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string Culture { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required string Location { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? Household { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required CoreAttributesDto Attributes { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required LaborSkillsDto Skills { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required ConditionDto Condition { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required string Source { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public required int InstantiatedAtMonth { get; init; }
+}
+
+/// <summary>One <see cref="Characters.CoreAttributes"/> (<c>gens-familia-design.md</c> §2.1).</summary>
+public sealed record CoreAttributesDto
+{
+    [JsonPropertyOrder(0)]
+    public required int Diplomacy { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Martial { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int Stewardship { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int Intrigue { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int Learning { get; init; }
+}
+
+/// <summary>One <see cref="Characters.LaborSkills"/> (<c>gens-familia-design.md</c> §2.2).</summary>
+public sealed record LaborSkillsDto
+{
+    [JsonPropertyOrder(0)]
+    public required int Fieldwork { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int DomesticService { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int Craft { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int Culinary { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int Medicine { get; init; }
+}
+
+/// <summary>One <see cref="Characters.Condition"/> (<c>gens-familia-design.md</c> §2.3).</summary>
+public sealed record ConditionDto
+{
+    [JsonPropertyOrder(0)]
+    public required int Health { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Fatigue { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int Loyalty { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int Ambition { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int Fertility { get; init; }
 }

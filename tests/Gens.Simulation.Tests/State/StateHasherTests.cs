@@ -1,4 +1,6 @@
+using Gens.Simulation.Characters;
 using Gens.Simulation.State;
+using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 
@@ -37,6 +39,25 @@ public sealed class StateHasherTests
     }
 
     [Test]
+    public void DifferentCharacterFieldChangesTheHash()
+    {
+        var baseline = new WorldState(new GameDate(10));
+        var id = baseline.CharacterIds.Issue();
+        baseline.Characters.Add(id, CharacterTestFixtures.Minimal(id));
+        var baselineHash = StateHasher.Hash(baseline);
+
+        var changed = new WorldState(new GameDate(10));
+        var changedId = changed.CharacterIds.Issue();
+        var changedCharacter = CharacterTestFixtures.Minimal(changedId) with
+        {
+            Condition = new Condition(50, 0, 50, 20, 50),
+        };
+        changed.Characters.Add(changedId, changedCharacter);
+
+        Assert.That(StateHasher.Hash(changed), Is.Not.EqualTo(baselineHash));
+    }
+
+    [Test]
     public void KnowledgeEntryChangesTheHash()
     {
         var baseline = BuildState();
@@ -55,8 +76,8 @@ public sealed class StateHasherTests
         var state = new WorldState(new GameDate(10));
         var first = state.CharacterIds.Issue();
         var second = state.CharacterIds.Issue();
-        state.Characters.Add(first, new object());
-        state.Characters.Add(second, new object());
+        state.Characters.Add(first, CharacterTestFixtures.Minimal(first, praenomen: "First"));
+        state.Characters.Add(second, CharacterTestFixtures.Minimal(second, praenomen: "Second"));
         return state;
     }
 }

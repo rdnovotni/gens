@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -36,6 +37,7 @@ public static class WorldStateMapper
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
+            Characters = state.Characters.InAscendingOrder().Select(entry => ToCharacterDto(entry.Value)).ToArray(),
             // Already deterministic key order (ADR 0004) via KnowledgeState.All.
             Knowledge = state.Knowledge.All().Select(ToKnowledgeDto).ToArray(),
             // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
@@ -48,9 +50,12 @@ public static class WorldStateMapper
         if (dto is null)
             throw new ArgumentNullException(nameof(dto));
 
-        var characters = OrderedRegistry<RuntimeId<Character>, object>.Restore(
-            dto.CharacterIds.Select(tagged => new KeyValuePair<RuntimeId<Character>, object>(
-                RuntimeId<Character>.Parse(tagged), new object())));
+        var characters = OrderedRegistry<RuntimeId<Character>, Character>.Restore(
+            dto.Characters.Select(characterDto =>
+            {
+                var character = FromCharacterDto(characterDto);
+                return new KeyValuePair<RuntimeId<Character>, Character>(character.Id, character);
+            }));
 
         var knowledge = KnowledgeState.Restore(dto.Knowledge.Select(FromKnowledgeDto));
 
@@ -97,6 +102,71 @@ public static class WorldStateMapper
         var entry = new KnowledgeEntry(value, confidence, new GameDate(dto.AsOfDateTotalMonths), dto.ProvenanceEventId);
         return new KeyValuePair<KnowledgeKey, KnowledgeEntry>(key, entry);
     }
+
+    private static CharacterDto ToCharacterDto(Character character) => new()
+    {
+        Id = character.Id.ToTaggedString(),
+        Praenomen = character.Praenomen,
+        Nomen = character.Nomen,
+        Cognomen = character.Cognomen,
+        Sex = character.Sex.ToString(),
+        BirthDateTotalMonths = character.BirthDate.TotalMonths,
+        LegalStatus = character.LegalStatus.ToString(),
+        SocialClass = character.SocialClass?.ToString(),
+        Culture = character.Culture.Value,
+        Location = character.Location.ToTaggedString(),
+        Household = character.Household?.ToTaggedString(),
+        Attributes = new CoreAttributesDto
+        {
+            Diplomacy = character.Attributes.Diplomacy,
+            Martial = character.Attributes.Martial,
+            Stewardship = character.Attributes.Stewardship,
+            Intrigue = character.Attributes.Intrigue,
+            Learning = character.Attributes.Learning,
+        },
+        Skills = new LaborSkillsDto
+        {
+            Fieldwork = character.Skills.Fieldwork,
+            DomesticService = character.Skills.DomesticService,
+            Craft = character.Skills.Craft,
+            Culinary = character.Skills.Culinary,
+            Medicine = character.Skills.Medicine,
+        },
+        Condition = new ConditionDto
+        {
+            Health = character.Condition.Health,
+            Fatigue = character.Condition.Fatigue,
+            Loyalty = character.Condition.Loyalty,
+            Ambition = character.Condition.Ambition,
+            Fertility = character.Condition.Fertility,
+        },
+        Source = character.Source.ToString(),
+        InstantiatedAtMonth = character.InstantiatedAtMonth,
+    };
+
+    private static Character FromCharacterDto(CharacterDto dto) => Character.Create(
+        id: RuntimeId<Character>.Parse(dto.Id),
+        praenomen: dto.Praenomen,
+        nomen: dto.Nomen,
+        cognomen: dto.Cognomen,
+        sex: Enum.Parse<Sex>(dto.Sex),
+        birthDate: new GameDate(dto.BirthDateTotalMonths),
+        status: Enum.Parse<LegalStatus>(dto.LegalStatus),
+        socialClass: dto.SocialClass is null ? null : Enum.Parse<SocialClass>(dto.SocialClass),
+        culture: new DefinitionId<Culture>(dto.Culture),
+        location: RuntimeId<Settlement>.Parse(dto.Location),
+        household: dto.Household is null ? null : RuntimeId<Household>.Parse(dto.Household),
+        attributes: new CoreAttributes(
+            dto.Attributes.Diplomacy, dto.Attributes.Martial, dto.Attributes.Stewardship,
+            dto.Attributes.Intrigue, dto.Attributes.Learning),
+        skills: new LaborSkills(
+            dto.Skills.Fieldwork, dto.Skills.DomesticService, dto.Skills.Craft,
+            dto.Skills.Culinary, dto.Skills.Medicine),
+        condition: new Condition(
+            dto.Condition.Health, dto.Condition.Fatigue, dto.Condition.Loyalty,
+            dto.Condition.Ambition, dto.Condition.Fertility),
+        source: Enum.Parse<CharacterSource>(dto.Source),
+        instantiatedAtMonth: dto.InstantiatedAtMonth);
 
     private static ScheduledActionEntryDto ToScheduledActionDto(ScheduledActionEntry entry) => new()
     {
