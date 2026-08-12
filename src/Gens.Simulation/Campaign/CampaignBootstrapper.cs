@@ -1,0 +1,80 @@
+using Gens.Simulation.Commands;
+using Gens.Simulation.Identity;
+using Gens.Simulation.Random;
+using Gens.Simulation.State;
+using Gens.Simulation.Time;
+
+namespace Gens.Simulation.Campaign;
+
+/// <summary>
+/// Constructs a fresh <see cref="WorldState"/> and its <see cref="RandomStreamSet"/> from a validated
+/// <see cref="CampaignConfig"/> (Phase 4 item 2). The exit gate calls this an "empty campaign" for a
+/// reason: no real Region/Settlement/Household record types exist yet (those land in Phase 5/6), so
+/// bootstrap only issues the IDs those later phases will attach real data to, plus one
+/// <see cref="CampaignBootstrappedEvent"/> recording that this is where the campaign's history
+/// starts.
+/// </summary>
+public static class CampaignBootstrapper
+{
+    /// <summary>The named random stream every non-system-specific campaign-level draw uses.</summary>
+    public const string CampaignStreamName = "campaign";
+
+    /// <summary>The named random stream <see cref="ScheduledActionSystem"/> reserves for itself, so a
+    /// scheduled-action-ordering change can never perturb the campaign stream's draws (rule 8).</summary>
+    public const string ScheduledActionStreamName = "scheduled-actions";
+
+    public static BootstrappedCampaign Bootstrap(CampaignConfig config)
+    {
+        if (config is null)
+            throw new ArgumentNullException(nameof(config));
+        config.Validate();
+
+        var state = new WorldState(config.StartDate);
+
+        var streams = new RandomStreamSet();
+        streams.AddDerived(CampaignStreamName, config.Seed);
+        streams.AddDerived(ScheduledActionStreamName, config.Seed);
+
+        var regionId = state.RegionIds.Issue();
+        var settlementId = state.SettlementIds.Issue();
+        var householdId = state.HouseholdIds.Issue();
+
+        var bootstrapped = new CampaignBootstrappedEvent(
+            state.EventIds.Issue(),
+            config.StartDate,
+            regionId,
+            settlementId,
+            householdId);
+
+        return new BootstrappedCampaign(state, streams, new IDomainEvent[] { bootstrapped }, regionId, settlementId, householdId);
+    }
+}
+
+/// <summary>The result of bootstrapping a new campaign: the constructed <see cref="State.WorldState"/>
+/// and its <see cref="Random.RandomStreamSet"/>, ready to be saved via <see
+/// cref="Saves.SaveWriter"/>, plus the "initial history" (Phase 4 item 2) the console runner should
+/// surface to the player before the first tick ever runs.</summary>
+public sealed record BootstrappedCampaign(
+    WorldState State,
+    RandomStreamSet RandomStreams,
+    IReadOnlyList<IDomainEvent> InitialHistory,
+    RuntimeId<Region> RegionId,
+    RuntimeId<Settlement> SettlementId,
+    RuntimeId<Household> HouseholdId);
+
+/// <summary>Marks the tick a campaign was bootstrapped at and which region/settlement/household IDs
+/// it started with. Every later "who was here from the beginning" question reads this event rather
+/// than a bespoke campaign-metadata field.</summary>
+public sealed record CampaignBootstrappedEvent(
+    RuntimeId<DomainEventEntity> EventId,
+    GameDate OccurredDate,
+    RuntimeId<Region> RegionId,
+    RuntimeId<Settlement> SettlementId,
+    RuntimeId<Household> HouseholdId) : IDomainEvent
+{
+    public string Type => "campaign.bootstrapped";
+    public int SchemaVersion => 1;
+    public IReadOnlyList<string> SubjectIds => new[] { RegionId.ToTaggedString(), SettlementId.ToTaggedString(), HouseholdId.ToTaggedString() };
+    public Visibility Visibility => Visibility.Public;
+    public string? CausationId => null;
+}

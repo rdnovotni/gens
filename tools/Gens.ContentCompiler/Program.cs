@@ -29,6 +29,36 @@ static int Dispatch(string[] args)
             "migrate-save" => MigrateSaveCommand.Run(
                 RequirePositional(args, 1, "savePath"),
                 RequireOption(args, "--out") ?? throw new ArgumentException("--out is required.")),
+            "new-campaign" => NewCampaignCommand.Run(
+                ulong.Parse(RequireOption(args, "--seed") ?? "1", CultureInfo.InvariantCulture),
+                int.Parse(RequireOption(args, "--start-months") ?? "0", CultureInfo.InvariantCulture),
+                RequireOption(args, "--region") ?? throw new ArgumentException("--region is required."),
+                RequireOption(args, "--content") ?? throw new ArgumentException("--content is required."),
+                RequireOption(args, "--out") ?? throw new ArgumentException("--out is required."),
+                RequireOption(args, "--start-profile"),
+                RequireOption(args, "--ruleset") ?? "default",
+                RequireOption(args, "--difficulty") ?? "standard"),
+            "advance" => AdvanceCommand.Run(
+                RequirePositional(args, 1, "savePath"),
+                int.Parse(RequireOption(args, "--months") ?? "1", CultureInfo.InvariantCulture),
+                RequireOption(args, "--out") ?? throw new ArgumentException("--out is required."),
+                RequireOption(args, "--report-out")),
+            "submit-command" => SubmitCommand.Run(
+                RequirePositional(args, 1, "savePath"),
+                RequireOption(args, "--actor") ?? throw new ArgumentException("--actor is required."),
+                RequireOption(args, "--type") ?? throw new ArgumentException("--type is required."),
+                RequireOption(args, "--payload") ?? "{}",
+                int.Parse(RequireOption(args, "--due-in-months") ?? "0", CultureInfo.InvariantCulture),
+                RequireOption(args, "--out") ?? throw new ArgumentException("--out is required.")),
+            "report" => ReportCommand.Run(RequirePositional(args, 1, "reportPath")),
+            "save" => SaveCommand.Run(
+                RequirePositional(args, 1, "savePath"),
+                RequireOption(args, "--out") ?? throw new ArgumentException("--out is required.")),
+            "load" => LoadCommand.Run(RequirePositional(args, 1, "savePath")),
+            "compare-hashes" => CompareHashesCommand.Run(
+                RequirePositional(args, 1, "pathA"),
+                RequirePositional(args, 2, "pathB")),
+            "inspect-state" => InspectStateCommand.Run(RequirePositional(args, 1, "savePath")),
             "help" or "--help" or "-h" => PrintUsageAndReturnZero(),
             _ => UnknownCommand(args[0]),
         };
@@ -87,5 +117,17 @@ static void PrintUsage()
           replay <savePath>
           verify-save <savePath>
           migrate-save <savePath> --out <path>
+
+        Headless campaign shell commands (Phase 4):
+          new-campaign --seed <n> --region <id> --content <compiledPackPath> --out <path>
+                       [--start-months <n>] [--start-profile <id>] [--ruleset <id>] [--difficulty <id>]
+          advance <savePath> [--months <n>] --out <path> [--report-out <path>]
+          submit-command <savePath> --actor <id> --type <name> [--payload <json>]
+                         [--due-in-months <n>] --out <path>
+          report <reportPath>
+          save <savePath> --out <path>
+          load <savePath>
+          compare-hashes <pathA> <pathB>
+          inspect-state <savePath>
         """);
 }
