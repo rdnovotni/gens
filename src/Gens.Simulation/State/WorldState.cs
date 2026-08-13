@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Land;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.State;
@@ -30,6 +31,7 @@ public sealed class WorldState
         RuntimeIdCounter<Region> regionIds,
         RuntimeIdCounter<Settlement> settlementIds,
         RuntimeIdCounter<Plot> plotIds,
+        RuntimeIdCounter<Holding> holdingIds,
         RuntimeIdCounter<Household> householdIds,
         RuntimeIdCounter<Actor> actorIds,
         RuntimeIdCounter<Character> characterIds,
@@ -39,6 +41,10 @@ public sealed class WorldState
         RuntimeIdCounter<Command> commandIds,
         RuntimeIdCounter<DomainEventEntity> eventIds,
         RuntimeIdCounter<ScheduledAction> scheduledActionIds,
+        OrderedRegistry<RuntimeId<Region>, Region> regions,
+        OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
+        OrderedRegistry<RuntimeId<Plot>, Plot> plots,
+        OrderedRegistry<RuntimeId<Holding>, Holding> holdings,
         OrderedRegistry<RuntimeId<Character>, Character> characters,
         OrderedRegistry<RelationshipKey, Relationship> relationships,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
@@ -50,6 +56,7 @@ public sealed class WorldState
         RegionIds = regionIds;
         SettlementIds = settlementIds;
         PlotIds = plotIds;
+        HoldingIds = holdingIds;
         HouseholdIds = householdIds;
         ActorIds = actorIds;
         CharacterIds = characterIds;
@@ -59,6 +66,10 @@ public sealed class WorldState
         CommandIds = commandIds;
         EventIds = eventIds;
         ScheduledActionIds = scheduledActionIds;
+        Regions = regions;
+        Settlements = settlements;
+        Plots = plots;
+        Holdings = holdings;
         Characters = characters;
         Relationships = relationships;
         ScheduledActions = scheduledActions;
@@ -70,6 +81,7 @@ public sealed class WorldState
     public RuntimeIdCounter<Region> RegionIds { get; } = new();
     public RuntimeIdCounter<Settlement> SettlementIds { get; } = new();
     public RuntimeIdCounter<Plot> PlotIds { get; } = new();
+    public RuntimeIdCounter<Holding> HoldingIds { get; } = new();
     public RuntimeIdCounter<Household> HouseholdIds { get; } = new();
     public RuntimeIdCounter<Actor> ActorIds { get; } = new();
     public RuntimeIdCounter<Character> CharacterIds { get; } = new();
@@ -79,6 +91,22 @@ public sealed class WorldState
     public RuntimeIdCounter<Command> CommandIds { get; } = new();
     public RuntimeIdCounter<DomainEventEntity> EventIds { get; } = new();
     public RuntimeIdCounter<ScheduledAction> ScheduledActionIds { get; } = new();
+
+    /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
+    /// (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<Region>, Region> Regions { get; } = new();
+
+    /// <summary>Every Settlement (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
+    /// (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<Settlement>, Settlement> Settlements { get; } = new();
+
+    /// <summary>Every Plot (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
+    /// (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<Plot>, Plot> Plots { get; } = new();
+
+    /// <summary>Every Holding (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
+    /// (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<Holding>, Holding> Holdings { get; } = new();
 
     /// <summary>Every named Character (Phase 5 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -124,6 +152,7 @@ public sealed class WorldState
         ["regionIds"] = RegionIds.Peek,
         ["settlementIds"] = SettlementIds.Peek,
         ["plotIds"] = PlotIds.Peek,
+        ["holdingIds"] = HoldingIds.Peek,
         ["householdIds"] = HouseholdIds.Peek,
         ["actorIds"] = ActorIds.Peek,
         ["characterIds"] = CharacterIds.Peek,
@@ -133,6 +162,10 @@ public sealed class WorldState
         ["commandIds"] = CommandIds.Peek,
         ["eventIds"] = EventIds.Peek,
         ["scheduledActionIds"] = ScheduledActionIds.Peek,
+        ["regions"] = Regions.Version,
+        ["settlements"] = Settlements.Version,
+        ["plots"] = Plots.Version,
+        ["holdings"] = Holdings.Version,
         ["characters"] = Characters.Version,
         ["relationships"] = Relationships.Version,
         ["scheduledActions"] = ScheduledActions.Version,

@@ -1,4 +1,5 @@
 using Gens.Simulation.Characters;
+using Gens.Simulation.Land;
 
 namespace Gens.Simulation.Identity;
 
@@ -10,33 +11,13 @@ namespace Gens.Simulation.Identity;
 // Character (Phase 5 item 1) is the first entity kind whose real record now exists
 // (Characters.Character) — RuntimeId<T>'s tag parameter is unconstrained, so that real record serves
 // directly as its own RuntimeId/DefinitionId tag rather than needing a separate, never-instantiated
-// marker class here. Every other kind below still uses a local phantom marker until its own real
-// record lands.
+// marker class here. Region, Settlement, Plot, and Holding (Phase 6 item 1) use the same pattern:
+// their real records in Gens.Simulation.Land now serve as the type parameters directly. Every other
+// kind below still uses a local phantom marker until its own real record lands.
 
 public sealed class Campaign
 {
     private Campaign()
-    {
-    }
-}
-
-public sealed class Region
-{
-    private Region()
-    {
-    }
-}
-
-public sealed class Settlement
-{
-    private Settlement()
-    {
-    }
-}
-
-public sealed class Plot
-{
-    private Plot()
     {
     }
 }
@@ -141,6 +122,7 @@ internal static class RuntimeIdTagRegistry
         [typeof(Household)] = "household",
         [typeof(Actor)] = "actor",
         [typeof(Character)] = "char",
+        [typeof(Holding)] = "holding",
         [typeof(Building)] = "building",
         [typeof(Contract)] = "contract",
         [typeof(Activity)] = "activity",

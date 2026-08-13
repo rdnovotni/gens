@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Land;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -25,6 +26,7 @@ public static class WorldStateMapper
                 RegionIds = state.RegionIds.Peek,
                 SettlementIds = state.SettlementIds.Peek,
                 PlotIds = state.PlotIds.Peek,
+                HoldingIds = state.HoldingIds.Peek,
                 HouseholdIds = state.HouseholdIds.Peek,
                 ActorIds = state.ActorIds.Peek,
                 CharacterIds = state.CharacterIds.Peek,
@@ -46,6 +48,11 @@ public static class WorldStateMapper
             Relationships = state.Relationships.InAscendingOrder().Select(entry => ToRelationshipDto(entry.Key, entry.Value)).ToArray(),
             // Already ascending (settlement, group type) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             PopGroups = state.PopGroups.InAscendingOrder().Select(entry => ToPopGroupDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Regions = state.Regions.InAscendingOrder().Select(entry => ToRegionDto(entry.Value)).ToArray(),
+            Settlements = state.Settlements.InAscendingOrder().Select(entry => ToSettlementDto(entry.Value)).ToArray(),
+            Plots = state.Plots.InAscendingOrder().Select(entry => ToPlotDto(entry.Value)).ToArray(),
+            Holdings = state.Holdings.InAscendingOrder().Select(entry => ToHoldingDto(entry.Value)).ToArray(),
         };
     }
 
@@ -72,11 +79,40 @@ public static class WorldStateMapper
         var popGroups = OrderedRegistry<PopGroupKey, PopGroup>.Restore(
             dto.PopGroups.Select(FromPopGroupDto));
 
+        var regions = OrderedRegistry<RuntimeId<Region>, Region>.Restore(
+            dto.Regions.Select(r =>
+            {
+                var region = FromRegionDto(r);
+                return new KeyValuePair<RuntimeId<Region>, Region>(region.Id, region);
+            }));
+
+        var settlements = OrderedRegistry<RuntimeId<Settlement>, Settlement>.Restore(
+            dto.Settlements.Select(s =>
+            {
+                var settlement = FromSettlementDto(s);
+                return new KeyValuePair<RuntimeId<Settlement>, Settlement>(settlement.Id, settlement);
+            }));
+
+        var plots = OrderedRegistry<RuntimeId<Plot>, Plot>.Restore(
+            dto.Plots.Select(p =>
+            {
+                var plot = FromPlotDto(p);
+                return new KeyValuePair<RuntimeId<Plot>, Plot>(plot.Id, plot);
+            }));
+
+        var holdings = OrderedRegistry<RuntimeId<Holding>, Holding>.Restore(
+            dto.Holdings.Select(h =>
+            {
+                var holding = FromHoldingDto(h);
+                return new KeyValuePair<RuntimeId<Holding>, Holding>(holding.Id, holding);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
             settlementIds: RuntimeIdCounter<Settlement>.Restore(dto.Counters.SettlementIds),
             plotIds: RuntimeIdCounter<Plot>.Restore(dto.Counters.PlotIds),
+            holdingIds: RuntimeIdCounter<Holding>.Restore(dto.Counters.HoldingIds),
             householdIds: RuntimeIdCounter<Household>.Restore(dto.Counters.HouseholdIds),
             actorIds: RuntimeIdCounter<Actor>.Restore(dto.Counters.ActorIds),
             characterIds: RuntimeIdCounter<Character>.Restore(dto.Counters.CharacterIds),
@@ -86,6 +122,10 @@ public static class WorldStateMapper
             commandIds: RuntimeIdCounter<Command>.Restore(dto.Counters.CommandIds),
             eventIds: RuntimeIdCounter<DomainEventEntity>.Restore(dto.Counters.EventIds),
             scheduledActionIds: RuntimeIdCounter<ScheduledAction>.Restore(dto.Counters.ScheduledActionIds),
+            regions: regions,
+            settlements: settlements,
+            plots: plots,
+            holdings: holdings,
             characters: characters,
             relationships: relationships,
             scheduledActions: scheduledActions,
@@ -362,4 +402,44 @@ public static class WorldStateMapper
         var popGroup = PopGroup.Create(settlementId, groupType, dto.Size);
         return new KeyValuePair<PopGroupKey, PopGroup>(new PopGroupKey(settlementId, groupType), popGroup);
     }
+
+    private static RegionDto ToRegionDto(Region region) => new()
+    {
+        Id = region.Id.ToTaggedString(),
+        Name = region.Name,
+    };
+
+    private static Region FromRegionDto(RegionDto dto) =>
+        Region.Create(RuntimeId<Region>.Parse(dto.Id), dto.Name);
+
+    private static SettlementDto ToSettlementDto(Settlement settlement) => new()
+    {
+        Id = settlement.Id.ToTaggedString(),
+        RegionId = settlement.RegionId.ToTaggedString(),
+        Stage = settlement.Stage.ToString(),
+    };
+
+    private static Settlement FromSettlementDto(SettlementDto dto) =>
+        Settlement.Create(
+            RuntimeId<Settlement>.Parse(dto.Id),
+            RuntimeId<Region>.Parse(dto.RegionId),
+            Enum.Parse<SettlementStage>(dto.Stage));
+
+    private static PlotDto ToPlotDto(Plot plot) => new()
+    {
+        Id = plot.Id.ToTaggedString(),
+        SettlementId = plot.SettlementId.ToTaggedString(),
+    };
+
+    private static Plot FromPlotDto(PlotDto dto) =>
+        Plot.Create(RuntimeId<Plot>.Parse(dto.Id), RuntimeId<Settlement>.Parse(dto.SettlementId));
+
+    private static HoldingDto ToHoldingDto(Holding holding) => new()
+    {
+        Id = holding.Id.ToTaggedString(),
+        SettlementId = holding.SettlementId.ToTaggedString(),
+    };
+
+    private static Holding FromHoldingDto(HoldingDto dto) =>
+        Holding.Create(RuntimeId<Holding>.Parse(dto.Id), RuntimeId<Settlement>.Parse(dto.SettlementId));
 }

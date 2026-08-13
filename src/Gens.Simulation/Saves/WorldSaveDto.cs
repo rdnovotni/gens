@@ -55,6 +55,30 @@ public sealed record WorldSaveDocument
     /// save never had any background population groups recorded.</summary>
     [JsonPropertyOrder(8)]
     public IReadOnlyList<PopGroupDto> PopGroups { get; init; } = Array.Empty<PopGroupDto>();
+
+    /// <summary>Every <see cref="Land.Region"/> boundary record (Phase 6 item 1), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty: a pre-Phase-6 save has no regions, matching ADR 0011's additive-only policy.</summary>
+    [JsonPropertyOrder(9)]
+    public IReadOnlyList<RegionDto> Regions { get; init; } = Array.Empty<RegionDto>();
+
+    /// <summary>Every <see cref="Land.Settlement"/> boundary record (Phase 6 item 1), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="Regions"/>.</summary>
+    [JsonPropertyOrder(10)]
+    public IReadOnlyList<SettlementDto> Settlements { get; init; } = Array.Empty<SettlementDto>();
+
+    /// <summary>Every <see cref="Land.Plot"/> boundary record (Phase 6 item 1), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="Regions"/>.</summary>
+    [JsonPropertyOrder(11)]
+    public IReadOnlyList<PlotDto> Plots { get; init; } = Array.Empty<PlotDto>();
+
+    /// <summary>Every <see cref="Land.Holding"/> boundary record (Phase 6 item 1), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="Regions"/>.</summary>
+    [JsonPropertyOrder(12)]
+    public IReadOnlyList<HoldingDto> Holdings { get; init; } = Array.Empty<HoldingDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -98,6 +122,12 @@ public sealed record CounterSetDto
     /// doc comment for why this field must tolerate a pre-Phase-4 save with no scheduled actions.</summary>
     [JsonPropertyOrder(11)]
     public long ScheduledActionIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-6 save has no holdings. Additive-only
+    /// per ADR 0011's policy — the fixture at <see cref="SaveFormat.CurrentVersion"/> must still load
+    /// without this field.</summary>
+    [JsonPropertyOrder(12)]
+    public long HoldingIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -451,4 +481,47 @@ public sealed record ConditionDto
 
     [JsonPropertyOrder(4)]
     public required int Fertility { get; init; }
+}
+
+/// <summary>One <see cref="Land.Region"/> boundary record (Phase 6 item 1).</summary>
+public sealed record RegionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Name { get; init; }
+}
+
+/// <summary>One <see cref="Land.Settlement"/> boundary record (Phase 6 item 1).</summary>
+public sealed record SettlementDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string RegionId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Stage { get; init; }
+}
+
+/// <summary>One <see cref="Land.Plot"/> boundary record (Phase 6 item 1).</summary>
+public sealed record PlotDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+}
+
+/// <summary>One <see cref="Land.Holding"/> boundary record (Phase 6 item 1).</summary>
+public sealed record HoldingDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
 }
