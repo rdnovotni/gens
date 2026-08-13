@@ -70,8 +70,8 @@ public static class PromoteToNamedCommands
     /// Position, a Curia seat, a Travel/Events encounter, a Guest, a rival-generated Character) isn't
     /// tied to one specific <see cref="PopGroupType"/> anywhere in the design corpus, so those are left
     /// unrestricted rather than guessing a cohort the documents never specify.</summary>
-    private static readonly IReadOnlyDictionary<CharacterSource, PopGroupType> RequiredCohortBySource =
-        new Dictionary<CharacterSource, PopGroupType>
+    private static readonly Dictionary<CharacterSource, PopGroupType> RequiredCohortBySource =
+        new()
         {
             [CharacterSource.MarriageProposal] = PopGroupType.Curiales,
             [CharacterSource.SlaveMarketPurchase] = PopGroupType.NonHouseholdEnslaved,
