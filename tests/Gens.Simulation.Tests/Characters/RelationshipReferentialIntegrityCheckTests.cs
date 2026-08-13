@@ -19,7 +19,7 @@ public sealed class RelationshipReferentialIntegrityCheckTests
             new RelationshipKey(characterId, targetId),
             new Relationship(10, BondTag.Friend, RelationshipOrigin.Encounter, new GameDate(0), new GameDate(0), null));
 
-        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToArray();
+        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToList();
 
         Assert.That(violations, Is.Empty);
     }
@@ -38,7 +38,7 @@ public sealed class RelationshipReferentialIntegrityCheckTests
             new RelationshipKey(characterId, targetId),
             new Relationship(-40, BondTag.Rival, RelationshipOrigin.Political, new GameDate(0), new GameDate(0), null));
 
-        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToArray();
+        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToList();
 
         Assert.That(violations, Is.Empty);
     }
@@ -54,7 +54,7 @@ public sealed class RelationshipReferentialIntegrityCheckTests
             new RelationshipKey(missingSourceId, targetId),
             new Relationship(10, BondTag.Friend, RelationshipOrigin.Encounter, new GameDate(0), new GameDate(0), null));
 
-        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToArray();
+        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToList();
 
         Assert.That(violations, Has.Count.EqualTo(1));
         Assert.That(violations[0].InvariantId, Is.EqualTo("characters.relationships.referentialIntegrity"));
@@ -71,7 +71,7 @@ public sealed class RelationshipReferentialIntegrityCheckTests
             new RelationshipKey(characterId, missingTargetId),
             new Relationship(10, BondTag.Friend, RelationshipOrigin.Encounter, new GameDate(0), new GameDate(0), null));
 
-        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToArray();
+        var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToList();
 
         Assert.That(violations, Has.Count.EqualTo(1));
     }
