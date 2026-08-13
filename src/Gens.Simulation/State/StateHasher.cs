@@ -55,6 +55,14 @@ public static class StateHasher
             hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
         }
 
+        // Already ascending (settlement, group type) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.PopGroups.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.SettlementId.Value);
+            hash = MixLong(hash, (long)entry.Key.GroupType);
+            hash = MixLong(hash, entry.Value.Size);
+        }
+
         // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.ScheduledActions.InAscendingOrder())
         {
@@ -123,6 +131,7 @@ public static class StateHasher
         hash = MixLong(hash, character.Condition.Fertility);
         hash = MixLong(hash, (long)character.Source);
         hash = MixLong(hash, character.InstantiatedAtMonth);
+        hash = MixLong(hash, character.BackfilledHistory ? 1L : 0L);
         hash = MixLong(hash, character.MotherId is null ? -1L : character.MotherId.Value.Value);
         hash = MixLong(hash, character.FatherId is null ? -1L : character.FatherId.Value.Value);
         hash = MixLong(hash, (long)character.Legitimacy);

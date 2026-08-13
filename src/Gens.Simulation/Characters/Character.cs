@@ -9,8 +9,10 @@ namespace Gens.Simulation.Characters;
 /// freedman, client, companion, rival, or encounter alike — gets this same full shape, immediately,
 /// per <c>gens-characters-design.md</c> §2's "no more lightweight tier" decision. This item only
 /// establishes the record's shape and validation; name/appearance generation (item 2), lifecycle
-/// transitions and aging (item 3), traits (item 4), relationships (item 5), household roles (item 6),
-/// and lazy instantiation/promotion (item 7) are later Phase 5 work.
+/// transitions and aging (item 3), traits (item 4), relationships (item 5), and household roles
+/// (item 6) are separate Phase 5 work. Lazy instantiation/promotion (item 7) is <see
+/// cref="PromoteToNamedCommand"/>, which creates records of exactly this shape from an aggregate <see
+/// cref="PopGroup"/> entry.
 /// </summary>
 public sealed record Character
 {
@@ -49,6 +51,13 @@ public sealed record Character
     // Provenance (gens-characters-design.md §14).
     public required CharacterSource Source { get; init; }
     public required int InstantiatedAtMonth { get; init; }
+
+    /// <summary>Whether this Character's traits/axes/history were generated as an age-appropriate life
+    /// history compressed into an instant, rather than accumulated in real time (§11) — true for
+    /// nearly everyone <see cref="PromoteToNamedCommand"/> creates, false for a Familia-born child
+    /// raised inside the simulation. Provenance metadata only: nothing downstream reads this to treat
+    /// a backfilled Character as less "real" than one grown in play (§11's own framing).</summary>
+    public bool BackfilledHistory { get; init; }
 
     // Parentage & legitimacy (gens-familia-design.md §5.2, §8; Phase 5 item 3).
     public RuntimeId<Character>? MotherId { get; init; }
@@ -99,6 +108,7 @@ public sealed record Character
         Condition == other.Condition &&
         Source == other.Source &&
         InstantiatedAtMonth == other.InstantiatedAtMonth &&
+        BackfilledHistory == other.BackfilledHistory &&
         MotherId == other.MotherId &&
         FatherId == other.FatherId &&
         Legitimacy == other.Legitimacy &&
@@ -128,6 +138,7 @@ public sealed record Character
         hash.Add(Condition);
         hash.Add(Source);
         hash.Add(InstantiatedAtMonth);
+        hash.Add(BackfilledHistory);
         hash.Add(MotherId);
         hash.Add(FatherId);
         hash.Add(Legitimacy);
@@ -164,6 +175,7 @@ public sealed record Character
         Condition condition,
         CharacterSource source,
         int instantiatedAtMonth,
+        bool backfilledHistory = false,
         RuntimeId<Character>? motherId = null,
         RuntimeId<Character>? fatherId = null,
         Legitimacy legitimacy = Legitimacy.Legitimate,
@@ -208,6 +220,7 @@ public sealed record Character
             Condition = condition,
             Source = source,
             InstantiatedAtMonth = instantiatedAtMonth,
+            BackfilledHistory = backfilledHistory,
             MotherId = motherId,
             FatherId = fatherId,
             Legitimacy = legitimacy,

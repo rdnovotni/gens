@@ -48,6 +48,13 @@ public sealed record WorldSaveDocument
     /// never had a relationship web populated.</summary>
     [JsonPropertyOrder(7)]
     public IReadOnlyList<RelationshipDto> Relationships { get; init; } = Array.Empty<RelationshipDto>();
+
+    /// <summary>Every background <see cref="Characters.PopGroup"/> (Phase 5 item 7; ADR 0009),
+    /// already in ascending (settlement, group type) order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="Characters"/> above: a pre-Phase-5-item-7
+    /// save never had any background population groups recorded.</summary>
+    [JsonPropertyOrder(8)]
+    public IReadOnlyList<PopGroupDto> PopGroups { get; init; } = Array.Empty<PopGroupDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -236,6 +243,27 @@ public sealed record CharacterDto
     /// field above: a pre-Phase-5-item-6 save's Characters never had a duty slot assigned.</summary>
     [JsonPropertyOrder(24)]
     public DutyAssignmentDto? Duty { get; init; }
+
+    /// <summary>Phase 5 item 7 (lazy instantiation/promotion). Not <c>required</c>, defaulting to
+    /// <c>false</c> ("raised inside the simulation, not backfilled"), for the same additive-only
+    /// reason as every other post-items-1-2 field above: a pre-Phase-5-item-7 save's Characters were
+    /// only ever born in play.</summary>
+    [JsonPropertyOrder(25)]
+    public bool BackfilledHistory { get; init; }
+}
+
+/// <summary>One <see cref="Characters.PopGroup"/> (Phase 5 item 7; ADR 0009), keyed by its <see
+/// cref="Characters.PopGroupKey"/>'s (settlement, group type) pair.</summary>
+public sealed record PopGroupDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string GroupType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int Size { get; init; }
 }
 
 /// <summary>The DTO shape of a <see cref="Characters.DutyAssignment"/>.</summary>

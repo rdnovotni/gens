@@ -24,6 +24,7 @@ public sealed record CampaignDebugSnapshot(
     long ScheduledActionIds,
     int CharacterCount,
     int ScheduledActionCount,
+    int PopGroupCount,
     int KnowledgeEntryCount,
     long NextCommandSequenceNumber,
     ulong StateHash);
@@ -55,6 +56,7 @@ public sealed class CampaignDebugQuery : IWorldQuery<CampaignDebugSnapshot>
             ScheduledActionIds: state.ScheduledActionIds.Peek,
             CharacterCount: state.Characters.Count,
             ScheduledActionCount: state.ScheduledActions.Count,
+            PopGroupCount: state.PopGroups.Count,
             KnowledgeEntryCount: state.Knowledge.All().Count(),
             NextCommandSequenceNumber: state.NextCommandSequenceNumber,
             StateHash: StateHasher.Hash(state));

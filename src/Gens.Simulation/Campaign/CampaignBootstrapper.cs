@@ -33,6 +33,12 @@ public static class CampaignBootstrapper
     /// cref="CharacterMortalityStreamName"/> for the same reason (rule 8).</summary>
     public const string CharacterGenerationStreamName = "characters.generation";
 
+    /// <summary>The named random stream <see cref="Characters.PromoteToNamedCommand"/>'s age/identity/
+    /// attribute backfill rolls reserve for themselves, kept distinct from <see
+    /// cref="CharacterGenerationStreamName"/> for the same rule-8 reason: promotion and birth are
+    /// different systems whose draw sequences shouldn't perturb each other.</summary>
+    public const string CharacterPromotionStreamName = "characters.promotion";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -46,6 +52,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(ScheduledActionStreamName, config.Seed);
         streams.AddDerived(CharacterMortalityStreamName, config.Seed);
         streams.AddDerived(CharacterGenerationStreamName, config.Seed);
+        streams.AddDerived(CharacterPromotionStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
