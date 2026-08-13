@@ -216,6 +216,13 @@ public sealed record CharacterDto
 
     [JsonPropertyOrder(22)]
     public DeathRecordDto? DeathRecord { get; init; }
+
+    /// <summary>Phase 5 item 4 — Trait <c>DefinitionId</c> references only (rule 10: "content is data,
+    /// rules are code"). Not <c>required</c>, defaulting to empty, for the same additive-only reason
+    /// as every other post-items-1-2 field above: a pre-Phase-5-item-4 save's Characters never had
+    /// traits assigned.</summary>
+    [JsonPropertyOrder(23)]
+    public IReadOnlyList<string> Traits { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>One <see cref="Characters.MarriageRecord"/> (<c>gens-familia-design.md</c> §5, §5.1).</summary>

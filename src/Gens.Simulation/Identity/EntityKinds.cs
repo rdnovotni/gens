@@ -72,6 +72,17 @@ public sealed class Good
     }
 }
 
+/// <summary>Phantom type for content-authored trait definitions (Phase 5 item 4;
+/// <c>gens-traits-design.md</c>). Content-authored only, like <see cref="Culture"/> — a Character
+/// holds a trait as a bare <see cref="DefinitionId{T}"/> reference rather than an embedded copy of
+/// the trait's data, per rule 10 ("content is data, rules are code").</summary>
+public sealed class Trait
+{
+    private Trait()
+    {
+    }
+}
+
 public sealed class Building
 {
     private Building()

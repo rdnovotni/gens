@@ -45,6 +45,8 @@ public sealed class ContentValidator
         }
 
         ValidateReferences(pack, errors);
+        ValidateOpposedTraitPairs(pack, errors);
+        ValidateTieredTraitSpectrums(pack, errors);
 
         return errors;
     }
@@ -116,6 +118,69 @@ public sealed class ContentValidator
                             $"references undefined {reference.TargetFamily} definition '{reference.TargetId}'."));
                 }
             }
+        }
+    }
+
+    /// <summary>A Trait's <c>opposes</c> forms a mutually-exclusive pair (<c>gens-traits-design.md</c>
+    /// §2: "holding one tier's tag actively excludes every other tier"; Characters §4: "mutually-
+    /// exclusive opposed pairs (can't hold both sides)"). <see cref="ValidateReferences"/> already
+    /// catches a dangling <c>opposes</c>; this catches the two shapes a dangling-reference check can't:
+    /// a trait opposing itself, and a one-directional "A opposes B" where B doesn't oppose A back —
+    /// either would let a Character end up holding both halves of what was meant to be an exclusive
+    /// pair, since exclusivity enforcement (§3, §5's runtime side) only ever walks the relationship in
+    /// one direction from whichever trait is being newly acquired.</summary>
+    private static void ValidateOpposedTraitPairs(ContentPack pack, List<ContentValidationError> errors)
+    {
+        var traitsById = pack.DefinitionsIn("traits").ToDictionary(static d => d.Id, StringComparer.Ordinal);
+
+        foreach (var trait in pack.DefinitionsIn("traits"))
+        {
+            if (!trait.Element.TryGetProperty("opposes", out var opposesElement))
+                continue;
+
+            var opposesId = opposesElement.GetString()!;
+            if (opposesId == trait.Id)
+            {
+                errors.Add(new ContentValidationError("traits", trait.Id, "opposes itself."));
+                continue;
+            }
+
+            if (!traitsById.TryGetValue(opposesId, out var opposite))
+                continue; // Dangling reference — already reported by ValidateReferences.
+
+            var oppositeOpposesBack = opposite.Element.TryGetProperty("opposes", out var backReference)
+                && backReference.GetString() == trait.Id;
+            if (!oppositeOpposesBack)
+                errors.Add(new ContentValidationError("traits", trait.Id,
+                    $"opposes '{opposesId}', but '{opposesId}' does not oppose '{trait.Id}' back " +
+                    "(opposed pairs must be mutual)."));
+        }
+    }
+
+    /// <summary>A tiered spectrum (<c>gens-traits-design.md</c> §3, e.g. Piety's Impious/Indifferent/
+    /// Devout/Zealous) is a small, exclusive, mandatory-pick-one group: "every Character holds exactly
+    /// one tag per spectrum." Two traits sharing the same <c>spectrum</c> claiming the same
+    /// <c>tierPosition</c> would make that position ambiguous — which tag a roll at that rung actually
+    /// grants — so it's a hard failure rather than a warning, matching every other duplicate-identity
+    /// check in this validator.</summary>
+    private static void ValidateTieredTraitSpectrums(ContentPack pack, List<ContentValidationError> errors)
+    {
+        var byTierPosition = new Dictionary<(string Spectrum, int TierPosition), string>();
+
+        foreach (var trait in pack.DefinitionsIn("traits"))
+        {
+            if (!trait.Element.TryGetProperty("spectrum", out var spectrumElement))
+                continue;
+
+            var spectrum = spectrumElement.GetString()!;
+            var tierPosition = trait.Element.GetProperty("tierPosition").GetInt32();
+            var key = (spectrum, tierPosition);
+
+            if (byTierPosition.TryGetValue(key, out var earlierId))
+                errors.Add(new ContentValidationError("traits", trait.Id,
+                    $"shares spectrum '{spectrum}' tier position {tierPosition} with '{earlierId}'."));
+            else
+                byTierPosition[key] = trait.Id;
         }
     }
 }

@@ -38,6 +38,24 @@ public sealed class ContentValidatorTests
     }
 
     [Test]
+    public void OneDirectionalTraitOppositionIsAHardError()
+    {
+        var errors = Validate("opposed-pair-pack");
+
+        Assert.That(errors, Has.Some.Matches<ContentValidationError>(e =>
+            e.Family == "traits" && e.Id == "one-sided" && e.Message.Contains("mutual", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Test]
+    public void DuplicateTierPositionWithinATraitSpectrumIsAHardError()
+    {
+        var errors = Validate("opposed-pair-pack");
+
+        Assert.That(errors, Has.Some.Matches<ContentValidationError>(e =>
+            e.Family == "traits" && e.Id == "tier-zero-b" && e.Message.Contains("tier position", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Test]
     public void MissingLocalizationKeyIsAHardError()
     {
         var errors = Validate("missing-localization-pack");

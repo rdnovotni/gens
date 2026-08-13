@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/goods.schema.json",
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "category",
+        "basePrice"
+      ],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "raw-materials",
+            "intermediate",
+            "finished",
+            "luxury",
+            "imported"
+          ]
+        },
+        "basePrice": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    }
+  ]
+}

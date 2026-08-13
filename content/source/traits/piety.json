@@ -1,0 +1,44 @@
+[
+  {
+    "id": "impious",
+    "status": "active",
+    "nameKey": "traits.impious.name",
+    "descriptionKey": "traits.impious.description",
+    "category": "formative",
+    "axis": "zealotry",
+    "axisNudge": -25,
+    "spectrum": "piety",
+    "tierPosition": 0
+  },
+  {
+    "id": "indifferent",
+    "status": "active",
+    "nameKey": "traits.indifferent.name",
+    "descriptionKey": "traits.indifferent.description",
+    "category": "formative",
+    "spectrum": "piety",
+    "tierPosition": 1
+  },
+  {
+    "id": "devout",
+    "status": "active",
+    "nameKey": "traits.devout.name",
+    "descriptionKey": "traits.devout.description",
+    "category": "formative",
+    "axis": "zealotry",
+    "axisNudge": 10,
+    "spectrum": "piety",
+    "tierPosition": 2
+  },
+  {
+    "id": "zealous",
+    "status": "active",
+    "nameKey": "traits.zealous.name",
+    "descriptionKey": "traits.zealous.description",
+    "category": "formative",
+    "axis": "zealotry",
+    "axisNudge": 25,
+    "spectrum": "piety",
+    "tierPosition": 3
+  }
+]

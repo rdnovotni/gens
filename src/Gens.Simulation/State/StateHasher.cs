@@ -129,6 +129,9 @@ public static class StateHasher
             hash = MixLong(hash, injury.InflictedDate.TotalMonths);
         }
 
+        foreach (var trait in character.Traits)
+            hash = MixString(hash, trait.Value);
+
         hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.Date.TotalMonths);
         hash = MixLong(hash, character.DeathRecord is null ? -1L : (long)character.DeathRecord.Value.Cause);
         hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.AgeAtDeath);
