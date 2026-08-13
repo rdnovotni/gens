@@ -11,20 +11,29 @@ public sealed class PromoteToNamedCommandTests
 {
     private const string StreamName = "test-promotion";
 
-    private static PromoteToNamedCommand MakeCommand(WorldState state, RuntimeId<Settlement> settlementId, CharacterSource source = CharacterSource.LaborDutyHire) =>
+    private static PromoteToNamedCommand MakeCommand(
+        WorldState state,
+        RuntimeId<Settlement> settlementId,
+        CharacterSource source = CharacterSource.LaborDutyHire,
+        PopGroupType groupType = PopGroupType.Operarii,
+        LegalStatus status = LegalStatus.Freedman,
+        SocialClass? socialClass = null) =>
         new(
             state.CommandIds.Issue(), "player", new GameDate(300), null,
-            settlementId, PopGroupType.Operarii, source, null,
-            LegalStatus.Freedman, null, new DefinitionId<Culture>("roman"),
+            settlementId, groupType, source, null,
+            status, socialClass, new DefinitionId<Culture>("roman"),
             NamePoolTestFixtures.Roman, StreamName);
 
-    private static WorldState SeedState(out RuntimeId<Settlement> settlementId, int popGroupSize = 5)
+    private static WorldState SeedState(out RuntimeId<Settlement> settlementId, int popGroupSize = 5) =>
+        SeedState(out settlementId, PopGroupType.Operarii, popGroupSize);
+
+    private static WorldState SeedState(out RuntimeId<Settlement> settlementId, PopGroupType groupType, int popGroupSize = 5)
     {
         var state = new WorldState(new GameDate(300));
         settlementId = state.SettlementIds.Issue();
         state.PopGroups.Add(
-            new PopGroupKey(settlementId, PopGroupType.Operarii),
-            PopGroup.Create(settlementId, PopGroupType.Operarii, popGroupSize));
+            new PopGroupKey(settlementId, groupType),
+            PopGroup.Create(settlementId, groupType, popGroupSize));
         return state;
     }
 
@@ -134,5 +143,68 @@ public sealed class PromoteToNamedCommandTests
         var stateB = Run();
 
         Assert.That(StateHasher.Hash(stateA), Is.EqualTo(StateHasher.Hash(stateB)));
+    }
+
+    [Test]
+    public void ValidationRejectsAMarriageProposalAgainstAnyCohortOtherThanCuriales()
+    {
+        var state = SeedState(out var settlementId, PopGroupType.Operarii);
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, 7, 1);
+        var pipeline = PromoteToNamedCommands.CreatePipeline(streams);
+
+        var result = pipeline.Execute(
+            state, MakeCommand(state, settlementId, CharacterSource.MarriageProposal, PopGroupType.Operarii));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PromoteToNamedCommands.SourceCohortMismatch));
+    }
+
+    [Test]
+    public void ValidationRejectsASlaveMarketPurchaseAgainstAnyCohortOtherThanNonHouseholdEnslaved()
+    {
+        var state = SeedState(out var settlementId, PopGroupType.Curiales);
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, 7, 1);
+        var pipeline = PromoteToNamedCommands.CreatePipeline(streams);
+
+        var result = pipeline.Execute(
+            state, MakeCommand(state, settlementId, CharacterSource.SlaveMarketPurchase, PopGroupType.Curiales));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(PromoteToNamedCommands.SourceCohortMismatch));
+    }
+
+    [Test]
+    public void AMarriageProposalAgainstCurialesIsAccepted()
+    {
+        var state = SeedState(out var settlementId, PopGroupType.Curiales);
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, 7, 1);
+        var pipeline = PromoteToNamedCommands.CreatePipeline(streams);
+
+        var result = pipeline.Execute(
+            state, MakeCommand(state, settlementId, CharacterSource.MarriageProposal, PopGroupType.Curiales));
+
+        Assert.That(result.Accepted, Is.True);
+    }
+
+    [Test]
+    public void AFailedCharacterConstructionDoesNotConsumeAnyPopGroupPopulation()
+    {
+        var state = SeedState(out var settlementId);
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, 7, 1);
+        var pipeline = PromoteToNamedCommands.CreatePipeline(streams);
+        // SocialClass is citizen-only (Character.Create's own invariant); pairing it with a non-citizen
+        // Status makes Character.Create throw during Mutate, after validation has already passed.
+        var command = MakeCommand(
+            state, settlementId, status: LegalStatus.Freedman, socialClass: SocialClass.Senatorial);
+
+        Assert.That(() => pipeline.Execute(state, command), Throws.ArgumentException);
+
+        Assert.That(state.PopGroups.TryGet(new PopGroupKey(settlementId, PopGroupType.Operarii), out var group), Is.True);
+        Assert.That(group.Size, Is.EqualTo(5));
+        Assert.That(state.Characters.Count, Is.EqualTo(0));
     }
 }

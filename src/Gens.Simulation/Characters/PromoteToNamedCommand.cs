@@ -61,6 +61,21 @@ public static class PromoteToNamedCommands
     public static readonly ValidationErrorCode PopGroupNotFound = new("characters.promote.popGroupNotFound");
     public static readonly ValidationErrorCode PopGroupEmpty = new("characters.promote.popGroupEmpty");
     public static readonly ValidationErrorCode InvalidSource = new("characters.promote.invalidSource");
+    public static readonly ValidationErrorCode SourceCohortMismatch = new("characters.promote.sourceCohortMismatch");
+
+    /// <summary>The specific source-to-cohort ties <c>gens-settlement-demographics-design.md</c> §11
+    /// names explicitly — a marriage proposal only ever targets a named Curiales individual, and a
+    /// Slave Market purchase only ever draws from the Non-Household Enslaved cohort. Every other
+    /// <see cref="CharacterSource"/> promotion trigger (a Labor Duty Slot/Overseer hire, a Court
+    /// Position, a Curia seat, a Travel/Events encounter, a Guest, a rival-generated Character) isn't
+    /// tied to one specific <see cref="PopGroupType"/> anywhere in the design corpus, so those are left
+    /// unrestricted rather than guessing a cohort the documents never specify.</summary>
+    private static readonly IReadOnlyDictionary<CharacterSource, PopGroupType> RequiredCohortBySource =
+        new Dictionary<CharacterSource, PopGroupType>
+        {
+            [CharacterSource.MarriageProposal] = PopGroupType.Curiales,
+            [CharacterSource.SlaveMarketPurchase] = PopGroupType.NonHouseholdEnslaved,
+        };
 
     public static CommandPipeline<WorldState, PromoteToNamedCommand> CreatePipeline(RandomStreamSet randomStreams)
     {
@@ -80,6 +95,12 @@ public static class PromoteToNamedCommands
         if (command.Source == CharacterSource.Familia)
             return InvalidSource;
 
+        // A marriage proposal always draws from Curiales and a Slave Market purchase always draws
+        // from the Non-Household Enslaved cohort (§11) — any other cohort for these two sources would
+        // decrement the wrong pop group and record misleading provenance on the resulting Character.
+        if (RequiredCohortBySource.TryGetValue(command.Source, out var requiredCohort) && command.GroupType != requiredCohort)
+            return SourceCohortMismatch;
+
         var key = new PopGroupKey(command.SettlementId, command.GroupType);
         if (!state.PopGroups.TryGet(key, out var popGroup))
             return PopGroupNotFound;
@@ -91,11 +112,11 @@ public static class PromoteToNamedCommands
 
     private static IDomainEvent[] Mutate(WorldState state, PromoteToNamedCommand command, RandomStreamSet randomStreams)
     {
-        var key = new PopGroupKey(command.SettlementId, command.GroupType);
-        state.PopGroups.TryGet(key, out var popGroup);
-        state.PopGroups.Remove(key);
-        state.PopGroups.Add(key, popGroup with { Size = popGroup.Size - 1 });
-
+        // Every fallible step — generation and Character.Create's own cross-field validation — runs
+        // before this method touches PopGroups or Characters. CommandPipeline has no rollback: if
+        // Character.Create threw after the PopGroup had already been decremented, the campaign would
+        // lose one unit of population with no corresponding Character or event to show for it,
+        // breaking the exact conservation invariant this command exists to guarantee (ADR 0009).
         var sex = command.Sex ?? (randomStreams.NextUInt(command.RandomStreamName, 2) == 0 ? Sex.Male : Sex.Female);
         var birthDate = CharacterBackfillGenerator.RollAdultBirthDate(randomStreams, command.RandomStreamName, command.SubmittedDate);
         var identity = CharacterIdentityGenerator.Generate(
@@ -122,9 +143,17 @@ public static class PromoteToNamedCommands
             condition: condition,
             source: command.Source,
             instantiatedAtMonth: command.SubmittedDate.TotalMonths,
-            // §11: a lazily-instantiated adult "obviously can't start with zero Reactive traits" —
-            // this record's history was generated, not lived through the simulation.
+            // §11: a lazily-instantiated adult's history is generated, not lived through the
+            // simulation. Trait backfill itself isn't implemented yet — no system in this codebase
+            // rolls traits onto a newly-generated Character yet (BirthCharacterCommand leaves them
+            // empty too); Traits defaults to empty here for that same current-scope reason.
             backfilledHistory: true);
+
+        // Only now that construction has fully succeeded do we commit the conserved population change.
+        var key = new PopGroupKey(command.SettlementId, command.GroupType);
+        state.PopGroups.TryGet(key, out var popGroup);
+        state.PopGroups.Remove(key);
+        state.PopGroups.Add(key, popGroup with { Size = popGroup.Size - 1 });
 
         state.Characters.Add(characterId, character);
 
