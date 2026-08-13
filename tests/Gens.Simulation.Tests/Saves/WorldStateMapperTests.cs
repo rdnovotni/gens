@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Land;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
@@ -103,6 +104,85 @@ public sealed class WorldStateMapperTests
 
         Assert.That(restoredState.Relationships.TryGet(key, out var restored), Is.True);
         Assert.That(restored, Is.EqualTo(relationship));
+
+        var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
+        var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));
+        Assert.That(bytesB, Is.EqualTo(bytesA));
+    }
+
+    [Test]
+    public void ARegionRoundTripsThroughTheDtoAndCanonicalJson()
+    {
+        var state = new WorldState(new GameDate(0));
+        var regionId = state.RegionIds.Issue();
+        var region = Region.Create(regionId, "Italian Heartland");
+        state.Regions.Add(regionId, region);
+
+        var dto = WorldStateMapper.ToDto(state);
+        var restoredState = WorldStateMapper.ToWorldState(dto);
+
+        Assert.That(restoredState.Regions.TryGet(regionId, out var restored), Is.True);
+        Assert.That(restored, Is.EqualTo(region));
+
+        var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
+        var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));
+        Assert.That(bytesB, Is.EqualTo(bytesA));
+    }
+
+    [Test]
+    public void ASettlementRoundTripsThroughTheDtoAndCanonicalJson()
+    {
+        var state = new WorldState(new GameDate(0));
+        var regionId = state.RegionIds.Issue();
+        var settlementId = state.SettlementIds.Issue();
+        var settlement = Settlement.Create(settlementId, regionId, SettlementStage.Vicus);
+        state.Settlements.Add(settlementId, settlement);
+
+        var dto = WorldStateMapper.ToDto(state);
+        var restoredState = WorldStateMapper.ToWorldState(dto);
+
+        Assert.That(restoredState.Settlements.TryGet(settlementId, out var restored), Is.True);
+        Assert.That(restored, Is.EqualTo(settlement));
+
+        var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
+        var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));
+        Assert.That(bytesB, Is.EqualTo(bytesA));
+    }
+
+    [Test]
+    public void APlotRoundTripsThroughTheDtoAndCanonicalJson()
+    {
+        var state = new WorldState(new GameDate(0));
+        var settlementId = state.SettlementIds.Issue();
+        var plotId = state.PlotIds.Issue();
+        var plot = Plot.Create(plotId, settlementId);
+        state.Plots.Add(plotId, plot);
+
+        var dto = WorldStateMapper.ToDto(state);
+        var restoredState = WorldStateMapper.ToWorldState(dto);
+
+        Assert.That(restoredState.Plots.TryGet(plotId, out var restored), Is.True);
+        Assert.That(restored, Is.EqualTo(plot));
+
+        var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
+        var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));
+        Assert.That(bytesB, Is.EqualTo(bytesA));
+    }
+
+    [Test]
+    public void AHoldingRoundTripsThroughTheDtoAndCanonicalJson()
+    {
+        var state = new WorldState(new GameDate(0));
+        var settlementId = state.SettlementIds.Issue();
+        var holdingId = state.HoldingIds.Issue();
+        var holding = Holding.Create(holdingId, settlementId);
+        state.Holdings.Add(holdingId, holding);
+
+        var dto = WorldStateMapper.ToDto(state);
+        var restoredState = WorldStateMapper.ToWorldState(dto);
+
+        Assert.That(restoredState.Holdings.TryGet(holdingId, out var restored), Is.True);
+        Assert.That(restored, Is.EqualTo(holding));
 
         var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
         var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));

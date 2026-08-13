@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Land;
 
 namespace Gens.Simulation.State;
 
@@ -37,6 +38,7 @@ public static class StateHasher
         hash = MixLong(hash, state.CommandIds.Peek);
         hash = MixLong(hash, state.EventIds.Peek);
         hash = MixLong(hash, state.ScheduledActionIds.Peek);
+        hash = MixLong(hash, state.HoldingIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -83,6 +85,32 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.AsOfDate.TotalMonths);
             hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
             hash = MixString(hash, JsonSerializer.Serialize(entry.Value.Value));
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Regions.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.Id.Value);
+            hash = MixString(hash, entry.Value.Name);
+        }
+
+        foreach (var entry in state.Settlements.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.Id.Value);
+            hash = MixLong(hash, entry.Value.RegionId.Value);
+            hash = MixLong(hash, (long)entry.Value.Stage);
+        }
+
+        foreach (var entry in state.Plots.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.Id.Value);
+            hash = MixLong(hash, entry.Value.SettlementId.Value);
+        }
+
+        foreach (var entry in state.Holdings.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.Id.Value);
+            hash = MixLong(hash, entry.Value.SettlementId.Value);
         }
 
         return hash;
