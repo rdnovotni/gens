@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Gens.Simulation.Characters;
 
 namespace Gens.Simulation.State;
@@ -60,6 +61,7 @@ public static class StateHasher
             hash = MixLong(hash, (long)entry.Value.Confidence);
             hash = MixLong(hash, entry.Value.AsOfDate.TotalMonths);
             hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
+            hash = MixString(hash, JsonSerializer.Serialize(entry.Value.Value));
         }
 
         return hash;

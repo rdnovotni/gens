@@ -152,6 +152,27 @@ public sealed class BirthCharacterCommandTests
     }
 
     [Test]
+    public void ValidationRejectsMotherBeingRecordedAsFather()
+    {
+        var state = new WorldState(new GameDate(300));
+        var motherId = state.CharacterIds.Issue();
+        state.Characters.Add(motherId, CharacterTestFixtures.Minimal(motherId, birthDate: new GameDate(300 - 25 * 12)));
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, 7, 1);
+        var pipeline = BirthCharacterCommands.CreatePipeline(streams);
+
+        var command = new BirthCharacterCommand(
+            state.CommandIds.Issue(), "player", new GameDate(300), null,
+            motherId, motherId, Sex.Male, LegalStatus.RomanCitizen, null,
+            NamePoolTestFixtures.Roman, StreamName);
+
+        var result = pipeline.Execute(state, command);
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(BirthCharacterCommands.MotherIsFather));
+    }
+
+    [Test]
     public void ValidationRejectsAMissingFather()
     {
         var state = new WorldState(new GameDate(300));
