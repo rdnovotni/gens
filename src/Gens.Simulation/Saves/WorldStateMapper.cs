@@ -143,6 +143,12 @@ public static class WorldStateMapper
         },
         Source = character.Source.ToString(),
         InstantiatedAtMonth = character.InstantiatedAtMonth,
+        MotherId = character.MotherId?.ToTaggedString(),
+        FatherId = character.FatherId?.ToTaggedString(),
+        Legitimacy = character.Legitimacy.ToString(),
+        MaritalHistory = character.MaritalHistory.Select(ToMarriageRecordDto).ToArray(),
+        PermanentInjuries = character.PermanentInjuries.Select(ToPermanentInjuryDto).ToArray(),
+        DeathRecord = character.DeathRecord is null ? null : ToDeathRecordDto(character.DeathRecord.Value),
     };
 
     private static Character FromCharacterDto(CharacterDto dto) => Character.Create(
@@ -168,7 +174,53 @@ public static class WorldStateMapper
             dto.Condition.Health, dto.Condition.Fatigue, dto.Condition.Loyalty,
             dto.Condition.Ambition, dto.Condition.Fertility),
         source: Enum.Parse<CharacterSource>(dto.Source),
-        instantiatedAtMonth: dto.InstantiatedAtMonth);
+        instantiatedAtMonth: dto.InstantiatedAtMonth,
+        motherId: dto.MotherId is null ? null : RuntimeId<Character>.Parse(dto.MotherId),
+        fatherId: dto.FatherId is null ? null : RuntimeId<Character>.Parse(dto.FatherId),
+        legitimacy: Enum.Parse<Legitimacy>(dto.Legitimacy),
+        maritalHistory: dto.MaritalHistory.Select(FromMarriageRecordDto).ToArray(),
+        permanentInjuries: dto.PermanentInjuries.Select(FromPermanentInjuryDto).ToArray(),
+        deathRecord: dto.DeathRecord is null ? null : FromDeathRecordDto(dto.DeathRecord));
+
+    private static MarriageRecordDto ToMarriageRecordDto(MarriageRecord record) => new()
+    {
+        SpouseId = record.SpouseId.ToTaggedString(),
+        StartDateTotalMonths = record.StartDate.TotalMonths,
+        EndDateTotalMonths = record.EndDate?.TotalMonths,
+        EndReason = record.EndReason?.ToString(),
+    };
+
+    private static MarriageRecord FromMarriageRecordDto(MarriageRecordDto dto) => new(
+        RuntimeId<Character>.Parse(dto.SpouseId),
+        new GameDate(dto.StartDateTotalMonths),
+        dto.EndDateTotalMonths is null ? null : new GameDate(dto.EndDateTotalMonths.Value),
+        dto.EndReason is null ? null : Enum.Parse<MarriageEndReason>(dto.EndReason));
+
+    private static PermanentInjuryDto ToPermanentInjuryDto(PermanentInjury injury) => new()
+    {
+        Target = injury.Target.ToString(),
+        Magnitude = injury.Magnitude,
+        Cause = injury.Cause,
+        InflictedDateTotalMonths = injury.InflictedDate.TotalMonths,
+    };
+
+    private static PermanentInjury FromPermanentInjuryDto(PermanentInjuryDto dto) => new(
+        Enum.Parse<PermanentInjuryTarget>(dto.Target),
+        dto.Magnitude,
+        dto.Cause,
+        new GameDate(dto.InflictedDateTotalMonths));
+
+    private static DeathRecordDto ToDeathRecordDto(DeathRecord record) => new()
+    {
+        DateTotalMonths = record.Date.TotalMonths,
+        Cause = record.Cause.ToString(),
+        AgeAtDeath = record.AgeAtDeath,
+    };
+
+    private static DeathRecord FromDeathRecordDto(DeathRecordDto dto) => new(
+        new GameDate(dto.DateTotalMonths),
+        Enum.Parse<DeathCause>(dto.Cause),
+        dto.AgeAtDeath);
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

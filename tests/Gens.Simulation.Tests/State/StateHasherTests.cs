@@ -58,6 +58,71 @@ public sealed class StateHasherTests
     }
 
     [Test]
+    public void DifferentParentageChangesTheHash()
+    {
+        var baseline = new WorldState(new GameDate(10));
+        var id = baseline.CharacterIds.Issue();
+        baseline.Characters.Add(id, CharacterTestFixtures.Minimal(id));
+        var baselineHash = StateHasher.Hash(baseline);
+
+        var changed = new WorldState(new GameDate(10));
+        var motherId = changed.CharacterIds.Issue();
+        var changedId = changed.CharacterIds.Issue();
+        changed.Characters.Add(changedId, CharacterTestFixtures.Minimal(changedId, motherId: motherId));
+
+        Assert.That(StateHasher.Hash(changed), Is.Not.EqualTo(baselineHash));
+    }
+
+    [Test]
+    public void DifferentMaritalHistoryChangesTheHash()
+    {
+        var baseline = new WorldState(new GameDate(10));
+        var id = baseline.CharacterIds.Issue();
+        baseline.Characters.Add(id, CharacterTestFixtures.Minimal(id));
+        var baselineHash = StateHasher.Hash(baseline);
+
+        var changed = new WorldState(new GameDate(10));
+        var spouseId = changed.CharacterIds.Issue();
+        var changedId = changed.CharacterIds.Issue();
+        changed.Characters.Add(changedId, CharacterTestFixtures.Minimal(changedId,
+            maritalHistory: new[] { new MarriageRecord(spouseId, new GameDate(0), null, null) }));
+
+        Assert.That(StateHasher.Hash(changed), Is.Not.EqualTo(baselineHash));
+    }
+
+    [Test]
+    public void DifferentPermanentInjuriesChangeTheHash()
+    {
+        var baseline = new WorldState(new GameDate(10));
+        var id = baseline.CharacterIds.Issue();
+        baseline.Characters.Add(id, CharacterTestFixtures.Minimal(id));
+        var baselineHash = StateHasher.Hash(baseline);
+
+        var changed = new WorldState(new GameDate(10));
+        var changedId = changed.CharacterIds.Issue();
+        changed.Characters.Add(changedId, CharacterTestFixtures.Minimal(changedId,
+            permanentInjuries: new[] { new PermanentInjury(PermanentInjuryTarget.Martial, 10, "wound", new GameDate(0)) }));
+
+        Assert.That(StateHasher.Hash(changed), Is.Not.EqualTo(baselineHash));
+    }
+
+    [Test]
+    public void ADeathRecordChangesTheHash()
+    {
+        var baseline = new WorldState(new GameDate(10));
+        var id = baseline.CharacterIds.Issue();
+        baseline.Characters.Add(id, CharacterTestFixtures.Minimal(id));
+        var baselineHash = StateHasher.Hash(baseline);
+
+        var changed = new WorldState(new GameDate(10));
+        var changedId = changed.CharacterIds.Issue();
+        changed.Characters.Add(changedId, CharacterTestFixtures.Minimal(changedId,
+            deathRecord: new DeathRecord(new GameDate(5), DeathCause.Disease, 20)));
+
+        Assert.That(StateHasher.Hash(changed), Is.Not.EqualTo(baselineHash));
+    }
+
+    [Test]
     public void KnowledgeEntryChangesTheHash()
     {
         var baseline = BuildState();

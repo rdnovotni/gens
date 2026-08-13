@@ -28,14 +28,22 @@ public static class CharacterTestFixtures
         RuntimeId<Character> id,
         string praenomen = "Marcus",
         string nomen = "Aurelius",
-        CharacterVisualProfile? visualProfile = null) =>
+        CharacterVisualProfile? visualProfile = null,
+        GameDate? birthDate = null,
+        RuntimeId<Character>? motherId = null,
+        RuntimeId<Character>? fatherId = null,
+        Legitimacy legitimacy = Legitimacy.Legitimate,
+        IReadOnlyList<MarriageRecord>? maritalHistory = null,
+        IReadOnlyList<PermanentInjury>? permanentInjuries = null,
+        DeathRecord? deathRecord = null,
+        Condition? condition = null) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
             nomen: nomen,
             cognomen: null,
             sex: Sex.Male,
-            birthDate: new GameDate(0),
+            birthDate: birthDate ?? new GameDate(0),
             visualProfile: visualProfile ?? MinimalVisualProfile,
             status: LegalStatus.RomanCitizen,
             socialClass: SocialClass.Plebeian,
@@ -44,7 +52,13 @@ public static class CharacterTestFixtures
             household: null,
             attributes: new CoreAttributes(10, 10, 10, 10, 10),
             skills: new LaborSkills(10, 10, 10, 10, 10),
-            condition: new Condition(80, 0, 50, 20, 50),
+            condition: condition ?? new Condition(80, 0, 50, 20, 50),
             source: CharacterSource.Familia,
-            instantiatedAtMonth: 0);
+            instantiatedAtMonth: 0,
+            motherId: motherId,
+            fatherId: fatherId,
+            legitimacy: legitimacy,
+            maritalHistory: maritalHistory,
+            permanentInjuries: permanentInjuries,
+            deathRecord: deathRecord);
 }

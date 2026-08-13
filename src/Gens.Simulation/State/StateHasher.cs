@@ -108,6 +108,28 @@ public static class StateHasher
         hash = MixLong(hash, character.Condition.Fertility);
         hash = MixLong(hash, (long)character.Source);
         hash = MixLong(hash, character.InstantiatedAtMonth);
+        hash = MixLong(hash, character.MotherId is null ? -1L : character.MotherId.Value.Value);
+        hash = MixLong(hash, character.FatherId is null ? -1L : character.FatherId.Value.Value);
+        hash = MixLong(hash, (long)character.Legitimacy);
+        foreach (var marriage in character.MaritalHistory)
+        {
+            hash = MixLong(hash, marriage.SpouseId.Value);
+            hash = MixLong(hash, marriage.StartDate.TotalMonths);
+            hash = MixLong(hash, marriage.EndDate is null ? -1L : marriage.EndDate.Value.TotalMonths);
+            hash = MixLong(hash, marriage.EndReason is null ? -1L : (long)marriage.EndReason.Value);
+        }
+
+        foreach (var injury in character.PermanentInjuries)
+        {
+            hash = MixLong(hash, (long)injury.Target);
+            hash = MixLong(hash, injury.Magnitude);
+            hash = MixString(hash, injury.Cause);
+            hash = MixLong(hash, injury.InflictedDate.TotalMonths);
+        }
+
+        hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.Date.TotalMonths);
+        hash = MixLong(hash, character.DeathRecord is null ? -1L : (long)character.DeathRecord.Value.Cause);
+        hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.AgeAtDeath);
         return hash;
     }
 

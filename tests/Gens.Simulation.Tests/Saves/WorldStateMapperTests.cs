@@ -13,6 +13,9 @@ public sealed class WorldStateMapperTests
     public void ACharacterWithEveryFieldPopulatedRoundTripsThroughTheDtoAndCanonicalJson()
     {
         var state = new WorldState(new GameDate(42));
+        var motherId = state.CharacterIds.Issue();
+        var fatherId = state.CharacterIds.Issue();
+        var spouseId = state.CharacterIds.Issue();
         var characterId = state.CharacterIds.Issue();
         var householdId = state.HouseholdIds.Issue();
         var settlementId = state.SettlementIds.Issue();
@@ -48,7 +51,19 @@ public sealed class WorldStateMapperTests
             skills: new LaborSkills(1, 2, 3, 4, 5),
             condition: new Condition(60, 70, 80, 90, 100),
             source: CharacterSource.Guest,
-            instantiatedAtMonth: 42);
+            instantiatedAtMonth: 42,
+            motherId: motherId,
+            fatherId: fatherId,
+            legitimacy: Legitimacy.Illegitimate,
+            maritalHistory: new[]
+            {
+                new MarriageRecord(spouseId, new GameDate(24), new GameDate(36), MarriageEndReason.Divorce),
+            },
+            permanentInjuries: new[]
+            {
+                new PermanentInjury(PermanentInjuryTarget.Fertility, 15, "difficult birth", new GameDate(30)),
+            },
+            deathRecord: new DeathRecord(new GameDate(40), DeathCause.Childbirth, 27));
         state.Characters.Add(characterId, character);
 
         var dto = WorldStateMapper.ToDto(state);
