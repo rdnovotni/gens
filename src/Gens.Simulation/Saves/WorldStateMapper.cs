@@ -42,6 +42,8 @@ public static class WorldStateMapper
             Knowledge = state.Knowledge.All().Select(ToKnowledgeDto).ToArray(),
             // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             ScheduledActions = state.ScheduledActions.InAscendingOrder().Select(entry => ToScheduledActionDto(entry.Value)).ToArray(),
+            // Already ascending (From, To) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            Relationships = state.Relationships.InAscendingOrder().Select(entry => ToRelationshipDto(entry.Key, entry.Value)).ToArray(),
         };
     }
 
@@ -62,6 +64,9 @@ public static class WorldStateMapper
         var scheduledActions = OrderedRegistry<ScheduledActionKey, ScheduledActionEntry>.Restore(
             dto.ScheduledActions.Select(FromScheduledActionDto));
 
+        var relationships = OrderedRegistry<RelationshipKey, Relationship>.Restore(
+            dto.Relationships.Select(FromRelationshipDto));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -77,6 +82,7 @@ public static class WorldStateMapper
             eventIds: RuntimeIdCounter<DomainEventEntity>.Restore(dto.Counters.EventIds),
             scheduledActionIds: RuntimeIdCounter<ScheduledAction>.Restore(dto.Counters.ScheduledActionIds),
             characters: characters,
+            relationships: relationships,
             scheduledActions: scheduledActions,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
@@ -266,5 +272,57 @@ public static class WorldStateMapper
         var dueDate = new GameDate(dto.DueDateTotalMonths);
         var entry = new ScheduledActionEntry(actionId, dueDate, dto.ActorId, dto.ActionType, dto.PayloadJson, dto.CausationId);
         return new KeyValuePair<ScheduledActionKey, ScheduledActionEntry>(new ScheduledActionKey(dueDate, actionId), entry);
+    }
+
+    /// <summary>Every <see cref="BondTag"/> flag, in a fixed, explicit, hand-listed order rather than
+    /// <c>Enum.GetValues</c> — ADR 0004's "never rely on reflection discovery order" applies just as
+    /// much to an enum's runtime value order as to any other collection (matching <see
+    /// cref="CharacterVisualProfileGenerator"/>'s identical convention).</summary>
+    private static readonly BondTag[] AllBondTags =
+    {
+        BondTag.Parent, BondTag.Child, BondTag.Sibling, BondTag.Spouse,
+        BondTag.Friend, BondTag.Rival, BondTag.Lover, BondTag.Mentor, BondTag.Student,
+        BondTag.Contubernium, BondTag.Nemesis, BondTag.Patron, BondTag.Client,
+        BondTag.Debtor, BondTag.Creditor, BondTag.CoMagistrate, BondTag.BlackmailLeverage,
+    };
+
+    /// <summary>Every individual flag set in <paramref name="bonds"/>, by name — stored as a string
+    /// list rather than the raw numeric bitmask so a save file stays human-readable and stable across
+    /// a future <see cref="BondTag"/> reordering, matching how <see cref="Character.Traits"/> is
+    /// stored as definition-ID strings rather than an opaque encoding.</summary>
+    private static string[] ToBondTagDto(BondTag bonds) =>
+        AllBondTags.Where(tag => bonds.HasFlag(tag)).Select(tag => tag.ToString()).ToArray();
+
+    private static BondTag FromBondTagDto(IReadOnlyList<string> bonds)
+    {
+        var result = BondTag.None;
+        foreach (var bond in bonds)
+            result |= Enum.Parse<BondTag>(bond);
+        return result;
+    }
+
+    private static RelationshipDto ToRelationshipDto(RelationshipKey key, Relationship relationship) => new()
+    {
+        From = key.From.ToTaggedString(),
+        To = key.To.ToTaggedString(),
+        Opinion = relationship.Opinion,
+        Bonds = ToBondTagDto(relationship.Bonds),
+        Origin = relationship.Origin.ToString(),
+        FormedDateTotalMonths = relationship.FormedDate.TotalMonths,
+        LastMeaningfulInteractionDateTotalMonths = relationship.LastMeaningfulInteractionDate.TotalMonths,
+        ProvenanceEventId = relationship.ProvenanceEventId,
+    };
+
+    private static KeyValuePair<RelationshipKey, Relationship> FromRelationshipDto(RelationshipDto dto)
+    {
+        var key = new RelationshipKey(RuntimeId<Character>.Parse(dto.From), RuntimeId<Character>.Parse(dto.To));
+        var relationship = new Relationship(
+            dto.Opinion,
+            FromBondTagDto(dto.Bonds),
+            Enum.Parse<RelationshipOrigin>(dto.Origin),
+            new GameDate(dto.FormedDateTotalMonths),
+            new GameDate(dto.LastMeaningfulInteractionDateTotalMonths),
+            dto.ProvenanceEventId);
+        return new KeyValuePair<RelationshipKey, Relationship>(key, relationship);
     }
 }

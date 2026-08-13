@@ -41,6 +41,13 @@ public sealed record WorldSaveDocument
     /// redundantly derivable from this list's IDs, purely for that same backward compatibility.</summary>
     [JsonPropertyOrder(6)]
     public IReadOnlyList<CharacterDto> Characters { get; init; } = Array.Empty<CharacterDto>();
+
+    /// <summary>Every directed <see cref="Characters.Relationship"/> (Phase 5 item 5), already in
+    /// ascending (From, To) order. Not <c>required</c>, and defaults to empty, for the same
+    /// additive-only reason as <see cref="Characters"/> above: a pre-Phase-5-item-5 save's Characters
+    /// never had a relationship web populated.</summary>
+    [JsonPropertyOrder(7)]
+    public IReadOnlyList<RelationshipDto> Relationships { get; init; } = Array.Empty<RelationshipDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -223,6 +230,37 @@ public sealed record CharacterDto
     /// traits assigned.</summary>
     [JsonPropertyOrder(23)]
     public IReadOnlyList<string> Traits { get; init; } = Array.Empty<string>();
+}
+
+/// <summary>One directed <see cref="Characters.Relationship"/> (Phase 5 item 5;
+/// <c>gens-characters-design.md</c> §7), keyed by its <see cref="Characters.RelationshipKey"/>'s
+/// (From, To) pair.</summary>
+public sealed record RelationshipDto
+{
+    [JsonPropertyOrder(0)]
+    public required string From { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string To { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int Opinion { get; init; }
+
+    /// <summary>Every held <see cref="Characters.BondTag"/> flag, by name.</summary>
+    [JsonPropertyOrder(3)]
+    public required IReadOnlyList<string> Bonds { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Origin { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int FormedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int LastMeaningfulInteractionDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? ProvenanceEventId { get; init; }
 }
 
 /// <summary>One <see cref="Characters.MarriageRecord"/> (<c>gens-familia-design.md</c> §5, §5.1).</summary>

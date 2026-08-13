@@ -123,6 +123,39 @@ public sealed class StateHasherTests
     }
 
     [Test]
+    public void ADifferentRelationshipChangesTheHash()
+    {
+        var baseline = BuildState();
+        var baselineHash = StateHasher.Hash(baseline);
+
+        var withRelationship = BuildState();
+        var characterIds = withRelationship.Characters.InAscendingOrder().Select(entry => entry.Key).ToArray();
+        withRelationship.Relationships.Add(
+            new RelationshipKey(characterIds[0], characterIds[1]),
+            new Relationship(10, BondTag.Friend, RelationshipOrigin.Encounter, withRelationship.Date, withRelationship.Date, null));
+
+        Assert.That(StateHasher.Hash(withRelationship), Is.Not.EqualTo(baselineHash));
+    }
+
+    [Test]
+    public void DirectionMattersForTheRelationshipHash()
+    {
+        var forward = BuildState();
+        var forwardIds = forward.Characters.InAscendingOrder().Select(entry => entry.Key).ToArray();
+        forward.Relationships.Add(
+            new RelationshipKey(forwardIds[0], forwardIds[1]),
+            new Relationship(10, BondTag.Friend, RelationshipOrigin.Encounter, forward.Date, forward.Date, null));
+
+        var reverse = BuildState();
+        var reverseIds = reverse.Characters.InAscendingOrder().Select(entry => entry.Key).ToArray();
+        reverse.Relationships.Add(
+            new RelationshipKey(reverseIds[1], reverseIds[0]),
+            new Relationship(10, BondTag.Friend, RelationshipOrigin.Encounter, reverse.Date, reverse.Date, null));
+
+        Assert.That(StateHasher.Hash(forward), Is.Not.EqualTo(StateHasher.Hash(reverse)));
+    }
+
+    [Test]
     public void KnowledgeEntryChangesTheHash()
     {
         var baseline = BuildState();

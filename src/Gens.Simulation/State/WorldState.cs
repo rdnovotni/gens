@@ -40,6 +40,7 @@ public sealed class WorldState
         RuntimeIdCounter<DomainEventEntity> eventIds,
         RuntimeIdCounter<ScheduledAction> scheduledActionIds,
         OrderedRegistry<RuntimeId<Character>, Character> characters,
+        OrderedRegistry<RelationshipKey, Relationship> relationships,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
@@ -58,6 +59,7 @@ public sealed class WorldState
         EventIds = eventIds;
         ScheduledActionIds = scheduledActionIds;
         Characters = characters;
+        Relationships = relationships;
         ScheduledActions = scheduledActions;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
@@ -79,6 +81,13 @@ public sealed class WorldState
     /// <summary>Every named Character (Phase 5 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
     public OrderedRegistry<RuntimeId<Character>, Character> Characters { get; } = new();
+
+    /// <summary>Every directed dyadic tie in the relationship web (Phase 5 item 5;
+    /// <c>gens-characters-design.md</c> §7), in ascending <see cref="RelationshipKey"/> order (ADR
+    /// 0004) — source Character first, target second. Sparse by construction: a pair with no recorded
+    /// interaction simply has no entry here at all, rather than every possible pair pre-allocating a
+    /// zero-opinion slot.</summary>
+    public OrderedRegistry<RelationshipKey, Relationship> Relationships { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -117,6 +126,7 @@ public sealed class WorldState
         ["eventIds"] = EventIds.Peek,
         ["scheduledActionIds"] = ScheduledActionIds.Peek,
         ["characters"] = Characters.Version,
+        ["relationships"] = Relationships.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,

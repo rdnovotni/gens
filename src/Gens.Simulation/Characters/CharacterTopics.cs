@@ -31,4 +31,7 @@ public static class CharacterTopics
 
     // Added alongside traits, opposed-pair enforcement, and Personality Axes (Phase 5 item 4).
     public const string Traits = "character.traits";
+
+    // Added alongside the relationship web (Phase 5 item 5).
+    public const string Relationships = "character.relationships";
 }
