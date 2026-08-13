@@ -69,7 +69,9 @@ public sealed class RelationshipDecaySystem : IMonthlySystem<WorldState>
                 ? Math.Max(0, relationship.Opinion - MonthlyOpinionDecay)
                 : Math.Min(0, relationship.Opinion + MonthlyOpinionDecay);
 
-            var decayed = relationship with { Opinion = decayedOpinion };
+            var decayed = new Relationship(
+                decayedOpinion, relationship.Bonds, relationship.Origin, relationship.FormedDate,
+                relationship.LastMeaningfulInteractionDate, relationship.ProvenanceEventId);
             state.Relationships.Remove(key);
             if (!decayed.IsEmpty)
                 state.Relationships.Add(key, decayed);
