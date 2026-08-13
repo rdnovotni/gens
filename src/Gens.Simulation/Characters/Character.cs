@@ -71,6 +71,10 @@ public sealed record Character
     // Death (gens-familia-design.md §3). Non-null is itself the "dead" flag — see IsAlive below.
     public DeathRecord? DeathRecord { get; init; }
 
+    // Household role (gens-familia-design.md §4, §8's role field; Phase 5 item 6). Labor duty slot
+    // tier only — Court Positions belong to §6.20's own later design pass.
+    public DutyAssignment? Duty { get; init; }
+
     /// <summary>Hand-written for the same reason as <see cref="CharacterVisualProfile.Equals(CharacterVisualProfile?)"/>
     /// and <see cref="PortraitRecipe.Equals(PortraitRecipe?)"/>: the record-synthesized <c>Equals</c>
     /// would compare <see cref="MaritalHistory"/> and <see cref="PermanentInjuries"/> by list reference
@@ -101,7 +105,8 @@ public sealed record Character
         MaritalHistory.SequenceEqual(other.MaritalHistory) &&
         PermanentInjuries.SequenceEqual(other.PermanentInjuries) &&
         Traits.SequenceEqual(other.Traits) &&
-        DeathRecord == other.DeathRecord;
+        DeathRecord == other.DeathRecord &&
+        Duty == other.Duty;
 
     public override int GetHashCode()
     {
@@ -133,6 +138,7 @@ public sealed record Character
         foreach (var trait in Traits)
             hash.Add(trait);
         hash.Add(DeathRecord);
+        hash.Add(Duty);
         return hash.ToHashCode();
     }
 
@@ -164,7 +170,8 @@ public sealed record Character
         IReadOnlyList<MarriageRecord>? maritalHistory = null,
         IReadOnlyList<PermanentInjury>? permanentInjuries = null,
         IReadOnlyList<DefinitionId<Trait>>? traits = null,
-        DeathRecord? deathRecord = null)
+        DeathRecord? deathRecord = null,
+        DutyAssignment? duty = null)
     {
         if (string.IsNullOrWhiteSpace(praenomen))
             throw new ArgumentException("A Character requires a non-empty praenomen.", nameof(praenomen));
@@ -208,6 +215,7 @@ public sealed record Character
             PermanentInjuries = permanentInjuries ?? Array.Empty<PermanentInjury>(),
             Traits = traits ?? Array.Empty<DefinitionId<Trait>>(),
             DeathRecord = deathRecord,
+            Duty = duty,
         };
     }
 

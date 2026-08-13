@@ -37,7 +37,11 @@ public static class CharacterTestFixtures
         IReadOnlyList<PermanentInjury>? permanentInjuries = null,
         IReadOnlyList<DefinitionId<Trait>>? traits = null,
         DeathRecord? deathRecord = null,
-        Condition? condition = null) =>
+        Condition? condition = null,
+        RuntimeId<Settlement>? location = null,
+        RuntimeId<Household>? household = null,
+        LaborSkills? skills = null,
+        DutyAssignment? duty = null) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
@@ -49,10 +53,10 @@ public static class CharacterTestFixtures
             status: LegalStatus.RomanCitizen,
             socialClass: SocialClass.Plebeian,
             culture: new DefinitionId<Culture>("roman"),
-            location: default(RuntimeId<Settlement>),
-            household: null,
+            location: location ?? default(RuntimeId<Settlement>),
+            household: household,
             attributes: new CoreAttributes(10, 10, 10, 10, 10),
-            skills: new LaborSkills(10, 10, 10, 10, 10),
+            skills: skills ?? new LaborSkills(10, 10, 10, 10, 10),
             condition: condition ?? new Condition(80, 0, 50, 20, 50),
             source: CharacterSource.Familia,
             instantiatedAtMonth: 0,
@@ -62,5 +66,6 @@ public static class CharacterTestFixtures
             maritalHistory: maritalHistory,
             permanentInjuries: permanentInjuries,
             traits: traits,
-            deathRecord: deathRecord);
+            deathRecord: deathRecord,
+            duty: duty);
 }

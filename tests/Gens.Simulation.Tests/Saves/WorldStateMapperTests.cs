@@ -65,7 +65,8 @@ public sealed class WorldStateMapperTests
                 new PermanentInjury(PermanentInjuryTarget.Fertility, 15, "difficult birth", new GameDate(30)),
             },
             traits: new[] { new DefinitionId<Trait>("bold"), new DefinitionId<Trait>("honest") },
-            deathRecord: new DeathRecord(new GameDate(40), DeathCause.Childbirth, 27));
+            deathRecord: new DeathRecord(new GameDate(40), DeathCause.Childbirth, 27),
+            duty: new DutyAssignment(householdId, DutySlot.Cook, new GameDate(20)));
         state.Characters.Add(characterId, character);
 
         var dto = WorldStateMapper.ToDto(state);

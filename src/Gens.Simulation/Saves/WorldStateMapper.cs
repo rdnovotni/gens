@@ -156,7 +156,20 @@ public static class WorldStateMapper
         PermanentInjuries = character.PermanentInjuries.Select(ToPermanentInjuryDto).ToArray(),
         DeathRecord = character.DeathRecord is null ? null : ToDeathRecordDto(character.DeathRecord.Value),
         Traits = character.Traits.Select(static trait => trait.Value).ToArray(),
+        Duty = character.Duty is null ? null : ToDutyAssignmentDto(character.Duty.Value),
     };
+
+    private static DutyAssignmentDto ToDutyAssignmentDto(DutyAssignment duty) => new()
+    {
+        HouseholdId = duty.HouseholdId.ToTaggedString(),
+        Slot = duty.Slot.ToString(),
+        AssignedDateTotalMonths = duty.AssignedDate.TotalMonths,
+    };
+
+    private static DutyAssignment FromDutyAssignmentDto(DutyAssignmentDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<DutySlot>(dto.Slot),
+        new GameDate(dto.AssignedDateTotalMonths));
 
     private static Character FromCharacterDto(CharacterDto dto) => Character.Create(
         id: RuntimeId<Character>.Parse(dto.Id),
@@ -188,7 +201,8 @@ public static class WorldStateMapper
         maritalHistory: dto.MaritalHistory.Select(FromMarriageRecordDto).ToArray(),
         permanentInjuries: dto.PermanentInjuries.Select(FromPermanentInjuryDto).ToArray(),
         traits: dto.Traits.Select(static trait => new DefinitionId<Trait>(trait)).ToArray(),
-        deathRecord: dto.DeathRecord is null ? null : FromDeathRecordDto(dto.DeathRecord));
+        deathRecord: dto.DeathRecord is null ? null : FromDeathRecordDto(dto.DeathRecord),
+        duty: dto.Duty is null ? null : FromDutyAssignmentDto(dto.Duty));
 
     private static MarriageRecordDto ToMarriageRecordDto(MarriageRecord record) => new()
     {

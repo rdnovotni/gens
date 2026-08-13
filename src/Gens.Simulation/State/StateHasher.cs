@@ -148,6 +148,9 @@ public static class StateHasher
         hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.Date.TotalMonths);
         hash = MixLong(hash, character.DeathRecord is null ? -1L : (long)character.DeathRecord.Value.Cause);
         hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.AgeAtDeath);
+        hash = MixLong(hash, character.Duty is null ? -1L : character.Duty.Value.HouseholdId.Value);
+        hash = MixLong(hash, character.Duty is null ? -1L : (long)character.Duty.Value.Slot);
+        hash = MixLong(hash, character.Duty is null ? -1L : character.Duty.Value.AssignedDate.TotalMonths);
         return hash;
     }
 
