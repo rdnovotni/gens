@@ -429,17 +429,47 @@ public static class WorldStateMapper
     {
         Id = plot.Id.ToTaggedString(),
         SettlementId = plot.SettlementId.ToTaggedString(),
+        Terrain = plot.Terrain.ToString(),
+        Features = (int)plot.Features,
+        Condition = plot.Condition.Value,
+        Capacity = plot.Capacity,
+        OwnerId = plot.OwnerId,
+        OccupyingHoldingId = plot.OccupyingHoldingId?.ToTaggedString(),
+        IsContested = plot.IsContested,
+        AcquisitionMethod = plot.Acquisition?.Method.ToString(),
+        AcquiredDateTotalMonths = plot.Acquisition?.AcquiredDate.TotalMonths,
+        AcquisitionSourceId = plot.Acquisition?.SourceId,
     };
 
     private static Plot FromPlotDto(PlotDto dto) =>
-        Plot.Create(RuntimeId<Plot>.Parse(dto.Id), RuntimeId<Settlement>.Parse(dto.SettlementId));
+        Plot.Create(
+            RuntimeId<Plot>.Parse(dto.Id),
+            RuntimeId<Settlement>.Parse(dto.SettlementId),
+            Enum.Parse<TerrainType>(dto.Terrain),
+            (TerrainFeature)dto.Features,
+            new LandCondition(dto.Condition),
+            dto.Capacity,
+            dto.IsContested,
+            dto.OwnerId,
+            dto.OccupyingHoldingId is null ? null : RuntimeId<Holding>.Parse(dto.OccupyingHoldingId),
+            dto.AcquisitionMethod is null || dto.AcquiredDateTotalMonths is null
+                ? null
+                : new LandAcquisition(
+                    Enum.Parse<AcquisitionMethod>(dto.AcquisitionMethod),
+                    new GameDate(dto.AcquiredDateTotalMonths.Value),
+                    dto.AcquisitionSourceId));
 
     private static HoldingDto ToHoldingDto(Holding holding) => new()
     {
         Id = holding.Id.ToTaggedString(),
         SettlementId = holding.SettlementId.ToTaggedString(),
+        OwnerId = holding.OwnerId,
+        OccupantId = holding.OccupantId,
+        ResidentCapacity = holding.ResidentCapacity,
     };
 
     private static Holding FromHoldingDto(HoldingDto dto) =>
-        Holding.Create(RuntimeId<Holding>.Parse(dto.Id), RuntimeId<Settlement>.Parse(dto.SettlementId));
+        Holding.Create(
+            RuntimeId<Holding>.Parse(dto.Id), RuntimeId<Settlement>.Parse(dto.SettlementId),
+            dto.OwnerId, dto.OccupantId, dto.ResidentCapacity);
 }

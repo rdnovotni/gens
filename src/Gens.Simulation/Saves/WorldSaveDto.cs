@@ -514,6 +514,36 @@ public sealed record PlotDto
 
     [JsonPropertyOrder(1)]
     public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string Terrain { get; init; } = "FertilePlain";
+
+    [JsonPropertyOrder(3)]
+    public int Features { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public int Condition { get; init; } = 100;
+
+    [JsonPropertyOrder(5)]
+    public int Capacity { get; init; } = 1;
+
+    [JsonPropertyOrder(6)]
+    public string? OwnerId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? OccupyingHoldingId { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public bool IsContested { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? AcquisitionMethod { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public int? AcquiredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public string? AcquisitionSourceId { get; init; }
 }
 
 /// <summary>One <see cref="Land.Holding"/> boundary record (Phase 6 item 1).</summary>
@@ -524,4 +554,13 @@ public sealed record HoldingDto
 
     [JsonPropertyOrder(1)]
     public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? OwnerId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? OccupantId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public int ResidentCapacity { get; init; } = 1;
 }

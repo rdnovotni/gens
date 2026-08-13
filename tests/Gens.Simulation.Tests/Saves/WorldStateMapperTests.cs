@@ -155,7 +155,12 @@ public sealed class WorldStateMapperTests
         var state = new WorldState(new GameDate(0));
         var settlementId = state.SettlementIds.Issue();
         var plotId = state.PlotIds.Issue();
-        var plot = Plot.Create(plotId, settlementId);
+        var holdingId = state.HoldingIds.Issue();
+        var plot = Plot.Create(
+            plotId, settlementId, TerrainType.Coast,
+            TerrainFeature.Coastline | TerrainFeature.RiverAdjacent,
+            new LandCondition(73), 4, true, "household_0000001", holdingId,
+            new LandAcquisition(AcquisitionMethod.Purchase, new GameDate(8), "contract_0000002"));
         state.Plots.Add(plotId, plot);
 
         var dto = WorldStateMapper.ToDto(state);
@@ -175,7 +180,8 @@ public sealed class WorldStateMapperTests
         var state = new WorldState(new GameDate(0));
         var settlementId = state.SettlementIds.Issue();
         var holdingId = state.HoldingIds.Issue();
-        var holding = Holding.Create(holdingId, settlementId);
+        var holding = Holding.Create(
+            holdingId, settlementId, "household_0000001", "household_0000002", 12);
         state.Holdings.Add(holdingId, holding);
 
         var dto = WorldStateMapper.ToDto(state);
