@@ -15,7 +15,7 @@ public static class CharacterNameGenerator
     /// sometimes descriptive" (§2.8), i.e. not universal.</summary>
     private const uint CognomenChancePercent = 50;
 
-    private static readonly IReadOnlyList<string> OrdinalWords = new[]
+    private static readonly string[] OrdinalWords = new[]
     {
         "Prima", "Secunda", "Tertia", "Quarta", "Quinta",
         "Sexta", "Septima", "Octava", "Nona", "Decima",

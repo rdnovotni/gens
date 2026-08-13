@@ -23,12 +23,12 @@ public sealed class WorldStateMapperTests
             FacialStructure = FacialStructure.Angular,
             Complexion = Complexion.Bronzed,
             HairColor = HairColor.Auburn,
-            HairStyle = HairStyle.Long,
+            HairStyle = HairStyle.Flowing,
             EyeColor = EyeColor.Green,
             NotableFeatures = new[] { NotableFeature.Scar, NotableFeature.GrayAtTemples },
             Portrait = PortraitRecipeGenerator.Generate(
                 Height.Tall, Build.Muscular, FacialStructure.Angular, Complexion.Bronzed,
-                HairColor.Auburn, HairStyle.Long, EyeColor.Green,
+                HairColor.Auburn, HairStyle.Flowing, EyeColor.Green,
                 new[] { NotableFeature.Scar, NotableFeature.GrayAtTemples }),
         };
         var character = Character.Create(

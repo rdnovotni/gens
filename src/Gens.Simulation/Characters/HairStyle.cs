@@ -7,6 +7,7 @@ public enum HairStyle
 {
     Cropped,
     ShoulderLength,
-    Long,
+    // Not "Long": CA1720 flags an identifier that collides with the `long` (Int64) keyword alias.
+    Flowing,
     BoundUp,
 }

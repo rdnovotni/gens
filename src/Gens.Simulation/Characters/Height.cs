@@ -5,7 +5,8 @@ namespace Gens.Simulation.Characters;
 /// (Frail/Average/Strong/Herculean), which is later Phase 5 work (item 4) layered on top of this.</summary>
 public enum Height
 {
-    Short,
+    // Not "Short": CA1720 flags an identifier that collides with the `short` (Int16) keyword alias.
+    Diminutive,
     Average,
     Tall,
 }

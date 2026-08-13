@@ -13,33 +13,33 @@ public static class CharacterVisualProfileGenerator
     /// enough that a household of several people plausibly has at least one marked member.</summary>
     private const uint NotableFeatureChancePercent = 12;
 
-    private static readonly IReadOnlyList<Height> HeightValues = new[] { Height.Short, Height.Average, Height.Tall };
+    private static readonly Height[] HeightValues = { Height.Diminutive, Height.Average, Height.Tall };
 
-    private static readonly IReadOnlyList<Build> BuildValues =
-        new[] { Build.Slight, Build.Average, Build.Muscular, Build.Heavyset };
+    private static readonly Build[] BuildValues =
+        { Build.Slight, Build.Average, Build.Muscular, Build.Heavyset };
 
-    private static readonly IReadOnlyList<FacialStructure> FacialStructureValues = new[]
+    private static readonly FacialStructure[] FacialStructureValues =
     {
         FacialStructure.Angular, FacialStructure.Round, FacialStructure.Square,
         FacialStructure.Oval, FacialStructure.Gaunt,
     };
 
-    private static readonly IReadOnlyList<Complexion> ComplexionValues =
-        new[] { Complexion.Fair, Complexion.Olive, Complexion.Bronzed, Complexion.Dark };
+    private static readonly Complexion[] ComplexionValues =
+        { Complexion.Fair, Complexion.Olive, Complexion.Bronzed, Complexion.Dark };
 
-    private static readonly IReadOnlyList<HairColor> HairColorValues = new[]
+    private static readonly HairColor[] HairColorValues =
     {
         HairColor.Black, HairColor.Brown, HairColor.Auburn,
         HairColor.Blond, HairColor.Gray, HairColor.White,
     };
 
-    private static readonly IReadOnlyList<HairStyle> HairStyleValues =
-        new[] { HairStyle.Cropped, HairStyle.ShoulderLength, HairStyle.Long, HairStyle.BoundUp };
+    private static readonly HairStyle[] HairStyleValues =
+        { HairStyle.Cropped, HairStyle.ShoulderLength, HairStyle.Flowing, HairStyle.BoundUp };
 
-    private static readonly IReadOnlyList<EyeColor> EyeColorValues =
-        new[] { EyeColor.Brown, EyeColor.Hazel, EyeColor.Green, EyeColor.Blue, EyeColor.Gray };
+    private static readonly EyeColor[] EyeColorValues =
+        { EyeColor.Brown, EyeColor.Hazel, EyeColor.Green, EyeColor.Blue, EyeColor.Gray };
 
-    private static readonly IReadOnlyList<NotableFeature> NotableFeatureValues = new[]
+    private static readonly NotableFeature[] NotableFeatureValues =
     {
         NotableFeature.Scar, NotableFeature.BrokenNose, NotableFeature.Freckled,
         NotableFeature.Birthmark, NotableFeature.GrayAtTemples,

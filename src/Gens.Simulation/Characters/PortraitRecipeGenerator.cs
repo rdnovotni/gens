@@ -11,7 +11,7 @@ public static class PortraitRecipeGenerator
     /// <summary>Fixed enum-declaration order, not the caller's <paramref name="notableFeatures"/> list
     /// order, so the recipe's feature layers stay identical regardless of which order the generator
     /// happened to roll each feature in.</summary>
-    private static readonly IReadOnlyList<NotableFeature> FeatureLayerOrder = new[]
+    private static readonly NotableFeature[] FeatureLayerOrder =
     {
         NotableFeature.Scar,
         NotableFeature.BrokenNose,
