@@ -144,5 +144,123 @@ public sealed class CharacterTests
         Assert.That(() => character.GetLifecycleStage(beforeBirth), Throws.TypeOf<ArgumentOutOfRangeException>());
     }
 
+    [Test]
+    public void CreateRejectsACharacterAsItsOwnMother()
+    {
+        var id = NextId();
+
+        Assert.That(() => CharacterTestFixtures.Minimal(id, motherId: id), Throws.ArgumentException);
+    }
+
+    [Test]
+    public void CreateRejectsACharacterAsItsOwnFather()
+    {
+        var id = NextId();
+
+        Assert.That(() => CharacterTestFixtures.Minimal(id, fatherId: id), Throws.ArgumentException);
+    }
+
+    [Test]
+    public void IsAliveIsTrueWithNoDeathRecord()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId());
+
+        Assert.That(character.IsAlive, Is.True);
+    }
+
+    [Test]
+    public void IsAliveIsFalseWithADeathRecord()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            deathRecord: new DeathRecord(new GameDate(10), DeathCause.OldAge, 60));
+
+        Assert.That(character.IsAlive, Is.False);
+    }
+
+    [Test]
+    public void CurrentSpouseIdIsNullWithNoMaritalHistory()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId());
+
+        Assert.That(character.CurrentSpouseId, Is.Null);
+    }
+
+    [Test]
+    public void CurrentSpouseIdReturnsTheOpenMarriageEntry()
+    {
+        var spouseId = NextId();
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            maritalHistory: new[] { new MarriageRecord(spouseId, new GameDate(0), null, null) });
+
+        Assert.That(character.CurrentSpouseId, Is.EqualTo(spouseId));
+    }
+
+    [Test]
+    public void CurrentSpouseIdIsNullWhenTheOnlyMarriageIsClosed()
+    {
+        var spouseId = NextId();
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            maritalHistory: new[]
+            {
+                new MarriageRecord(spouseId, new GameDate(0), new GameDate(12), MarriageEndReason.Divorce),
+            });
+
+        Assert.That(character.CurrentSpouseId, Is.Null);
+    }
+
+    [Test]
+    public void GetEffectiveAttributesSubtractsMatchingInjuryMagnitude()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            permanentInjuries: new[] { new PermanentInjury(PermanentInjuryTarget.Martial, 4, "battlefield wound", new GameDate(0)) });
+
+        var effective = character.GetEffectiveAttributes();
+
+        Assert.That(effective.Martial, Is.EqualTo(6));
+        Assert.That(effective.Diplomacy, Is.EqualTo(character.Attributes.Diplomacy));
+    }
+
+    [Test]
+    public void GetEffectiveAttributesSumsMultipleInjuriesOnTheSameTargetAndClampsToZero()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            permanentInjuries: new[]
+            {
+                new PermanentInjury(PermanentInjuryTarget.Martial, 60, "wound one", new GameDate(0)),
+                new PermanentInjury(PermanentInjuryTarget.Martial, 60, "wound two", new GameDate(1)),
+            });
+
+        Assert.That(character.GetEffectiveAttributes().Martial, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void GetEffectiveSkillsSubtractsMatchingInjuryMagnitude()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            permanentInjuries: new[] { new PermanentInjury(PermanentInjuryTarget.Fieldwork, 3, "lamed leg", new GameDate(0)) });
+
+        Assert.That(character.GetEffectiveSkills().Fieldwork, Is.EqualTo(7));
+    }
+
+    [Test]
+    public void GetEffectiveFertilitySubtractsMatchingInjuryMagnitude()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            condition: new Condition(80, 0, 50, 20, 50),
+            permanentInjuries: new[] { new PermanentInjury(PermanentInjuryTarget.Fertility, 20, "difficult birth", new GameDate(0)) });
+
+        Assert.That(character.GetEffectiveFertility(), Is.EqualTo(30));
+    }
+
+    [Test]
+    public void GetEffectiveFertilityIgnoresInjuriesOnOtherTargets()
+    {
+        var character = CharacterTestFixtures.Minimal(NextId(),
+            condition: new Condition(80, 0, 50, 20, 50),
+            permanentInjuries: new[] { new PermanentInjury(PermanentInjuryTarget.Martial, 20, "wound", new GameDate(0)) });
+
+        Assert.That(character.GetEffectiveFertility(), Is.EqualTo(50));
+    }
+
     private static RuntimeId<Character> NextId() => new RuntimeIdCounter<Character>().Issue();
 }

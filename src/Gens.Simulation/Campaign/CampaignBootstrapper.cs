@@ -23,6 +23,16 @@ public static class CampaignBootstrapper
     /// scheduled-action-ordering change can never perturb the campaign stream's draws (rule 8).</summary>
     public const string ScheduledActionStreamName = "scheduled-actions";
 
+    /// <summary>The named random stream <see cref="Characters.CharacterLifecycleSystem"/> reserves for
+    /// its monthly mortality roll, so a change to how any other system draws never perturbs the
+    /// mortality curve's draws, and vice versa (rule 8).</summary>
+    public const string CharacterMortalityStreamName = "characters.mortality";
+
+    /// <summary>The named random stream Character generation (<see cref="Characters.BirthCharacterCommand"/>'s
+    /// name/appearance/baseline-Condition rolls) reserves for itself, kept distinct from <see
+    /// cref="CharacterMortalityStreamName"/> for the same reason (rule 8).</summary>
+    public const string CharacterGenerationStreamName = "characters.generation";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -34,6 +44,8 @@ public static class CampaignBootstrapper
         var streams = new RandomStreamSet();
         streams.AddDerived(CampaignStreamName, config.Seed);
         streams.AddDerived(ScheduledActionStreamName, config.Seed);
+        streams.AddDerived(CharacterMortalityStreamName, config.Seed);
+        streams.AddDerived(CharacterGenerationStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

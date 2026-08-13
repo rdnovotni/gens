@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Gens.Simulation.Characters;
 
 namespace Gens.Simulation.Saves;
 
@@ -191,6 +192,75 @@ public sealed record CharacterDto
 
     [JsonPropertyOrder(16)]
     public required int InstantiatedAtMonth { get; init; }
+
+    /// <summary>Every field below is Phase 5 item 3 (lifecycle transitions, birth, marriage,
+    /// legitimacy, death), added after the Phase 5 items 1-2 fields above. Not <c>required</c>, and
+    /// each defaults to "no parents / legitimate / no history / alive" — the same additive-only
+    /// reasoning as <see cref="WorldSaveDocument.Characters"/>'s own doc comment: a pre-Phase-5-item-3
+    /// save's Characters were never born in play and never married or died, so these fields simply
+    /// didn't exist for them, and default to the values that describe exactly that.</summary>
+    [JsonPropertyOrder(17)]
+    public string? MotherId { get; init; }
+
+    [JsonPropertyOrder(18)]
+    public string? FatherId { get; init; }
+
+    [JsonPropertyOrder(19)]
+    public string Legitimacy { get; init; } = nameof(Characters.Legitimacy.Legitimate);
+
+    [JsonPropertyOrder(20)]
+    public IReadOnlyList<MarriageRecordDto> MaritalHistory { get; init; } = Array.Empty<MarriageRecordDto>();
+
+    [JsonPropertyOrder(21)]
+    public IReadOnlyList<PermanentInjuryDto> PermanentInjuries { get; init; } = Array.Empty<PermanentInjuryDto>();
+
+    [JsonPropertyOrder(22)]
+    public DeathRecordDto? DeathRecord { get; init; }
+}
+
+/// <summary>One <see cref="Characters.MarriageRecord"/> (<c>gens-familia-design.md</c> §5, §5.1).</summary>
+public sealed record MarriageRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SpouseId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int StartDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public int? EndDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? EndReason { get; init; }
+}
+
+/// <summary>One <see cref="Characters.PermanentInjury"/> (<c>gens-familia-design.md</c> §3.1).</summary>
+public sealed record PermanentInjuryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Target { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Magnitude { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Cause { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int InflictedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Characters.DeathRecord"/> (<c>gens-familia-design.md</c> §3).</summary>
+public sealed record DeathRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required int DateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Cause { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int AgeAtDeath { get; init; }
 }
 
 /// <summary>One <see cref="Characters.CharacterVisualProfile"/> (<c>gens-familia-design.md</c> §2.4 /

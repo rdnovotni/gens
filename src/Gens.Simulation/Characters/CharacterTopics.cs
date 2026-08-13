@@ -20,4 +20,12 @@ public static class CharacterTopics
     public const string CoreAttributes = "character.attributes";
     public const string LaborSkills = "character.skills";
     public const string Condition = "character.condition";
+
+    // Added alongside lifecycle transitions, birth, marriage, and death (Phase 5 item 3).
+    public const string LifecycleStage = "character.lifecycleStage";
+    public const string Parentage = "character.parentage";
+    public const string Legitimacy = "character.legitimacy";
+    public const string MaritalHistory = "character.maritalHistory";
+    public const string PermanentInjuries = "character.permanentInjuries";
+    public const string Death = "character.death";
 }
