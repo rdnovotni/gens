@@ -48,7 +48,7 @@ public sealed class CharacterLifecycleSystem : IMonthlySystem<WorldState>
     public string Id => "characters.lifecycle";
     public TickPhase Phase => TickPhase.Lifecycle;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "characters" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "characters" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "characters", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
