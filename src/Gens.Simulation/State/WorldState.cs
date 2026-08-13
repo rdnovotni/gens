@@ -42,6 +42,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Character>, Character> characters,
         OrderedRegistry<RelationshipKey, Relationship> relationships,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
+        OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -61,6 +62,7 @@ public sealed class WorldState
         Characters = characters;
         Relationships = relationships;
         ScheduledActions = scheduledActions;
+        PopGroups = popGroups;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -95,6 +97,12 @@ public sealed class WorldState
     /// <see cref="Characters"/> and <see cref="Knowledge"/> are mutated.</summary>
     public OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> ScheduledActions { get; } = new();
 
+    /// <summary>Every background population group — ADR 0009's <c>Background</c> fidelity tier (Phase
+    /// 5 item 7) — in ascending (settlement, group type) order (ADR 0004).
+    /// <c>PromoteToNamedCommand</c> is the only thing that mutates an entry here: it decrements a
+    /// group's size by exactly one and adds the corresponding entry to <see cref="Characters"/>.</summary>
+    public OrderedRegistry<PopGroupKey, PopGroup> PopGroups { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -128,6 +136,7 @@ public sealed class WorldState
         ["characters"] = Characters.Version,
         ["relationships"] = Relationships.Version,
         ["scheduledActions"] = ScheduledActions.Version,
+        ["popGroups"] = PopGroups.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

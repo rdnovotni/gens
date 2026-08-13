@@ -44,6 +44,8 @@ public static class WorldStateMapper
             ScheduledActions = state.ScheduledActions.InAscendingOrder().Select(entry => ToScheduledActionDto(entry.Value)).ToArray(),
             // Already ascending (From, To) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             Relationships = state.Relationships.InAscendingOrder().Select(entry => ToRelationshipDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending (settlement, group type) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            PopGroups = state.PopGroups.InAscendingOrder().Select(entry => ToPopGroupDto(entry.Value)).ToArray(),
         };
     }
 
@@ -67,6 +69,9 @@ public static class WorldStateMapper
         var relationships = OrderedRegistry<RelationshipKey, Relationship>.Restore(
             dto.Relationships.Select(FromRelationshipDto));
 
+        var popGroups = OrderedRegistry<PopGroupKey, PopGroup>.Restore(
+            dto.PopGroups.Select(FromPopGroupDto));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -84,6 +89,7 @@ public static class WorldStateMapper
             characters: characters,
             relationships: relationships,
             scheduledActions: scheduledActions,
+            popGroups: popGroups,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -157,6 +163,7 @@ public static class WorldStateMapper
         DeathRecord = character.DeathRecord is null ? null : ToDeathRecordDto(character.DeathRecord.Value),
         Traits = character.Traits.Select(static trait => trait.Value).ToArray(),
         Duty = character.Duty is null ? null : ToDutyAssignmentDto(character.Duty.Value),
+        BackfilledHistory = character.BackfilledHistory,
     };
 
     private static DutyAssignmentDto ToDutyAssignmentDto(DutyAssignment duty) => new()
@@ -195,6 +202,7 @@ public static class WorldStateMapper
             dto.Condition.Ambition, dto.Condition.Fertility),
         source: Enum.Parse<CharacterSource>(dto.Source),
         instantiatedAtMonth: dto.InstantiatedAtMonth,
+        backfilledHistory: dto.BackfilledHistory,
         motherId: dto.MotherId is null ? null : RuntimeId<Character>.Parse(dto.MotherId),
         fatherId: dto.FatherId is null ? null : RuntimeId<Character>.Parse(dto.FatherId),
         legitimacy: Enum.Parse<Legitimacy>(dto.Legitimacy),
@@ -338,5 +346,20 @@ public static class WorldStateMapper
             new GameDate(dto.LastMeaningfulInteractionDateTotalMonths),
             dto.ProvenanceEventId);
         return new KeyValuePair<RelationshipKey, Relationship>(key, relationship);
+    }
+
+    private static PopGroupDto ToPopGroupDto(PopGroup popGroup) => new()
+    {
+        SettlementId = popGroup.SettlementId.ToTaggedString(),
+        GroupType = popGroup.GroupType.ToString(),
+        Size = popGroup.Size,
+    };
+
+    private static KeyValuePair<PopGroupKey, PopGroup> FromPopGroupDto(PopGroupDto dto)
+    {
+        var settlementId = RuntimeId<Settlement>.Parse(dto.SettlementId);
+        var groupType = Enum.Parse<PopGroupType>(dto.GroupType);
+        var popGroup = PopGroup.Create(settlementId, groupType, dto.Size);
+        return new KeyValuePair<PopGroupKey, PopGroup>(new PopGroupKey(settlementId, groupType), popGroup);
     }
 }

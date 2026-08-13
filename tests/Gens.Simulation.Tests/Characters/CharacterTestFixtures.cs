@@ -41,7 +41,8 @@ public static class CharacterTestFixtures
         RuntimeId<Settlement>? location = null,
         RuntimeId<Household>? household = null,
         LaborSkills? skills = null,
-        DutyAssignment? duty = null) =>
+        DutyAssignment? duty = null,
+        bool backfilledHistory = false) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
@@ -67,5 +68,6 @@ public static class CharacterTestFixtures
             permanentInjuries: permanentInjuries,
             traits: traits,
             deathRecord: deathRecord,
-            duty: duty);
+            duty: duty,
+            backfilledHistory: backfilledHistory);
 }
