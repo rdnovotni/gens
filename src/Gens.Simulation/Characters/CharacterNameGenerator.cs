@@ -102,9 +102,9 @@ public static class CharacterNameGenerator
 
     private static string OrdinalWord(int ordinal)
     {
-        if (ordinal < 1 || ordinal > OrdinalWords.Count)
+        if (ordinal < 1 || ordinal > OrdinalWords.Length)
             throw new ArgumentOutOfRangeException(
-                nameof(ordinal), ordinal, $"Only ordinals 1-{OrdinalWords.Count} have a named descriptor.");
+                nameof(ordinal), ordinal, $"Only ordinals 1-{OrdinalWords.Length} have a named descriptor.");
 
         return OrdinalWords[ordinal - 1];
     }
