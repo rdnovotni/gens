@@ -136,6 +136,22 @@ public sealed class StateHasherTests
         Assert.That(StateHasher.Hash(withKnowledge), Is.Not.EqualTo(baselineHash));
     }
 
+    [Test]
+    public void DifferentKnowledgeValueWithSameKeyChangesTheHash()
+    {
+        var stateRome = BuildState();
+        stateRome.Knowledge.Set(
+            new KnowledgeKey("player", "char_0000001", "location"),
+            new KnowledgeEntry("Rome", KnowledgeConfidence.Certain, stateRome.Date, null));
+
+        var stateCarthage = BuildState();
+        stateCarthage.Knowledge.Set(
+            new KnowledgeKey("player", "char_0000001", "location"),
+            new KnowledgeEntry("Carthage", KnowledgeConfidence.Certain, stateCarthage.Date, null));
+
+        Assert.That(StateHasher.Hash(stateRome), Is.Not.EqualTo(StateHasher.Hash(stateCarthage)));
+    }
+
     private static WorldState BuildState()
     {
         var state = new WorldState(new GameDate(10));

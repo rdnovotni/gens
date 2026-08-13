@@ -62,6 +62,7 @@ public static class BirthCharacterCommands
     public static readonly ValidationErrorCode MotherNotOfAge = new("characters.birth.motherNotOfAge");
     public static readonly ValidationErrorCode FatherNotFound = new("characters.birth.fatherNotFound");
     public static readonly ValidationErrorCode FatherDeceased = new("characters.birth.fatherDeceased");
+    public static readonly ValidationErrorCode MotherIsFather = new("characters.birth.motherIsFather");
 
     public static CommandPipeline<WorldState, BirthCharacterCommand> CreatePipeline(RandomStreamSet randomStreams)
     {
@@ -87,6 +88,8 @@ public static class BirthCharacterCommands
 
         if (command.FatherId is { } fatherId)
         {
+            if (fatherId == command.MotherId)
+                return MotherIsFather;
             if (!state.Characters.TryGet(fatherId, out var father))
                 return FatherNotFound;
             if (!father.IsAlive)

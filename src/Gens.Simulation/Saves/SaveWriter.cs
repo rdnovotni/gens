@@ -56,13 +56,13 @@ public static class SaveWriter
                 WriteEntry(archive, SaveFormat.ManifestEntry, manifestBytes);
             }
 
-            // Atomic rename: on the platforms this project targets, File.Move onto an existing path
-            // fails, so remove any prior save first — there is still no window where neither the old
-            // nor the new file is a complete, valid archive, since the temp file is already fully
-            // written and flushed above.
+            // Atomic overwrite: File.Replace atomically replaces an existing file (MoveFileEx on
+            // Windows, rename(2) on Unix) with no window where neither the old nor the new file
+            // exists. When no prior save is present a plain Move is sufficient.
             if (File.Exists(path))
-                File.Delete(path);
-            File.Move(tempPath, path);
+                File.Replace(tempPath, path, null);
+            else
+                File.Move(tempPath, path);
         }
         finally
         {
