@@ -65,7 +65,7 @@ public static class StateHasher
         return hash;
     }
 
-    /// <summary>Folds every <see cref="Character"/> field (Phase 5 item 1) into the hash, in the
+    /// <summary>Folds every <see cref="Character"/> field (Phase 5 items 1-2) into the hash, in the
     /// record's declared field order, so a divergent Character anywhere flips the campaign hash.</summary>
     private static ulong MixCharacter(ulong hash, Character character)
     {
@@ -75,6 +75,17 @@ public static class StateHasher
         hash = MixString(hash, character.Cognomen ?? string.Empty);
         hash = MixLong(hash, (long)character.Sex);
         hash = MixLong(hash, character.BirthDate.TotalMonths);
+        hash = MixLong(hash, (long)character.VisualProfile.Height);
+        hash = MixLong(hash, (long)character.VisualProfile.Build);
+        hash = MixLong(hash, (long)character.VisualProfile.FacialStructure);
+        hash = MixLong(hash, (long)character.VisualProfile.Complexion);
+        hash = MixLong(hash, (long)character.VisualProfile.HairColor);
+        hash = MixLong(hash, (long)character.VisualProfile.HairStyle);
+        hash = MixLong(hash, (long)character.VisualProfile.EyeColor);
+        foreach (var feature in character.VisualProfile.NotableFeatures)
+            hash = MixLong(hash, (long)feature);
+        foreach (var layer in character.VisualProfile.Portrait.Layers)
+            hash = MixString(hash, layer);
         hash = MixLong(hash, (long)character.LegalStatus);
         hash = MixLong(hash, character.SocialClass is null ? -1L : (long)character.SocialClass.Value);
         hash = MixString(hash, character.Culture.Value);

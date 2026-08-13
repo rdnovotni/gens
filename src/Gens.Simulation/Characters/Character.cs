@@ -27,6 +27,9 @@ public sealed record Character
     public required Sex Sex { get; init; }
     public required GameDate BirthDate { get; init; }
 
+    // Fixed-genetics appearance (gens-familia-design.md §2.4 / Core §7.11; item 2).
+    public required CharacterVisualProfile VisualProfile { get; init; }
+
     // Legal status & social class (gens-familia-design.md §2.5).
     public required LegalStatus LegalStatus { get; init; }
     public SocialClass? SocialClass { get; init; }
@@ -57,6 +60,7 @@ public sealed record Character
         string? cognomen,
         Sex sex,
         GameDate birthDate,
+        CharacterVisualProfile visualProfile,
         LegalStatus status,
         SocialClass? socialClass,
         DefinitionId<Culture> culture,
@@ -72,6 +76,8 @@ public sealed record Character
             throw new ArgumentException("A Character requires a non-empty praenomen.", nameof(praenomen));
         if (string.IsNullOrWhiteSpace(nomen))
             throw new ArgumentException("A Character requires a non-empty nomen.", nameof(nomen));
+        if (visualProfile is null)
+            throw new ArgumentNullException(nameof(visualProfile));
         if (socialClass is not null && status != LegalStatus.RomanCitizen)
             throw new ArgumentException(
                 $"'{nameof(socialClass)}' can only be set for a {LegalStatus.RomanCitizen} " +
@@ -86,6 +92,7 @@ public sealed record Character
             Cognomen = cognomen,
             Sex = sex,
             BirthDate = birthDate,
+            VisualProfile = visualProfile,
             LegalStatus = status,
             SocialClass = socialClass,
             Culture = culture,

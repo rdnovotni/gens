@@ -11,6 +11,7 @@ namespace Gens.Simulation.Characters;
 public static class CharacterTopics
 {
     public const string Identity = "character.identity";
+    public const string Appearance = "character.appearance";
     public const string LegalStatus = "character.legalStatus";
     public const string SocialClass = "character.socialClass";
     public const string Culture = "character.culture";
