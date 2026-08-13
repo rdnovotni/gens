@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/buildings.schema.json",
+  "$defs": {
+    "recipeLine": {
+      "type": "object",
+      "required": [
+        "good",
+        "quantity"
+      ],
+      "properties": {
+        "good": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "quantity": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "constructionMonths",
+        "recipe"
+      ],
+      "properties": {
+        "constructionMonths": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "recipe": {
+          "type": "object",
+          "required": [
+            "inputs",
+            "outputs"
+          ],
+          "properties": {
+            "inputs": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/recipeLine"
+              }
+            },
+            "outputs": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/recipeLine"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

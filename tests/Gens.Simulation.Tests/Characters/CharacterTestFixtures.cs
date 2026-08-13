@@ -35,6 +35,7 @@ public static class CharacterTestFixtures
         Legitimacy legitimacy = Legitimacy.Legitimate,
         IReadOnlyList<MarriageRecord>? maritalHistory = null,
         IReadOnlyList<PermanentInjury>? permanentInjuries = null,
+        IReadOnlyList<DefinitionId<Trait>>? traits = null,
         DeathRecord? deathRecord = null,
         Condition? condition = null) =>
         Character.Create(
@@ -60,5 +61,6 @@ public static class CharacterTestFixtures
             legitimacy: legitimacy,
             maritalHistory: maritalHistory,
             permanentInjuries: permanentInjuries,
+            traits: traits,
             deathRecord: deathRecord);
 }

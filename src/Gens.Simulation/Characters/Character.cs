@@ -61,6 +61,13 @@ public sealed record Character
     // Permanent injury (gens-familia-design.md §3.1, §8).
     public IReadOnlyList<PermanentInjury> PermanentInjuries { get; init; } = Array.Empty<PermanentInjury>();
 
+    // Traits — definition references only, per rule 10 ("content is data, rules are code"); resolve
+    // against a TraitCatalog for category, Axis nudge, opposed-pair, and tiered-spectrum data
+    // (gens-traits-design.md; Phase 5 item 4). Exclusivity (opposed pairs, tiered spectrums) is
+    // enforced by whatever grants a trait (TraitCatalog.CheckExclusivity), not by this record itself —
+    // Character has no catalog to check against on its own.
+    public IReadOnlyList<DefinitionId<Trait>> Traits { get; init; } = Array.Empty<DefinitionId<Trait>>();
+
     // Death (gens-familia-design.md §3). Non-null is itself the "dead" flag — see IsAlive below.
     public DeathRecord? DeathRecord { get; init; }
 
@@ -93,6 +100,7 @@ public sealed record Character
         Legitimacy == other.Legitimacy &&
         MaritalHistory.SequenceEqual(other.MaritalHistory) &&
         PermanentInjuries.SequenceEqual(other.PermanentInjuries) &&
+        Traits.SequenceEqual(other.Traits) &&
         DeathRecord == other.DeathRecord;
 
     public override int GetHashCode()
@@ -122,6 +130,8 @@ public sealed record Character
             hash.Add(marriage);
         foreach (var injury in PermanentInjuries)
             hash.Add(injury);
+        foreach (var trait in Traits)
+            hash.Add(trait);
         hash.Add(DeathRecord);
         return hash.ToHashCode();
     }
@@ -153,6 +163,7 @@ public sealed record Character
         Legitimacy legitimacy = Legitimacy.Legitimate,
         IReadOnlyList<MarriageRecord>? maritalHistory = null,
         IReadOnlyList<PermanentInjury>? permanentInjuries = null,
+        IReadOnlyList<DefinitionId<Trait>>? traits = null,
         DeathRecord? deathRecord = null)
     {
         if (string.IsNullOrWhiteSpace(praenomen))
@@ -195,6 +206,7 @@ public sealed record Character
             Legitimacy = legitimacy,
             MaritalHistory = maritalHistory ?? Array.Empty<MarriageRecord>(),
             PermanentInjuries = permanentInjuries ?? Array.Empty<PermanentInjury>(),
+            Traits = traits ?? Array.Empty<DefinitionId<Trait>>(),
             DeathRecord = deathRecord,
         };
     }

@@ -8,9 +8,18 @@
     {
       "type": "object",
       "required": [
-        "axis"
+        "category"
       ],
       "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "congenital",
+            "formative",
+            "reactive",
+            "lifestyle"
+          ]
+        },
         "axis": {
           "type": "string",
           "enum": [
@@ -23,10 +32,47 @@
             "rationality"
           ]
         },
+        "axisNudge": {
+          "type": "integer",
+          "minimum": -25,
+          "maximum": 25,
+          "not": {
+            "const": 0
+          }
+        },
         "opposes": {
           "type": "string",
           "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "spectrum": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "tierPosition": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
         }
+      },
+      "dependentRequired": {
+        "axis": [
+          "axisNudge"
+        ],
+        "axisNudge": [
+          "axis"
+        ],
+        "spectrum": [
+          "tierPosition"
+        ],
+        "tierPosition": [
+          "spectrum"
+        ]
+      },
+      "not": {
+        "required": [
+          "opposes",
+          "spectrum"
+        ]
       }
     }
   ]

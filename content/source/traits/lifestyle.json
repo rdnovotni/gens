@@ -1,0 +1,18 @@
+[
+  {
+    "id": "horseman",
+    "status": "active",
+    "nameKey": "traits.horseman.name",
+    "descriptionKey": "traits.horseman.description",
+    "category": "lifestyle"
+  },
+  {
+    "id": "duelist",
+    "status": "active",
+    "nameKey": "traits.duelist.name",
+    "descriptionKey": "traits.duelist.description",
+    "category": "lifestyle",
+    "axis": "boldness",
+    "axisNudge": 10
+  }
+]

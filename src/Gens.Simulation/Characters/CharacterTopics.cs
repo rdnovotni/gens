@@ -28,4 +28,7 @@ public static class CharacterTopics
     public const string MaritalHistory = "character.maritalHistory";
     public const string PermanentInjuries = "character.permanentInjuries";
     public const string Death = "character.death";
+
+    // Added alongside traits, opposed-pair enforcement, and Personality Axes (Phase 5 item 4).
+    public const string Traits = "character.traits";
 }

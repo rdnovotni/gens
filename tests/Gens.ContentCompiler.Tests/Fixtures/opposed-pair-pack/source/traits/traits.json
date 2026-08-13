@@ -1,0 +1,35 @@
+[
+  {
+    "id": "one-sided",
+    "status": "active",
+    "nameKey": "traits.one-sided.name",
+    "descriptionKey": "traits.one-sided.description",
+    "category": "congenital",
+    "opposes": "does-not-oppose-back"
+  },
+  {
+    "id": "does-not-oppose-back",
+    "status": "active",
+    "nameKey": "traits.does-not-oppose-back.name",
+    "descriptionKey": "traits.does-not-oppose-back.description",
+    "category": "congenital"
+  },
+  {
+    "id": "tier-zero-a",
+    "status": "active",
+    "nameKey": "traits.tier-zero-a.name",
+    "descriptionKey": "traits.tier-zero-a.description",
+    "category": "formative",
+    "spectrum": "clashing-spectrum",
+    "tierPosition": 0
+  },
+  {
+    "id": "tier-zero-b",
+    "status": "active",
+    "nameKey": "traits.tier-zero-b.name",
+    "descriptionKey": "traits.tier-zero-b.description",
+    "category": "formative",
+    "spectrum": "clashing-spectrum",
+    "tierPosition": 0
+  }
+]

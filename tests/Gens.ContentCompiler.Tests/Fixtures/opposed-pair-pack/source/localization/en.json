@@ -1,0 +1,10 @@
+{
+  "traits.one-sided.name": "One Sided",
+  "traits.one-sided.description": "Claims an opposition the other side never returns.",
+  "traits.does-not-oppose-back.name": "Does Not Oppose Back",
+  "traits.does-not-oppose-back.description": "Never named the other trait's opposite.",
+  "traits.tier-zero-a.name": "Tier Zero A",
+  "traits.tier-zero-a.description": "Claims the same spectrum rung as another trait.",
+  "traits.tier-zero-b.name": "Tier Zero B",
+  "traits.tier-zero-b.description": "Claims the same spectrum rung as another trait."
+}

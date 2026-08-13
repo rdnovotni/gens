@@ -149,6 +149,7 @@ public static class WorldStateMapper
         MaritalHistory = character.MaritalHistory.Select(ToMarriageRecordDto).ToArray(),
         PermanentInjuries = character.PermanentInjuries.Select(ToPermanentInjuryDto).ToArray(),
         DeathRecord = character.DeathRecord is null ? null : ToDeathRecordDto(character.DeathRecord.Value),
+        Traits = character.Traits.Select(static trait => trait.Value).ToArray(),
     };
 
     private static Character FromCharacterDto(CharacterDto dto) => Character.Create(
@@ -180,6 +181,7 @@ public static class WorldStateMapper
         legitimacy: Enum.Parse<Legitimacy>(dto.Legitimacy),
         maritalHistory: dto.MaritalHistory.Select(FromMarriageRecordDto).ToArray(),
         permanentInjuries: dto.PermanentInjuries.Select(FromPermanentInjuryDto).ToArray(),
+        traits: dto.Traits.Select(static trait => new DefinitionId<Trait>(trait)).ToArray(),
         deathRecord: dto.DeathRecord is null ? null : FromDeathRecordDto(dto.DeathRecord));
 
     private static MarriageRecordDto ToMarriageRecordDto(MarriageRecord record) => new()

@@ -1,0 +1,266 @@
+[
+  {
+    "id": "hardy",
+    "status": "active",
+    "nameKey": "traits.hardy.name",
+    "descriptionKey": "traits.hardy.description",
+    "category": "congenital",
+    "opposes": "sickly"
+  },
+  {
+    "id": "sickly",
+    "status": "active",
+    "nameKey": "traits.sickly.name",
+    "descriptionKey": "traits.sickly.description",
+    "category": "congenital",
+    "opposes": "hardy"
+  },
+  {
+    "id": "fecund",
+    "status": "active",
+    "nameKey": "traits.fecund.name",
+    "descriptionKey": "traits.fecund.description",
+    "category": "congenital",
+    "opposes": "barren"
+  },
+  {
+    "id": "barren",
+    "status": "active",
+    "nameKey": "traits.barren.name",
+    "descriptionKey": "traits.barren.description",
+    "category": "congenital",
+    "opposes": "fecund"
+  },
+  {
+    "id": "perceptive",
+    "status": "active",
+    "nameKey": "traits.perceptive.name",
+    "descriptionKey": "traits.perceptive.description",
+    "category": "congenital",
+    "axis": "rationality",
+    "axisNudge": 10,
+    "opposes": "oblivious"
+  },
+  {
+    "id": "oblivious",
+    "status": "active",
+    "nameKey": "traits.oblivious.name",
+    "descriptionKey": "traits.oblivious.description",
+    "category": "congenital",
+    "axis": "rationality",
+    "axisNudge": -10,
+    "opposes": "perceptive"
+  },
+  {
+    "id": "calm",
+    "status": "active",
+    "nameKey": "traits.calm.name",
+    "descriptionKey": "traits.calm.description",
+    "category": "congenital",
+    "axis": "vengefulness",
+    "axisNudge": -10,
+    "opposes": "wrathful"
+  },
+  {
+    "id": "wrathful",
+    "status": "active",
+    "nameKey": "traits.wrathful.name",
+    "descriptionKey": "traits.wrathful.description",
+    "category": "congenital",
+    "axis": "vengefulness",
+    "axisNudge": 10,
+    "opposes": "calm"
+  },
+  {
+    "id": "patient",
+    "status": "active",
+    "nameKey": "traits.patient.name",
+    "descriptionKey": "traits.patient.description",
+    "category": "congenital",
+    "opposes": "impatient"
+  },
+  {
+    "id": "impatient",
+    "status": "active",
+    "nameKey": "traits.impatient.name",
+    "descriptionKey": "traits.impatient.description",
+    "category": "congenital",
+    "opposes": "patient"
+  },
+  {
+    "id": "bold",
+    "status": "active",
+    "nameKey": "traits.bold.name",
+    "descriptionKey": "traits.bold.description",
+    "category": "congenital",
+    "axis": "boldness",
+    "axisNudge": 10,
+    "opposes": "cautious"
+  },
+  {
+    "id": "cautious",
+    "status": "active",
+    "nameKey": "traits.cautious.name",
+    "descriptionKey": "traits.cautious.description",
+    "category": "congenital",
+    "axis": "boldness",
+    "axisNudge": -10,
+    "opposes": "bold"
+  },
+  {
+    "id": "gregarious",
+    "status": "active",
+    "nameKey": "traits.gregarious.name",
+    "descriptionKey": "traits.gregarious.description",
+    "category": "congenital",
+    "opposes": "reserved"
+  },
+  {
+    "id": "reserved",
+    "status": "active",
+    "nameKey": "traits.reserved.name",
+    "descriptionKey": "traits.reserved.description",
+    "category": "congenital",
+    "opposes": "gregarious"
+  },
+  {
+    "id": "proud",
+    "status": "active",
+    "nameKey": "traits.proud.name",
+    "descriptionKey": "traits.proud.description",
+    "category": "congenital",
+    "opposes": "humble"
+  },
+  {
+    "id": "humble",
+    "status": "active",
+    "nameKey": "traits.humble.name",
+    "descriptionKey": "traits.humble.description",
+    "category": "congenital",
+    "opposes": "proud"
+  },
+  {
+    "id": "stubborn",
+    "status": "active",
+    "nameKey": "traits.stubborn.name",
+    "descriptionKey": "traits.stubborn.description",
+    "category": "congenital",
+    "opposes": "pliant"
+  },
+  {
+    "id": "pliant",
+    "status": "active",
+    "nameKey": "traits.pliant.name",
+    "descriptionKey": "traits.pliant.description",
+    "category": "congenital",
+    "opposes": "stubborn"
+  },
+  {
+    "id": "honest",
+    "status": "active",
+    "nameKey": "traits.honest.name",
+    "descriptionKey": "traits.honest.description",
+    "category": "congenital",
+    "axis": "honor",
+    "axisNudge": 25,
+    "opposes": "deceitful"
+  },
+  {
+    "id": "deceitful",
+    "status": "active",
+    "nameKey": "traits.deceitful.name",
+    "descriptionKey": "traits.deceitful.description",
+    "category": "congenital",
+    "axis": "honor",
+    "axisNudge": -25,
+    "opposes": "honest"
+  },
+  {
+    "id": "generous",
+    "status": "active",
+    "nameKey": "traits.generous.name",
+    "descriptionKey": "traits.generous.description",
+    "category": "congenital",
+    "axis": "greed",
+    "axisNudge": -10,
+    "opposes": "greedy"
+  },
+  {
+    "id": "greedy",
+    "status": "active",
+    "nameKey": "traits.greedy.name",
+    "descriptionKey": "traits.greedy.description",
+    "category": "congenital",
+    "axis": "greed",
+    "axisNudge": 10,
+    "opposes": "generous"
+  },
+  {
+    "id": "compassionate",
+    "status": "active",
+    "nameKey": "traits.compassionate.name",
+    "descriptionKey": "traits.compassionate.description",
+    "category": "congenital",
+    "axis": "compassion",
+    "axisNudge": 10,
+    "opposes": "callous"
+  },
+  {
+    "id": "callous",
+    "status": "active",
+    "nameKey": "traits.callous.name",
+    "descriptionKey": "traits.callous.description",
+    "category": "congenital",
+    "axis": "compassion",
+    "axisNudge": -10,
+    "opposes": "compassionate"
+  },
+  {
+    "id": "diligent",
+    "status": "active",
+    "nameKey": "traits.diligent.name",
+    "descriptionKey": "traits.diligent.description",
+    "category": "congenital",
+    "opposes": "slothful"
+  },
+  {
+    "id": "slothful",
+    "status": "active",
+    "nameKey": "traits.slothful.name",
+    "descriptionKey": "traits.slothful.description",
+    "category": "congenital",
+    "opposes": "diligent"
+  },
+  {
+    "id": "lustful",
+    "status": "active",
+    "nameKey": "traits.lustful.name",
+    "descriptionKey": "traits.lustful.description",
+    "category": "congenital",
+    "opposes": "chaste"
+  },
+  {
+    "id": "chaste",
+    "status": "active",
+    "nameKey": "traits.chaste.name",
+    "descriptionKey": "traits.chaste.description",
+    "category": "congenital",
+    "opposes": "lustful"
+  },
+  {
+    "id": "temperate",
+    "status": "active",
+    "nameKey": "traits.temperate.name",
+    "descriptionKey": "traits.temperate.description",
+    "category": "congenital",
+    "opposes": "gluttonous"
+  },
+  {
+    "id": "gluttonous",
+    "status": "active",
+    "nameKey": "traits.gluttonous.name",
+    "descriptionKey": "traits.gluttonous.description",
+    "category": "congenital",
+    "opposes": "temperate"
+  }
+]
