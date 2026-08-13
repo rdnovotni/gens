@@ -40,7 +40,7 @@ public static class DutySlotCatalog
     /// duty — the "availability" gate distinct from simply already holding one.</summary>
     public const int MaxWorkableFatigue = 90;
 
-    private static readonly IReadOnlyDictionary<DutySlot, int> Capacities = new Dictionary<DutySlot, int>
+    private static readonly Dictionary<DutySlot, int> Capacities = new()
     {
         [DutySlot.FieldHand] = 4,
         [DutySlot.DomesticServant] = 3,
