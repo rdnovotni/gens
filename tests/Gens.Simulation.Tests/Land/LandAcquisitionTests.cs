@@ -51,6 +51,28 @@ public sealed class LandAcquisitionTests
     }
 
     [Test]
+    public void AcquireRejectsUndefinedAcquisitionMethodWithoutMutation()
+    {
+        var state = new WorldState(new GameDate(0));
+        var plotId = state.PlotIds.Issue();
+        state.Plots.Add(plotId, Plot.Create(plotId, state.SettlementIds.Issue()));
+
+        var result = AcquirePlotCommands.Pipeline.Execute(state, new AcquirePlotCommand(
+            state.CommandIds.Issue(), "system", state.Date, null, plotId,
+            "household_0000001", (AcquisitionMethod)int.MaxValue));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error?.Code, Is.EqualTo(AcquirePlotCommands.InvalidMethod.Code));
+        Assert.That(state.Plots.TryGet(plotId, out var plot), Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(plot.OwnerId, Is.Null);
+            Assert.That(plot.Acquisition, Is.Null);
+            Assert.That(state.NextCommandSequenceNumber, Is.Zero);
+        });
+    }
+
+    [Test]
     public void OccupyLinksCoLocatedSameOwnerHolding()
     {
         var state = new WorldState(new GameDate(0));

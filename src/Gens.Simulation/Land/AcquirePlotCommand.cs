@@ -37,6 +37,7 @@ public static class AcquirePlotCommands
 {
     public static readonly ValidationErrorCode PlotNotFound = new("land.acquire.plotNotFound");
     public static readonly ValidationErrorCode InvalidOwner = new("land.acquire.invalidOwner");
+    public static readonly ValidationErrorCode InvalidMethod = new("land.acquire.invalidMethod");
     public static readonly ValidationErrorCode AlreadyOwned = new("land.acquire.alreadyOwned");
     public static readonly ValidationErrorCode PlotContested = new("land.acquire.plotContested");
 
@@ -51,6 +52,8 @@ public static class AcquirePlotCommands
             return PlotNotFound;
         if (string.IsNullOrWhiteSpace(command.NewOwnerId))
             return InvalidOwner;
+        if (!Enum.IsDefined(command.Method))
+            return InvalidMethod;
         if (plot.OwnerId is not null)
             return AlreadyOwned;
         if (plot.IsContested)
