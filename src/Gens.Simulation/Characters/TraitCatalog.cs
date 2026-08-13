@@ -31,7 +31,7 @@ public readonly record struct TraitExclusivityViolation(DefinitionId<Trait> Conf
 /// whichever caller has it loaded, not embedded in the save-state graph itself.</summary>
 public sealed class TraitCatalog
 {
-    private readonly IReadOnlyDictionary<DefinitionId<Trait>, TraitDefinition> _byId;
+    private readonly Dictionary<DefinitionId<Trait>, TraitDefinition> _byId;
 
     public TraitCatalog(IEnumerable<TraitDefinition> definitions)
     {
