@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
+using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 
@@ -72,6 +73,35 @@ public sealed class WorldStateMapperTests
 
         Assert.That(restoredState.Characters.TryGet(characterId, out var restored), Is.True);
         Assert.That(restored, Is.EqualTo(character));
+
+        var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
+        var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));
+        Assert.That(bytesB, Is.EqualTo(bytesA));
+    }
+
+    [Test]
+    public void ARelationshipWithEveryFieldPopulatedRoundTripsThroughTheDtoAndCanonicalJson()
+    {
+        var state = new WorldState(new GameDate(42));
+        var characterId = state.CharacterIds.Issue();
+        var targetId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
+        state.Characters.Add(targetId, CharacterTestFixtures.Minimal(targetId));
+        var key = new RelationshipKey(characterId, targetId);
+        var relationship = new Relationship(
+            -55,
+            BondTag.Rival | BondTag.Nemesis | BondTag.BlackmailLeverage,
+            RelationshipOrigin.Political,
+            new GameDate(10),
+            new GameDate(38),
+            "evt_0000007");
+        state.Relationships.Add(key, relationship);
+
+        var dto = WorldStateMapper.ToDto(state);
+        var restoredState = WorldStateMapper.ToWorldState(dto);
+
+        Assert.That(restoredState.Relationships.TryGet(key, out var restored), Is.True);
+        Assert.That(restored, Is.EqualTo(relationship));
 
         var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
         var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));

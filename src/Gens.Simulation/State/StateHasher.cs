@@ -42,6 +42,19 @@ public static class StateHasher
         foreach (var entry in state.Characters.InAscendingOrder())
             hash = MixCharacter(hash, entry.Value);
 
+        // Already ascending (From, To) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Relationships.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.From.Value);
+            hash = MixLong(hash, entry.Key.To.Value);
+            hash = MixLong(hash, entry.Value.Opinion);
+            hash = MixLong(hash, (long)entry.Value.Bonds);
+            hash = MixLong(hash, (long)entry.Value.Origin);
+            hash = MixLong(hash, entry.Value.FormedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.LastMeaningfulInteractionDate.TotalMonths);
+            hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
+        }
+
         // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.ScheduledActions.InAscendingOrder())
         {
