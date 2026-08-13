@@ -56,7 +56,7 @@ public sealed class RelationshipReferentialIntegrityCheckTests
 
         var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToArray();
 
-        Assert.That(violations, Has.Count.EqualTo(1));
+        Assert.That(violations, Has.Length.EqualTo(1));
         Assert.That(violations[0].InvariantId, Is.EqualTo("characters.relationships.referentialIntegrity"));
     }
 
@@ -73,6 +73,6 @@ public sealed class RelationshipReferentialIntegrityCheckTests
 
         var violations = new RelationshipReferentialIntegrityCheck().Check(state).ToArray();
 
-        Assert.That(violations, Has.Count.EqualTo(1));
+        Assert.That(violations, Has.Length.EqualTo(1));
     }
 }

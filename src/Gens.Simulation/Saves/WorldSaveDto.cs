@@ -230,6 +230,25 @@ public sealed record CharacterDto
     /// traits assigned.</summary>
     [JsonPropertyOrder(23)]
     public IReadOnlyList<string> Traits { get; init; } = Array.Empty<string>();
+
+    /// <summary>Phase 5 item 6 (household roles &amp; duty assignments). Not <c>required</c>, defaulting
+    /// to <c>null</c> ("no duty held"), for the same additive-only reason as every other post-items-1-2
+    /// field above: a pre-Phase-5-item-6 save's Characters never had a duty slot assigned.</summary>
+    [JsonPropertyOrder(24)]
+    public DutyAssignmentDto? Duty { get; init; }
+}
+
+/// <summary>The DTO shape of a <see cref="Characters.DutyAssignment"/>.</summary>
+public sealed record DutyAssignmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Slot { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int AssignedDateTotalMonths { get; init; }
 }
 
 /// <summary>One directed <see cref="Characters.Relationship"/> (Phase 5 item 5;
