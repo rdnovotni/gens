@@ -111,6 +111,7 @@ public static class WorldStateMapper
         Cognomen = character.Cognomen,
         Sex = character.Sex.ToString(),
         BirthDateTotalMonths = character.BirthDate.TotalMonths,
+        VisualProfile = ToVisualProfileDto(character.VisualProfile),
         LegalStatus = character.LegalStatus.ToString(),
         SocialClass = character.SocialClass?.ToString(),
         Culture = character.Culture.Value,
@@ -151,6 +152,7 @@ public static class WorldStateMapper
         cognomen: dto.Cognomen,
         sex: Enum.Parse<Sex>(dto.Sex),
         birthDate: new GameDate(dto.BirthDateTotalMonths),
+        visualProfile: FromVisualProfileDto(dto.VisualProfile),
         status: Enum.Parse<LegalStatus>(dto.LegalStatus),
         socialClass: dto.SocialClass is null ? null : Enum.Parse<SocialClass>(dto.SocialClass),
         culture: new DefinitionId<Culture>(dto.Culture),
@@ -167,6 +169,32 @@ public static class WorldStateMapper
             dto.Condition.Ambition, dto.Condition.Fertility),
         source: Enum.Parse<CharacterSource>(dto.Source),
         instantiatedAtMonth: dto.InstantiatedAtMonth);
+
+    private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
+    {
+        Height = profile.Height.ToString(),
+        Build = profile.Build.ToString(),
+        FacialStructure = profile.FacialStructure.ToString(),
+        Complexion = profile.Complexion.ToString(),
+        HairColor = profile.HairColor.ToString(),
+        HairStyle = profile.HairStyle.ToString(),
+        EyeColor = profile.EyeColor.ToString(),
+        NotableFeatures = profile.NotableFeatures.Select(static feature => feature.ToString()).ToArray(),
+        Portrait = new PortraitRecipeDto { Layers = profile.Portrait.Layers.ToArray() },
+    };
+
+    private static CharacterVisualProfile FromVisualProfileDto(CharacterVisualProfileDto dto) => new()
+    {
+        Height = Enum.Parse<Height>(dto.Height),
+        Build = Enum.Parse<Build>(dto.Build),
+        FacialStructure = Enum.Parse<FacialStructure>(dto.FacialStructure),
+        Complexion = Enum.Parse<Complexion>(dto.Complexion),
+        HairColor = Enum.Parse<HairColor>(dto.HairColor),
+        HairStyle = Enum.Parse<HairStyle>(dto.HairStyle),
+        EyeColor = Enum.Parse<EyeColor>(dto.EyeColor),
+        NotableFeatures = dto.NotableFeatures.Select(static feature => Enum.Parse<NotableFeature>(feature)).ToArray(),
+        Portrait = new PortraitRecipe { Layers = dto.Portrait.Layers.ToArray() },
+    };
 
     private static ScheduledActionEntryDto ToScheduledActionDto(ScheduledActionEntry entry) => new()
     {

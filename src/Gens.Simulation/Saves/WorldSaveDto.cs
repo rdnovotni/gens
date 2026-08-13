@@ -137,7 +137,7 @@ public sealed record ScheduledActionEntryDto
     public string? CausationId { get; init; }
 }
 
-/// <summary>One <see cref="Characters.Character"/>'s full record (Phase 5 item 1), in the same
+/// <summary>One <see cref="Characters.Character"/>'s full record (Phase 5 items 1-2), in the same
 /// declared-field order the record itself uses.</summary>
 public sealed record CharacterDto
 {
@@ -160,34 +160,78 @@ public sealed record CharacterDto
     public required int BirthDateTotalMonths { get; init; }
 
     [JsonPropertyOrder(6)]
-    public required string LegalStatus { get; init; }
+    public required CharacterVisualProfileDto VisualProfile { get; init; }
 
     [JsonPropertyOrder(7)]
-    public string? SocialClass { get; init; }
+    public required string LegalStatus { get; init; }
 
     [JsonPropertyOrder(8)]
-    public required string Culture { get; init; }
+    public string? SocialClass { get; init; }
 
     [JsonPropertyOrder(9)]
-    public required string Location { get; init; }
+    public required string Culture { get; init; }
 
     [JsonPropertyOrder(10)]
-    public string? Household { get; init; }
+    public required string Location { get; init; }
 
     [JsonPropertyOrder(11)]
-    public required CoreAttributesDto Attributes { get; init; }
+    public string? Household { get; init; }
 
     [JsonPropertyOrder(12)]
-    public required LaborSkillsDto Skills { get; init; }
+    public required CoreAttributesDto Attributes { get; init; }
 
     [JsonPropertyOrder(13)]
-    public required ConditionDto Condition { get; init; }
+    public required LaborSkillsDto Skills { get; init; }
 
     [JsonPropertyOrder(14)]
-    public required string Source { get; init; }
+    public required ConditionDto Condition { get; init; }
 
     [JsonPropertyOrder(15)]
+    public required string Source { get; init; }
+
+    [JsonPropertyOrder(16)]
     public required int InstantiatedAtMonth { get; init; }
+}
+
+/// <summary>One <see cref="Characters.CharacterVisualProfile"/> (<c>gens-familia-design.md</c> §2.4 /
+/// Core §7.11; Phase 5 item 2).</summary>
+public sealed record CharacterVisualProfileDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Height { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Build { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string FacialStructure { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Complexion { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string HairColor { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string HairStyle { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string EyeColor { get; init; }
+
+    /// <summary>Already in the generator's own fixed canonical order (<see
+    /// cref="Characters.PortraitRecipeGenerator"/>'s <c>FeatureLayerOrder</c>) — never re-sorted here.</summary>
+    [JsonPropertyOrder(7)]
+    public required IReadOnlyList<string> NotableFeatures { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required PortraitRecipeDto Portrait { get; init; }
+}
+
+/// <summary>One <see cref="Characters.PortraitRecipe"/>.</summary>
+public sealed record PortraitRecipeDto
+{
+    [JsonPropertyOrder(0)]
+    public required IReadOnlyList<string> Layers { get; init; }
 }
 
 /// <summary>One <see cref="Characters.CoreAttributes"/> (<c>gens-familia-design.md</c> §2.1).</summary>

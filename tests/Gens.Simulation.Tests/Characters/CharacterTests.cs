@@ -28,6 +28,7 @@ public sealed class CharacterTests
                 cognomen: null,
                 sex: Sex.Male,
                 birthDate: new GameDate(0),
+                visualProfile: CharacterTestFixtures.MinimalVisualProfile,
                 status: LegalStatus.RomanCitizen,
                 socialClass: null,
                 culture: new DefinitionId<Culture>("roman"),
@@ -52,6 +53,7 @@ public sealed class CharacterTests
                 cognomen: null,
                 sex: Sex.Male,
                 birthDate: new GameDate(0),
+                visualProfile: CharacterTestFixtures.MinimalVisualProfile,
                 status: LegalStatus.RomanCitizen,
                 socialClass: null,
                 culture: new DefinitionId<Culture>("roman"),
@@ -66,6 +68,31 @@ public sealed class CharacterTests
     }
 
     [Test]
+    public void CreateRejectsANullVisualProfile()
+    {
+        Assert.That(
+            () => Character.Create(
+                id: NextId(),
+                praenomen: "Numa",
+                nomen: "Pompilius",
+                cognomen: null,
+                sex: Sex.Male,
+                birthDate: new GameDate(0),
+                visualProfile: null!,
+                status: LegalStatus.RomanCitizen,
+                socialClass: null,
+                culture: new DefinitionId<Culture>("roman"),
+                location: default,
+                household: null,
+                attributes: new CoreAttributes(10, 10, 10, 10, 10),
+                skills: new LaborSkills(10, 10, 10, 10, 10),
+                condition: new Condition(50, 0, 50, 20, 50),
+                source: CharacterSource.Familia,
+                instantiatedAtMonth: 0),
+            Throws.ArgumentNullException);
+    }
+
+    [Test]
     public void CreateRejectsASocialClassOnANonCitizen()
     {
         Assert.That(
@@ -76,6 +103,7 @@ public sealed class CharacterTests
                 cognomen: null,
                 sex: Sex.Male,
                 birthDate: new GameDate(0),
+                visualProfile: CharacterTestFixtures.MinimalVisualProfile,
                 status: LegalStatus.Peregrine,
                 socialClass: SocialClass.Plebeian,
                 culture: new DefinitionId<Culture>("roman"),

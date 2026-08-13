@@ -9,7 +9,26 @@ namespace Gens.Simulation.Tests.Characters;
 /// tests previously used a bare placeholder value).</summary>
 public static class CharacterTestFixtures
 {
-    public static Character Minimal(RuntimeId<Character> id, string praenomen = "Marcus", string nomen = "Aurelius") =>
+    public static readonly CharacterVisualProfile MinimalVisualProfile = new()
+    {
+        Height = Height.Average,
+        Build = Build.Average,
+        FacialStructure = FacialStructure.Oval,
+        Complexion = Complexion.Olive,
+        HairColor = HairColor.Brown,
+        HairStyle = HairStyle.Cropped,
+        EyeColor = EyeColor.Brown,
+        NotableFeatures = Array.Empty<NotableFeature>(),
+        Portrait = PortraitRecipeGenerator.Generate(
+            Height.Average, Build.Average, FacialStructure.Oval, Complexion.Olive,
+            HairColor.Brown, HairStyle.Cropped, EyeColor.Brown, Array.Empty<NotableFeature>()),
+    };
+
+    public static Character Minimal(
+        RuntimeId<Character> id,
+        string praenomen = "Marcus",
+        string nomen = "Aurelius",
+        CharacterVisualProfile? visualProfile = null) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
@@ -17,6 +36,7 @@ public static class CharacterTestFixtures
             cognomen: null,
             sex: Sex.Male,
             birthDate: new GameDate(0),
+            visualProfile: visualProfile ?? MinimalVisualProfile,
             status: LegalStatus.RomanCitizen,
             socialClass: SocialClass.Plebeian,
             culture: new DefinitionId<Culture>("roman"),

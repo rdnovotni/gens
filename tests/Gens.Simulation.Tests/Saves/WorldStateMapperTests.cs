@@ -16,6 +16,21 @@ public sealed class WorldStateMapperTests
         var characterId = state.CharacterIds.Issue();
         var householdId = state.HouseholdIds.Issue();
         var settlementId = state.SettlementIds.Issue();
+        var visualProfile = new CharacterVisualProfile
+        {
+            Height = Height.Tall,
+            Build = Build.Muscular,
+            FacialStructure = FacialStructure.Angular,
+            Complexion = Complexion.Bronzed,
+            HairColor = HairColor.Auburn,
+            HairStyle = HairStyle.Flowing,
+            EyeColor = EyeColor.Green,
+            NotableFeatures = new[] { NotableFeature.Scar, NotableFeature.GrayAtTemples },
+            Portrait = PortraitRecipeGenerator.Generate(
+                Height.Tall, Build.Muscular, FacialStructure.Angular, Complexion.Bronzed,
+                HairColor.Auburn, HairStyle.Flowing, EyeColor.Green,
+                new[] { NotableFeature.Scar, NotableFeature.GrayAtTemples }),
+        };
         var character = Character.Create(
             id: characterId,
             praenomen: "Gaia",
@@ -23,6 +38,7 @@ public sealed class WorldStateMapperTests
             cognomen: "Prima",
             sex: Sex.Female,
             birthDate: new GameDate(12),
+            visualProfile: visualProfile,
             status: LegalStatus.RomanCitizen,
             socialClass: SocialClass.Senatorial,
             culture: new DefinitionId<Culture>("roman"),
