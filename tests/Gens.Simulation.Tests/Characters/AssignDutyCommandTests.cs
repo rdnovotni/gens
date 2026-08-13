@@ -163,4 +163,27 @@ public sealed class AssignDutyCommandTests
         Assert.That(result.Accepted, Is.False);
         Assert.That(result.Error, Is.EqualTo(AssignDutyCommands.SlotAtCapacity));
     }
+
+    [Test]
+    public void ADeceasedSlotHolderDoesNotConsumeCapacityOrCauseALocationConflict()
+    {
+        var state = new WorldState(SubmittedDate);
+        var householdId = state.HouseholdIds.Issue();
+        var location = state.SettlementIds.Issue();
+        var elsewhere = state.SettlementIds.Issue();
+        var deceasedCookId = state.CharacterIds.Issue();
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(deceasedCookId, CharacterTestFixtures.Minimal(
+            deceasedCookId, birthDate: AdultBirthDate, household: householdId, location: elsewhere,
+            duty: new DutyAssignment(householdId, DutySlot.Cook, SubmittedDate),
+            deathRecord: new DeathRecord(new GameDate(280), DeathCause.Disease, 23)));
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(
+            characterId, birthDate: AdultBirthDate, household: householdId, location: location));
+
+        var command = new AssignDutyCommand(
+            state.CommandIds.Issue(), "player", SubmittedDate, null, characterId, householdId, DutySlot.Cook);
+        var result = AssignDutyCommands.Pipeline.Execute(state, command);
+
+        Assert.That(result.Accepted, Is.True);
+    }
 }

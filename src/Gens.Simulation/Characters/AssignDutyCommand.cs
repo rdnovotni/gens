@@ -35,8 +35,11 @@ public sealed record DutyAssignedEvent(
 /// covers every gate <c>gens-familia-design.md</c> §4 implies but doesn't specify numerically: the
 /// assignee must belong to the household, be old enough (Adolescent+), competent enough at the slot's
 /// <see cref="LaborSkills"/> stat, currently available (not already on a duty, not too fatigued to
-/// take one on), physically co-located with the rest of the household, and the slot must have an open
-/// seat (<see cref="DutySlotCatalog"/>).</summary>
+/// take one on), physically co-located with every other living household member, and the slot must
+/// have an open seat (<see cref="DutySlotCatalog"/>). A deceased household member is skipped
+/// entirely when checking location and slot occupancy — nothing clears a dead Character's own
+/// <see cref="Character.Duty"/> retroactively, but a corpse should neither block a mismatched-location
+/// assignment nor keep a duty slot permanently full.</summary>
 public static class AssignDutyCommands
 {
     public static readonly ValidationErrorCode CharacterNotFound = new("characters.duty.characterNotFound");
@@ -74,20 +77,18 @@ public static class AssignDutyCommands
             return InsufficientCompetence;
 
         var slotHolders = 0;
-        RuntimeId<Settlement>? otherMemberLocation = null;
         foreach (var entry in state.Characters.InAscendingOrder())
         {
             var member = entry.Value;
-            if (member.Id == character.Id || member.Household != command.HouseholdId)
+            if (member.Id == character.Id || member.Household != command.HouseholdId || !member.IsAlive)
                 continue;
 
-            otherMemberLocation ??= member.Location;
+            if (member.Location != character.Location)
+                return LocationConflict;
             if (member.Duty is { } duty && duty.HouseholdId == command.HouseholdId && duty.Slot == command.Slot)
                 slotHolders++;
         }
 
-        if (otherMemberLocation is { } location && location != character.Location)
-            return LocationConflict;
         if (slotHolders >= DutySlotCatalog.Capacity(command.Slot))
             return SlotAtCapacity;
 
