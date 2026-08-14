@@ -1,4 +1,5 @@
 using Gens.Simulation.Identity;
+using Gens.Simulation.Villas;
 
 namespace Gens.Simulation.Land;
 
@@ -26,13 +27,18 @@ public sealed record Holding
     /// <summary>Maximum number of residents supported before later housing systems apply pressure.</summary>
     public required int ResidentCapacity { get; init; }
 
+    /// <summary>The holding's optional residence. Production buildings remain plot-level objects;
+    /// villa rooms are owned by this specialized interior layer.</summary>
+    public Villa? Villa { get; init; }
+
     /// <summary>The only supported way to construct a <see cref="Holding"/>.</summary>
     public static Holding Create(
         RuntimeId<Holding> id,
         RuntimeId<Settlement> settlementId,
         string? ownerId = null,
         string? occupantId = null,
-        int residentCapacity = 1)
+        int residentCapacity = 1,
+        Villa? villa = null)
     {
         if (residentCapacity <= 0)
             throw new ArgumentOutOfRangeException(nameof(residentCapacity), residentCapacity, "Resident capacity must be positive.");
@@ -48,6 +54,7 @@ public sealed record Holding
             OwnerId = ownerId,
             OccupantId = occupantId,
             ResidentCapacity = residentCapacity,
+            Villa = villa,
         };
     }
 }

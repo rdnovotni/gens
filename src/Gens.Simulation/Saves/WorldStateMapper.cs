@@ -1,9 +1,11 @@
 using System.Text.Json;
+using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
+using Gens.Simulation.Villas;
 
 namespace Gens.Simulation.Saves;
 
@@ -466,10 +468,44 @@ public static class WorldStateMapper
         OwnerId = holding.OwnerId,
         OccupantId = holding.OccupantId,
         ResidentCapacity = holding.ResidentCapacity,
+        Villa = holding.Villa is null ? null : ToVillaDto(holding.Villa),
     };
 
     private static Holding FromHoldingDto(HoldingDto dto) =>
         Holding.Create(
             RuntimeId<Holding>.Parse(dto.Id), RuntimeId<Settlement>.Parse(dto.SettlementId),
-            dto.OwnerId, dto.OccupantId, dto.ResidentCapacity);
+            dto.OwnerId, dto.OccupantId, dto.ResidentCapacity,
+            dto.Villa is null ? null : FromVillaDto(dto.Villa));
+
+    private static VillaDto ToVillaDto(Villa villa) => new()
+    {
+        Stage = villa.Stage.ToString(),
+        IsOutpost = villa.IsOutpost,
+        Rooms = villa.Rooms.Select(room => new VillaRoomDto
+        {
+            Key = room.Key,
+            DefinitionKey = room.Definition.Key,
+            MinimumStage = room.Definition.MinimumStage.ToString(),
+            MaximumTier = room.Definition.MaximumTier,
+            UsesRoomSlot = room.Definition.UsesRoomSlot,
+            Tier = room.Tier,
+            CapacityTier = room.CapacityTier.ToString(),
+            Condition = room.Condition.ToString(),
+            AssignedTo = room.AssignedTo,
+        }).ToArray(),
+    };
+
+    private static Villa FromVillaDto(VillaDto dto)
+    {
+        var villa = new Villa(Enum.Parse<VillaStage>(dto.Stage), dto.IsOutpost);
+        foreach (var room in dto.Rooms)
+        {
+            var definition = new VillaRoomDefinition(
+                room.DefinitionKey, Enum.Parse<VillaStage>(room.MinimumStage), room.MaximumTier, room.UsesRoomSlot);
+            villa.AddRoom(new VillaRoomInstance(
+                room.Key, definition, room.Tier, Enum.Parse<VillaRoomCapacityTier>(room.CapacityTier),
+                Enum.Parse<BuildingCondition>(room.Condition), room.AssignedTo));
+        }
+        return villa;
+    }
 }

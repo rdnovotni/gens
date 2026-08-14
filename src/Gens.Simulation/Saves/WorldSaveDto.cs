@@ -563,4 +563,49 @@ public sealed record HoldingDto
 
     [JsonPropertyOrder(4)]
     public int ResidentCapacity { get; init; } = 1;
+
+    [JsonPropertyOrder(5)]
+    public VillaDto? Villa { get; init; }
+}
+
+public sealed record VillaDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Stage { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public bool IsOutpost { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public IReadOnlyList<VillaRoomDto> Rooms { get; init; } = Array.Empty<VillaRoomDto>();
+}
+
+public sealed record VillaRoomDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Key { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string DefinitionKey { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string MinimumStage { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public int MaximumTier { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public bool UsesRoomSlot { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public int Tier { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string CapacityTier { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string Condition { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? AssignedTo { get; init; }
 }
