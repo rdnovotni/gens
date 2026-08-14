@@ -111,6 +111,26 @@ public static class StateHasher
         {
             hash = MixLong(hash, entry.Value.Id.Value);
             hash = MixLong(hash, entry.Value.SettlementId.Value);
+            hash = MixString(hash, entry.Value.OwnerId ?? string.Empty);
+            hash = MixString(hash, entry.Value.OccupantId ?? string.Empty);
+            hash = MixLong(hash, entry.Value.ResidentCapacity);
+            hash = MixLong(hash, entry.Value.Villa is null ? -1 : (long)entry.Value.Villa.Stage);
+            if (entry.Value.Villa is not null)
+            {
+                hash = MixLong(hash, entry.Value.Villa.IsOutpost ? 1 : 0);
+                foreach (var room in entry.Value.Villa.Rooms)
+                {
+                    hash = MixString(hash, room.Key);
+                    hash = MixString(hash, room.Definition.Key);
+                    hash = MixLong(hash, (long)room.Definition.MinimumStage);
+                    hash = MixLong(hash, room.Definition.MaximumTier);
+                    hash = MixLong(hash, room.Definition.UsesRoomSlot ? 1 : 0);
+                    hash = MixLong(hash, room.Tier);
+                    hash = MixLong(hash, (long)room.CapacityTier);
+                    hash = MixLong(hash, (long)room.Condition);
+                    hash = MixString(hash, room.AssignedTo ?? string.Empty);
+                }
+            }
         }
 
         return hash;

@@ -5,6 +5,7 @@ using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
+using Gens.Simulation.Villas;
 using NUnit.Framework;
 
 namespace Gens.Simulation.Tests.Saves;
@@ -193,5 +194,26 @@ public sealed class WorldStateMapperTests
         var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
         var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));
         Assert.That(bytesB, Is.EqualTo(bytesA));
+    }
+
+    [Test]
+    public void AVillaAndItsRoomsRoundTripWithTheirHolding()
+    {
+        var state = new WorldState(new GameDate(0));
+        var villa = new Villa(VillaStage.Urbana);
+        villa.AddRoom(new VillaRoomInstance(
+            new VillaRoomDefinition("grand-vestibule", VillaStage.Rustica, maximumTier: 2),
+            tier: 2, assignedTo: "character_0000001"));
+        var holdingId = state.HoldingIds.Issue();
+        state.Holdings.Add(holdingId, Holding.Create(
+            holdingId, state.SettlementIds.Issue(), residentCapacity: 8, villa: villa));
+
+        var restored = WorldStateMapper.ToWorldState(WorldStateMapper.ToDto(state));
+
+        Assert.That(restored.Holdings.TryGet(holdingId, out var holding), Is.True);
+        Assert.That(holding.Villa?.Stage, Is.EqualTo(VillaStage.Urbana));
+        Assert.That(holding.Villa?.Rooms.Single().Definition.Key, Is.EqualTo("grand-vestibule"));
+        Assert.That(holding.Villa?.Rooms.Single().Tier, Is.EqualTo(2));
+        Assert.That(holding.Villa?.Rooms.Single().AssignedTo, Is.EqualTo("character_0000001"));
     }
 }
