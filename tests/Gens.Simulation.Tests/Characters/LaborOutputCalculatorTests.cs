@@ -50,11 +50,15 @@ public sealed class LaborOutputCalculatorTests
     public void OutputNeverLeavesTheZeroToOneHundredRange()
     {
         foreach (var skill in new[] { 0, 50, 100 })
-        foreach (var health in new[] { 0, 50, 100 })
-        foreach (var fatigue in new[] { 0, 50, 100 })
         {
-            var output = LaborOutputCalculator.ComputeOutput(skill, health, fatigue, Neutral);
-            Assert.That(output, Is.InRange(0, 100));
+            foreach (var health in new[] { 0, 50, 100 })
+            {
+                foreach (var fatigue in new[] { 0, 50, 100 })
+                {
+                    var output = LaborOutputCalculator.ComputeOutput(skill, health, fatigue, Neutral);
+                    Assert.That(output, Is.InRange(0, 100));
+                }
+            }
         }
     }
 
