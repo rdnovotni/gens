@@ -1,5 +1,18 @@
 [
   {
+    "id": "ager",
+    "status": "active",
+    "nameKey": "buildings.ager.name",
+    "descriptionKey": "buildings.ager.description",
+    "constructionMonths": 1,
+    "recipe": {
+      "inputs": [],
+      "outputs": [
+        { "good": "grain", "quantity": 4 }
+      ]
+    }
+  },
+  {
     "id": "pistrinum",
     "status": "active",
     "nameKey": "buildings.pistrinum.name",
@@ -11,6 +24,62 @@
       ],
       "outputs": [
         { "good": "bread", "quantity": 1 }
+      ]
+    }
+  },
+  {
+    "id": "ferraria",
+    "status": "active",
+    "nameKey": "buildings.ferraria.name",
+    "descriptionKey": "buildings.ferraria.description",
+    "constructionMonths": 2,
+    "recipe": {
+      "inputs": [],
+      "outputs": [
+        { "good": "iron", "quantity": 2 }
+      ]
+    }
+  },
+  {
+    "id": "fabrica",
+    "status": "active",
+    "nameKey": "buildings.fabrica.name",
+    "descriptionKey": "buildings.fabrica.description",
+    "constructionMonths": 3,
+    "recipe": {
+      "inputs": [
+        { "good": "iron", "quantity": 2 }
+      ],
+      "outputs": [
+        { "good": "tools", "quantity": 1 }
+      ]
+    }
+  },
+  {
+    "id": "ovile",
+    "status": "active",
+    "nameKey": "buildings.ovile.name",
+    "descriptionKey": "buildings.ovile.description",
+    "constructionMonths": 1,
+    "recipe": {
+      "inputs": [],
+      "outputs": [
+        { "good": "wool", "quantity": 3 }
+      ]
+    }
+  },
+  {
+    "id": "textrinum",
+    "status": "active",
+    "nameKey": "buildings.textrinum.name",
+    "descriptionKey": "buildings.textrinum.description",
+    "constructionMonths": 2,
+    "recipe": {
+      "inputs": [
+        { "good": "wool", "quantity": 2 }
+      ],
+      "outputs": [
+        { "good": "textiles", "quantity": 1 }
       ]
     }
   }

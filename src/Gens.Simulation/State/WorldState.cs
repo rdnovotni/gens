@@ -1,4 +1,6 @@
+using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Time;
@@ -50,6 +52,9 @@ public sealed class WorldState
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
+        OrderedRegistry<RuntimeId<Building>, BuildingInstance> buildings,
+        OrderedRegistry<RuntimeId<Holding>, Stockpile> stockpiles,
+        OrderedRegistry<RuntimeId<Holding>, ConstructionQueue> constructionQueues,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -76,6 +81,9 @@ public sealed class WorldState
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
+        Buildings = buildings;
+        Stockpiles = stockpiles;
+        ConstructionQueues = constructionQueues;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -139,6 +147,28 @@ public sealed class WorldState
     /// back to <see cref="RegimenCatalog.Default"/>.</summary>
     public OrderedRegistry<HouseholdRegimenKey, RegimenSettings> HouseholdRegimenDefaults { get; } = new();
 
+    /// <summary>Every completed Building (Phase 6 item 4/7), in ascending-<see cref="RuntimeId{T}"/>
+    /// order (ADR 0004), regardless of which Plot or Holding it stands on. <see
+    /// cref="BuildingInstance"/> is a mutable class (not an immutable record like <see
+    /// cref="Character"/>) — systems mutate an entry in place (staffing, condition) rather than
+    /// removing and re-adding it; only construction completion structurally adds a new entry here.</summary>
+    public OrderedRegistry<RuntimeId<Building>, BuildingInstance> Buildings { get; } = new();
+
+    /// <summary>One capacity-bounded <see cref="Stockpile"/> per Holding (Phase 6 items 3/7) — "one
+    /// estate transforms inputs... into deterministic outputs" (Phase 6 exit gate) reads as one
+    /// storage pool per estate, matching <c>gens-resources-goods-design.md</c> §8's storage
+    /// accumulating at the estate/settlement level rather than per individual building. Sparse: a
+    /// Holding with no stockpile provisioned yet simply has no entry, and buildings on its plots
+    /// cannot produce or consume until one exists.</summary>
+    public OrderedRegistry<RuntimeId<Holding>, Stockpile> Stockpiles { get; } = new();
+
+    /// <summary>One <see cref="ConstructionQueue"/> per Holding (Phase 6 item 7's "one construction
+    /// queue") — a single FIFO per estate that <see cref="ConstructionQueue.Enqueue"/> can target any
+    /// of that Holding's plots, matching <see cref="ConstructionQueue"/>'s own per-call <c>Plot</c>
+    /// parameter. <see cref="ConstructionQueue"/> is a mutable class, mutated in place like <see
+    /// cref="Buildings"/> above.</summary>
+    public OrderedRegistry<RuntimeId<Holding>, ConstructionQueue> ConstructionQueues { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -179,6 +209,9 @@ public sealed class WorldState
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,
+        ["buildings"] = Buildings.Version,
+        ["stockpiles"] = Stockpiles.Version,
+        ["constructionQueues"] = ConstructionQueues.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

@@ -52,7 +52,7 @@ public static class AcquirePlotCommands
             return PlotNotFound;
         if (string.IsNullOrWhiteSpace(command.NewOwnerId))
             return InvalidOwner;
-        if (!Enum.IsDefined(command.Method))
+        if (!Enum.IsDefined(typeof(AcquisitionMethod), command.Method))
             return InvalidMethod;
         if (plot.OwnerId is not null)
             return AlreadyOwned;

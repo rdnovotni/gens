@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.State;
@@ -58,6 +59,13 @@ public static class WorldStateMapper
             // Already ascending (household, slot) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             HouseholdRegimenDefaults = state.HouseholdRegimenDefaults.InAscendingOrder()
                 .Select(entry => ToHouseholdRegimenDefaultDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Buildings = state.Buildings.InAscendingOrder().Select(entry => ToBuildingInstanceDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Stockpiles = state.Stockpiles.InAscendingOrder().Select(entry => ToStockpileDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ConstructionQueues = state.ConstructionQueues.InAscendingOrder()
+                .Select(entry => ToConstructionQueueDto(entry.Key, entry.Value)).ToArray(),
         };
     }
 
@@ -115,6 +123,21 @@ public static class WorldStateMapper
         var householdRegimenDefaults = OrderedRegistry<HouseholdRegimenKey, RegimenSettings>.Restore(
             dto.HouseholdRegimenDefaults.Select(FromHouseholdRegimenDefaultDto));
 
+        var buildings = OrderedRegistry<RuntimeId<Building>, BuildingInstance>.Restore(
+            dto.Buildings.Select(b =>
+            {
+                var building = FromBuildingInstanceDto(b);
+                return new KeyValuePair<RuntimeId<Building>, BuildingInstance>(building.Id, building);
+            }));
+
+        var stockpiles = OrderedRegistry<RuntimeId<Holding>, Stockpile>.Restore(
+            dto.Stockpiles.Select(s => new KeyValuePair<RuntimeId<Holding>, Stockpile>(
+                RuntimeId<Holding>.Parse(s.HoldingId), FromStockpileDto(s))));
+
+        var constructionQueues = OrderedRegistry<RuntimeId<Holding>, ConstructionQueue>.Restore(
+            dto.ConstructionQueues.Select(q => new KeyValuePair<RuntimeId<Holding>, ConstructionQueue>(
+                RuntimeId<Holding>.Parse(q.HoldingId), FromConstructionQueueDto(q))));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -139,6 +162,9 @@ public static class WorldStateMapper
             scheduledActions: scheduledActions,
             popGroups: popGroups,
             householdRegimenDefaults: householdRegimenDefaults,
+            buildings: buildings,
+            stockpiles: stockpiles,
+            constructionQueues: constructionQueues,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -578,5 +604,179 @@ public static class WorldStateMapper
                 Enum.Parse<BuildingCondition>(room.Condition), room.AssignedTo));
         }
         return villa;
+    }
+
+    private static RecipeLineDto ToRecipeLineDto(RecipeLine line) => new()
+    {
+        GoodId = line.GoodId.Value,
+        Quantity = line.Quantity,
+    };
+
+    private static RecipeLine FromRecipeLineDto(RecipeLineDto dto) =>
+        new(new DefinitionId<Good>(dto.GoodId), dto.Quantity);
+
+    private static StaffingSlotDto ToStaffingSlotDto(StaffingSlot slot) => new()
+    {
+        Id = slot.Id,
+        Capacity = slot.Capacity,
+        RequiredForProduction = slot.RequiredForProduction,
+    };
+
+    private static StaffingSlot FromStaffingSlotDto(StaffingSlotDto dto) =>
+        new(dto.Id, dto.Capacity, dto.RequiredForProduction);
+
+    private static BuildingDefinitionDto ToBuildingDefinitionDto(BuildingDefinition definition) => new()
+    {
+        Id = definition.Id.Value,
+        Tier = definition.Tier.ToString(),
+        ConstructionMonths = definition.ConstructionMonths,
+        PlotCapacity = definition.PlotCapacity,
+        Prerequisites = definition.Prerequisites.Select(static id => id.Value).ToArray(),
+        AllowedTerrain = definition.AllowedTerrain.Select(static terrain => terrain.ToString()).ToArray(),
+        RequiredFeatures = (int)definition.RequiredFeatures,
+        Upkeep = definition.Upkeep.Select(ToRecipeLineDto).ToArray(),
+        StaffingSlots = definition.StaffingSlots.Select(ToStaffingSlotDto).ToArray(),
+        Recipe = definition.Recipe is null ? null : new ProductionRecipeDto
+        {
+            Inputs = definition.Recipe.Inputs.Select(ToRecipeLineDto).ToArray(),
+            Outputs = definition.Recipe.Outputs.Select(ToRecipeLineDto).ToArray(),
+        },
+    };
+
+    private static BuildingDefinition FromBuildingDefinitionDto(BuildingDefinitionDto dto) => new(
+        new DefinitionId<Building>(dto.Id),
+        Enum.Parse<BuildingTier>(dto.Tier),
+        dto.ConstructionMonths,
+        dto.PlotCapacity,
+        prerequisites: dto.Prerequisites.Select(static id => new DefinitionId<Building>(id)),
+        allowedTerrain: dto.AllowedTerrain.Select(static terrain => Enum.Parse<TerrainType>(terrain)),
+        requiredFeatures: (TerrainFeature)dto.RequiredFeatures,
+        upkeep: dto.Upkeep.Select(FromRecipeLineDto),
+        staffingSlots: dto.StaffingSlots.Select(FromStaffingSlotDto),
+        recipe: dto.Recipe is null ? null : new ProductionRecipe(
+            dto.Recipe.Inputs.Select(FromRecipeLineDto), dto.Recipe.Outputs.Select(FromRecipeLineDto)));
+
+    private static BuildingInstanceDto ToBuildingInstanceDto(BuildingInstance building) => new()
+    {
+        Id = building.Id.ToTaggedString(),
+        PlotId = building.PlotId.ToTaggedString(),
+        Definition = ToBuildingDefinitionDto(building.Definition),
+        Condition = building.Condition.ToString(),
+        // Already ordinal slot-ID order (ADR 0004) via BuildingInstance.Staff's SortedDictionary.
+        Staff = building.Staff.Select(pair => new StaffSlotAssignmentDto
+        {
+            SlotId = pair.Key,
+            WorkerIds = pair.Value.ToArray(),
+        }).ToArray(),
+    };
+
+    private static BuildingInstance FromBuildingInstanceDto(BuildingInstanceDto dto) => BuildingInstance.Restore(
+        RuntimeId<Building>.Parse(dto.Id),
+        RuntimeId<Plot>.Parse(dto.PlotId),
+        FromBuildingDefinitionDto(dto.Definition),
+        Enum.Parse<BuildingCondition>(dto.Condition),
+        dto.Staff.Select(assignment =>
+            new KeyValuePair<string, IReadOnlyCollection<string>>(assignment.SlotId, assignment.WorkerIds)));
+
+    private static ConstructionProjectDto ToConstructionProjectDto(ConstructionProject project) => new()
+    {
+        Sequence = project.Sequence,
+        PlotId = project.PlotId.ToTaggedString(),
+        Definition = ToBuildingDefinitionDto(project.Definition),
+        CompletedMonths = project.CompletedMonths,
+    };
+
+    private static ConstructionProject FromConstructionProjectDto(ConstructionProjectDto dto) => new(
+        dto.Sequence, RuntimeId<Plot>.Parse(dto.PlotId), FromBuildingDefinitionDto(dto.Definition), dto.CompletedMonths);
+
+    private static ConstructionQueueDto ToConstructionQueueDto(RuntimeId<Holding> holdingId, ConstructionQueue queue) => new()
+    {
+        HoldingId = holdingId.ToTaggedString(),
+        NextSequence = queue.NextSequence,
+        // Already FIFO order (ADR 0004) via ConstructionQueue.Projects.
+        Projects = queue.Projects.Select(ToConstructionProjectDto).ToArray(),
+    };
+
+    private static ConstructionQueue FromConstructionQueueDto(ConstructionQueueDto dto) =>
+        ConstructionQueue.Restore(dto.NextSequence, dto.Projects.Select(FromConstructionProjectDto));
+
+    private static GoodDefinitionDto ToGoodDefinitionDto(GoodDefinition good) => new()
+    {
+        Id = good.Id.Value,
+        Perishability = good.Perishability.ToString(),
+        QualityEligible = good.QualityEligible,
+        ConditionTracked = good.ConditionTracked,
+        ShelfLifeTicks = good.ShelfLifeTicks,
+    };
+
+    private static GoodDefinition FromGoodDefinitionDto(GoodDefinitionDto dto) => new(
+        new DefinitionId<Good>(dto.Id),
+        Enum.Parse<Perishability>(dto.Perishability),
+        dto.QualityEligible,
+        dto.ConditionTracked,
+        dto.ShelfLifeTicks);
+
+    private static StockProvenanceDto ToStockProvenanceDto(StockProvenance provenance) => new()
+    {
+        SourceId = provenance.SourceId,
+        EventId = provenance.EventId,
+        ExceptionalObjectId = provenance.ExceptionalObjectId,
+    };
+
+    private static StockProvenance FromStockProvenanceDto(StockProvenanceDto dto) =>
+        new(dto.SourceId, dto.EventId, dto.ExceptionalObjectId);
+
+    private static StockLotDto ToStockLotDto(StockLot lot) => new()
+    {
+        Good = ToGoodDefinitionDto(lot.Good),
+        Quantity = lot.Quantity,
+        Quality = lot.Quality?.ToString(),
+        Condition = lot.Condition?.Value,
+        AgeInTicks = lot.AgeInTicks,
+        Provenance = lot.Provenance is null ? null : ToStockProvenanceDto(lot.Provenance.Value),
+    };
+
+    private static StockReservationDto ToStockReservationDto(StockReservation reservation) => new()
+    {
+        ReservationId = reservation.ReservationId,
+        GoodId = reservation.GoodId.Value,
+        Quality = reservation.Quality?.ToString(),
+        Quantity = reservation.Quantity,
+    };
+
+    private static StockpileDto ToStockpileDto(RuntimeId<Holding> holdingId, Stockpile stockpile) => new()
+    {
+        HoldingId = holdingId.ToTaggedString(),
+        Capacity = stockpile.Capacity,
+        // Original list order — see StockLotDto's doc comment for why this matters.
+        Lots = stockpile.Lots.Select(ToStockLotDto).ToArray(),
+        // Ordinal ReservationId order (ADR 0004) via Stockpile's SortedDictionary.
+        Reservations = stockpile.Reservations.Select(ToStockReservationDto).ToArray(),
+    };
+
+    private static Stockpile FromStockpileDto(StockpileDto dto)
+    {
+        var stockpile = new Stockpile(dto.Capacity);
+        foreach (var lot in dto.Lots)
+        {
+            stockpile.Add(
+                FromGoodDefinitionDto(lot.Good),
+                lot.Quantity,
+                lot.Quality is null ? null : Enum.Parse<GoodQuality>(lot.Quality),
+                lot.Condition is null ? null : new StockCondition(lot.Condition.Value),
+                lot.Provenance is null ? null : FromStockProvenanceDto(lot.Provenance),
+                lot.AgeInTicks);
+        }
+
+        foreach (var reservation in dto.Reservations)
+        {
+            stockpile.Reserve(
+                reservation.ReservationId,
+                new DefinitionId<Good>(reservation.GoodId),
+                reservation.Quantity,
+                reservation.Quality is null ? null : Enum.Parse<GoodQuality>(reservation.Quality));
+        }
+
+        return stockpile;
     }
 }

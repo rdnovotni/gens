@@ -78,4 +78,33 @@ public sealed class BuildingInstance
             throw new InvalidOperationException("A repair must improve the building's condition.");
         Condition = condition;
     }
+
+    /// <summary>Rebuilds a building instance from persisted save data (ADR 0010), bypassing the
+    /// constructor's "always starts Pristine and unstaffed" default and <see cref="ApplyUpkeep"/>/<see
+    /// cref="Repair"/>'s step-at-a-time validation — the condition and staffing were already valid when
+    /// saved (matching <see cref="Identity.OrderedRegistry{TId,TEntity}.Restore"/>'s identical
+    /// reasoning).</summary>
+    public static BuildingInstance Restore(
+        RuntimeId<Building> id,
+        RuntimeId<Plot> plotId,
+        BuildingDefinition definition,
+        BuildingCondition condition,
+        IEnumerable<KeyValuePair<string, IReadOnlyCollection<string>>> staff)
+    {
+        if (!Enum.IsDefined(typeof(BuildingCondition), condition))
+            throw new ArgumentOutOfRangeException(nameof(condition));
+        if (staff is null)
+            throw new ArgumentNullException(nameof(staff));
+
+        var instance = new BuildingInstance(id, plotId, definition) { Condition = condition };
+        foreach (var (slotId, workers) in staff)
+        {
+            if (!instance._staff.TryGetValue(slotId, out var set))
+                throw new KeyNotFoundException($"Staffing slot '{slotId}' does not exist.");
+            foreach (var workerId in workers)
+                set.Add(workerId);
+        }
+
+        return instance;
+    }
 }

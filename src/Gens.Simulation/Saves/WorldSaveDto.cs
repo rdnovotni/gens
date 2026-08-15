@@ -85,6 +85,25 @@ public sealed record WorldSaveDocument
     /// cref="Regions"/>: a pre-Phase-6-item-6 save never had any group Regimen defaults recorded.</summary>
     [JsonPropertyOrder(13)]
     public IReadOnlyList<HouseholdRegimenDefaultDto> HouseholdRegimenDefaults { get; init; } = Array.Empty<HouseholdRegimenDefaultDto>();
+
+    /// <summary>Every completed <see cref="Buildings.BuildingInstance"/> (Phase 6 item 7), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="Regions"/>: a pre-Phase-6-item-7 save
+    /// never had any completed buildings recorded.</summary>
+    [JsonPropertyOrder(14)]
+    public IReadOnlyList<BuildingInstanceDto> Buildings { get; init; } = Array.Empty<BuildingInstanceDto>();
+
+    /// <summary>Every Holding's <see cref="Goods.Stockpile"/> (Phase 6 items 3/7), keyed by Holding.
+    /// Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="Regions"/>: a pre-Phase-6-item-7 save never had any stockpiles provisioned.</summary>
+    [JsonPropertyOrder(15)]
+    public IReadOnlyList<StockpileDto> Stockpiles { get; init; } = Array.Empty<StockpileDto>();
+
+    /// <summary>Every Holding's <see cref="Buildings.ConstructionQueue"/> (Phase 6 item 7), keyed by
+    /// Holding. Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="Regions"/>: a pre-Phase-6-item-7 save never had any construction queues provisioned.</summary>
+    [JsonPropertyOrder(16)]
+    public IReadOnlyList<ConstructionQueueDto> ConstructionQueues { get; init; } = Array.Empty<ConstructionQueueDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -693,4 +712,226 @@ public sealed record VillaRoomDto
 
     [JsonPropertyOrder(8)]
     public string? AssignedTo { get; init; }
+}
+
+/// <summary>One <see cref="Buildings.RecipeLine"/> — a positive quantity of a good.</summary>
+public sealed record RecipeLineDto
+{
+    [JsonPropertyOrder(0)]
+    public required string GoodId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required long Quantity { get; init; }
+}
+
+/// <summary>One <see cref="Buildings.StaffingSlot"/>.</summary>
+public sealed record StaffingSlotDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Capacity { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public bool RequiredForProduction { get; init; } = true;
+}
+
+/// <summary>One <see cref="Buildings.ProductionRecipe"/>.</summary>
+public sealed record ProductionRecipeDto
+{
+    [JsonPropertyOrder(0)]
+    public required IReadOnlyList<RecipeLineDto> Inputs { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required IReadOnlyList<RecipeLineDto> Outputs { get; init; }
+}
+
+/// <summary>One <see cref="Buildings.BuildingDefinition"/>, embedded inline rather than referenced by
+/// ID — no content catalog resolves a <see cref="Identity.DefinitionId{T}"/> back to a
+/// <c>BuildingDefinition</c> at runtime yet (Phase 6 item 7's scope is the production network, not a
+/// content-loading pipeline), so every runtime <see cref="Buildings.BuildingInstance"/> and <see
+/// cref="Buildings.ConstructionProject"/> already carries its full definition by reference in memory;
+/// this DTO round-trips that same shape rather than inventing a lookup this project doesn't have yet.</summary>
+public sealed record BuildingDefinitionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Tier { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int ConstructionMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int PlotCapacity { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public IReadOnlyList<string> Prerequisites { get; init; } = Array.Empty<string>();
+
+    [JsonPropertyOrder(5)]
+    public IReadOnlyList<string> AllowedTerrain { get; init; } = Array.Empty<string>();
+
+    [JsonPropertyOrder(6)]
+    public int RequiredFeatures { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public IReadOnlyList<RecipeLineDto> Upkeep { get; init; } = Array.Empty<RecipeLineDto>();
+
+    [JsonPropertyOrder(8)]
+    public IReadOnlyList<StaffingSlotDto> StaffingSlots { get; init; } = Array.Empty<StaffingSlotDto>();
+
+    [JsonPropertyOrder(9)]
+    public ProductionRecipeDto? Recipe { get; init; }
+}
+
+/// <summary>One Building's staffing slot assignment (<see cref="Buildings.BuildingInstance.Staff"/>).</summary>
+public sealed record StaffSlotAssignmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SlotId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required IReadOnlyList<string> WorkerIds { get; init; }
+}
+
+/// <summary>One <see cref="Buildings.BuildingInstance"/> (Phase 6 item 7).</summary>
+public sealed record BuildingInstanceDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required BuildingDefinitionDto Definition { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Condition { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public IReadOnlyList<StaffSlotAssignmentDto> Staff { get; init; } = Array.Empty<StaffSlotAssignmentDto>();
+}
+
+/// <summary>One <see cref="Buildings.ConstructionProject"/>.</summary>
+public sealed record ConstructionProjectDto
+{
+    [JsonPropertyOrder(0)]
+    public required long Sequence { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required BuildingDefinitionDto Definition { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int CompletedMonths { get; init; }
+}
+
+/// <summary>One Holding's <see cref="Buildings.ConstructionQueue"/> (Phase 6 item 7's "one
+/// construction queue").</summary>
+public sealed record ConstructionQueueDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HoldingId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required long NextSequence { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public IReadOnlyList<ConstructionProjectDto> Projects { get; init; } = Array.Empty<ConstructionProjectDto>();
+}
+
+/// <summary>One <see cref="Goods.GoodDefinition"/>, embedded inline for the same reason as <see
+/// cref="BuildingDefinitionDto"/>: no content catalog resolves a Good <see
+/// cref="Identity.DefinitionId{T}"/> back to its storage-relevant properties at runtime yet.</summary>
+public sealed record GoodDefinitionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Perishability { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public bool QualityEligible { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public bool ConditionTracked { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public int? ShelfLifeTicks { get; init; }
+}
+
+/// <summary>One optional <see cref="Goods.StockProvenance"/> on a batch.</summary>
+public sealed record StockProvenanceDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SourceId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? EventId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? ExceptionalObjectId { get; init; }
+}
+
+/// <summary>One <see cref="Goods.StockLot"/> batch, in the Stockpile's original list order — restore
+/// re-adds lots in this exact order because <see cref="Goods.Stockpile"/>'s FEFO/FIFO removal breaks
+/// equal-age ties by insertion order (that type's own doc comment).</summary>
+public sealed record StockLotDto
+{
+    [JsonPropertyOrder(0)]
+    public required GoodDefinitionDto Good { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required long Quantity { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? Quality { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public int? Condition { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int AgeInTicks { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public StockProvenanceDto? Provenance { get; init; }
+}
+
+/// <summary>One <see cref="Goods.StockReservation"/>, in ordinal <c>ReservationId</c> order.</summary>
+public sealed record StockReservationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ReservationId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string GoodId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? Quality { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required long Quantity { get; init; }
+}
+
+/// <summary>One Holding's <see cref="Goods.Stockpile"/> (Phase 6 items 3/7's "one storage
+/// constraint").</summary>
+public sealed record StockpileDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HoldingId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required long Capacity { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public IReadOnlyList<StockLotDto> Lots { get; init; } = Array.Empty<StockLotDto>();
+
+    [JsonPropertyOrder(3)]
+    public IReadOnlyList<StockReservationDto> Reservations { get; init; } = Array.Empty<StockReservationDto>();
 }

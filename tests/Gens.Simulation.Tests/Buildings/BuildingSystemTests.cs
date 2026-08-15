@@ -2,6 +2,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using NUnit.Framework;
 
 namespace Gens.Simulation.Tests.Buildings;
 
