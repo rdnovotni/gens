@@ -55,6 +55,9 @@ public static class WorldStateMapper
             Settlements = state.Settlements.InAscendingOrder().Select(entry => ToSettlementDto(entry.Value)).ToArray(),
             Plots = state.Plots.InAscendingOrder().Select(entry => ToPlotDto(entry.Value)).ToArray(),
             Holdings = state.Holdings.InAscendingOrder().Select(entry => ToHoldingDto(entry.Value)).ToArray(),
+            // Already ascending (household, slot) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            HouseholdRegimenDefaults = state.HouseholdRegimenDefaults.InAscendingOrder()
+                .Select(entry => ToHouseholdRegimenDefaultDto(entry.Key, entry.Value)).ToArray(),
         };
     }
 
@@ -109,6 +112,9 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Holding>, Holding>(holding.Id, holding);
             }));
 
+        var householdRegimenDefaults = OrderedRegistry<HouseholdRegimenKey, RegimenSettings>.Restore(
+            dto.HouseholdRegimenDefaults.Select(FromHouseholdRegimenDefaultDto));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -132,6 +138,7 @@ public static class WorldStateMapper
             relationships: relationships,
             scheduledActions: scheduledActions,
             popGroups: popGroups,
+            householdRegimenDefaults: householdRegimenDefaults,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -206,7 +213,67 @@ public static class WorldStateMapper
         Traits = character.Traits.Select(static trait => trait.Value).ToArray(),
         Duty = character.Duty is null ? null : ToDutyAssignmentDto(character.Duty.Value),
         BackfilledHistory = character.BackfilledHistory,
+        Regimen = character.Regimen is null ? null : ToRegimenSettingsDto(character.Regimen.Value),
+        Flight = character.Flight is null ? null : ToFledRecordDto(character.Flight.Value),
+        Pursuit = character.Pursuit is null ? null : ToPursuitRecordDto(character.Pursuit.Value),
+        ManumissionPlan = character.ManumissionPlan is null ? null : ToManumissionPlanDto(character.ManumissionPlan.Value),
     };
+
+    private static RegimenSettingsDto ToRegimenSettingsDto(RegimenSettings regimen) => new()
+    {
+        Diet = regimen.Diet.ToString(),
+        Accommodation = regimen.Accommodation.ToString(),
+        Freedoms = regimen.Freedoms.ToString(),
+        Discipline = regimen.Discipline.ToString(),
+    };
+
+    private static RegimenSettings FromRegimenSettingsDto(RegimenSettingsDto dto) => new(
+        Enum.Parse<DietTier>(dto.Diet), Enum.Parse<AccommodationTier>(dto.Accommodation),
+        Enum.Parse<FreedomsTier>(dto.Freedoms), Enum.Parse<DisciplineTier>(dto.Discipline));
+
+    private static FledRecordDto ToFledRecordDto(FledRecord flight) => new()
+    {
+        FledDateTotalMonths = flight.FledDate.TotalMonths,
+        FormerHousehold = flight.FormerHousehold.ToTaggedString(),
+        LastKnownLocation = flight.LastKnownLocation?.ToTaggedString(),
+    };
+
+    private static FledRecord FromFledRecordDto(FledRecordDto dto) => new(
+        new GameDate(dto.FledDateTotalMonths),
+        RuntimeId<Household>.Parse(dto.FormerHousehold),
+        dto.LastKnownLocation is null ? null : RuntimeId<Settlement>.Parse(dto.LastKnownLocation));
+
+    private static PursuitRecordDto ToPursuitRecordDto(PursuitRecord pursuit) => new()
+    {
+        MonthsRemaining = pursuit.MonthsRemaining,
+        PursuerId = pursuit.PursuerId?.ToTaggedString(),
+    };
+
+    private static PursuitRecord FromPursuitRecordDto(PursuitRecordDto dto) => new(
+        dto.MonthsRemaining, dto.PursuerId is null ? null : RuntimeId<Character>.Parse(dto.PursuerId));
+
+    private static ManumissionPlanDto ToManumissionPlanDto(ManumissionPlan plan) => new()
+    {
+        GrantorId = plan.GrantorId.ToTaggedString(),
+        Type = plan.Type.ToString(),
+    };
+
+    private static ManumissionPlan FromManumissionPlanDto(ManumissionPlanDto dto) => new(
+        RuntimeId<Character>.Parse(dto.GrantorId), Enum.Parse<ManumissionType>(dto.Type));
+
+    private static HouseholdRegimenDefaultDto ToHouseholdRegimenDefaultDto(HouseholdRegimenKey key, RegimenSettings regimen) => new()
+    {
+        HouseholdId = key.HouseholdId.ToTaggedString(),
+        Slot = key.Slot?.ToString(),
+        Regimen = ToRegimenSettingsDto(regimen),
+    };
+
+    private static KeyValuePair<HouseholdRegimenKey, RegimenSettings> FromHouseholdRegimenDefaultDto(HouseholdRegimenDefaultDto dto)
+    {
+        var key = new HouseholdRegimenKey(
+            RuntimeId<Household>.Parse(dto.HouseholdId), dto.Slot is null ? null : Enum.Parse<DutySlot>(dto.Slot));
+        return new KeyValuePair<HouseholdRegimenKey, RegimenSettings>(key, FromRegimenSettingsDto(dto.Regimen));
+    }
 
     private static DutyAssignmentDto ToDutyAssignmentDto(DutyAssignment duty) => new()
     {
@@ -252,7 +319,11 @@ public static class WorldStateMapper
         permanentInjuries: dto.PermanentInjuries.Select(FromPermanentInjuryDto).ToArray(),
         traits: dto.Traits.Select(static trait => new DefinitionId<Trait>(trait)).ToArray(),
         deathRecord: dto.DeathRecord is null ? null : FromDeathRecordDto(dto.DeathRecord),
-        duty: dto.Duty is null ? null : FromDutyAssignmentDto(dto.Duty));
+        duty: dto.Duty is null ? null : FromDutyAssignmentDto(dto.Duty),
+        regimen: dto.Regimen is null ? null : FromRegimenSettingsDto(dto.Regimen),
+        flight: dto.Flight is null ? null : FromFledRecordDto(dto.Flight),
+        pursuit: dto.Pursuit is null ? null : FromPursuitRecordDto(dto.Pursuit),
+        manumissionPlan: dto.ManumissionPlan is null ? null : FromManumissionPlanDto(dto.ManumissionPlan));
 
     private static MarriageRecordDto ToMarriageRecordDto(MarriageRecord record) => new()
     {

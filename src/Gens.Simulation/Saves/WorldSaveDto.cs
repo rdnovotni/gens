@@ -79,6 +79,12 @@ public sealed record WorldSaveDocument
     /// empty, for the same additive-only reason as <see cref="Regions"/>.</summary>
     [JsonPropertyOrder(12)]
     public IReadOnlyList<HoldingDto> Holdings { get; init; } = Array.Empty<HoldingDto>();
+
+    /// <summary>Every household-level Regimen default (Phase 6 item 6; <c>gens-labor-slavery-design.md</c>
+    /// §5). Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="Regions"/>: a pre-Phase-6-item-6 save never had any group Regimen defaults recorded.</summary>
+    [JsonPropertyOrder(13)]
+    public IReadOnlyList<HouseholdRegimenDefaultDto> HouseholdRegimenDefaults { get; init; } = Array.Empty<HouseholdRegimenDefaultDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -280,6 +286,85 @@ public sealed record CharacterDto
     /// only ever born in play.</summary>
     [JsonPropertyOrder(25)]
     public bool BackfilledHistory { get; init; }
+
+    /// <summary>Every field below is Phase 6 item 6 (Labor &amp; Slavery: Regimen, flight, manumission).
+    /// Not <c>required</c>, and each defaults to "no override / never fled / no plan" for the same
+    /// additive-only reason as every other post-items-1-2 field above: a pre-Phase-6-item-6 save's
+    /// Characters never had any of these set.</summary>
+    [JsonPropertyOrder(26)]
+    public RegimenSettingsDto? Regimen { get; init; }
+
+    [JsonPropertyOrder(27)]
+    public FledRecordDto? Flight { get; init; }
+
+    [JsonPropertyOrder(28)]
+    public PursuitRecordDto? Pursuit { get; init; }
+
+    [JsonPropertyOrder(29)]
+    public ManumissionPlanDto? ManumissionPlan { get; init; }
+}
+
+/// <summary>One <see cref="Characters.RegimenSettings"/> (<c>gens-labor-slavery-design.md</c> §5).</summary>
+public sealed record RegimenSettingsDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Diet { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Accommodation { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Freedoms { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Discipline { get; init; }
+}
+
+/// <summary>One <see cref="Characters.FledRecord"/> (<c>gens-labor-slavery-design.md</c> §7).</summary>
+public sealed record FledRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required int FledDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string FormerHousehold { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? LastKnownLocation { get; init; }
+}
+
+/// <summary>One <see cref="Characters.PursuitRecord"/> (<c>gens-labor-slavery-design.md</c> §7).</summary>
+public sealed record PursuitRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required int MonthsRemaining { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? PursuerId { get; init; }
+}
+
+/// <summary>One <see cref="Characters.ManumissionPlan"/> (<c>gens-labor-slavery-design.md</c> §8).</summary>
+public sealed record ManumissionPlanDto
+{
+    [JsonPropertyOrder(0)]
+    public required string GrantorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Type { get; init; }
+}
+
+/// <summary>One household-level Regimen default (Phase 6 item 6), keyed by its <see
+/// cref="Characters.HouseholdRegimenKey"/>'s (household, duty slot or <c>null</c>) pair.</summary>
+public sealed record HouseholdRegimenDefaultDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? Slot { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required RegimenSettingsDto Regimen { get; init; }
 }
 
 /// <summary>One <see cref="Characters.PopGroup"/> (Phase 5 item 7; ADR 0009), keyed by its <see

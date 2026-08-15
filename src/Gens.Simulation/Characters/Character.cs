@@ -85,6 +85,15 @@ public sealed record Character
     // tier only — Court Positions belong to §6.20's own later design pass.
     public DutyAssignment? Duty { get; init; }
 
+    // Labor & Slavery (gens-labor-slavery-design.md §5, §7, §8; Phase 6 item 6). Acquisition (§2),
+    // flightRisk (derived — see FlightRiskCalculator, not stored per this record's own
+    // GetLifecycleStage/GetEffectiveSkills convention), Sale (§9), and the vilicus tier (§4) are out
+    // of this item's "basic" scope.
+    public RegimenSettings? Regimen { get; init; }
+    public FledRecord? Flight { get; init; }
+    public PursuitRecord? Pursuit { get; init; }
+    public ManumissionPlan? ManumissionPlan { get; init; }
+
     /// <summary>Hand-written for the same reason as <see cref="CharacterVisualProfile.Equals(CharacterVisualProfile?)"/>
     /// and <see cref="PortraitRecipe.Equals(PortraitRecipe?)"/>: the record-synthesized <c>Equals</c>
     /// would compare <see cref="MaritalHistory"/> and <see cref="PermanentInjuries"/> by list reference
@@ -117,7 +126,11 @@ public sealed record Character
         PermanentInjuries.SequenceEqual(other.PermanentInjuries) &&
         Traits.SequenceEqual(other.Traits) &&
         DeathRecord == other.DeathRecord &&
-        Duty == other.Duty;
+        Duty == other.Duty &&
+        Regimen == other.Regimen &&
+        Flight == other.Flight &&
+        Pursuit == other.Pursuit &&
+        ManumissionPlan == other.ManumissionPlan;
 
     public override int GetHashCode()
     {
@@ -151,6 +164,10 @@ public sealed record Character
             hash.Add(trait);
         hash.Add(DeathRecord);
         hash.Add(Duty);
+        hash.Add(Regimen);
+        hash.Add(Flight);
+        hash.Add(Pursuit);
+        hash.Add(ManumissionPlan);
         return hash.ToHashCode();
     }
 
@@ -184,7 +201,11 @@ public sealed record Character
         IReadOnlyList<PermanentInjury>? permanentInjuries = null,
         IReadOnlyList<DefinitionId<Trait>>? traits = null,
         DeathRecord? deathRecord = null,
-        DutyAssignment? duty = null)
+        DutyAssignment? duty = null,
+        RegimenSettings? regimen = null,
+        FledRecord? flight = null,
+        PursuitRecord? pursuit = null,
+        ManumissionPlan? manumissionPlan = null)
     {
         if (string.IsNullOrWhiteSpace(praenomen))
             throw new ArgumentException("A Character requires a non-empty praenomen.", nameof(praenomen));
@@ -230,6 +251,10 @@ public sealed record Character
             Traits = traits ?? Array.Empty<DefinitionId<Trait>>(),
             DeathRecord = deathRecord,
             Duty = duty,
+            Regimen = regimen,
+            Flight = flight,
+            Pursuit = pursuit,
+            ManumissionPlan = manumissionPlan,
         };
     }
 

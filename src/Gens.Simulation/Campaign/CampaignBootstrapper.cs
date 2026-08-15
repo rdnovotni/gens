@@ -40,6 +40,16 @@ public static class CampaignBootstrapper
     /// different systems whose draw sequences shouldn't perturb each other.</summary>
     public const string CharacterPromotionStreamName = "characters.promotion";
 
+    /// <summary>The named random stream <see cref="Characters.LaborFlightSystem"/> reserves for its
+    /// monthly flight-opportunity roll (Phase 6 item 6), kept distinct from every other stream here for
+    /// the same rule-8 reason.</summary>
+    public const string CharacterLaborFlightStreamName = "characters.laborFlight";
+
+    /// <summary>The named random stream <see cref="Characters.LaborFlightSystem"/> reserves for its
+    /// pursuit-outcome roll (Phase 6 item 6), kept distinct from <see cref="CharacterLaborFlightStreamName"/>
+    /// for the same rule-8 reason.</summary>
+    public const string CharacterPursuitOutcomeStreamName = "characters.pursuitOutcome";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -54,6 +64,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(CharacterMortalityStreamName, config.Seed);
         streams.AddDerived(CharacterGenerationStreamName, config.Seed);
         streams.AddDerived(CharacterPromotionStreamName, config.Seed);
+        streams.AddDerived(CharacterLaborFlightStreamName, config.Seed);
+        streams.AddDerived(CharacterPursuitOutcomeStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
