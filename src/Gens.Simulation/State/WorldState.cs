@@ -49,6 +49,7 @@ public sealed class WorldState
         OrderedRegistry<RelationshipKey, Relationship> relationships,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
+        OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -74,6 +75,7 @@ public sealed class WorldState
         Relationships = relationships;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
+        HouseholdRegimenDefaults = householdRegimenDefaults;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -131,6 +133,12 @@ public sealed class WorldState
     /// group's size by exactly one and adds the corresponding entry to <see cref="Characters"/>.</summary>
     public OrderedRegistry<PopGroupKey, PopGroup> PopGroups { get; } = new();
 
+    /// <summary>Every household-level Regimen default (Phase 6 item 6; <c>gens-labor-slavery-design.md</c>
+    /// §5), keyed by (household, duty slot or <c>null</c> for the whole-household fallback). Sparse: a
+    /// household with no group default set simply has no entry — <see cref="RegimenResolver"/> falls
+    /// back to <see cref="RegimenCatalog.Default"/>.</summary>
+    public OrderedRegistry<HouseholdRegimenKey, RegimenSettings> HouseholdRegimenDefaults { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -170,6 +178,7 @@ public sealed class WorldState
         ["relationships"] = Relationships.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
+        ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

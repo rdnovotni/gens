@@ -107,6 +107,17 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.SettlementId.Value);
         }
 
+        // Already ascending (household, slot) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.HouseholdRegimenDefaults.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.HouseholdId.Value);
+            hash = MixLong(hash, entry.Key.Slot is null ? -1L : (long)entry.Key.Slot.Value);
+            hash = MixLong(hash, (long)entry.Value.Diet);
+            hash = MixLong(hash, (long)entry.Value.Accommodation);
+            hash = MixLong(hash, (long)entry.Value.Freedoms);
+            hash = MixLong(hash, (long)entry.Value.Discipline);
+        }
+
         foreach (var entry in state.Holdings.InAscendingOrder())
         {
             hash = MixLong(hash, entry.Value.Id.Value);
@@ -208,6 +219,22 @@ public static class StateHasher
         hash = MixLong(hash, character.Duty is null ? -1L : character.Duty.Value.HouseholdId.Value);
         hash = MixLong(hash, character.Duty is null ? -1L : (long)character.Duty.Value.Slot);
         hash = MixLong(hash, character.Duty is null ? -1L : character.Duty.Value.AssignedDate.TotalMonths);
+
+        hash = MixLong(hash, character.Regimen is null ? -1L : (long)character.Regimen.Value.Diet);
+        hash = MixLong(hash, character.Regimen is null ? -1L : (long)character.Regimen.Value.Accommodation);
+        hash = MixLong(hash, character.Regimen is null ? -1L : (long)character.Regimen.Value.Freedoms);
+        hash = MixLong(hash, character.Regimen is null ? -1L : (long)character.Regimen.Value.Discipline);
+
+        hash = MixLong(hash, character.Flight is null ? -1L : character.Flight.Value.FledDate.TotalMonths);
+        hash = MixLong(hash, character.Flight is null ? -1L : character.Flight.Value.FormerHousehold.Value);
+        hash = MixLong(hash, character.Flight?.LastKnownLocation is { } lastKnownLocation ? lastKnownLocation.Value : -1L);
+
+        hash = MixLong(hash, character.Pursuit is null ? -1L : character.Pursuit.Value.MonthsRemaining);
+        hash = MixLong(hash, character.Pursuit?.PursuerId is { } pursuerId ? pursuerId.Value : -1L);
+
+        hash = MixLong(hash, character.ManumissionPlan is null ? -1L : character.ManumissionPlan.Value.GrantorId.Value);
+        hash = MixLong(hash, character.ManumissionPlan is null ? -1L : (long)character.ManumissionPlan.Value.Type);
+
         return hash;
     }
 

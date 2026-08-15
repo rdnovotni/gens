@@ -43,7 +43,12 @@ public static class CharacterTestFixtures
         RuntimeId<Household>? household = null,
         LaborSkills? skills = null,
         DutyAssignment? duty = null,
-        bool backfilledHistory = false) =>
+        bool backfilledHistory = false,
+        LegalStatus status = LegalStatus.RomanCitizen,
+        RegimenSettings? regimen = null,
+        FledRecord? flight = null,
+        PursuitRecord? pursuit = null,
+        ManumissionPlan? manumissionPlan = null) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
@@ -52,8 +57,8 @@ public static class CharacterTestFixtures
             sex: Sex.Male,
             birthDate: birthDate ?? new GameDate(0),
             visualProfile: visualProfile ?? MinimalVisualProfile,
-            status: LegalStatus.RomanCitizen,
-            socialClass: SocialClass.Plebeian,
+            status: status,
+            socialClass: status == LegalStatus.RomanCitizen ? SocialClass.Plebeian : null,
             culture: new DefinitionId<Culture>("roman"),
             location: location ?? default(RuntimeId<Settlement>),
             household: household,
@@ -70,5 +75,9 @@ public static class CharacterTestFixtures
             traits: traits,
             deathRecord: deathRecord,
             duty: duty,
-            backfilledHistory: backfilledHistory);
+            backfilledHistory: backfilledHistory,
+            regimen: regimen,
+            flight: flight,
+            pursuit: pursuit,
+            manumissionPlan: manumissionPlan);
 }
