@@ -103,6 +103,35 @@ public sealed class BuildingSystemTests
             TerrainType.Hills, TerrainFeature.MineralDeposit | TerrainFeature.RiverAdjacent)), Is.True);
     }
 
+    [Test]
+    public void SectorAndBackgroundJobCapacityAreCapturedForJobCapacitySystem()
+    {
+        var definition = new BuildingDefinition(FarmId, BuildingTier.Tier1, 1, 1,
+            sector: BuildingSector.Agriculture, backgroundJobCapacity: 12);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(definition.Sector, Is.EqualTo(BuildingSector.Agriculture));
+            Assert.That(definition.BackgroundJobCapacity, Is.EqualTo(12));
+        });
+    }
+
+    [Test]
+    public void ConstructorRejectsANegativeBackgroundJobCapacity()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new BuildingDefinition(FarmId, BuildingTier.Tier1, 1, 1,
+            sector: BuildingSector.Agriculture, backgroundJobCapacity: -1));
+    }
+
+    [Test]
+    public void ConstructorRejectsAPositiveBackgroundJobCapacityWithNoSector()
+    {
+        Assert.Throws<ArgumentException>(() => new BuildingDefinition(FarmId, BuildingTier.Tier1, 1, 1,
+            backgroundJobCapacity: 5));
+    }
+
+    private static readonly DefinitionId<Building> FarmId = new("farm");
+
     private static BuildingDefinition Smithy() => new(
         SmithyId,
         BuildingTier.Tier2,
