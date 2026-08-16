@@ -43,7 +43,7 @@ public sealed class JobCapacitySystem : IMonthlySystem<WorldState>
     /// <summary>Curiales capacity as a fraction of total settlement population, in basis points (parts
     /// per 1,000), rising with <see cref="SettlementStage"/> — a modest, growing pool of upward-mobility
     /// slots as a settlement matures, standing in for "Dignitas/stage" until Dignitas exists.</summary>
-    private static readonly IReadOnlyDictionary<SettlementStage, int> CurialesBasisPoints =
+    private static readonly Dictionary<SettlementStage, int> CurialesBasisPoints =
         new Dictionary<SettlementStage, int>
         {
             [SettlementStage.Villa] = 20,
