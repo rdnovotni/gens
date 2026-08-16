@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.Numerics;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
@@ -190,6 +191,35 @@ public sealed class WorldStateMapperTests
 
         Assert.That(restoredState.Holdings.TryGet(holdingId, out var restored), Is.True);
         Assert.That(restored, Is.EqualTo(holding));
+
+        var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
+        var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));
+        Assert.That(bytesB, Is.EqualTo(bytesA));
+    }
+
+    [Test]
+    public void APopGroupWithEveryFieldPopulatedRoundTripsThroughTheDtoAndCanonicalJson()
+    {
+        var state = new WorldState(new GameDate(0));
+        var settlementId = state.SettlementIds.Issue();
+        var key = new PopGroupKey(settlementId, PopGroupType.Negotiatores);
+        var popGroup = PopGroup.Create(
+            settlementId, PopGroupType.Negotiatores, 12,
+            legalStatusDistribution: new LegalStatusDistribution(3, 2, 4, 1),
+            culture: new DefinitionId<Culture>("roman"),
+            wealthBand: WealthBand.ModestSurplus,
+            needsProfile: DietTier.Adequate,
+            employmentRatio: Fixed64.FromInt(2),
+            housingSatisfaction: Fixed64.FromRaw(750_000),
+            contentment: Fixed64.FromRaw(600_000),
+            healthExposure: Fixed64.FromRaw(50_000));
+        state.PopGroups.Add(key, popGroup);
+
+        var dto = WorldStateMapper.ToDto(state);
+        var restoredState = WorldStateMapper.ToWorldState(dto);
+
+        Assert.That(restoredState.PopGroups.TryGet(key, out var restored), Is.True);
+        Assert.That(restored, Is.EqualTo(popGroup));
 
         var bytesA = CanonicalJson.SerializeToCanonicalBytes(dto);
         var bytesB = CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restoredState));

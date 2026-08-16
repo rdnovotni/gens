@@ -151,6 +151,9 @@ public static class PromoteToNamedCommands
             backfilledHistory: true);
 
         // Only now that construction has fully succeeded do we commit the conserved population change.
+        // Only Size is conserved here — PopGroup's other composition/condition fields (legal status
+        // distribution, wealth band, contentment, etc.) are not yet maintained by promotion; that
+        // lands with Settlement Demographics' own later mobility/assimilation construction-order items.
         var key = new PopGroupKey(command.SettlementId, command.GroupType);
         state.PopGroups.TryGet(key, out var popGroup);
         state.PopGroups.Remove(key);

@@ -492,13 +492,36 @@ public static class WorldStateMapper
         SettlementId = popGroup.SettlementId.ToTaggedString(),
         GroupType = popGroup.GroupType.ToString(),
         Size = popGroup.Size,
+        CitizenCount = popGroup.LegalStatusDistribution.Citizen,
+        LatinRightsCount = popGroup.LegalStatusDistribution.LatinRights,
+        PeregrineCount = popGroup.LegalStatusDistribution.Peregrine,
+        FreedmanCount = popGroup.LegalStatusDistribution.Freedman,
+        Culture = popGroup.Culture.Value,
+        WealthBand = popGroup.WealthBand.ToString(),
+        NeedsProfile = popGroup.NeedsProfile.ToString(),
+        EmploymentRatio = popGroup.EmploymentRatio,
+        HousingSatisfaction = popGroup.HousingSatisfaction,
+        Contentment = popGroup.Contentment,
+        HealthExposure = popGroup.HealthExposure,
     };
 
     private static KeyValuePair<PopGroupKey, PopGroup> FromPopGroupDto(PopGroupDto dto)
     {
         var settlementId = RuntimeId<Settlement>.Parse(dto.SettlementId);
         var groupType = Enum.Parse<PopGroupType>(dto.GroupType);
-        var popGroup = PopGroup.Create(settlementId, groupType, dto.Size);
+        var distribution = new LegalStatusDistribution(dto.CitizenCount, dto.LatinRightsCount, dto.PeregrineCount, dto.FreedmanCount);
+        var popGroup = PopGroup.Create(
+            settlementId,
+            groupType,
+            dto.Size,
+            legalStatusDistribution: distribution,
+            culture: new DefinitionId<Culture>(dto.Culture),
+            wealthBand: Enum.Parse<WealthBand>(dto.WealthBand),
+            needsProfile: Enum.Parse<DietTier>(dto.NeedsProfile),
+            employmentRatio: dto.EmploymentRatio,
+            housingSatisfaction: dto.HousingSatisfaction,
+            contentment: dto.Contentment,
+            healthExposure: dto.HealthExposure);
         return new KeyValuePair<PopGroupKey, PopGroup>(new PopGroupKey(settlementId, groupType), popGroup);
     }
 

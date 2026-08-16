@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Numerics;
 
 namespace Gens.Simulation.Saves;
 
@@ -398,6 +399,39 @@ public sealed record PopGroupDto
 
     [JsonPropertyOrder(2)]
     public required int Size { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int CitizenCount { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int LatinRightsCount { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int PeregrineCount { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int FreedmanCount { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string Culture { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string WealthBand { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required string NeedsProfile { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required Fixed64 EmploymentRatio { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required Fixed64 HousingSatisfaction { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required Fixed64 Contentment { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required Fixed64 HealthExposure { get; init; }
 }
 
 /// <summary>The DTO shape of a <see cref="Characters.DutyAssignment"/>.</summary>

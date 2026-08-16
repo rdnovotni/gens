@@ -65,6 +65,17 @@ public static class StateHasher
             hash = MixLong(hash, entry.Key.SettlementId.Value);
             hash = MixLong(hash, (long)entry.Key.GroupType);
             hash = MixLong(hash, entry.Value.Size);
+            hash = MixLong(hash, entry.Value.LegalStatusDistribution.Citizen);
+            hash = MixLong(hash, entry.Value.LegalStatusDistribution.LatinRights);
+            hash = MixLong(hash, entry.Value.LegalStatusDistribution.Peregrine);
+            hash = MixLong(hash, entry.Value.LegalStatusDistribution.Freedman);
+            hash = MixString(hash, entry.Value.Culture.Value);
+            hash = MixLong(hash, (long)entry.Value.WealthBand);
+            hash = MixLong(hash, (long)entry.Value.NeedsProfile);
+            hash = MixLong(hash, entry.Value.EmploymentRatio.RawValue);
+            hash = MixLong(hash, entry.Value.HousingSatisfaction.RawValue);
+            hash = MixLong(hash, entry.Value.Contentment.RawValue);
+            hash = MixLong(hash, entry.Value.HealthExposure.RawValue);
         }
 
         // Already ascending (due date, action ID) order (ADR 0004) via OrderedRegistry.
