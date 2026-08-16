@@ -41,17 +41,33 @@ public sealed class ConstructionSystem : IMonthlySystem<WorldState>
         {
             var holdingId = entry.Key;
             var queue = entry.Value;
+            if (queue.Projects.Count == 0)
+                continue;
+            var head = queue.Projects[0];
+
             var laborAvailable = EstateLookup.HasLaborAvailable(state, holdingId);
             var completed = queue.AdvanceMonth(laborAvailable);
-            if (completed is null)
+            if (completed is not null)
+            {
+                var buildingId = state.BuildingIds.Issue();
+                var building = new BuildingInstance(buildingId, completed.PlotId, completed.Definition);
+                state.Buildings.Add(buildingId, building);
+
+                events.Add(new BuildingConstructionCompletedEvent(
+                    state.EventIds.Issue(), context.Date, buildingId, holdingId, completed.PlotId, completed.Definition.Id));
+                continue;
+            }
+
+            if (!laborAvailable)
                 continue;
 
-            var buildingId = state.BuildingIds.Issue();
-            var building = new BuildingInstance(buildingId, completed.PlotId, completed.Definition);
-            state.Buildings.Add(buildingId, building);
-
-            events.Add(new BuildingConstructionCompletedEvent(
-                state.EventIds.Issue(), context.Date, buildingId, holdingId, completed.PlotId, completed.Definition.Id));
+            // Advanced by one month without finishing: report the same labor-consumption fact a
+            // completion event reports, just short of the terminal month (Phase 6 item 8's "construction
+            // events even before the economy consumes them").
+            var progressed = queue.Projects[0];
+            events.Add(new BuildingConstructionProgressedEvent(
+                state.EventIds.Issue(), context.Date, holdingId, head.PlotId, head.Definition.Id,
+                progressed.CompletedMonths, head.Definition.ConstructionMonths));
         }
 
         return events;
@@ -77,6 +93,31 @@ public sealed record BuildingConstructionCompletedEvent(
     {
         BuildingId.ToTaggedString(), HoldingId.ToTaggedString(), PlotId.ToTaggedString(),
     };
+
+    public Visibility Visibility => Visibility.Public;
+    public string? CausationId => null;
+}
+
+/// <summary>Emitted whenever a <see cref="ConstructionSchedule"/> head project consumes a month of labor
+/// without yet reaching completion (Phase 6 item 8's "emit complete ledger-ready... construction...
+/// events even before the economy consumes them" — a ledger consumer needs to see labor committed to an
+/// unfinished project every month, not only the month it finally finishes). Not emitted the month a
+/// project completes (<see cref="BuildingConstructionCompletedEvent"/> covers that month instead) or a
+/// month <see cref="EstateLookup.HasLaborAvailable"/> is <see langword="false"/> (the queue paused; no
+/// labor moved).</summary>
+public sealed record BuildingConstructionProgressedEvent(
+    RuntimeId<DomainEventEntity> EventId,
+    GameDate OccurredDate,
+    RuntimeId<Holding> HoldingId,
+    RuntimeId<Plot> PlotId,
+    DefinitionId<Building> DefinitionId,
+    int CompletedMonths,
+    int TotalMonths) : IDomainEvent
+{
+    public string Type => "buildings.constructionProgressed";
+    public int SchemaVersion => 1;
+
+    public IReadOnlyList<string> SubjectIds => new[] { HoldingId.ToTaggedString(), PlotId.ToTaggedString() };
 
     public Visibility Visibility => Visibility.Public;
     public string? CausationId => null;

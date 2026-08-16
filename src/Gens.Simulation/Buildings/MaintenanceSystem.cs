@@ -53,33 +53,35 @@ public sealed class MaintenanceSystem : IMonthlySystem<WorldState>
             var previousCondition = building.Condition;
             building.ApplyUpkeep(paid);
 
-            if (building.Condition != previousCondition)
-            {
-                events.Add(new BuildingUpkeepResolvedEvent(
-                    state.EventIds.Issue(), context.Date, building.Id, holdingId, paid, previousCondition, building.Condition));
-            }
+            events.Add(new BuildingUpkeepResolvedEvent(
+                state.EventIds.Issue(), context.Date, building.Id, holdingId,
+                paid, building.Definition.Upkeep, previousCondition, building.Condition));
         }
 
         return events;
     }
 }
 
-/// <summary>Emitted whenever a Building's <see cref="BuildingCondition"/> changes as a result of this
-/// month's upkeep resolution (Phase 6 item 7's "maintenance"). Not emitted for a Building whose upkeep
-/// was paid (no condition change) or whose condition was already <see
-/// cref="BuildingCondition.Ruined"/> before this tick (<see cref="BuildingInstance.ApplyUpkeep"/> is a
-/// no-op there).</summary>
+/// <summary>Emitted every month for every Building whose Definition authors upkeep lines and whose
+/// Holding's Stockpile could be resolved, whether or not upkeep was paid and whether or not <see
+/// cref="BuildingCondition"/> changed (Phase 6 item 8's "emit complete ledger-ready... consumption...
+/// events even before the economy consumes them") — this is the "consumption" half of that item, the
+/// counterpart to <see cref="ProductionResolvedEvent"/>'s inputs. <see
+/// cref="UpkeepLines"/> always carries the Definition's full authored upkeep; those quantities were
+/// actually consumed from the Stockpile when <see cref="Paid"/> is <see langword="true"/>, and were
+/// needed but left untouched when it is <see langword="false"/>.</summary>
 public sealed record BuildingUpkeepResolvedEvent(
     RuntimeId<DomainEventEntity> EventId,
     GameDate OccurredDate,
     RuntimeId<Building> BuildingId,
     RuntimeId<Holding> HoldingId,
     bool Paid,
+    IReadOnlyList<RecipeLine> UpkeepLines,
     BuildingCondition PreviousCondition,
     BuildingCondition NewCondition) : IDomainEvent
 {
     public string Type => "buildings.upkeepResolved";
-    public int SchemaVersion => 1;
+    public int SchemaVersion => 2;
     public IReadOnlyList<string> SubjectIds => new[] { BuildingId.ToTaggedString(), HoldingId.ToTaggedString() };
     public Visibility Visibility => Visibility.Public;
     public string? CausationId => null;
