@@ -59,14 +59,19 @@ public sealed class PopGroupTests
     }
 
     [Test]
-    public void CreateRejectsALegalStatusDistributionTotalExceedingSize()
+    public void CreateAllowsALegalStatusDistributionTotalExceedingSize()
     {
+        // PromoteToNamedCommand decrements Size without touching the distribution (PopGroup.cs's own
+        // doc comment), so a group that has had members promoted legitimately carries a distribution
+        // whose Total exceeds its current Size — Create must tolerate reloading that state from a save.
         var state = new WorldState(new GameDate(0));
         var settlementId = state.SettlementIds.Issue();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => PopGroup.Create(
+        var group = PopGroup.Create(
             settlementId, PopGroupType.Coloni, 5,
-            legalStatusDistribution: new LegalStatusDistribution(3, 3, 0, 0)));
+            legalStatusDistribution: new LegalStatusDistribution(3, 3, 0, 0));
+
+        Assert.That(group.LegalStatusDistribution.Total, Is.EqualTo(6));
     }
 
     [Test]

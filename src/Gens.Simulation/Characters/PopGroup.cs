@@ -35,8 +35,10 @@ public sealed record PopGroup
     /// <summary>The group's legal-status composition (§10, §15). Tracks composition among the
     /// group's free-status population rather than strictly partitioning every member — a member with
     /// a legal status outside the four tracked categories (e.g. an individual enslaved within an
-    /// otherwise-free group) is possible and simply isn't counted here, so <see
-    /// cref="LegalStatusDistribution.Total"/> may be less than <see cref="Size"/>.</summary>
+    /// otherwise-free group) is possible and simply isn't counted here, and <see
+    /// cref="PromoteToNamedCommand"/> decrements <see cref="Size"/> without updating this
+    /// distribution — so <see cref="LegalStatusDistribution.Total"/> may differ from <see
+    /// cref="Size"/> in either direction and is not validated against it.</summary>
     public required LegalStatusDistribution LegalStatusDistribution { get; init; }
 
     /// <summary>The group's culture (content-authored; same reference type as <see
@@ -97,10 +99,10 @@ public sealed record PopGroup
         if (distribution.Citizen < 0 || distribution.LatinRights < 0 || distribution.Peregrine < 0 || distribution.Freedman < 0)
             throw new ArgumentOutOfRangeException(
                 nameof(legalStatusDistribution), distribution, "A LegalStatusDistribution's counts cannot be negative.");
-        if (distribution.Total > size)
-            throw new ArgumentOutOfRangeException(
-                nameof(legalStatusDistribution), distribution,
-                "A LegalStatusDistribution's total cannot exceed the PopGroup's size.");
+        // Deliberately not validated against `size`: PromoteToNamedCommand decrements Size without
+        // touching the distribution (PopGroup.cs's own doc comment), so a group that has had members
+        // promoted legitimately carries a distribution whose Total exceeds its current Size until a
+        // later mobility/assimilation pass (Phase 7 items 4-6) starts maintaining both together.
         if (groupType == PopGroupType.NonHouseholdEnslaved && distribution != LegalStatusDistribution.Empty)
             throw new ArgumentException(
                 $"A {PopGroupType.NonHouseholdEnslaved} group's whole population is enslaved by group type; " +
