@@ -50,6 +50,21 @@ public static class CampaignBootstrapper
     /// for the same rule-8 reason.</summary>
     public const string CharacterPursuitOutcomeStreamName = "characters.pursuitOutcome";
 
+    /// <summary>The named random stream <see cref="Characters.GrowthMortalitySystem"/> reserves for its
+    /// monthly rounding roll (Phase 7 item 4), kept distinct from every other stream here for the same
+    /// rule-8 reason.</summary>
+    public const string PopGroupGrowthMortalityStreamName = "characters.popGroupGrowthMortality";
+
+    /// <summary>The named random stream <see cref="Characters.MigrationSystem"/> reserves for its
+    /// monthly emigration rounding roll (Phase 7 item 4), kept distinct from every other stream here
+    /// for the same rule-8 reason.</summary>
+    public const string PopGroupEmigrationStreamName = "characters.popGroupEmigration";
+
+    /// <summary>The named random stream <see cref="Characters.MigrationSystem"/> reserves for its
+    /// monthly immigration rounding roll (Phase 7 item 4), kept distinct from <see
+    /// cref="PopGroupEmigrationStreamName"/> for the same rule-8 reason.</summary>
+    public const string PopGroupImmigrationStreamName = "characters.popGroupImmigration";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -66,6 +81,9 @@ public static class CampaignBootstrapper
         streams.AddDerived(CharacterPromotionStreamName, config.Seed);
         streams.AddDerived(CharacterLaborFlightStreamName, config.Seed);
         streams.AddDerived(CharacterPursuitOutcomeStreamName, config.Seed);
+        streams.AddDerived(PopGroupGrowthMortalityStreamName, config.Seed);
+        streams.AddDerived(PopGroupEmigrationStreamName, config.Seed);
+        streams.AddDerived(PopGroupImmigrationStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

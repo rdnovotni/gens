@@ -85,7 +85,8 @@ public sealed record BuildingDefinition
         IEnumerable<StaffingSlot>? staffingSlots = null,
         ProductionRecipe? recipe = null,
         BuildingSector sector = BuildingSector.None,
-        int backgroundJobCapacity = 0)
+        int backgroundJobCapacity = 0,
+        int residentialCapacity = 0)
     {
         if (!Enum.IsDefined(typeof(BuildingTier), tier))
             throw new ArgumentOutOfRangeException(nameof(tier));
@@ -101,6 +102,8 @@ public sealed record BuildingDefinition
             throw new ArgumentException(
                 "A building with no background-economy sector cannot carry a positive background job capacity.",
                 nameof(backgroundJobCapacity));
+        if (residentialCapacity < 0)
+            throw new ArgumentOutOfRangeException(nameof(residentialCapacity), residentialCapacity, "Residential capacity cannot be negative.");
 
         Id = id;
         Tier = tier;
@@ -118,6 +121,7 @@ public sealed record BuildingDefinition
         Recipe = recipe;
         Sector = sector;
         BackgroundJobCapacity = backgroundJobCapacity;
+        ResidentialCapacity = residentialCapacity;
     }
 
     public DefinitionId<Building> Id { get; }
@@ -142,6 +146,16 @@ public sealed record BuildingDefinition
     /// cref="Sector"/>'s pop group (§4.1) — read by <see cref="Characters.JobCapacitySystem"/>. Zero
     /// for every <see cref="BuildingSector.None"/> building.</summary>
     public int BackgroundJobCapacity { get; }
+
+    /// <summary>How many residents this one completed building houses
+    /// (<c>gens-settlement-demographics-design.md</c> §7.1's Insulae/Domus urban housing stock) —
+    /// read by <see cref="Characters.HousingCapacitySystem"/>. Deliberately independent of <see
+    /// cref="Sector"/>/<see cref="BackgroundJobCapacity"/>: a residential building's mere existence
+    /// houses people regardless of which background-job sector (if any) it also happens to feed, so
+    /// no building-vs-sector coupling is enforced here the way <see cref="BackgroundJobCapacity"/>
+    /// requires a non-<see cref="BuildingSector.None"/> <see cref="Sector"/>. Zero for every building
+    /// definition authored before this field existed (no content currently defines an Insula/Domus).</summary>
+    public int ResidentialCapacity { get; }
 
     public bool Allows(Plot plot) =>
         plot is not null &&
