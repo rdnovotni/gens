@@ -1,4 +1,5 @@
 using Gens.Simulation.Characters;
+using Gens.Simulation.Numerics;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
@@ -153,6 +154,25 @@ public sealed class StateHasherTests
             new Relationship(10, BondTag.Friend, RelationshipOrigin.Encounter, reverse.Date, reverse.Date, null));
 
         Assert.That(StateHasher.Hash(forward), Is.Not.EqualTo(StateHasher.Hash(reverse)));
+    }
+
+    [Test]
+    public void DifferentPopGroupContentmentChangesTheHash()
+    {
+        var baseline = BuildState();
+        var settlementId = baseline.SettlementIds.Issue();
+        var key = new PopGroupKey(settlementId, PopGroupType.Coloni);
+        baseline.PopGroups.Add(key, PopGroup.Create(settlementId, PopGroupType.Coloni, 10));
+        var baselineHash = StateHasher.Hash(baseline);
+
+        var changed = BuildState();
+        var changedSettlementId = changed.SettlementIds.Issue();
+        var changedKey = new PopGroupKey(changedSettlementId, PopGroupType.Coloni);
+        changed.PopGroups.Add(
+            changedKey,
+            PopGroup.Create(changedSettlementId, PopGroupType.Coloni, 10, contentment: Fixed64.FromRaw(500_000)));
+
+        Assert.That(StateHasher.Hash(changed), Is.Not.EqualTo(baselineHash));
     }
 
     [Test]
