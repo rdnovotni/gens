@@ -30,4 +30,4 @@ This index closes Phase 1, Item 3 of the [Comprehensive Build Roadmap](../gens-c
 ## Relationship to the other Phase 1 artifacts
 
 - The [design authority registry](../../gens-design-authority-registry.md) is the map these ADRs were built from — each ADR's Context section cites the specific registry cluster or design-document section it grounds a decision in.
-- The [cross-system field ledger](../gens-cross-system-field-ledger.md) is this index's sibling deliverable (Phase 1, Item 4): it applies these ADRs' vocabulary (typed IDs, `Fixed64` rates, fidelity tiers, visibility) to the actual fields the vertical-slice design documents define, system by system.
+- The [cross-system field ledger](../gens-field-ledger.md) is this index's sibling deliverable (Phase 1, Item 4): it applies these ADRs' vocabulary (typed IDs, `Fixed64` rates, fidelity tiers, visibility) to the actual fields the vertical-slice design documents define, system by system.
