@@ -86,7 +86,8 @@ public sealed class ProductionSystem : IMonthlySystem<WorldState>
             if (!hasEveryInput)
             {
                 events.Add(new ProductionResolvedEvent(
-                    state.EventIds.Issue(), context.Date, building.Id, holdingId, ProductionOutcome.InputShortage));
+                    state.EventIds.Issue(), context.Date, building.Id, holdingId,
+                    ProductionOutcome.InputShortage, recipe.Inputs, recipe.Outputs));
                 continue;
             }
 
@@ -97,7 +98,8 @@ public sealed class ProductionSystem : IMonthlySystem<WorldState>
             if (totalOutputQuantity > stockpile.RemainingCapacity + totalInputQuantity)
             {
                 events.Add(new ProductionResolvedEvent(
-                    state.EventIds.Issue(), context.Date, building.Id, holdingId, ProductionOutcome.StorageFull));
+                    state.EventIds.Issue(), context.Date, building.Id, holdingId,
+                    ProductionOutcome.StorageFull, recipe.Inputs, recipe.Outputs));
                 continue;
             }
 
@@ -107,7 +109,8 @@ public sealed class ProductionSystem : IMonthlySystem<WorldState>
                 stockpile.Add(ResolveGood(line.GoodId), line.Quantity);
 
             events.Add(new ProductionResolvedEvent(
-                state.EventIds.Issue(), context.Date, building.Id, holdingId, ProductionOutcome.Produced));
+                state.EventIds.Issue(), context.Date, building.Id, holdingId,
+                ProductionOutcome.Produced, recipe.Inputs, recipe.Outputs));
         }
 
         return events;
@@ -122,16 +125,24 @@ public sealed class ProductionSystem : IMonthlySystem<WorldState>
 /// <summary>Emitted for every operational Building with a recipe, every month, whether or not
 /// production actually ran (Phase 6 item 8's "emit complete ledger-ready production... events even
 /// before the economy consumes them") — ledger-ready groundwork for a future Markets & Ledger system,
-/// matching <see cref="Characters.LaborOutputComputedEvent"/>'s identical "always emitted" convention.</summary>
+/// matching <see cref="Characters.LaborOutputComputedEvent"/>'s identical "always emitted" convention.
+/// <see cref="InputLines"/> and <see cref="OutputLines"/> always carry the recipe's full authored lines
+/// regardless of <see cref="Outcome"/> — production is all-or-nothing, so these are exactly the
+/// quantities that moved on <see cref="ProductionOutcome.Produced"/> and exactly the quantities that
+/// were needed (but did not move) on <see cref="ProductionOutcome.InputShortage"/> or <see
+/// cref="ProductionOutcome.StorageFull"/>. A ledger consumer needs the attempted flow in every case, not
+/// only the successful one.</summary>
 public sealed record ProductionResolvedEvent(
     RuntimeId<DomainEventEntity> EventId,
     GameDate OccurredDate,
     RuntimeId<Building> BuildingId,
     RuntimeId<Holding> HoldingId,
-    ProductionOutcome Outcome) : IDomainEvent
+    ProductionOutcome Outcome,
+    IReadOnlyList<RecipeLine> InputLines,
+    IReadOnlyList<RecipeLine> OutputLines) : IDomainEvent
 {
     public string Type => "buildings.productionResolved";
-    public int SchemaVersion => 1;
+    public int SchemaVersion => 2;
     public IReadOnlyList<string> SubjectIds => new[] { BuildingId.ToTaggedString(), HoldingId.ToTaggedString() };
     public Visibility Visibility => Visibility.Public;
     public string? CausationId => null;

@@ -38,6 +38,8 @@ public sealed class ProductionNetworkTests
             var resolved = (ProductionResolvedEvent)events.Single();
             Assert.That(resolved.Outcome, Is.EqualTo(ProductionOutcome.Produced));
             Assert.That(resolved.BuildingId, Is.EqualTo(pistrinum.Id));
+            Assert.That(resolved.InputLines.Single(), Is.EqualTo(new RecipeLine(GrainId, 1)));
+            Assert.That(resolved.OutputLines.Single(), Is.EqualTo(new RecipeLine(BreadId, 1)));
         });
     }
 
@@ -59,6 +61,9 @@ public sealed class ProductionNetworkTests
             Assert.That(stockpile.QuantityOf(BreadId), Is.Zero);
             var resolved = (ProductionResolvedEvent)events.Single();
             Assert.That(resolved.Outcome, Is.EqualTo(ProductionOutcome.InputShortage));
+            Assert.That(resolved.InputLines.Single(), Is.EqualTo(new RecipeLine(GrainId, 1)),
+                "A shortage still reports the lines that were needed, for the ledger.");
+            Assert.That(resolved.OutputLines.Single(), Is.EqualTo(new RecipeLine(BreadId, 1)));
         });
     }
 
@@ -136,6 +141,27 @@ public sealed class ProductionNetworkTests
     }
 
     [Test]
+    public void UnpaidUpkeepStillEmitsAConsumptionEventRecordingWhatWasNeeded()
+    {
+        var state = NewWorldState();
+        var (holdingId, plotId) = SetupHolding(state, capacity: 100);
+        var fabrica = new BuildingInstance(state.BuildingIds.Issue(), plotId, Fabrica());
+        state.Buildings.Add(fabrica.Id, fabrica);
+        // No iron in stock: upkeep (1 iron) cannot be paid.
+
+        var events = new MaintenanceSystem().Tick(state, Context(state));
+
+        var resolved = (BuildingUpkeepResolvedEvent)events.Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolved.Paid, Is.False);
+            Assert.That(resolved.UpkeepLines.Single(), Is.EqualTo(new RecipeLine(IronId, 1)));
+            Assert.That(resolved.PreviousCondition, Is.EqualTo(BuildingCondition.Pristine));
+            Assert.That(resolved.NewCondition, Is.Not.EqualTo(BuildingCondition.Pristine));
+        });
+    }
+
+    [Test]
     public void PaidUpkeepConsumesStockAndLeavesConditionUnchanged()
     {
         var state = NewWorldState();
@@ -151,7 +177,11 @@ public sealed class ProductionNetworkTests
         {
             Assert.That(stockpile.QuantityOf(IronId), Is.EqualTo(4));
             Assert.That(fabrica.Condition, Is.EqualTo(BuildingCondition.Pristine));
-            Assert.That(events, Is.Empty, "No condition change means no event.");
+            var resolved = (BuildingUpkeepResolvedEvent)events.Single();
+            Assert.That(resolved.Paid, Is.True);
+            Assert.That(resolved.UpkeepLines.Single(), Is.EqualTo(new RecipeLine(IronId, 1)));
+            Assert.That(resolved.PreviousCondition, Is.EqualTo(BuildingCondition.Pristine));
+            Assert.That(resolved.NewCondition, Is.EqualTo(BuildingCondition.Pristine));
         });
     }
 
@@ -167,8 +197,13 @@ public sealed class ProductionNetworkTests
         state.ConstructionSchedules.Add(holdingId, queue);
 
         var system = new ConstructionSystem();
-        Assert.That(system.Tick(state, Context(state)), Is.Empty, "Pistrinum's first construction month isn't the last one.");
+        var firstMonthEvents = system.Tick(state, Context(state));
         Assert.That(state.Buildings.Count, Is.Zero);
+        var progressed = (BuildingConstructionProgressedEvent)firstMonthEvents.Single();
+        Assert.That(progressed.HoldingId, Is.EqualTo(holdingId));
+        Assert.That(progressed.DefinitionId, Is.EqualTo(PistrinumId));
+        Assert.That(progressed.CompletedMonths, Is.EqualTo(1));
+        Assert.That(progressed.TotalMonths, Is.EqualTo(2));
 
         var events = system.Tick(state, Context(state));
 
