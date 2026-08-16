@@ -2,6 +2,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using NUnit.Framework;
 
 namespace Gens.Simulation.Tests.Buildings;
 
@@ -36,7 +37,7 @@ public sealed class BuildingSystemTests
             TerrainType.Hills, TerrainFeature.MineralDeposit, capacity: 2);
         var mine = new BuildingDefinition(MineId, BuildingTier.Tier1, 2, 1,
             allowedTerrain: new[] { TerrainType.Hills }, requiredFeatures: TerrainFeature.MineralDeposit);
-        var queue = new ConstructionQueue();
+        var queue = new ConstructionSchedule();
 
         queue.Enqueue(plot, mine, Array.Empty<BuildingInstance>());
         Assert.That(() => queue.Enqueue(plot, Smithy(), Array.Empty<BuildingInstance>()),
@@ -55,7 +56,7 @@ public sealed class BuildingSystemTests
         var plot = Plot.Create(RuntimeId<Plot>.Parse("plot_0000001"), RuntimeId<Settlement>.Parse("settlement_0000001"), capacity: 2);
         var first = new BuildingDefinition(new DefinitionId<Building>("field"), BuildingTier.Tier1, 2, 1);
         var second = new BuildingDefinition(new DefinitionId<Building>("shed"), BuildingTier.Tier1, 1, 1);
-        var queue = new ConstructionQueue();
+        var queue = new ConstructionSchedule();
         queue.Enqueue(plot, first, Array.Empty<BuildingInstance>());
         queue.Enqueue(plot, second, Array.Empty<BuildingInstance>());
 

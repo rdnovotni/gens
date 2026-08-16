@@ -133,7 +133,7 @@ public sealed class Stockpile
         return records;
     }
 
-    private IReadOnlyList<StockMovement> Remove(DefinitionId<Good> goodId, long quantity, GoodQuality? quality)
+    private List<StockMovement> Remove(DefinitionId<Good> goodId, long quantity, GoodQuality? quality)
     {
         var remaining = quantity;
         var removed = new List<StockMovement>();
@@ -164,7 +164,7 @@ public sealed class Stockpile
         var excessReservation = Math.Max(0, reserved - physical);
         var released = 0L;
         // Reservation IDs provide a stable priority: later ordinal IDs lose their claim first.
-        foreach (var pair in compatible.Reverse())
+        foreach (var pair in Enumerable.Reverse(compatible))
         {
             var reduction = Math.Min(pair.Value.Quantity, excessReservation);
             if (reduction == 0)

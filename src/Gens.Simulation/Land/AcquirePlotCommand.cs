@@ -52,7 +52,7 @@ public static class AcquirePlotCommands
             return PlotNotFound;
         if (string.IsNullOrWhiteSpace(command.NewOwnerId))
             return InvalidOwner;
-        if (!Enum.IsDefined(command.Method))
+        if (!Enum.IsDefined(typeof(AcquisitionMethod), command.Method))
             return InvalidMethod;
         if (plot.OwnerId is not null)
             return AlreadyOwned;
@@ -61,7 +61,7 @@ public static class AcquirePlotCommands
         return null;
     }
 
-    private static IReadOnlyList<IDomainEvent> Mutate(WorldState state, AcquirePlotCommand command)
+    private static IDomainEvent[] Mutate(WorldState state, AcquirePlotCommand command)
     {
         state.Plots.TryGet(command.PlotId, out var plot);
         state.Plots.Remove(command.PlotId);

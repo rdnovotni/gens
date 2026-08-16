@@ -1,0 +1,18 @@
+[
+  {
+    "id": "iron",
+    "status": "active",
+    "nameKey": "goods.iron.name",
+    "descriptionKey": "goods.iron.description",
+    "category": "raw-materials",
+    "basePrice": 0.8
+  },
+  {
+    "id": "tools",
+    "status": "active",
+    "nameKey": "goods.tools.name",
+    "descriptionKey": "goods.tools.description",
+    "category": "finished",
+    "basePrice": 2.4
+  }
+]

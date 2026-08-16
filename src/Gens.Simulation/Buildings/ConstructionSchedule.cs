@@ -13,12 +13,34 @@ public sealed record ConstructionProject(
 }
 
 /// <summary>FIFO construction with deterministic sequence numbers and validation at enqueue time.</summary>
-public sealed class ConstructionQueue
+public sealed class ConstructionSchedule
 {
     private readonly List<ConstructionProject> _projects = new();
     private long _nextSequence;
 
     public IReadOnlyList<ConstructionProject> Projects => _projects;
+
+    /// <summary>The sequence number the next <see cref="Enqueue"/> call will issue. Persist and
+    /// restore this for save compatibility (ADR 0010), matching <see
+    /// cref="Identity.RuntimeIdCounter{T}.Peek"/>'s identical convention.</summary>
+    public long NextSequence => _nextSequence;
+
+    /// <summary>Rebuilds a queue from persisted save data (ADR 0010), bypassing <see cref="Enqueue"/>'s
+    /// validation — the projects were already valid when saved, and re-validating against a
+    /// possibly-since-changed Plot would be a correctness bug, not a safety net (matching <see
+    /// cref="Identity.OrderedRegistry{TId,TEntity}.Restore"/>'s identical reasoning).</summary>
+    public static ConstructionSchedule Restore(long nextSequence, IEnumerable<ConstructionProject> projects)
+    {
+        if (nextSequence < 0)
+            throw new ArgumentOutOfRangeException(nameof(nextSequence), nextSequence, "A restored sequence cannot be negative.");
+        if (projects is null)
+            throw new ArgumentNullException(nameof(projects));
+
+        var queue = new ConstructionSchedule();
+        queue._nextSequence = nextSequence;
+        queue._projects.AddRange(projects);
+        return queue;
+    }
 
     public ConstructionProject Enqueue(
         Plot plot,

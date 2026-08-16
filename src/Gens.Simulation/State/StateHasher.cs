@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json;
+using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Goods;
 using Gens.Simulation.Land;
 
 namespace Gens.Simulation.State;
@@ -142,6 +144,126 @@ public static class StateHasher
                     hash = MixString(hash, room.AssignedTo ?? string.Empty);
                 }
             }
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Buildings.InAscendingOrder())
+            hash = MixBuilding(hash, entry.Value);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Stockpiles.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixStockpile(hash, entry.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ConstructionSchedules.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            foreach (var project in entry.Value.Projects)
+            {
+                hash = MixLong(hash, project.Sequence);
+                hash = MixLong(hash, project.PlotId.Value);
+                hash = MixBuildingDefinition(hash, project.Definition);
+                hash = MixLong(hash, project.CompletedMonths);
+            }
+        }
+
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="BuildingInstance"/>'s full state, in field-declaration order.</summary>
+    private static ulong MixBuilding(ulong hash, BuildingInstance building)
+    {
+        hash = MixLong(hash, building.Id.Value);
+        hash = MixLong(hash, building.PlotId.Value);
+        hash = MixBuildingDefinition(hash, building.Definition);
+        hash = MixLong(hash, (long)building.Condition);
+        // Already ordinal slot-ID order (ADR 0004) via BuildingInstance.Staff's SortedDictionary.
+        foreach (var (slotId, workers) in building.Staff)
+        {
+            hash = MixString(hash, slotId);
+            foreach (var workerId in workers)
+                hash = MixString(hash, workerId);
+        }
+
+        return hash;
+    }
+
+    /// <summary>Folds one content-authored <see cref="BuildingDefinition"/> — embedded inline on every
+    /// <see cref="BuildingInstance"/>/<see cref="Buildings.ConstructionProject"/> rather than
+    /// referenced by ID, matching <see cref="Saves.WorldStateMapper"/>'s identical reasoning.</summary>
+    private static ulong MixBuildingDefinition(ulong hash, BuildingDefinition definition)
+    {
+        hash = MixString(hash, definition.Id.Value);
+        hash = MixLong(hash, (long)definition.Tier);
+        hash = MixLong(hash, definition.ConstructionMonths);
+        hash = MixLong(hash, definition.PlotCapacity);
+        foreach (var prerequisite in definition.Prerequisites)
+            hash = MixString(hash, prerequisite.Value);
+        foreach (var terrain in definition.AllowedTerrain)
+            hash = MixLong(hash, (long)terrain);
+        hash = MixLong(hash, (long)definition.RequiredFeatures);
+        foreach (var line in definition.Upkeep)
+        {
+            hash = MixString(hash, line.GoodId.Value);
+            hash = MixLong(hash, line.Quantity);
+        }
+
+        foreach (var slot in definition.StaffingSlots)
+        {
+            hash = MixString(hash, slot.Id);
+            hash = MixLong(hash, slot.Capacity);
+            hash = MixLong(hash, slot.RequiredForProduction ? 1 : 0);
+        }
+
+        hash = MixLong(hash, definition.Recipe is null ? 0 : 1);
+        if (definition.Recipe is not null)
+        {
+            foreach (var line in definition.Recipe.Inputs)
+            {
+                hash = MixString(hash, line.GoodId.Value);
+                hash = MixLong(hash, line.Quantity);
+            }
+
+            foreach (var line in definition.Recipe.Outputs)
+            {
+                hash = MixString(hash, line.GoodId.Value);
+                hash = MixLong(hash, line.Quantity);
+            }
+        }
+
+        return hash;
+    }
+
+    /// <summary>Folds one Holding's <see cref="Stockpile"/> — lots in original list order (equal-age
+    /// tie-break order per that type's own doc comment), reservations in ordinal ID order.</summary>
+    private static ulong MixStockpile(ulong hash, Stockpile stockpile)
+    {
+        hash = MixLong(hash, stockpile.Capacity);
+        foreach (var lot in stockpile.Lots)
+        {
+            hash = MixString(hash, lot.Good.Id.Value);
+            hash = MixLong(hash, (long)lot.Good.Perishability);
+            hash = MixLong(hash, lot.Good.QualityEligible ? 1 : 0);
+            hash = MixLong(hash, lot.Good.ConditionTracked ? 1 : 0);
+            hash = MixLong(hash, lot.Good.ShelfLifeTicks ?? -1);
+            hash = MixLong(hash, lot.Quantity);
+            hash = MixLong(hash, lot.Quality is null ? -1L : (long)lot.Quality.Value);
+            hash = MixLong(hash, lot.Condition?.Value ?? -1);
+            hash = MixLong(hash, lot.AgeInTicks);
+            hash = MixString(hash, lot.Provenance?.SourceId ?? string.Empty);
+            hash = MixString(hash, lot.Provenance?.EventId ?? string.Empty);
+            hash = MixString(hash, lot.Provenance?.ExceptionalObjectId ?? string.Empty);
+        }
+
+        foreach (var reservation in stockpile.Reservations)
+        {
+            hash = MixString(hash, reservation.ReservationId);
+            hash = MixString(hash, reservation.GoodId.Value);
+            hash = MixLong(hash, reservation.Quality is null ? -1L : (long)reservation.Quality.Value);
+            hash = MixLong(hash, reservation.Quantity);
         }
 
         return hash;
