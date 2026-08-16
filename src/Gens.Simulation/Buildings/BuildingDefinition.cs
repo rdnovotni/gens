@@ -83,7 +83,9 @@ public sealed record BuildingDefinition
         TerrainFeature requiredFeatures = TerrainFeature.None,
         IEnumerable<RecipeLine>? upkeep = null,
         IEnumerable<StaffingSlot>? staffingSlots = null,
-        ProductionRecipe? recipe = null)
+        ProductionRecipe? recipe = null,
+        BuildingSector sector = BuildingSector.None,
+        int backgroundJobCapacity = 0)
     {
         if (!Enum.IsDefined(typeof(BuildingTier), tier))
             throw new ArgumentOutOfRangeException(nameof(tier));
@@ -91,6 +93,14 @@ public sealed record BuildingDefinition
             throw new ArgumentOutOfRangeException(nameof(constructionMonths), constructionMonths, "Construction time must be positive.");
         if (plotCapacity <= 0)
             throw new ArgumentOutOfRangeException(nameof(plotCapacity), plotCapacity, "Plot capacity use must be positive.");
+        if (!Enum.IsDefined(typeof(BuildingSector), sector))
+            throw new ArgumentOutOfRangeException(nameof(sector));
+        if (backgroundJobCapacity < 0)
+            throw new ArgumentOutOfRangeException(nameof(backgroundJobCapacity), backgroundJobCapacity, "Background job capacity cannot be negative.");
+        if (sector == BuildingSector.None && backgroundJobCapacity > 0)
+            throw new ArgumentException(
+                "A building with no background-economy sector cannot carry a positive background job capacity.",
+                nameof(backgroundJobCapacity));
 
         Id = id;
         Tier = tier;
@@ -106,6 +116,8 @@ public sealed record BuildingDefinition
         if (StaffingSlots.Select(slot => slot.Id).Distinct(StringComparer.Ordinal).Count() != StaffingSlots.Count)
             throw new ArgumentException("Staffing slot IDs must be unique.", nameof(staffingSlots));
         Recipe = recipe;
+        Sector = sector;
+        BackgroundJobCapacity = backgroundJobCapacity;
     }
 
     public DefinitionId<Building> Id { get; }
@@ -119,6 +131,17 @@ public sealed record BuildingDefinition
     public IReadOnlyList<RecipeLine> Upkeep { get; }
     public IReadOnlyList<StaffingSlot> StaffingSlots { get; }
     public ProductionRecipe? Recipe { get; }
+
+    /// <summary>The background-economy sector this building's investment counts toward
+    /// (<c>gens-settlement-demographics-design.md</c> §4.1), independent of <see cref="StaffingSlots"/>
+    /// — those are the player's own named staff, not the background job openings this building's mere
+    /// presence creates. <see cref="BuildingSector.None"/> means this building contributes none.</summary>
+    public BuildingSector Sector { get; }
+
+    /// <summary>How many background job slots this one completed building contributes to its <see
+    /// cref="Sector"/>'s pop group (§4.1) — read by <see cref="Characters.JobCapacitySystem"/>. Zero
+    /// for every <see cref="BuildingSector.None"/> building.</summary>
+    public int BackgroundJobCapacity { get; }
 
     public bool Allows(Plot plot) =>
         plot is not null &&
