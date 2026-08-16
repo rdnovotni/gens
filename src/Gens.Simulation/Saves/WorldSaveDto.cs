@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Ledger;
 using Gens.Simulation.Numerics;
 
 namespace Gens.Simulation.Saves;
@@ -105,6 +106,24 @@ public sealed record WorldSaveDocument
     /// cref="Regions"/>: a pre-Phase-6-item-7 save never had any construction queues provisioned.</summary>
     [JsonPropertyOrder(16)]
     public IReadOnlyList<ConstructionScheduleDto> ConstructionSchedules { get; init; } = Array.Empty<ConstructionScheduleDto>();
+
+    /// <summary>Every <see cref="Ledger.LedgerAccount"/> (Phase 8 items 1-2), already in ascending
+    /// <see cref="Ledger.LedgerAccountKey"/> order. Not <c>required</c>, and defaults to empty — no
+    /// pre-Phase-8 save ever had a ledger, matching ADR 0011's additive-only policy.</summary>
+    [JsonPropertyOrder(17)]
+    public IReadOnlyList<LedgerAccountDto> LedgerAccounts { get; init; } = Array.Empty<LedgerAccountDto>();
+
+    /// <summary>Every posted <see cref="Ledger.LedgerTransaction"/> (Phase 8 item 1), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="LedgerAccounts"/>.</summary>
+    [JsonPropertyOrder(18)]
+    public IReadOnlyList<LedgerTransactionDto> LedgerTransactions { get; init; } = Array.Empty<LedgerTransactionDto>();
+
+    /// <summary>Every cleared <see cref="Markets.SettlementMarket"/> (Phase 8 items 3-4), already in
+    /// ascending <see cref="Markets.MarketGoodKey"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="LedgerAccounts"/>.</summary>
+    [JsonPropertyOrder(19)]
+    public IReadOnlyList<SettlementMarketDto> MarketPrices { get; init; } = Array.Empty<SettlementMarketDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -154,6 +173,11 @@ public sealed record CounterSetDto
     /// without this field.</summary>
     [JsonPropertyOrder(12)]
     public long HoldingIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-8 save has no ledger transactions.
+    /// Additive-only per ADR 0011's policy, matching <see cref="HoldingIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(13)]
+    public long LedgerTransactionIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -968,4 +992,77 @@ public sealed record StockpileDto
 
     [JsonPropertyOrder(3)]
     public IReadOnlyList<StockReservationDto> Reservations { get; init; } = Array.Empty<StockReservationDto>();
+}
+
+/// <summary>One <see cref="Ledger.LedgerAccount"/> (Phase 8 items 1-2).</summary>
+public sealed record LedgerAccountDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Kind { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string OwnerId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required Money Balance { get; init; }
+}
+
+/// <summary>One <see cref="Ledger.LedgerPosting"/>, part of <see cref="LedgerTransactionDto"/>.</summary>
+public sealed record LedgerPostingDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Kind { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string OwnerId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required Money Amount { get; init; }
+}
+
+/// <summary>One posted <see cref="Ledger.LedgerTransaction"/> (Phase 8 item 1).</summary>
+public sealed record LedgerTransactionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int OccurredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Category { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required IReadOnlyList<LedgerPostingDto> Postings { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? Reference { get; init; }
+}
+
+/// <summary>One cleared <see cref="Markets.SettlementMarket"/> (Phase 8 items 3-4).</summary>
+public sealed record SettlementMarketDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string GoodId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required Money Price { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required Money PreviousPrice { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required long Supply { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required long Demand { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required long ClearedQuantity { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required long UnsatisfiedDemand { get; init; }
 }

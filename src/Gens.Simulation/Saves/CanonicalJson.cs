@@ -31,6 +31,7 @@ public static class CanonicalJson
         Converters =
         {
             new Fixed64JsonConverter(),
+            new MoneyJsonConverter(),
             new GameDateJsonConverter(),
             new Pcg32StateJsonConverter(),
             new RuntimeIdJsonConverterFactory(),
