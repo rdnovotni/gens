@@ -37,21 +37,14 @@ namespace Gens.Simulation.Characters;
 /// cref="Settlement.Stage"/> alone rather than "Dignitas/stage" (§4.1): no Dignitas field exists yet
 /// anywhere in this codebase (open question P35's cross-reference), so Stage is the only half of that
 /// pair currently available.
+///
+/// The actual sector-summing and Curiales math lives in <see cref="BackgroundJobCapacityCalculator"/>
+/// (factored out for Phase 7 item 3) so <see cref="EmploymentMatchingSystem"/> can read the same exact
+/// slot counts this system uses, rather than back-deriving them from <see
+/// cref="PopGroup.EmploymentRatio"/>'s rounded ratio.
 /// </summary>
 public sealed class JobCapacitySystem : IMonthlySystem<WorldState>
 {
-    /// <summary>Curiales capacity as a fraction of total settlement population, in basis points (parts
-    /// per 1,000), rising with <see cref="SettlementStage"/> — a modest, growing pool of upward-mobility
-    /// slots as a settlement matures, standing in for "Dignitas/stage" until Dignitas exists.</summary>
-    private static readonly Dictionary<SettlementStage, int> CurialesBasisPoints =
-        new Dictionary<SettlementStage, int>
-        {
-            [SettlementStage.Villa] = 20,
-            [SettlementStage.Vicus] = 30,
-            [SettlementStage.Town] = 50,
-            [SettlementStage.City] = 80,
-        };
-
     public string Id => "characters.jobCapacity";
     public TickPhase Phase => TickPhase.EmploymentNeeds;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "buildings", "plots", "settlements", "popGroups" };
@@ -67,7 +60,7 @@ public sealed class JobCapacitySystem : IMonthlySystem<WorldState>
             throw new ArgumentNullException(nameof(state));
 
         var events = new List<IDomainEvent>();
-        var capacityBySettlement = SumBuildingCapacityBySettlement(state);
+        var capacityBySettlement = BackgroundJobCapacityCalculator.SumBuildingCapacityBySettlement(state);
 
         foreach (var settlementEntry in state.Settlements.InAscendingOrder().ToArray())
         {
@@ -75,35 +68,18 @@ public sealed class JobCapacitySystem : IMonthlySystem<WorldState>
             var settlement = settlementEntry.Value;
             capacityBySettlement.TryGetValue(settlementId, out var sectorCapacity);
 
-            // Every sector-driven group always gets an entry, even at zero — a settlement that lost
-            // its last Agriculture building must see Coloni capacity drop to zero, not silently keep
-            // whatever ratio a now-vanished building last produced.
-            var capacityByGroup = new Dictionary<PopGroupType, int>
-            {
-                [PopGroupType.Coloni] = 0,
-                [PopGroupType.Operarii] = 0,
-                [PopGroupType.Opifices] = 0,
-                [PopGroupType.Negotiatores] = 0,
-                [PopGroupType.Aeditui] = 0,
-            };
-            if (sectorCapacity is not null)
-            {
-                foreach (var (sector, slots) in sectorCapacity)
-                {
-                    if (PrimaryGroupFor(sector) is { } primaryGroup)
-                        AddCapacity(capacityByGroup, primaryGroup, slots);
-                    if (sector == BuildingSector.Commerce)
-                        AddCapacity(capacityByGroup, PopGroupType.Operarii, slots);
-                }
-            }
-
             var totalPopulation = 0;
             foreach (var popGroupEntry in state.PopGroups.InAscendingOrder())
             {
                 if (popGroupEntry.Key.SettlementId == settlementId)
                     totalPopulation += popGroupEntry.Value.Size;
             }
-            capacityByGroup[PopGroupType.Curiales] = CurialesCapacity(totalPopulation, settlement.Stage);
+
+            // Every sector-driven group always gets an entry, even at zero — a settlement that lost
+            // its last Agriculture building must see Coloni capacity drop to zero, not silently keep
+            // whatever ratio a now-vanished building last produced.
+            var capacityByGroup = BackgroundJobCapacityCalculator.ComputeCapacityByGroup(
+                sectorCapacity, totalPopulation, settlement.Stage);
 
             foreach (var (groupType, capacity) in capacityByGroup)
             {
@@ -130,50 +106,6 @@ public sealed class JobCapacitySystem : IMonthlySystem<WorldState>
 
         return events;
     }
-
-    private static Dictionary<RuntimeId<Settlement>, Dictionary<BuildingSector, int>> SumBuildingCapacityBySettlement(WorldState state)
-    {
-        var result = new Dictionary<RuntimeId<Settlement>, Dictionary<BuildingSector, int>>();
-
-        foreach (var entry in state.Buildings.InAscendingOrder())
-        {
-            var building = entry.Value;
-            if (building.Condition == BuildingCondition.Ruined)
-                continue;
-            if (building.Definition.Sector == BuildingSector.None || building.Definition.BackgroundJobCapacity == 0)
-                continue;
-            if (!state.Plots.TryGet(building.PlotId, out var plot))
-                continue;
-
-            if (!result.TryGetValue(plot.SettlementId, out var bySector))
-            {
-                bySector = new Dictionary<BuildingSector, int>();
-                result[plot.SettlementId] = bySector;
-            }
-
-            AddCapacity(bySector, building.Definition.Sector, building.Definition.BackgroundJobCapacity);
-        }
-
-        return result;
-    }
-
-    private static void AddCapacity<TKey>(Dictionary<TKey, int> capacity, TKey key, int slots) where TKey : notnull
-    {
-        capacity.TryGetValue(key, out var existing);
-        capacity[key] = existing + slots;
-    }
-
-    private static PopGroupType? PrimaryGroupFor(BuildingSector sector) => sector switch
-    {
-        BuildingSector.Agriculture => PopGroupType.Coloni,
-        BuildingSector.Industry => PopGroupType.Opifices,
-        BuildingSector.Commerce => PopGroupType.Negotiatores,
-        BuildingSector.Religion => PopGroupType.Aeditui,
-        _ => null,
-    };
-
-    private static int CurialesCapacity(int totalPopulation, SettlementStage stage) =>
-        (int)((long)totalPopulation * CurialesBasisPoints[stage] / 1000);
 }
 
 /// <summary>One Settlement's computed background job capacity for one pop group this month (§4.1/§4.2),
@@ -181,7 +113,7 @@ public sealed class JobCapacitySystem : IMonthlySystem<WorldState>
 public sealed record BackgroundJobCapacityLine(PopGroupType GroupType, int AvailableSlots);
 
 /// <summary>Emitted for every Settlement, every month, whether or not any capacity changed — ledger-ready
-/// groundwork for the employment-matching system Phase 7 item 3 will add, matching <see
+/// groundwork <see cref="EmploymentMatchingSystem"/> (Phase 7 item 3) builds on, matching <see
 /// cref="Buildings.ProductionResolvedEvent"/>'s and <see cref="LaborOutputComputedEvent"/>'s identical
 /// "always emitted" convention.</summary>
 public sealed record BackgroundJobCapacityComputedEvent(
