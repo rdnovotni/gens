@@ -52,21 +52,25 @@ The merged [framework pull request](https://github.com/rdnovotni/gens/pull/5) ad
 
 The [design index](../design/README.md) links 110 design documents (111 files under `docs/design/` including the index itself), totaling approximately 384,000 words and 24,800 lines as of this revision (excluding the index file itself). The design is broad and rich; it is not yet an engineering contract.
 
-### What does not exist yet
+### What does not exist yet (as of the original audit)
 
-There is no authoritative `WorldState`, campaign bootstrap, historical date conversion, entity-ID model, deterministic collection policy, transaction/change-set model, event envelope, query/read-model layer, save writer/reader, migration runner, substantive content schema, headless simulation executable, gameplay system, Unity scene, UI document, or player loop.
+At the audit point there was no authoritative `WorldState`, campaign bootstrap, historical date conversion, entity-ID model, deterministic collection policy, transaction/change-set model, event envelope, query/read-model layer, save writer/reader, migration runner, substantive content schema, headless simulation executable, gameplay system, Unity scene, UI document, or player loop.
 
-The authored content catalog contains only `status.placeholder`. The JSON Schema requires only an `id` and permits every other property. The benchmark measures 10,000 random draws rather than a monthly tick. The save code declares names and a version but does not serialize or migrate a campaign. The art-provider seam is intentionally disconnected from gameplay.
+The authored content catalog contained only `status.placeholder`. The JSON Schema required only an `id` and permitted every other property. The benchmark measured 10,000 random draws rather than a monthly tick. The save code declared names and a version but did not serialize or migrate a campaign. The art-provider seam was intentionally disconnected from gameplay.
 
-### Immediate red condition
+**This has since changed.** Phases 0–6 (see "Detailed roadmap" below) have since been implemented and merged: `WorldState`, typed IDs, epoch-aware `GameDate`, phased ticks, command/event envelopes, RNG stream registry, canonical save serialization with migrations, typed content-definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation), a headless campaign bootstrap and console runner, `Character`/Familia lifecycle, and region/settlement/plot/holding, stockpiles, buildings, villas, labor, and a production network with ledger-ready event emission. The player loop, ledger/market, and everything from Phase 7 onward remain unbuilt. Treat the assessment table below as the state at the original audit point, not the current state — see "Detailed roadmap" for what has been completed since.
 
-The originally reported ambiguity between NUnit's and FsCheck's `Property` attribute in `Pcg32Tests.cs` is resolved in source: both property tests now fully qualify the attribute as `[FsCheck.NUnit.Property]`. Standalone CI on `main` is nonetheless still red as of this revision ([latest run](https://github.com/rdnovotni/gens/actions/runs/31523750160)): the `standalone` job fails `dotnet build` on unrelated analyzer/compile errors (`CA1869`, `CA1861`, `CA1050`, and a `CS1061` on `.ToProperty()` that suggests the FsCheck API surface used no longer matches the referenced package version), and the `content` job fails at content-schema validation. Re-check current CI status before treating either job as fixed; both need their own diagnosis distinct from the original `Property`-ambiguity report.
+### CI status
 
-The current workflow also runs only standalone .NET validation. It does not yet perform the Unity EditMode, PlayMode, UI, content-migration, save-fixture, deterministic-replay, or Unity-build checks promised by the technical baseline.
+The originally reported ambiguity between NUnit's and FsCheck's `Property` attribute in `Pcg32Tests.cs` is resolved in source: both property tests fully qualify the attribute as `[FsCheck.NUnit.Property]`. Both the `standalone` and `content` jobs are green on `main` as of this revision (latest run on commit `e33deb2`, 16 August 2026): `dotnet format`, `dotnet build`/`dotnet test` in Release, the skeleton benchmark, the deterministic-build check, content validation/compilation, and the run-campaign → verify-save → migrate-save → replay exit-gate smoke test all pass from a clean clone. Re-check current CI status before relying on this snapshot, but as of this revision there is no outstanding red condition.
 
-### Skeleton assessment
+The workflow still runs only standalone .NET validation. It does not yet perform the Unity EditMode, PlayMode, UI, or Unity-build checks promised by the technical baseline (content-migration, save-fixture, and deterministic-replay checks are now covered by the `content` job's exit-gate smoke test).
 
-| Area | Status | Assessment |
+### Skeleton assessment (original audit point)
+
+This table reflects the state at the original audit commit, not the current state. See "Detailed roadmap" below for what Phases 0–6 have since delivered (green CI, `WorldState`/command/event envelopes, epoch-aware time, canonical saves with migrations, typed content families, headless campaign, characters/Familia, and land/goods/buildings/labor/production).
+
+| Area | Status at audit | Assessment |
 | --- | --- | --- |
 | Stack selection | Settled | Keep Unity 6.3 LTS + pure C# simulation. Do not reopen the engine decision. |
 | Repository structure | Good early baseline | Source, tests, tools, content, benchmarks, design, and Unity paths are sensibly separated. |
@@ -152,7 +156,7 @@ Construction order:
    - `gens-activities-activity-engine-design.md` owns multi-phase hosted activities;
    - `gens-events-design.md` owns triggered event delivery and chains.
 3. Create architecture decision records for IDs, fixed-point arithmetic, time/epoch, tick phases, event envelopes, command atomicity, deterministic collection ordering, visibility/knowledge, fidelity tiers, save serialization, migrations, content versioning, and UI projection boundaries.
-4. Create a cross-system field ledger: field name, type, units, range, owner, readers, writers, persistence, visibility, and migration policy.
+4. Create a cross-system field ledger: field name, type, units, range, owner, readers, writers, persistence, visibility, and migration policy. See `docs/engineering/gens-field-ledger.md`.
 5. Convert open questions into three queues:
    - **structural blockers** required before coding a system;
    - **slice tuning** required before its first playable version;
