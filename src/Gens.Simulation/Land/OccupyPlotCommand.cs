@@ -55,7 +55,7 @@ public static class OccupyPlotCommands
         return null;
     }
 
-    private static IReadOnlyList<IDomainEvent> Mutate(WorldState state, OccupyPlotCommand command)
+    private static IDomainEvent[] Mutate(WorldState state, OccupyPlotCommand command)
     {
         state.Plots.TryGet(command.PlotId, out var plot);
         state.Plots.Remove(command.PlotId);

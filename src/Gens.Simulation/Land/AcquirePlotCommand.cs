@@ -61,7 +61,7 @@ public static class AcquirePlotCommands
         return null;
     }
 
-    private static IReadOnlyList<IDomainEvent> Mutate(WorldState state, AcquirePlotCommand command)
+    private static IDomainEvent[] Mutate(WorldState state, AcquirePlotCommand command)
     {
         state.Plots.TryGet(command.PlotId, out var plot);
         state.Plots.Remove(command.PlotId);

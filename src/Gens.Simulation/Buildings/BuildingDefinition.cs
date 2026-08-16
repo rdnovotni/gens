@@ -38,7 +38,7 @@ public sealed record ProductionRecipe
     public IReadOnlyList<RecipeLine> Inputs { get; }
     public IReadOnlyList<RecipeLine> Outputs { get; }
 
-    private static IReadOnlyList<RecipeLine> Normalize(IEnumerable<RecipeLine> lines, string name, bool allowEmpty)
+    private static RecipeLine[] Normalize(IEnumerable<RecipeLine> lines, string name, bool allowEmpty)
     {
         if (lines is null)
             throw new ArgumentNullException(name);
@@ -125,10 +125,10 @@ public sealed record BuildingDefinition
         (AllowedTerrain.Count == 0 || AllowedTerrain.Contains(plot.Terrain)) &&
         (plot.Features & RequiredFeatures) == RequiredFeatures;
 
-    private static IReadOnlyList<DefinitionId<Building>> DistinctSorted(IEnumerable<DefinitionId<Building>> values) =>
+    private static DefinitionId<Building>[] DistinctSorted(IEnumerable<DefinitionId<Building>> values) =>
         values.Distinct().OrderBy(value => value.Value, StringComparer.Ordinal).ToArray();
 
-    private static IReadOnlyList<RecipeLine> NormalizeLines(IEnumerable<RecipeLine> values, string name)
+    private static RecipeLine[] NormalizeLines(IEnumerable<RecipeLine> values, string name)
     {
         var lines = values.OrderBy(value => value.GoodId.Value, StringComparer.Ordinal).ToArray();
         if (lines.Select(line => line.GoodId).Distinct().Count() != lines.Length)

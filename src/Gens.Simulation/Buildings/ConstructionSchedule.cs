@@ -13,7 +13,7 @@ public sealed record ConstructionProject(
 }
 
 /// <summary>FIFO construction with deterministic sequence numbers and validation at enqueue time.</summary>
-public sealed class ConstructionQueue
+public sealed class ConstructionSchedule
 {
     private readonly List<ConstructionProject> _projects = new();
     private long _nextSequence;
@@ -29,14 +29,14 @@ public sealed class ConstructionQueue
     /// validation — the projects were already valid when saved, and re-validating against a
     /// possibly-since-changed Plot would be a correctness bug, not a safety net (matching <see
     /// cref="Identity.OrderedRegistry{TId,TEntity}.Restore"/>'s identical reasoning).</summary>
-    public static ConstructionQueue Restore(long nextSequence, IEnumerable<ConstructionProject> projects)
+    public static ConstructionSchedule Restore(long nextSequence, IEnumerable<ConstructionProject> projects)
     {
         if (nextSequence < 0)
             throw new ArgumentOutOfRangeException(nameof(nextSequence), nextSequence, "A restored sequence cannot be negative.");
         if (projects is null)
             throw new ArgumentNullException(nameof(projects));
 
-        var queue = new ConstructionQueue();
+        var queue = new ConstructionSchedule();
         queue._nextSequence = nextSequence;
         queue._projects.AddRange(projects);
         return queue;

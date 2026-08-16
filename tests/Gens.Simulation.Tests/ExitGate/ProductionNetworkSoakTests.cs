@@ -19,7 +19,7 @@ namespace Gens.Simulation.Tests.ExitGate;
 /// cref="EstateChainFixtures"/>'s compact chains end to end through <see cref="ConstructionSystem"/>,
 /// <see cref="MaintenanceSystem"/>, and <see cref="ProductionSystem"/> — a raw good producer plus a
 /// converter for each of Grain/Bread, Iron/Tools, and Wool/Textiles, sharing one bounded <see
-/// cref="Stockpile"/> and one <see cref="ConstructionQueue"/>, exactly as Phase 6 item 7 specifies.
+/// cref="Stockpile"/> and one <see cref="ConstructionSchedule"/>, exactly as Phase 6 item 7 specifies.
 /// </summary>
 public sealed class ProductionNetworkSoakTests
 {
@@ -85,7 +85,7 @@ public sealed class ProductionNetworkSoakTests
             // Every stockpile quantity stays inside the storage constraint at every point by
             // construction (Stockpile.Add itself throws otherwise), and the queue drained completely.
             Assert.That(stockpile.RemainingCapacity, Is.GreaterThanOrEqualTo(0));
-            state.ConstructionQueues.TryGet(holdingId, out var queue);
+            state.ConstructionSchedules.TryGet(holdingId, out var queue);
             Assert.That(queue.Projects, Is.Empty, "All six chain buildings must have finished construction.");
         });
     }
@@ -151,7 +151,7 @@ public sealed class ProductionNetworkSoakTests
         // stall the soak run, small enough to remain a real "storage constraint" rather than infinite.
         state.Stockpiles.Add(holdingId, new Stockpile(5_000));
 
-        var queue = new ConstructionQueue();
+        var queue = new ConstructionSchedule();
         state.Plots.TryGet(plotId, out var freshPlot);
         var completed = Array.Empty<BuildingInstance>();
         queue.Enqueue(freshPlot, Ager(), completed);
@@ -165,7 +165,7 @@ public sealed class ProductionNetworkSoakTests
         queue.Enqueue(freshPlot, Fabrica(), new[] { ferrariaPlaceholder });
         queue.Enqueue(freshPlot, Ovile(), completed);
         queue.Enqueue(freshPlot, Textrinum(), completed);
-        state.ConstructionQueues.Add(holdingId, queue);
+        state.ConstructionSchedules.Add(holdingId, queue);
 
         return (holdingId, plotId);
     }

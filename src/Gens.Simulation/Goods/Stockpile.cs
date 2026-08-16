@@ -133,7 +133,7 @@ public sealed class Stockpile
         return records;
     }
 
-    private IReadOnlyList<StockMovement> Remove(DefinitionId<Good> goodId, long quantity, GoodQuality? quality)
+    private List<StockMovement> Remove(DefinitionId<Good> goodId, long quantity, GoodQuality? quality)
     {
         var remaining = quantity;
         var removed = new List<StockMovement>();

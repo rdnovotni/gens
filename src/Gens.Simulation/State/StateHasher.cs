@@ -158,7 +158,7 @@ public static class StateHasher
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
-        foreach (var entry in state.ConstructionQueues.InAscendingOrder())
+        foreach (var entry in state.ConstructionSchedules.InAscendingOrder())
         {
             hash = MixLong(hash, entry.Key.Value);
             foreach (var project in entry.Value.Projects)

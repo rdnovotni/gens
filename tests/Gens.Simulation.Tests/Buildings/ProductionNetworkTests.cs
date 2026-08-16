@@ -161,10 +161,10 @@ public sealed class ProductionNetworkTests
         var state = NewWorldState();
         var (holdingId, plotId) = SetupHolding(state, capacity: 100);
         state.Plots.TryGet(plotId, out var plot);
-        var queue = new ConstructionQueue();
+        var queue = new ConstructionSchedule();
         queue.Enqueue(plot, Pistrinum(), Array.Empty<BuildingInstance>()); // 2 construction months
 
-        state.ConstructionQueues.Add(holdingId, queue);
+        state.ConstructionSchedules.Add(holdingId, queue);
 
         var system = new ConstructionSystem();
         Assert.That(system.Tick(state, Context(state)), Is.Empty, "Pistrinum's first construction month isn't the last one.");
@@ -194,9 +194,9 @@ public sealed class ProductionNetworkTests
         state.Holdings.Remove(holdingId);
         state.Holdings.Add(holdingId, holding);
 
-        var queue = new ConstructionQueue();
+        var queue = new ConstructionSchedule();
         queue.Enqueue(plot, Ovile(), Array.Empty<BuildingInstance>());
-        state.ConstructionQueues.Add(holdingId, queue);
+        state.ConstructionSchedules.Add(holdingId, queue);
 
         var system = new ConstructionSystem();
         // No living Character belongs to `householdId`, so labor is unavailable this tick.
@@ -211,9 +211,9 @@ public sealed class ProductionNetworkTests
         var (holdingId, plotId) = SetupHolding(state, capacity: 100);
         state.Plots.TryGet(plotId, out var plot);
 
-        var queue = new ConstructionQueue();
+        var queue = new ConstructionSchedule();
         queue.Enqueue(plot, Ager(), Array.Empty<BuildingInstance>());
-        state.ConstructionQueues.Add(holdingId, queue);
+        state.ConstructionSchedules.Add(holdingId, queue);
 
         var construction = new ConstructionSystem();
         var maintenance = new MaintenanceSystem();

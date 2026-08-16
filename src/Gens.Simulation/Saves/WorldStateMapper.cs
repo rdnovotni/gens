@@ -64,8 +64,8 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             Stockpiles = state.Stockpiles.InAscendingOrder().Select(entry => ToStockpileDto(entry.Key, entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
-            ConstructionQueues = state.ConstructionQueues.InAscendingOrder()
-                .Select(entry => ToConstructionQueueDto(entry.Key, entry.Value)).ToArray(),
+            ConstructionSchedules = state.ConstructionSchedules.InAscendingOrder()
+                .Select(entry => ToConstructionScheduleDto(entry.Key, entry.Value)).ToArray(),
         };
     }
 
@@ -134,9 +134,9 @@ public static class WorldStateMapper
             dto.Stockpiles.Select(s => new KeyValuePair<RuntimeId<Holding>, Stockpile>(
                 RuntimeId<Holding>.Parse(s.HoldingId), FromStockpileDto(s))));
 
-        var constructionQueues = OrderedRegistry<RuntimeId<Holding>, ConstructionQueue>.Restore(
-            dto.ConstructionQueues.Select(q => new KeyValuePair<RuntimeId<Holding>, ConstructionQueue>(
-                RuntimeId<Holding>.Parse(q.HoldingId), FromConstructionQueueDto(q))));
+        var constructionSchedules = OrderedRegistry<RuntimeId<Holding>, ConstructionSchedule>.Restore(
+            dto.ConstructionSchedules.Select(q => new KeyValuePair<RuntimeId<Holding>, ConstructionSchedule>(
+                RuntimeId<Holding>.Parse(q.HoldingId), FromConstructionScheduleDto(q))));
 
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
@@ -164,7 +164,7 @@ public static class WorldStateMapper
             householdRegimenDefaults: householdRegimenDefaults,
             buildings: buildings,
             stockpiles: stockpiles,
-            constructionQueues: constructionQueues,
+            constructionSchedules: constructionSchedules,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -689,16 +689,16 @@ public static class WorldStateMapper
     private static ConstructionProject FromConstructionProjectDto(ConstructionProjectDto dto) => new(
         dto.Sequence, RuntimeId<Plot>.Parse(dto.PlotId), FromBuildingDefinitionDto(dto.Definition), dto.CompletedMonths);
 
-    private static ConstructionQueueDto ToConstructionQueueDto(RuntimeId<Holding> holdingId, ConstructionQueue queue) => new()
+    private static ConstructionScheduleDto ToConstructionScheduleDto(RuntimeId<Holding> holdingId, ConstructionSchedule queue) => new()
     {
         HoldingId = holdingId.ToTaggedString(),
         NextSequence = queue.NextSequence,
-        // Already FIFO order (ADR 0004) via ConstructionQueue.Projects.
+        // Already FIFO order (ADR 0004) via ConstructionSchedule.Projects.
         Projects = queue.Projects.Select(ToConstructionProjectDto).ToArray(),
     };
 
-    private static ConstructionQueue FromConstructionQueueDto(ConstructionQueueDto dto) =>
-        ConstructionQueue.Restore(dto.NextSequence, dto.Projects.Select(FromConstructionProjectDto));
+    private static ConstructionSchedule FromConstructionScheduleDto(ConstructionScheduleDto dto) =>
+        ConstructionSchedule.Restore(dto.NextSequence, dto.Projects.Select(FromConstructionProjectDto));
 
     private static GoodDefinitionDto ToGoodDefinitionDto(GoodDefinition good) => new()
     {

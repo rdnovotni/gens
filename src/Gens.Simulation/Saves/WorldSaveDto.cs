@@ -99,11 +99,11 @@ public sealed record WorldSaveDocument
     [JsonPropertyOrder(15)]
     public IReadOnlyList<StockpileDto> Stockpiles { get; init; } = Array.Empty<StockpileDto>();
 
-    /// <summary>Every Holding's <see cref="Buildings.ConstructionQueue"/> (Phase 6 item 7), keyed by
+    /// <summary>Every Holding's <see cref="Buildings.ConstructionSchedule"/> (Phase 6 item 7), keyed by
     /// Holding. Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
     /// cref="Regions"/>: a pre-Phase-6-item-7 save never had any construction queues provisioned.</summary>
     [JsonPropertyOrder(16)]
-    public IReadOnlyList<ConstructionQueueDto> ConstructionQueues { get; init; } = Array.Empty<ConstructionQueueDto>();
+    public IReadOnlyList<ConstructionScheduleDto> ConstructionSchedules { get; init; } = Array.Empty<ConstructionScheduleDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -831,9 +831,9 @@ public sealed record ConstructionProjectDto
     public required int CompletedMonths { get; init; }
 }
 
-/// <summary>One Holding's <see cref="Buildings.ConstructionQueue"/> (Phase 6 item 7's "one
+/// <summary>One Holding's <see cref="Buildings.ConstructionSchedule"/> (Phase 6 item 7's "one
 /// construction queue").</summary>
-public sealed record ConstructionQueueDto
+public sealed record ConstructionScheduleDto
 {
     [JsonPropertyOrder(0)]
     public required string HoldingId { get; init; }

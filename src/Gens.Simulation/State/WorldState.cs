@@ -54,7 +54,7 @@ public sealed class WorldState
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
         OrderedRegistry<RuntimeId<Building>, BuildingInstance> buildings,
         OrderedRegistry<RuntimeId<Holding>, Stockpile> stockpiles,
-        OrderedRegistry<RuntimeId<Holding>, ConstructionQueue> constructionQueues,
+        OrderedRegistry<RuntimeId<Holding>, ConstructionSchedule> constructionSchedules,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -83,7 +83,7 @@ public sealed class WorldState
         HouseholdRegimenDefaults = householdRegimenDefaults;
         Buildings = buildings;
         Stockpiles = stockpiles;
-        ConstructionQueues = constructionQueues;
+        ConstructionSchedules = constructionSchedules;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -162,12 +162,12 @@ public sealed class WorldState
     /// cannot produce or consume until one exists.</summary>
     public OrderedRegistry<RuntimeId<Holding>, Stockpile> Stockpiles { get; } = new();
 
-    /// <summary>One <see cref="ConstructionQueue"/> per Holding (Phase 6 item 7's "one construction
-    /// queue") — a single FIFO per estate that <see cref="ConstructionQueue.Enqueue"/> can target any
-    /// of that Holding's plots, matching <see cref="ConstructionQueue"/>'s own per-call <c>Plot</c>
-    /// parameter. <see cref="ConstructionQueue"/> is a mutable class, mutated in place like <see
+    /// <summary>One <see cref="ConstructionSchedule"/> per Holding (Phase 6 item 7's "one construction
+    /// queue") — a single FIFO per estate that <see cref="ConstructionSchedule.Enqueue"/> can target any
+    /// of that Holding's plots, matching <see cref="ConstructionSchedule"/>'s own per-call <c>Plot</c>
+    /// parameter. <see cref="ConstructionSchedule"/> is a mutable class, mutated in place like <see
     /// cref="Buildings"/> above.</summary>
-    public OrderedRegistry<RuntimeId<Holding>, ConstructionQueue> ConstructionQueues { get; } = new();
+    public OrderedRegistry<RuntimeId<Holding>, ConstructionSchedule> ConstructionSchedules { get; } = new();
 
     public KnowledgeState Knowledge { get; } = new();
 
@@ -211,7 +211,7 @@ public sealed class WorldState
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,
         ["buildings"] = Buildings.Version,
         ["stockpiles"] = Stockpiles.Version,
-        ["constructionQueues"] = ConstructionQueues.Version,
+        ["constructionSchedules"] = ConstructionSchedules.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
