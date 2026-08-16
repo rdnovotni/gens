@@ -29,16 +29,24 @@ dotnet test Gens.slnx
 | `src/Gens.Simulation/` | Engine-independent deterministic simulation package |
 | `tests/` | Standalone automated tests |
 | `benchmarks/` | Simulation performance benchmarks |
-| `content/source/` | Authored content inputs (currently a placeholder — `catalog.json` holds a single stub entry, not real content) |
-| `content/schemas/` | Content validation contracts (currently minimal/generic, not yet fleshed out for real content) |
-| `tools/` | Standalone development and content tooling |
+| `content/source/` | Authored content inputs — typed definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation) validated against `content/schemas/` |
+| `content/schemas/` | Content validation contracts (JSON Schema per definition family, plus cross-file reference/duplicate-ID checks in the content compiler) |
+| `tools/` | Standalone development and content tooling, including the `Gens.ContentCompiler` CLI (`validate`, `compile`, `run-campaign`, `verify-save`, `migrate-save`, `replay`) |
 | `docs/design/` | Game design, setting references, and content plans |
-| `docs/engineering/` | Technical architecture and implementation policy |
+| `docs/engineering/` | Technical architecture, implementation policy, and the [build roadmap](docs/engineering/gens-comprehensive-build-roadmap.md) |
 
-The initial simulation framework provides ordered monthly systems, named and
-persistable random streams, validated command handling, save-format contracts,
-and asynchronous artwork-provider boundaries. These are intentionally small
-building blocks for feature systems rather than gameplay implementations.
+The simulation package implements a partitioned deterministic `WorldState`,
+phased monthly ticks with declared read/write sets, a command/event envelope
+with atomic application, named and persistable PCG32 random streams, canonical
+`.gens` save serialization with a migration registry, a headless campaign
+bootstrap and console runner, and asynchronous artwork-provider boundaries.
+On top of that foundation, characters and Familia households (lifecycle,
+traits, relationships, roles), and land/goods/buildings/villas/labor with a
+production network (three compact chains, storage, construction, maintenance,
+and ledger-ready event emission) are implemented and covered by headless
+exit-gate soak tests. See the [build roadmap](docs/engineering/gens-comprehensive-build-roadmap.md)
+for what is and is not built yet — population groups, the ledger/market, and
+the player-facing Unity loop are not started.
 
 ## Documentation and contributions
 

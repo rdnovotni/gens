@@ -20,13 +20,17 @@ dotnet restore Gens.slnx
 dotnet format Gens.slnx --no-restore --verify-no-changes
 dotnet build Gens.slnx --no-restore --configuration Release
 dotnet test Gens.slnx --no-restore --no-build --configuration Release
-dotnet run --project tools/Gens.ContentCompiler -- \
-  content/schemas/definitions.schema.json \
-  content/source/catalog.json \
-  artifacts/content/catalog.json
+dotnet run --project tools/Gens.ContentCompiler -- validate content
+dotnet run --project tools/Gens.ContentCompiler -- compile content artifacts/content/catalog.json
 dotnet run --project benchmarks/Gens.Simulation.Benchmarks -- --job Dry
 ./scripts/verify-deterministic-build.sh
 ```
+
+The content compiler also exposes `inspect`, `diff`, and the save/campaign
+commands (`run-campaign`, `verify-save`, `migrate-save`, `replay`, and the
+Phase 4 headless shell commands `new-campaign`, `advance`, `submit-command`,
+`report`, `save`, `load`, `compare-hashes`, `inspect-state`). Run
+`dotnet run --project tools/Gens.ContentCompiler -- --help` for the full list.
 
 For Unity changes, open the root in Unity Hub or run the assembly compilation smoke
 check with an already activated editor:
