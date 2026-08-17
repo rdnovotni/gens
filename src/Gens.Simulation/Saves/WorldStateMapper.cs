@@ -7,6 +7,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
+using Gens.Simulation.Policies;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 using Gens.Simulation.Villas;
@@ -84,6 +85,8 @@ public static class WorldStateMapper
             NetWorthAssessments = state.NetWorthAssessments.InAscendingOrder().Select(entry => ToNetWorthDto(entry.Value)).ToArray(),
             InsolvencyStates = state.InsolvencyStates.InAscendingOrder().Select(entry => ToInsolvencyStateDto(entry.Value)).ToArray(),
             StandingContracts = state.StandingContracts.InAscendingOrder().Select(entry => ToStandingContractDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            HouseholdPolicies = state.HouseholdPolicies.InAscendingOrder().Select(entry => ToHouseholdPolicyStateDto(entry.Value)).ToArray(),
         };
     }
 
@@ -212,6 +215,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<StandingContract>, StandingContract>(contract.Id, contract);
             }));
 
+        var householdPolicies = OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState>.Restore(
+            dto.HouseholdPolicies.Select(p =>
+            {
+                var policy = FromHouseholdPolicyStateDto(p);
+                return new KeyValuePair<RuntimeId<Household>, HouseholdPolicyState>(policy.HouseholdId, policy);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -250,6 +260,7 @@ public static class WorldStateMapper
             netWorthAssessments: netWorthAssessments,
             insolvencyStates: insolvencyStates,
             standingContracts: standingContracts,
+            householdPolicies: householdPolicies,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1049,4 +1060,16 @@ public static class WorldStateMapper
         dto.PriceOverMarketFraction,
         dto.DenariiCommitted,
         dto.RouteName);
+
+    private static HouseholdPolicyStateDto ToHouseholdPolicyStateDto(HouseholdPolicyState policy) => new()
+    {
+        HouseholdId = policy.HouseholdId.ToTaggedString(),
+        RitesBudget = policy.RitesBudget.ToString(),
+        LastChangedDateTotalMonths = policy.LastChangedDate.TotalMonths,
+    };
+
+    private static HouseholdPolicyState FromHouseholdPolicyStateDto(HouseholdPolicyStateDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<RitesBudgetTier>(dto.RitesBudget),
+        new GameDate(dto.LastChangedDateTotalMonths));
 }
