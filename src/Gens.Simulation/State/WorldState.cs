@@ -1,5 +1,6 @@
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Economy;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
@@ -46,6 +47,8 @@ public sealed class WorldState
         RuntimeIdCounter<DomainEventEntity> eventIds,
         RuntimeIdCounter<ScheduledAction> scheduledActionIds,
         RuntimeIdCounter<LedgerTransaction> ledgerTransactionIds,
+        RuntimeIdCounter<DebtRecord> debtRecordIds,
+        RuntimeIdCounter<StandingContract> standingContractIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -61,6 +64,11 @@ public sealed class WorldState
         OrderedRegistry<LedgerAccountKey, LedgerAccount> ledgerAccounts,
         OrderedRegistry<RuntimeId<LedgerTransaction>, LedgerTransaction> ledgerTransactions,
         OrderedRegistry<MarketGoodKey, SettlementMarket> marketPrices,
+        OrderedRegistry<RuntimeId<Household>, HouseholdMonthlyStatement> householdStatements,
+        OrderedRegistry<RuntimeId<DebtRecord>, DebtRecord> debtRecords,
+        OrderedRegistry<RuntimeId<Household>, NetWorth> netWorthAssessments,
+        OrderedRegistry<RuntimeId<Household>, InsolvencyState> insolvencyStates,
+        OrderedRegistry<RuntimeId<StandingContract>, StandingContract> standingContracts,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -79,6 +87,8 @@ public sealed class WorldState
         EventIds = eventIds;
         ScheduledActionIds = scheduledActionIds;
         LedgerTransactionIds = ledgerTransactionIds;
+        DebtRecordIds = debtRecordIds;
+        StandingContractIds = standingContractIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -94,6 +104,11 @@ public sealed class WorldState
         LedgerAccounts = ledgerAccounts;
         LedgerTransactions = ledgerTransactions;
         MarketPrices = marketPrices;
+        HouseholdStatements = householdStatements;
+        DebtRecords = debtRecords;
+        NetWorthAssessments = netWorthAssessments;
+        InsolvencyStates = insolvencyStates;
+        StandingContracts = standingContracts;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -114,6 +129,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Ledger.LedgerTransaction"/> (Phase 8 item 1).</summary>
     public RuntimeIdCounter<LedgerTransaction> LedgerTransactionIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Economy.DebtRecord"/> (Phase 8 item 6).</summary>
+    public RuntimeIdCounter<DebtRecord> DebtRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Economy.StandingContract"/> (Phase 8 item 7).</summary>
+    public RuntimeIdCounter<StandingContract> StandingContractIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -199,6 +220,32 @@ public sealed class WorldState
     /// that has never cleared simply has no entry yet.</summary>
     public OrderedRegistry<MarketGoodKey, SettlementMarket> MarketPrices { get; } = new();
 
+    /// <summary>Each household's latest monthly income/expense/net summary (Phase 8 item 5), keyed by
+    /// household, ascending <see cref="RuntimeId{T}"/> order (ADR 0004). Sparse and overwritten each
+    /// month — see <see cref="Economy.HouseholdMonthlyStatement"/>'s own doc comment for why this is a
+    /// latest-snapshot read model, not an accumulating history.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdMonthlyStatement> HouseholdStatements { get; } = new();
+
+    /// <summary>Every standing loan (Phase 8 item 6; <c>gens-economy-finance-design.md</c> §6.1), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — never removed once opened, even once
+    /// resolved, matching <see cref="LedgerTransactions"/>' append-only-audit-log convention.</summary>
+    public OrderedRegistry<RuntimeId<DebtRecord>, DebtRecord> DebtRecords { get; } = new();
+
+    /// <summary>Each household's latest Net Worth assessment (Phase 8 item 6; §8), keyed by household.
+    /// Sparse and overwritten each month, matching <see cref="HouseholdStatements"/>' identical
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, NetWorth> NetWorthAssessments { get; } = new();
+
+    /// <summary>Each household's Insolvency ladder position (Phase 8 item 6; §9), keyed by household.
+    /// Sparse and overwritten each month; unlike <see cref="NetWorthAssessments"/>, its own <see
+    /// cref="Economy.InsolvencyState.ConsequencesApplied"/> field is itself cumulative across months —
+    /// see that record's own doc comment.</summary>
+    public OrderedRegistry<RuntimeId<Household>, InsolvencyState> InsolvencyStates { get; } = new();
+
+    /// <summary>Every standing market contract and trade-route commitment (Phase 8 item 7), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<StandingContract>, StandingContract> StandingContracts { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -231,6 +278,8 @@ public sealed class WorldState
         ["eventIds"] = EventIds.Peek,
         ["scheduledActionIds"] = ScheduledActionIds.Peek,
         ["ledgerTransactionIds"] = LedgerTransactionIds.Peek,
+        ["debtRecordIds"] = DebtRecordIds.Peek,
+        ["standingContractIds"] = StandingContractIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -246,6 +295,11 @@ public sealed class WorldState
         ["ledgerAccounts"] = LedgerAccounts.Version,
         ["ledgerTransactions"] = LedgerTransactions.Version,
         ["marketPrices"] = MarketPrices.Version,
+        ["householdStatements"] = HouseholdStatements.Version,
+        ["debtRecords"] = DebtRecords.Version,
+        ["netWorthAssessments"] = NetWorthAssessments.Version,
+        ["insolvencyStates"] = InsolvencyStates.Version,
+        ["standingContracts"] = StandingContracts.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

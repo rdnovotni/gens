@@ -1,4 +1,5 @@
 using Gens.Simulation.Characters;
+using Gens.Simulation.Economy;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 
@@ -135,6 +136,11 @@ internal static class RuntimeIdTagRegistry
         // Settlement/Plot/Holding's identical "real record replaces the phantom marker" convention
         // (this file's own top-of-file doc comment).
         [typeof(LedgerTransaction)] = "ledgertxn",
+        // Phase 8 item 6 — Gens.Simulation.Economy.DebtRecord, same "real record as its own tag"
+        // convention as LedgerTransaction above.
+        [typeof(DebtRecord)] = "debt",
+        // Phase 8 item 7 — Gens.Simulation.Economy.StandingContract, same convention.
+        [typeof(StandingContract)] = "stcontract",
     };
 
     public static string Resolve(Type type) =>

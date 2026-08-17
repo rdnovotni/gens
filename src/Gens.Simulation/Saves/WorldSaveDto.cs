@@ -124,6 +124,36 @@ public sealed record WorldSaveDocument
     /// empty, for the same additive-only reason as <see cref="LedgerAccounts"/>.</summary>
     [JsonPropertyOrder(19)]
     public IReadOnlyList<SettlementMarketDto> MarketPrices { get; init; } = Array.Empty<SettlementMarketDto>();
+
+    /// <summary>Every household's latest <see cref="Economy.HouseholdMonthlyStatement"/> (Phase 8 item
+    /// 5), already keyed by household. Not <c>required</c>, and defaults to empty — no pre-Phase-8-item-5
+    /// save ever had a statement, matching ADR 0011's additive-only policy.</summary>
+    [JsonPropertyOrder(20)]
+    public IReadOnlyList<HouseholdMonthlyStatementDto> HouseholdStatements { get; init; } = Array.Empty<HouseholdMonthlyStatementDto>();
+
+    /// <summary>Every <see cref="Economy.DebtRecord"/> (Phase 8 item 6), already in ascending-<see
+    /// cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty, for the same
+    /// additive-only reason as <see cref="HouseholdStatements"/>.</summary>
+    [JsonPropertyOrder(21)]
+    public IReadOnlyList<DebtRecordDto> DebtRecords { get; init; } = Array.Empty<DebtRecordDto>();
+
+    /// <summary>Every household's latest <see cref="Economy.NetWorth"/> assessment (Phase 8 item 6; §8),
+    /// already keyed by household. Not <c>required</c>, and defaults to empty, for the same
+    /// additive-only reason as <see cref="HouseholdStatements"/>.</summary>
+    [JsonPropertyOrder(22)]
+    public IReadOnlyList<NetWorthDto> NetWorthAssessments { get; init; } = Array.Empty<NetWorthDto>();
+
+    /// <summary>Every household's <see cref="Economy.InsolvencyState"/> (Phase 8 item 6; §9), already
+    /// keyed by household. Not <c>required</c>, and defaults to empty, for the same additive-only reason
+    /// as <see cref="HouseholdStatements"/>.</summary>
+    [JsonPropertyOrder(23)]
+    public IReadOnlyList<InsolvencyStateDto> InsolvencyStates { get; init; } = Array.Empty<InsolvencyStateDto>();
+
+    /// <summary>Every <see cref="Economy.StandingContract"/> (Phase 8 item 7), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// for the same additive-only reason as <see cref="HouseholdStatements"/>.</summary>
+    [JsonPropertyOrder(24)]
+    public IReadOnlyList<StandingContractDto> StandingContracts { get; init; } = Array.Empty<StandingContractDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -178,6 +208,18 @@ public sealed record CounterSetDto
     /// Additive-only per ADR 0011's policy, matching <see cref="HoldingIds"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(13)]
     public long LedgerTransactionIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-8-item-6 save has no debt records.
+    /// Additive-only per ADR 0011's policy, matching <see cref="LedgerTransactionIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(14)]
+    public long DebtRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-8-item-7 save has no standing
+    /// contracts. Additive-only per ADR 0011's policy, matching <see cref="LedgerTransactionIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(15)]
+    public long StandingContractIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1065,4 +1107,132 @@ public sealed record SettlementMarketDto
 
     [JsonPropertyOrder(7)]
     public required long UnsatisfiedDemand { get; init; }
+}
+
+/// <summary>One household's <see cref="Economy.HouseholdMonthlyStatement"/> (Phase 8 item 5).</summary>
+public sealed record HouseholdMonthlyStatementDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required Money Income { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required Money Expenses { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required Money Net { get; init; }
+}
+
+/// <summary>One <see cref="Economy.DebtRecord"/> (Phase 8 item 6).</summary>
+public sealed record DebtRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string DebtorHouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required Money Principal { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required Fixed64 InterestRate { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string Origin { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool IsFenusNauticum { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int MonthsOverdue { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required string Resolution { get; init; }
+}
+
+/// <summary>One household's <see cref="Economy.NetWorth"/> assessment (Phase 8 item 6; §8).</summary>
+public sealed record NetWorthDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required Money TreasuryBalance { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required Money StoredGoodsValue { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required Money OutstandingDebt { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required Money Total { get; init; }
+}
+
+/// <summary>One household's <see cref="Economy.InsolvencyState"/> (Phase 8 item 6; §9).</summary>
+public sealed record InsolvencyStateDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int MonthsBelowThreshold { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Stage { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required IReadOnlyList<string> ConsequencesApplied { get; init; }
+}
+
+/// <summary>One <see cref="Economy.StandingContract"/> (Phase 8 item 7).</summary>
+public sealed record StandingContractDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Kind { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? HoldingId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? GoodId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required long QuantityPerMonth { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required Fixed64 PriceOverMarketFraction { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required Money DenariiCommitted { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? RouteName { get; init; }
 }
