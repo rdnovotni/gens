@@ -101,7 +101,7 @@ public static class EventSubjects
         var fromCharacters = state.Characters.InAscendingOrder()
             .Select(entry => entry.Value.Household)
             .Where(household => household.HasValue)
-            .Select(household => household.Value);
+            .Select(household => household!.Value);
         var fromPolicies = state.HouseholdPolicies.InAscendingOrder().Select(entry => entry.Key);
 
         return fromCharacters.Concat(fromPolicies).Distinct().OrderBy(id => id.Value);

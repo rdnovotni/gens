@@ -156,7 +156,7 @@ public static class SampleEventDefinitions
     /// there too — real content wiring an option to a concrete stat change is exactly where that
     /// extension happens; this vertical-slice sample deliberately stays inside the partitions
     /// <see cref="EventPoolSystem"/> already declares.</summary>
-    private static IReadOnlyList<IDomainEvent> AnnounceOutcome(
+    private static IDomainEvent[] AnnounceOutcome(
         WorldState state, EventInstance instance, GameDate submittedDate, string? causationId, string outcomeTag) => new IDomainEvent[]
     {
         new SampleEventOptionOutcomeEvent(
