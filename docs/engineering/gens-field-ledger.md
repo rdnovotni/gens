@@ -90,6 +90,18 @@
 
 ---
 
+## 7. Economy, ledger, and market (Phase 8 items 1-4)
+
+| Field | Type | Unit / range | Owner | Readers | Persistence | Visibility | Migration policy |
+|---|---|---|---|---|---|---|---|
+| `Money.RawValue` (every `LedgerAccount.Balance`, `LedgerPosting.Amount`, `SettlementMarket.Price`/`PreviousPrice`) | `long` | Denarii minor units (100 = 1 Denarius, ADR 0002); may be negative for a balance | `LedgerService.Post` (accounts); `MarketClearingSystem` (market prices) | Every future wages/rents/taxes/debt system (Phase 8 item 6); Monthly Report (Phase 9); invariant checks | Yes — `WorldSaveDocument.LedgerAccounts`/`LedgerTransactions`/`MarketPrices` | Omniscient to the owning household/actor; settlement-treasury and system accounts are campaign-wide | Save-breaking if the minor-unit scale (`Money.ScaleFactor`) ever changes; additive-only otherwise |
+| `WorldState.LedgerAccounts` (`LedgerAccountKey` → `LedgerAccount`) | keyed registry | One entry per (kind, owner) pair, sparse | `LedgerService.Post` | `LedgerAccountBalanceConsistencyInvariantCheck`, future purchasing/wages/taxes/debt systems (Phase 8 items 5-6) | Yes | Same as `Money.RawValue` above | Additive-only; a new `LedgerAccountKind` value never renumbers an existing one |
+| `WorldState.LedgerTransactions` (`RuntimeId<LedgerTransaction>` → `LedgerTransaction`) | append-only ordered log | One entry per posted transaction; `Postings` sum to zero (enforced at write time by `LedgerService.Post` and re-verified by `LedgerTransactionBalanceInvariantCheck`) | `LedgerService.Post` | `LedgerAccountBalanceConsistencyInvariantCheck`, Monthly Report (Phase 9), Dynasty Chronicle (future) | Yes | Same as `Money.RawValue` above | Additive-only; a transaction, once posted, is never mutated or removed |
+| `LedgerTransaction.Category` (`LedgerTransactionCategory`) | enum | Treasury/Wages/Sales/Purchases/Taxes/Upkeep/Construction/Debt/Gifts/Contracts/Transfers (roadmap Phase 8 item 2) | `LedgerService.Post` callers | Monthly Report grouping (Phase 9) | Yes | Same as `Money.RawValue` above | Additive-only; existing values must not be renumbered once shipped |
+| `WorldState.MarketPrices` (`MarketGoodKey` → `SettlementMarket`) | keyed registry | One entry per (settlement, good) pair, sparse | `MarketClearingSystem` | `MarketBoundedPriceChangeInvariantCheck`, `MarketNoNegativeStockOrPriceInvariantCheck`, future household purchasing (Phase 8 item 5) | Yes — `WorldSaveDocument.MarketPrices` | Omniscient (a settlement market price is public information) | Additive-only |
+| `SettlementMarket.Supply` / `Demand` / `ClearedQuantity` / `UnsatisfiedDemand` | `long` | Good units, ≥ 0; `ClearedQuantity = min(Supply, Demand)`, `UnsatisfiedDemand = Demand - ClearedQuantity` (derived, enforced by `SettlementMarket`'s own constructor) | `MarketClearingSystem` | Monthly Report (Phase 9), future household purchasing (Phase 8 item 5) | Yes | Omniscient | Additive-only |
+| `MarketOrder` (`SettlementId`, `GoodId`, `Side`, `SourceId`, `Quantity`) | ephemeral, not `WorldState` | Regenerated every tick from `Stockpiles`/`PopGroups`, never persisted or hashed | `MarketClearingSystem` (internal) | None outside `MarketClearingSystem` itself in this phase | No — deliberately ephemeral | N/A | N/A until Phase 8 item 5 gives orders a persisted, player-submitted form |
+
 ## Maintenance rule
 
 A new cross-system field (read by a system other than its writer) is added to this ledger in the same pull request that introduces it — per `CONTRIBUTING.md`. A field that stops being cross-system (its only external reader is removed) may be deleted from this ledger in the same pull request that removes that reader.

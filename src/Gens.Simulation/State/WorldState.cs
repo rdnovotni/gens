@@ -3,6 +3,8 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.Ledger;
+using Gens.Simulation.Markets;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.State;
@@ -43,6 +45,7 @@ public sealed class WorldState
         RuntimeIdCounter<Command> commandIds,
         RuntimeIdCounter<DomainEventEntity> eventIds,
         RuntimeIdCounter<ScheduledAction> scheduledActionIds,
+        RuntimeIdCounter<LedgerTransaction> ledgerTransactionIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -55,6 +58,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Building>, BuildingInstance> buildings,
         OrderedRegistry<RuntimeId<Holding>, Stockpile> stockpiles,
         OrderedRegistry<RuntimeId<Holding>, ConstructionSchedule> constructionSchedules,
+        OrderedRegistry<LedgerAccountKey, LedgerAccount> ledgerAccounts,
+        OrderedRegistry<RuntimeId<LedgerTransaction>, LedgerTransaction> ledgerTransactions,
+        OrderedRegistry<MarketGoodKey, SettlementMarket> marketPrices,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -72,6 +78,7 @@ public sealed class WorldState
         CommandIds = commandIds;
         EventIds = eventIds;
         ScheduledActionIds = scheduledActionIds;
+        LedgerTransactionIds = ledgerTransactionIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -84,6 +91,9 @@ public sealed class WorldState
         Buildings = buildings;
         Stockpiles = stockpiles;
         ConstructionSchedules = constructionSchedules;
+        LedgerAccounts = ledgerAccounts;
+        LedgerTransactions = ledgerTransactions;
+        MarketPrices = marketPrices;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -101,6 +111,9 @@ public sealed class WorldState
     public RuntimeIdCounter<Command> CommandIds { get; } = new();
     public RuntimeIdCounter<DomainEventEntity> EventIds { get; } = new();
     public RuntimeIdCounter<ScheduledAction> ScheduledActionIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Ledger.LedgerTransaction"/> (Phase 8 item 1).</summary>
+    public RuntimeIdCounter<LedgerTransaction> LedgerTransactionIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -169,6 +182,23 @@ public sealed class WorldState
     /// cref="Buildings"/> above.</summary>
     public OrderedRegistry<RuntimeId<Holding>, ConstructionSchedule> ConstructionSchedules { get; } = new();
 
+    /// <summary>Every household, actor, settlement-treasury, or system <see cref="LedgerAccount"/>
+    /// balance (Phase 8 items 1-2), in ascending <see cref="LedgerAccountKey"/> order (ADR 0004).
+    /// Sparse: an account with no posting yet simply has no entry — <see cref="LedgerService.Post"/>
+    /// creates one at a zero balance on first use, matching <see cref="Stockpiles"/>'s identical
+    /// sparse-provisioning convention.</summary>
+    public OrderedRegistry<LedgerAccountKey, LedgerAccount> LedgerAccounts { get; } = new();
+
+    /// <summary>Every posted <see cref="LedgerTransaction"/> (Phase 8 item 1), in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004) — the append-only double-entry-style audit log <see
+    /// cref="LedgerAccounts"/>' balances are folded from.</summary>
+    public OrderedRegistry<RuntimeId<LedgerTransaction>, LedgerTransaction> LedgerTransactions { get; } = new();
+
+    /// <summary>One cleared <see cref="SettlementMarket"/> per (settlement, good) (Phase 8 items 3-4),
+    /// in ascending <see cref="MarketGoodKey"/> order (ADR 0004). Sparse: a (settlement, good) pair
+    /// that has never cleared simply has no entry yet.</summary>
+    public OrderedRegistry<MarketGoodKey, SettlementMarket> MarketPrices { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -200,6 +230,7 @@ public sealed class WorldState
         ["commandIds"] = CommandIds.Peek,
         ["eventIds"] = EventIds.Peek,
         ["scheduledActionIds"] = ScheduledActionIds.Peek,
+        ["ledgerTransactionIds"] = LedgerTransactionIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -212,6 +243,9 @@ public sealed class WorldState
         ["buildings"] = Buildings.Version,
         ["stockpiles"] = Stockpiles.Version,
         ["constructionSchedules"] = ConstructionSchedules.Version,
+        ["ledgerAccounts"] = LedgerAccounts.Version,
+        ["ledgerTransactions"] = LedgerTransactions.Version,
+        ["marketPrices"] = MarketPrices.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

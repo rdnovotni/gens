@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Land;
+using Gens.Simulation.Ledger;
 
 namespace Gens.Simulation.Identity;
 
@@ -129,6 +130,11 @@ internal static class RuntimeIdTagRegistry
         [typeof(Command)] = "cmd",
         [typeof(DomainEventEntity)] = "event",
         [typeof(ScheduledAction)] = "action",
+        // Phase 8 item 1 — the real Gens.Simulation.Ledger.LedgerTransaction record (defined once
+        // its own file lands) serves directly as its own RuntimeId tag, matching Character/Region/
+        // Settlement/Plot/Holding's identical "real record replaces the phantom marker" convention
+        // (this file's own top-of-file doc comment).
+        [typeof(LedgerTransaction)] = "ledgertxn",
     };
 
     public static string Resolve(Type type) =>

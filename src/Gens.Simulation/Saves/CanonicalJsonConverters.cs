@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Ledger;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Random;
 using Gens.Simulation.Time;
@@ -15,6 +16,18 @@ public sealed class Fixed64JsonConverter : JsonConverter<Fixed64>
         Fixed64.FromRaw(reader.GetInt64());
 
     public override void Write(Utf8JsonWriter writer, Fixed64 value, JsonSerializerOptions options) =>
+        writer.WriteNumberValue(value.RawValue);
+}
+
+/// <summary>Persists a <see cref="Money"/> (Phase 8 item 1) as its raw minor-unit <see cref="long"/>
+/// (ADR 0010) — never as decimal text, matching <see cref="Fixed64JsonConverter"/>'s identical
+/// "raw scaled integer, never lossy text" reasoning.</summary>
+public sealed class MoneyJsonConverter : JsonConverter<Money>
+{
+    public override Money Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        Money.FromMinorUnits(reader.GetInt64());
+
+    public override void Write(Utf8JsonWriter writer, Money value, JsonSerializerOptions options) =>
         writer.WriteNumberValue(value.RawValue);
 }
 

@@ -4,6 +4,8 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Land;
+using Gens.Simulation.Ledger;
+using Gens.Simulation.Markets;
 
 namespace Gens.Simulation.State;
 
@@ -41,6 +43,7 @@ public static class StateHasher
         hash = MixLong(hash, state.EventIds.Peek);
         hash = MixLong(hash, state.ScheduledActionIds.Peek);
         hash = MixLong(hash, state.HoldingIds.Peek);
+        hash = MixLong(hash, state.LedgerTransactionIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -179,6 +182,43 @@ public static class StateHasher
                 hash = MixBuildingDefinition(hash, project.Definition);
                 hash = MixLong(hash, project.CompletedMonths);
             }
+        }
+
+        // Already ascending LedgerAccountKey order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.LedgerAccounts.InAscendingOrder())
+        {
+            hash = MixLong(hash, (long)entry.Key.Kind);
+            hash = MixString(hash, entry.Key.OwnerId);
+            hash = MixLong(hash, entry.Value.Balance.RawValue);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.LedgerTransactions.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.OccurredDate.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.Category);
+            foreach (var posting in entry.Value.Postings)
+            {
+                hash = MixLong(hash, (long)posting.Account.Kind);
+                hash = MixString(hash, posting.Account.OwnerId);
+                hash = MixLong(hash, posting.Amount.RawValue);
+            }
+
+            hash = MixString(hash, entry.Value.Reference ?? string.Empty);
+        }
+
+        // Already ascending MarketGoodKey order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.MarketPrices.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.SettlementId.Value);
+            hash = MixString(hash, entry.Key.GoodId.Value);
+            hash = MixLong(hash, entry.Value.Price.RawValue);
+            hash = MixLong(hash, entry.Value.PreviousPrice.RawValue);
+            hash = MixLong(hash, entry.Value.Supply);
+            hash = MixLong(hash, entry.Value.Demand);
+            hash = MixLong(hash, entry.Value.ClearedQuantity);
+            hash = MixLong(hash, entry.Value.UnsatisfiedDemand);
         }
 
         return hash;

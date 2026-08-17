@@ -4,6 +4,8 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.Ledger;
+using Gens.Simulation.Markets;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 using Gens.Simulation.Villas;
@@ -39,6 +41,7 @@ public static class WorldStateMapper
                 CommandIds = state.CommandIds.Peek,
                 EventIds = state.EventIds.Peek,
                 ScheduledActionIds = state.ScheduledActionIds.Peek,
+                LedgerTransactionIds = state.LedgerTransactionIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -66,6 +69,12 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ConstructionSchedules = state.ConstructionSchedules.InAscendingOrder()
                 .Select(entry => ToConstructionScheduleDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending LedgerAccountKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            LedgerAccounts = state.LedgerAccounts.InAscendingOrder().Select(entry => ToLedgerAccountDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            LedgerTransactions = state.LedgerTransactions.InAscendingOrder().Select(entry => ToLedgerTransactionDto(entry.Value)).ToArray(),
+            // Already ascending MarketGoodKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            MarketPrices = state.MarketPrices.InAscendingOrder().Select(entry => ToSettlementMarketDto(entry.Value)).ToArray(),
         };
     }
 
@@ -138,6 +147,27 @@ public static class WorldStateMapper
             dto.ConstructionSchedules.Select(q => new KeyValuePair<RuntimeId<Holding>, ConstructionSchedule>(
                 RuntimeId<Holding>.Parse(q.HoldingId), FromConstructionScheduleDto(q))));
 
+        var ledgerAccounts = OrderedRegistry<LedgerAccountKey, LedgerAccount>.Restore(
+            dto.LedgerAccounts.Select(a =>
+            {
+                var account = FromLedgerAccountDto(a);
+                return new KeyValuePair<LedgerAccountKey, LedgerAccount>(account.Key, account);
+            }));
+
+        var ledgerTransactions = OrderedRegistry<RuntimeId<LedgerTransaction>, LedgerTransaction>.Restore(
+            dto.LedgerTransactions.Select(t =>
+            {
+                var transaction = FromLedgerTransactionDto(t);
+                return new KeyValuePair<RuntimeId<LedgerTransaction>, LedgerTransaction>(transaction.Id, transaction);
+            }));
+
+        var marketPrices = OrderedRegistry<MarketGoodKey, SettlementMarket>.Restore(
+            dto.MarketPrices.Select(m =>
+            {
+                var market = FromSettlementMarketDto(m);
+                return new KeyValuePair<MarketGoodKey, SettlementMarket>(new MarketGoodKey(market.SettlementId, market.GoodId), market);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -153,6 +183,7 @@ public static class WorldStateMapper
             commandIds: RuntimeIdCounter<Command>.Restore(dto.Counters.CommandIds),
             eventIds: RuntimeIdCounter<DomainEventEntity>.Restore(dto.Counters.EventIds),
             scheduledActionIds: RuntimeIdCounter<ScheduledAction>.Restore(dto.Counters.ScheduledActionIds),
+            ledgerTransactionIds: RuntimeIdCounter<LedgerTransaction>.Restore(dto.Counters.LedgerTransactionIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -165,6 +196,9 @@ public static class WorldStateMapper
             buildings: buildings,
             stockpiles: stockpiles,
             constructionSchedules: constructionSchedules,
+            ledgerAccounts: ledgerAccounts,
+            ledgerTransactions: ledgerTransactions,
+            marketPrices: marketPrices,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -776,6 +810,66 @@ public static class WorldStateMapper
         // Ordinal ReservationId order (ADR 0004) via Stockpile's SortedDictionary.
         Reservations = stockpile.Reservations.Select(ToStockReservationDto).ToArray(),
     };
+
+    private static LedgerAccountDto ToLedgerAccountDto(LedgerAccount account) => new()
+    {
+        Kind = account.Key.Kind.ToString(),
+        OwnerId = account.Key.OwnerId,
+        Balance = account.Balance,
+    };
+
+    private static LedgerAccount FromLedgerAccountDto(LedgerAccountDto dto) =>
+        new(new LedgerAccountKey(Enum.Parse<LedgerAccountKind>(dto.Kind), dto.OwnerId), dto.Balance);
+
+    private static LedgerPostingDto ToLedgerPostingDto(LedgerPosting posting) => new()
+    {
+        Kind = posting.Account.Kind.ToString(),
+        OwnerId = posting.Account.OwnerId,
+        Amount = posting.Amount,
+    };
+
+    private static LedgerPosting FromLedgerPostingDto(LedgerPostingDto dto) =>
+        new(new LedgerAccountKey(Enum.Parse<LedgerAccountKind>(dto.Kind), dto.OwnerId), dto.Amount);
+
+    private static LedgerTransactionDto ToLedgerTransactionDto(LedgerTransaction transaction) => new()
+    {
+        Id = transaction.Id.ToTaggedString(),
+        OccurredDateTotalMonths = transaction.OccurredDate.TotalMonths,
+        Category = transaction.Category.ToString(),
+        // Original posting order preserved — a transaction's postings are a fixed, authored sequence,
+        // not a re-sortable collection.
+        Postings = transaction.Postings.Select(ToLedgerPostingDto).ToArray(),
+        Reference = transaction.Reference,
+    };
+
+    private static LedgerTransaction FromLedgerTransactionDto(LedgerTransactionDto dto) => new(
+        RuntimeId<LedgerTransaction>.Parse(dto.Id),
+        new GameDate(dto.OccurredDateTotalMonths),
+        Enum.Parse<LedgerTransactionCategory>(dto.Category),
+        dto.Postings.Select(FromLedgerPostingDto).ToArray(),
+        dto.Reference);
+
+    private static SettlementMarketDto ToSettlementMarketDto(SettlementMarket market) => new()
+    {
+        SettlementId = market.SettlementId.ToTaggedString(),
+        GoodId = market.GoodId.Value,
+        Price = market.Price,
+        PreviousPrice = market.PreviousPrice,
+        Supply = market.Supply,
+        Demand = market.Demand,
+        ClearedQuantity = market.ClearedQuantity,
+        UnsatisfiedDemand = market.UnsatisfiedDemand,
+    };
+
+    private static SettlementMarket FromSettlementMarketDto(SettlementMarketDto dto) => new(
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        new DefinitionId<Good>(dto.GoodId),
+        dto.Price,
+        dto.PreviousPrice,
+        dto.Supply,
+        dto.Demand,
+        dto.ClearedQuantity,
+        dto.UnsatisfiedDemand);
 
     private static Stockpile FromStockpileDto(StockpileDto dto)
     {
