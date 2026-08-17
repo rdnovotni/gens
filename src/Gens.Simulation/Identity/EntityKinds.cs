@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Events;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 
@@ -141,6 +142,9 @@ internal static class RuntimeIdTagRegistry
         [typeof(DebtRecord)] = "debt",
         // Phase 8 item 7 — Gens.Simulation.Economy.StandingContract, same convention.
         [typeof(StandingContract)] = "stcontract",
+        // Phase 9 item 3 — Gens.Simulation.Events.EventInstance, same "real record as its own tag"
+        // convention as LedgerTransaction/DebtRecord/StandingContract above.
+        [typeof(EventInstance)] = "eventinst",
     };
 
     public static string Resolve(Type type) =>

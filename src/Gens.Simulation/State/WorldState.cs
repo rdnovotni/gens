@@ -1,6 +1,7 @@
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Events;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
@@ -50,6 +51,7 @@ public sealed class WorldState
         RuntimeIdCounter<LedgerTransaction> ledgerTransactionIds,
         RuntimeIdCounter<DebtRecord> debtRecordIds,
         RuntimeIdCounter<StandingContract> standingContractIds,
+        RuntimeIdCounter<EventInstance> eventInstanceIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -71,6 +73,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, InsolvencyState> insolvencyStates,
         OrderedRegistry<RuntimeId<StandingContract>, StandingContract> standingContracts,
         OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState> householdPolicies,
+        OrderedRegistry<RuntimeId<EventInstance>, EventInstance> eventInstances,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -91,6 +94,7 @@ public sealed class WorldState
         LedgerTransactionIds = ledgerTransactionIds;
         DebtRecordIds = debtRecordIds;
         StandingContractIds = standingContractIds;
+        EventInstanceIds = eventInstanceIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -112,6 +116,7 @@ public sealed class WorldState
         InsolvencyStates = insolvencyStates;
         StandingContracts = standingContracts;
         HouseholdPolicies = householdPolicies;
+        EventInstances = eventInstances;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -138,6 +143,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Economy.StandingContract"/> (Phase 8 item 7).</summary>
     public RuntimeIdCounter<StandingContract> StandingContractIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Events.EventInstance"/> (Phase 9 item 3).</summary>
+    public RuntimeIdCounter<EventInstance> EventInstanceIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -256,6 +264,16 @@ public sealed class WorldState
     /// see <see cref="Policies.HouseholdPolicyResolver"/>.</summary>
     public OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState> HouseholdPolicies { get; } = new();
 
+    /// <summary>Every fired <see cref="Events.EventInstance"/> (Phase 9 item 3), in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004). <see cref="Events.EventInstance"/> is an immutable
+    /// record, so a stage advancement, resolution, or expiry replaces the entry (remove then re-add
+    /// under the same <see cref="Events.EventInstance.InstanceId"/>) rather than mutating it in place —
+    /// matching <see cref="HouseholdPolicies"/>' identical convention. Entries are kept, resolved or
+    /// not, for the campaign's lifetime: a resolved instance's own <see
+    /// cref="Events.EventInstance.ResolvedOptionId"/>/<see cref="Events.EventInstance.ResolvingEventId"/>
+    /// fields are exactly what the Monthly Report's drill-down (Phase 9 item 4) reads back.</summary>
+    public OrderedRegistry<RuntimeId<EventInstance>, EventInstance> EventInstances { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -290,6 +308,7 @@ public sealed class WorldState
         ["ledgerTransactionIds"] = LedgerTransactionIds.Peek,
         ["debtRecordIds"] = DebtRecordIds.Peek,
         ["standingContractIds"] = StandingContractIds.Peek,
+        ["eventInstanceIds"] = EventInstanceIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -311,6 +330,7 @@ public sealed class WorldState
         ["insolvencyStates"] = InsolvencyStates.Version,
         ["standingContracts"] = StandingContracts.Version,
         ["householdPolicies"] = HouseholdPolicies.Version,
+        ["eventInstances"] = EventInstances.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
