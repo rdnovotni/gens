@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Economy;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
@@ -42,6 +43,8 @@ public static class WorldStateMapper
                 EventIds = state.EventIds.Peek,
                 ScheduledActionIds = state.ScheduledActionIds.Peek,
                 LedgerTransactionIds = state.LedgerTransactionIds.Peek,
+                DebtRecordIds = state.DebtRecordIds.Peek,
+                StandingContractIds = state.StandingContractIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -75,6 +78,12 @@ public static class WorldStateMapper
             LedgerTransactions = state.LedgerTransactions.InAscendingOrder().Select(entry => ToLedgerTransactionDto(entry.Value)).ToArray(),
             // Already ascending MarketGoodKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             MarketPrices = state.MarketPrices.InAscendingOrder().Select(entry => ToSettlementMarketDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            HouseholdStatements = state.HouseholdStatements.InAscendingOrder().Select(entry => ToHouseholdMonthlyStatementDto(entry.Value)).ToArray(),
+            DebtRecords = state.DebtRecords.InAscendingOrder().Select(entry => ToDebtRecordDto(entry.Value)).ToArray(),
+            NetWorthAssessments = state.NetWorthAssessments.InAscendingOrder().Select(entry => ToNetWorthDto(entry.Value)).ToArray(),
+            InsolvencyStates = state.InsolvencyStates.InAscendingOrder().Select(entry => ToInsolvencyStateDto(entry.Value)).ToArray(),
+            StandingContracts = state.StandingContracts.InAscendingOrder().Select(entry => ToStandingContractDto(entry.Value)).ToArray(),
         };
     }
 
@@ -168,6 +177,41 @@ public static class WorldStateMapper
                 return new KeyValuePair<MarketGoodKey, SettlementMarket>(new MarketGoodKey(market.SettlementId, market.GoodId), market);
             }));
 
+        var householdStatements = OrderedRegistry<RuntimeId<Household>, HouseholdMonthlyStatement>.Restore(
+            dto.HouseholdStatements.Select(s =>
+            {
+                var statement = FromHouseholdMonthlyStatementDto(s);
+                return new KeyValuePair<RuntimeId<Household>, HouseholdMonthlyStatement>(statement.HouseholdId, statement);
+            }));
+
+        var debtRecords = OrderedRegistry<RuntimeId<DebtRecord>, DebtRecord>.Restore(
+            dto.DebtRecords.Select(d =>
+            {
+                var debt = FromDebtRecordDto(d);
+                return new KeyValuePair<RuntimeId<DebtRecord>, DebtRecord>(debt.Id, debt);
+            }));
+
+        var netWorthAssessments = OrderedRegistry<RuntimeId<Household>, NetWorth>.Restore(
+            dto.NetWorthAssessments.Select(n =>
+            {
+                var netWorth = FromNetWorthDto(n);
+                return new KeyValuePair<RuntimeId<Household>, NetWorth>(netWorth.HouseholdId, netWorth);
+            }));
+
+        var insolvencyStates = OrderedRegistry<RuntimeId<Household>, InsolvencyState>.Restore(
+            dto.InsolvencyStates.Select(i =>
+            {
+                var insolvency = FromInsolvencyStateDto(i);
+                return new KeyValuePair<RuntimeId<Household>, InsolvencyState>(insolvency.HouseholdId, insolvency);
+            }));
+
+        var standingContracts = OrderedRegistry<RuntimeId<StandingContract>, StandingContract>.Restore(
+            dto.StandingContracts.Select(c =>
+            {
+                var contract = FromStandingContractDto(c);
+                return new KeyValuePair<RuntimeId<StandingContract>, StandingContract>(contract.Id, contract);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -184,6 +228,8 @@ public static class WorldStateMapper
             eventIds: RuntimeIdCounter<DomainEventEntity>.Restore(dto.Counters.EventIds),
             scheduledActionIds: RuntimeIdCounter<ScheduledAction>.Restore(dto.Counters.ScheduledActionIds),
             ledgerTransactionIds: RuntimeIdCounter<LedgerTransaction>.Restore(dto.Counters.LedgerTransactionIds),
+            debtRecordIds: RuntimeIdCounter<DebtRecord>.Restore(dto.Counters.DebtRecordIds),
+            standingContractIds: RuntimeIdCounter<StandingContract>.Restore(dto.Counters.StandingContractIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -199,6 +245,11 @@ public static class WorldStateMapper
             ledgerAccounts: ledgerAccounts,
             ledgerTransactions: ledgerTransactions,
             marketPrices: marketPrices,
+            householdStatements: householdStatements,
+            debtRecords: debtRecords,
+            netWorthAssessments: netWorthAssessments,
+            insolvencyStates: insolvencyStates,
+            standingContracts: standingContracts,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -896,4 +947,106 @@ public static class WorldStateMapper
 
         return stockpile;
     }
+
+    private static HouseholdMonthlyStatementDto ToHouseholdMonthlyStatementDto(HouseholdMonthlyStatement statement) => new()
+    {
+        HouseholdId = statement.HouseholdId.ToTaggedString(),
+        MonthTotalMonths = statement.Month.TotalMonths,
+        Income = statement.Income,
+        Expenses = statement.Expenses,
+        Net = statement.Net,
+    };
+
+    private static HouseholdMonthlyStatement FromHouseholdMonthlyStatementDto(HouseholdMonthlyStatementDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        new GameDate(dto.MonthTotalMonths),
+        dto.Income,
+        dto.Expenses,
+        dto.Net);
+
+    private static DebtRecordDto ToDebtRecordDto(DebtRecord debt) => new()
+    {
+        Id = debt.Id.ToTaggedString(),
+        SettlementId = debt.SettlementId.ToTaggedString(),
+        DebtorHouseholdId = debt.DebtorHouseholdId.ToTaggedString(),
+        Principal = debt.Principal,
+        InterestRate = debt.InterestRate,
+        Origin = debt.Origin.ToString(),
+        IsFenusNauticum = debt.IsFenusNauticum,
+        MonthsOverdue = debt.MonthsOverdue,
+        Status = debt.Status.ToString(),
+        Resolution = debt.Resolution.ToString(),
+    };
+
+    private static DebtRecord FromDebtRecordDto(DebtRecordDto dto) => new(
+        RuntimeId<DebtRecord>.Parse(dto.Id),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        RuntimeId<Household>.Parse(dto.DebtorHouseholdId),
+        dto.Principal,
+        dto.InterestRate,
+        Enum.Parse<DebtOrigin>(dto.Origin),
+        dto.IsFenusNauticum,
+        dto.MonthsOverdue,
+        Enum.Parse<DebtStatus>(dto.Status),
+        Enum.Parse<DebtResolution>(dto.Resolution));
+
+    private static NetWorthDto ToNetWorthDto(NetWorth netWorth) => new()
+    {
+        HouseholdId = netWorth.HouseholdId.ToTaggedString(),
+        MonthTotalMonths = netWorth.Month.TotalMonths,
+        TreasuryBalance = netWorth.TreasuryBalance,
+        StoredGoodsValue = netWorth.StoredGoodsValue,
+        OutstandingDebt = netWorth.OutstandingDebt,
+        Total = netWorth.Total,
+    };
+
+    private static NetWorth FromNetWorthDto(NetWorthDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        new GameDate(dto.MonthTotalMonths),
+        dto.TreasuryBalance,
+        dto.StoredGoodsValue,
+        dto.OutstandingDebt,
+        dto.Total);
+
+    private static InsolvencyStateDto ToInsolvencyStateDto(InsolvencyState insolvency) => new()
+    {
+        HouseholdId = insolvency.HouseholdId.ToTaggedString(),
+        MonthsBelowThreshold = insolvency.MonthsBelowThreshold,
+        Stage = insolvency.Stage.ToString(),
+        ConsequencesApplied = insolvency.ConsequencesApplied.Select(static c => c.ToString()).ToArray(),
+    };
+
+    private static InsolvencyState FromInsolvencyStateDto(InsolvencyStateDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.MonthsBelowThreshold,
+        Enum.Parse<InsolvencyStage>(dto.Stage),
+        dto.ConsequencesApplied.Select(static c => Enum.Parse<InsolvencyConsequence>(c)).ToArray());
+
+    private static StandingContractDto ToStandingContractDto(StandingContract contract) => new()
+    {
+        Id = contract.Id.ToTaggedString(),
+        Kind = contract.Kind.ToString(),
+        SettlementId = contract.SettlementId.ToTaggedString(),
+        HouseholdId = contract.HouseholdId.ToTaggedString(),
+        Status = contract.Status.ToString(),
+        HoldingId = contract.HoldingId?.ToTaggedString(),
+        GoodId = contract.GoodId?.Value,
+        QuantityPerMonth = contract.QuantityPerMonth,
+        PriceOverMarketFraction = contract.PriceOverMarketFraction,
+        DenariiCommitted = contract.DenariiCommitted,
+        RouteName = contract.RouteName,
+    };
+
+    private static StandingContract FromStandingContractDto(StandingContractDto dto) => new(
+        RuntimeId<StandingContract>.Parse(dto.Id),
+        Enum.Parse<StandingContractKind>(dto.Kind),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<StandingContractStatus>(dto.Status),
+        dto.HoldingId is null ? null : RuntimeId<Holding>.Parse(dto.HoldingId),
+        dto.GoodId is null ? null : new DefinitionId<Good>(dto.GoodId),
+        dto.QuantityPerMonth,
+        dto.PriceOverMarketFraction,
+        dto.DenariiCommitted,
+        dto.RouteName);
 }

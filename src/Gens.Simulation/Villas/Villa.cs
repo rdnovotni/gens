@@ -137,4 +137,22 @@ public sealed class Villa
             throw new InvalidOperationException("The villa is already at its maximum stage.");
         Stage++;
     }
+
+    /// <summary>
+    /// Forces the villa's stage backward one step (Phase 8 item 6; <c>gens-economy-finance-design.md</c>
+    /// §9's Insolvency ladder rung 3: "where upkeep genuinely can't be sustained, the Villa's own stage...
+    /// can be forced backward"). Unlike <see cref="AdvanceStage"/>, this is never a player action — only
+    /// <see cref="Economy.InsolvencySystem"/> calls it, and only for a household at the <c>Ruined</c>
+    /// stage. §13 leaves reversibility on recovery an open question; this implementation does not
+    /// automatically restore a demoted stage, matching that open question's own "isn't decided" framing —
+    /// a future pass can add restoration once the question is resolved.
+    /// </summary>
+    public void DemoteStage()
+    {
+        if (IsOutpost)
+            throw new InvalidOperationException("An outpost residence has no stage to demote.");
+        if (Stage == VillaStage.Rustica)
+            throw new InvalidOperationException("The villa is already at its minimum stage.");
+        Stage--;
+    }
 }
