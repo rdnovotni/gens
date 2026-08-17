@@ -154,6 +154,13 @@ public sealed record WorldSaveDocument
     /// for the same additive-only reason as <see cref="HouseholdStatements"/>.</summary>
     [JsonPropertyOrder(24)]
     public IReadOnlyList<StandingContractDto> StandingContracts { get; init; } = Array.Empty<StandingContractDto>();
+
+    /// <summary>Every household's current Standing Policy configuration (Phase 9 item 2), already
+    /// keyed by household. Not <c>required</c>, and defaults to empty, for the same additive-only
+    /// reason as <see cref="StandingContracts"/>: a pre-Phase-9-item-2 save never had any Standing
+    /// Policy state recorded.</summary>
+    [JsonPropertyOrder(25)]
+    public IReadOnlyList<HouseholdPolicyStateDto> HouseholdPolicies { get; init; } = Array.Empty<HouseholdPolicyStateDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1235,4 +1242,18 @@ public sealed record StandingContractDto
 
     [JsonPropertyOrder(10)]
     public string? RouteName { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Policies.HouseholdPolicyState"/> (Phase 9 item 2), keyed by
+/// household.</summary>
+public sealed record HouseholdPolicyStateDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string RitesBudget { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int LastChangedDateTotalMonths { get; init; }
 }

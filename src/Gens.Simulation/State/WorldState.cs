@@ -6,6 +6,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
+using Gens.Simulation.Policies;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.State;
@@ -69,6 +70,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, NetWorth> netWorthAssessments,
         OrderedRegistry<RuntimeId<Household>, InsolvencyState> insolvencyStates,
         OrderedRegistry<RuntimeId<StandingContract>, StandingContract> standingContracts,
+        OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState> householdPolicies,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -109,6 +111,7 @@ public sealed class WorldState
         NetWorthAssessments = netWorthAssessments;
         InsolvencyStates = insolvencyStates;
         StandingContracts = standingContracts;
+        HouseholdPolicies = householdPolicies;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -246,6 +249,13 @@ public sealed class WorldState
     /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
     public OrderedRegistry<RuntimeId<StandingContract>, StandingContract> StandingContracts { get; } = new();
 
+    /// <summary>Each household's current Standing Policy configuration (Phase 9 item 2;
+    /// <c>gens-policies-edicts-design.md</c> §2), keyed by household. Sparse and overwritten on each
+    /// accepted <see cref="Policies.ChangeRitesBudgetCommand"/>, matching <see
+    /// cref="HouseholdRegimenDefaults"/>'s identical "no entry means the catalog default" convention —
+    /// see <see cref="Policies.HouseholdPolicyResolver"/>.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState> HouseholdPolicies { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -300,6 +310,7 @@ public sealed class WorldState
         ["netWorthAssessments"] = NetWorthAssessments.Version,
         ["insolvencyStates"] = InsolvencyStates.Version,
         ["standingContracts"] = StandingContracts.Version,
+        ["householdPolicies"] = HouseholdPolicies.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
