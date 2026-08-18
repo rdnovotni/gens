@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="MonthlyReportScreen.uss" />
+    <ui:VisualElement name="monthly-report-screen" class="screen-root" style="padding: 16px;">
+        <ui:Label text="THE STEWARD'S REPORT" class="screen-title" />
+        <ui:VisualElement class="monthly-report-summary">
+            <ui:Label name="monthly-report-income" text="—" class="monthly-report-summary__stat" />
+            <ui:Label name="monthly-report-expenses" text="—" class="monthly-report-summary__stat" />
+            <ui:Label name="monthly-report-net" text="—" class="monthly-report-summary__stat" />
+        </ui:VisualElement>
+        <ui:ScrollView>
+            <ui:VisualElement name="monthly-report-headlines" />
+        </ui:ScrollView>
+    </ui:VisualElement>
+</ui:UXML>

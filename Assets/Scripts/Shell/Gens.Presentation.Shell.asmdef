@@ -2,7 +2,8 @@
   "name": "Gens.Presentation.Shell",
   "rootNamespace": "Gens.Presentation.Shell",
   "references": [
-    "Gens.Simulation"
+    "Gens.Simulation",
+    "Gens.Presentation.Adapters"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

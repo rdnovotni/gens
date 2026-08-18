@@ -1,0 +1,47 @@
+/*
+ * Shared design tokens for every screen (gens-core-design.md §7.2/§7.3). UI Toolkit's USS variant
+ * does not support CSS custom properties on :root the way the web does, so these are plain class
+ * selectors every screen/ink-bar stylesheet composes with rather than a single ":root" token sheet —
+ * import this file first in each screen's own USS and reuse the class names below.
+ */
+
+.papyrus-background {
+    background-color: #E9DFC4;
+}
+
+.ink-text {
+    color: #2A231B;
+}
+
+.authority-text {
+    color: #5C3350;
+}
+
+.land-text {
+    color: #9C4B2E;
+}
+
+.chrome-text {
+    color: #6E8272;
+}
+
+.prestige-text {
+    color: #B9922E;
+}
+
+.crisis-text {
+    color: #7A2E1F;
+}
+
+.display-face {
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+.body-face {
+    white-space: normal;
+}
+
+.utility-face {
+    -unity-font-style: normal;
+}

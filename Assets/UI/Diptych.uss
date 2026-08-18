@@ -1,0 +1,44 @@
+@import url("Palette.uss");
+
+/*
+ * The wax-tablet diptych layout (gens-core-design.md §7.4): two hinged leaves under the ink-bar
+ * spine — left leaf carries identity/summary, right leaf carries the screen's actual job.
+ */
+
+.screen-root {
+    flex-grow: 1;
+    background-color: #E9DFC4;
+}
+
+.diptych {
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.diptych__leaf {
+    padding: 16px;
+}
+
+.diptych__leaf--left {
+    width: 30%;
+    border-right-width: 2px;
+    border-right-color: #2A231B;
+}
+
+.diptych__leaf--right {
+    flex-grow: 1;
+}
+
+.screen-title {
+    color: #2A231B;
+    font-size: 20px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.screen-subtitle {
+    color: #6E8272;
+    font-size: 13px;
+    margin-bottom: 8px;
+}

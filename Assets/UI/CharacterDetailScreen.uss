@@ -1,0 +1,22 @@
+@import url("Diptych.uss");
+
+.character-detail-name {
+    color: #5C3350;
+    font-size: 22px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.character-detail-subtitle {
+    color: #6E8272;
+    font-size: 12px;
+    margin-bottom: 16px;
+}
+
+.character-detail-stat {
+    color: #2A231B;
+    font-size: 13px;
+    margin-bottom: 10px;
+    white-space: normal;
+}

@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="CharacterDetailScreen.uss" />
+    <ui:VisualElement name="character-detail-screen" class="screen-root">
+        <ui:VisualElement class="diptych">
+            <ui:VisualElement class="diptych__leaf diptych__leaf--left">
+                <ui:Label name="character-detail-name" text="—" class="character-detail-name" />
+                <ui:Label name="character-detail-subtitle" text="—" class="character-detail-subtitle" />
+            </ui:VisualElement>
+            <ui:VisualElement class="diptych__leaf diptych__leaf--right">
+                <ui:Label text="ATTRIBUTES" class="screen-subtitle" />
+                <ui:Label name="character-detail-attributes" text="—" class="character-detail-stat" />
+                <ui:Label text="LABOR SKILLS" class="screen-subtitle" />
+                <ui:Label name="character-detail-skills" text="—" class="character-detail-stat" />
+                <ui:Label text="CONDITION" class="screen-subtitle" />
+                <ui:Label name="character-detail-condition" text="—" class="character-detail-stat" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

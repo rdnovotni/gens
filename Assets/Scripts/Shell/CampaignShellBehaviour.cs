@@ -1,6 +1,9 @@
 #nullable enable
 
+using System;
+using System.Collections.Generic;
 using Gens.Simulation.Campaign;
+using Gens.Simulation.Commands;
 using Gens.Simulation.Time;
 using UnityEngine;
 
@@ -41,6 +44,12 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
     /// has bootstrapped it.</summary>
     public CampaignShell? Shell { get; private set; }
 
+    /// <summary>The events <see cref="CampaignShell.Bootstrap"/> returned before the first tick ever
+    /// ran (mirroring the console runner's own bootstrap output) — the Monthly Report screen's initial
+    /// seed until Phase 9 item 8's pause/advance UI starts feeding it each month's
+    /// <see cref="CampaignShell.AdvanceMonth"/> result instead. Empty until <see cref="Awake"/> runs.</summary>
+    public IReadOnlyList<IDomainEvent> InitialHistory { get; private set; } = Array.Empty<IDomainEvent>();
+
     private void Awake()
     {
         var config = new CampaignConfig
@@ -55,6 +64,7 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
         };
 
         Shell = CampaignShell.Bootstrap(config, out var initialHistory);
+        InitialHistory = initialHistory;
         foreach (var domainEvent in initialHistory)
             Debug.Log($"[Gens] {domainEvent.Type}: {string.Join(", ", domainEvent.SubjectIds)}");
     }
