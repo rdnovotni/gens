@@ -53,15 +53,35 @@ public static class EstateSettlementBinding
 {
     public const string StageLabelName = "estate-settlement-stage";
     public const string HoldingContainerName = "estate-holdings";
+    public const string ChangeRitesBudgetButtonName = "estate-settlement-change-rites-budget";
+    public const string FundFestivalButtonName = "estate-settlement-fund-festival";
     private const string HoldingClass = "estate-holding";
     private const string HoldingLabelClass = "estate-holding__label";
     private const string BuildingListClass = "estate-holding__buildings";
     private const string BuildingRowClass = "estate-building-row";
 
-    public static void Apply(VisualElement root, EstateSettlementViewModel viewModel)
+    /// <summary>Populates the estate/settlement screen and wires its two household-action buttons
+    /// (Phase 9 item 7's wax-seal/ordinary confirmation flow) to the caller-supplied handlers — the
+    /// same "callback per interactive element" shape as <see cref="HouseholdRosterBinding.Apply"/>'s
+    /// <c>onSelectCharacter</c>, since neither action actually submits anything itself here; the caller
+    /// (Phase 9 item 8's <c>GensUIController</c>) owns running the confirmation dialog first.</summary>
+    public static void Apply(
+        VisualElement root, EstateSettlementViewModel viewModel, Action onChangeRitesBudget, Action onFundFestival)
     {
         if (root is null)
             throw new ArgumentNullException(nameof(root));
+        if (onChangeRitesBudget is null)
+            throw new ArgumentNullException(nameof(onChangeRitesBudget));
+        if (onFundFestival is null)
+            throw new ArgumentNullException(nameof(onFundFestival));
+
+        var changeRitesBudgetButton = root.Q<Button>(ChangeRitesBudgetButtonName);
+        if (changeRitesBudgetButton is not null)
+            changeRitesBudgetButton.clicked += onChangeRitesBudget;
+
+        var fundFestivalButton = root.Q<Button>(FundFestivalButtonName);
+        if (fundFestivalButton is not null)
+            fundFestivalButton.clicked += onFundFestival;
 
         var stageLabel = root.Q<Label>(StageLabelName);
         if (stageLabel is not null)

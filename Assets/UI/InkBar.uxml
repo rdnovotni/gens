@@ -2,10 +2,18 @@
     <Style src="InkBar.uss" />
     <ui:VisualElement name="ink-bar-root" class="ink-bar">
         <ui:Label name="ink-bar-gens-name" text="—" class="ink-bar__gens-name" />
-        <ui:VisualElement style="flex-direction: row;">
+        <ui:VisualElement style="flex-direction: row; align-items: center;">
             <ui:Label name="ink-bar-date" text="—" class="ink-bar__stat" />
             <ui:Label name="ink-bar-treasury" text="—" class="ink-bar__stat ink-bar__stat--treasury" />
             <ui:Label name="ink-bar-dignitas" text="—" class="ink-bar__stat ink-bar__stat--dignitas" />
+            <ui:Label name="ink-bar-clock-status" text="Paused" class="ink-bar__stat ink-bar__clock-status" />
+            <ui:Button name="ink-bar-pause-toggle" text="Resume" class="ink-bar__control" />
+            <ui:VisualElement name="ink-bar-advance" class="wax-seal ink-bar__advance">
+                <ui:Label text="&#10148;" class="wax-seal__glyph" />
+            </ui:VisualElement>
+            <ui:Button name="ink-bar-save" text="Save" class="ink-bar__control" />
+            <ui:Button name="ink-bar-load" text="Load" class="ink-bar__control" />
+            <ui:Button name="ink-bar-diagnostics" text="Diagnostics" class="ink-bar__control" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
