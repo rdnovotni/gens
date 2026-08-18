@@ -1,5 +1,29 @@
 @import url("Diptych.uss");
 
+/*
+ * The placeholder/procedural portrait medallion (Phase 9 item 8): no composited art layers exist yet
+ * (PortraitRecipe is deliberately just data), so this is a coin-like tinted roundel with a monogram —
+ * closer to gens-core-design.md §7.11's "coin's profile bust" than a photorealistic render — standing
+ * in until a real rendering layer resolves the recipe's layer tokens against authored art.
+ */
+.character-detail-portrait {
+    width: 96px;
+    height: 96px;
+    border-radius: 48px;
+    border-width: 3px;
+    border-color: #B9922E;
+    background-color: #6E8272;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.character-detail-portrait__monogram {
+    color: #E9DFC4;
+    font-size: 28px;
+    -unity-font-style: bold;
+}
+
 .character-detail-name {
     color: #5C3350;
     font-size: 22px;

@@ -8,6 +8,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Queries;
 using Gens.Simulation.Random;
+using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -38,13 +39,30 @@ public sealed class CampaignShell
     /// cref="HouseholdId"/> at bootstrap.</summary>
     public RuntimeId<Settlement> SettlementId { get; }
 
+    /// <summary>The compiled content pack this campaign is authored against (ADR 0012) — carried
+    /// forward from bootstrap (or a loaded save's manifest) purely so <see cref="Save"/> can round-trip
+    /// it without the caller having to track it separately.</summary>
+    public string ContentPackHash { get; }
+
+    /// <summary>The player household's runtime ID is always the very first one <see
+    /// cref="CampaignBootstrapper"/> issues (Phase 9's single-household vertical slice — Phase 10's
+    /// rival houses are the first to add a second one), so a freshly <see cref="Load"/>ed save can
+    /// reconstruct it without the save format itself needing to persist it separately.</summary>
+    private static readonly RuntimeId<Household> RootHouseholdId = RuntimeId<Household>.Parse("household_0000000");
+
+    /// <summary>The player's starting settlement's runtime ID, by the same "first one issued" reasoning
+    /// as <see cref="RootHouseholdId"/>.</summary>
+    private static readonly RuntimeId<Settlement> RootSettlementId = RuntimeId<Settlement>.Parse("settlement_0000000");
+
     private CampaignShell(
-        WorldState state, RandomStreamSet randomStreams, RuntimeId<Household> householdId, RuntimeId<Settlement> settlementId)
+        WorldState state, RandomStreamSet randomStreams, RuntimeId<Household> householdId,
+        RuntimeId<Settlement> settlementId, string contentPackHash)
     {
         State = state;
         RandomStreams = randomStreams;
         HouseholdId = householdId;
         SettlementId = settlementId;
+        ContentPackHash = contentPackHash;
     }
 
     /// <summary>Bootstraps a fresh campaign from <paramref name="config"/>, returning the shell that
@@ -54,7 +72,38 @@ public sealed class CampaignShell
     {
         var campaign = CampaignBootstrapper.Bootstrap(config);
         initialHistory = campaign.InitialHistory;
-        return new CampaignShell(campaign.State, campaign.RandomStreams, campaign.HouseholdId, campaign.SettlementId);
+        return new CampaignShell(
+            campaign.State, campaign.RandomStreams, campaign.HouseholdId, campaign.SettlementId, config.ContentPackHash);
+    }
+
+    /// <summary>Loads a previously <see cref="Save"/>d campaign from <paramref name="path"/>, mirroring
+    /// the console runner's <c>load</c> verb (<see cref="Gens.Simulation.Saves.SaveReader.Read"/>) but
+    /// returning a ready-to-use shell rather than just printing a summary. <paramref name="manifest"/>
+    /// is the loaded save's manifest (format/game/content versions, RNG stream states), surfaced for a
+    /// caller that wants to display or log it.</summary>
+    public static CampaignShell Load(string path, out SaveManifest manifest)
+    {
+        var loaded = SaveReader.Read(path);
+        manifest = loaded.Manifest;
+        return new CampaignShell(loaded.State, loaded.RandomStreams, RootHouseholdId, RootSettlementId, manifest.ContentPackHash);
+    }
+
+    /// <summary>Writes this shell's current state to <paramref name="path"/>, mirroring the console
+    /// runner's <c>save</c> verb (<see cref="Gens.Simulation.Saves.SaveWriter.Write"/>).</summary>
+    public void Save(string path, string gameVersion) => SaveWriter.Write(path, State, RandomStreams, gameVersion, ContentPackHash);
+
+    /// <summary>Deterministic replay diagnostics (Phase 9 item 8): saves the current state to
+    /// <paramref name="diagnosticsPath"/>, reloads it, and compares <see cref="StateHasher"/> hashes
+    /// before and after — the same "load reproduces the exact same state hash it was saved with" check
+    /// the console runner's <c>replay</c>/<c>compare-hashes</c> verbs make, surfaced here so the Unity
+    /// shell can run it on demand without shelling out.</summary>
+    public ReplayDiagnosticsResult VerifyDeterministicReplay(string diagnosticsPath, string gameVersion)
+    {
+        var hashBeforeSave = StateHasher.Hash(State);
+        Save(diagnosticsPath, gameVersion);
+        var reloaded = SaveReader.Read(diagnosticsPath);
+        var hashAfterReload = StateHasher.Hash(reloaded.State);
+        return new ReplayDiagnosticsResult(hashBeforeSave, hashAfterReload, hashBeforeSave == hashAfterReload);
     }
 
     /// <summary>The sole read path (ADR 0013): executes <paramref name="query"/> against the shell's
@@ -82,7 +131,8 @@ public sealed class CampaignShell
 
     /// <summary>Advances the campaign one month, mirroring <c>AdvanceCommand</c>'s pairing of a
     /// <see cref="WriteSetVerifyingSimulation"/> tick with <see cref="WorldState.AdvanceMonth"/>. The
-    /// full pause/advance UI is Phase 9 item 8's job; this method only owns the state transition.</summary>
+    /// pause/advance UI (Phase 9 item 8, <c>GensUIController</c>) owns when to call this; this method
+    /// only owns the state transition itself.</summary>
     public IReadOnlyList<IDomainEvent> AdvanceMonth(IEnumerable<IMonthlySystem<WorldState>> systems)
     {
         if (systems is null)
@@ -94,3 +144,8 @@ public sealed class CampaignShell
         return events;
     }
 }
+
+/// <summary>The result of <see cref="CampaignShell.VerifyDeterministicReplay"/>: the state hash
+/// immediately before saving, the hash after reloading that same save, and whether they matched.
+/// </summary>
+public readonly record struct ReplayDiagnosticsResult(ulong HashBeforeSave, ulong HashAfterReload, bool Matches);

@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="ConfirmationDialog.uss" />
+    <ui:VisualElement name="confirmation-overlay" class="confirmation-overlay" style="display: none;">
+        <ui:VisualElement name="confirmation-tablet" class="confirmation-tablet">
+            <ui:Label name="confirmation-title" text="—" class="confirmation-title" />
+            <ui:Label name="confirmation-body" text="—" class="confirmation-body" />
+            <ui:VisualElement class="confirmation-actions">
+                <ui:Button name="confirmation-cancel" text="Cancel" class="confirmation-button confirmation-button--cancel" />
+                <ui:VisualElement name="confirmation-wax-seal" class="wax-seal">
+                    <ui:Label text="&#10003;" class="wax-seal__glyph" />
+                </ui:VisualElement>
+                <ui:Button name="confirmation-confirm" text="Confirm" class="confirmation-button confirmation-button--confirm" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

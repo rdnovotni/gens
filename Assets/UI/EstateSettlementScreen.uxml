@@ -6,6 +6,9 @@
                 <ui:Label text="ESTATE &amp; SETTLEMENT" class="screen-title" />
                 <ui:Label text="Settlement stage" class="screen-subtitle" />
                 <ui:Label name="estate-settlement-stage" text="—" class="screen-subtitle" />
+                <ui:Label text="HOUSEHOLD ACTIONS" class="screen-subtitle" />
+                <ui:Button name="estate-settlement-change-rites-budget" text="Change Rites Budget" class="estate-action-button" />
+                <ui:Button name="estate-settlement-fund-festival" text="Fund a Festival" class="estate-action-button" />
             </ui:VisualElement>
             <ui:VisualElement class="diptych__leaf diptych__leaf--right">
                 <ui:ScrollView>

@@ -68,4 +68,14 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
         foreach (var domainEvent in initialHistory)
             Debug.Log($"[Gens] {domainEvent.Type}: {string.Join(", ", domainEvent.SubjectIds)}");
     }
+
+    /// <summary>Swaps in a <see cref="CampaignShell"/> loaded from a save (Phase 9 item 8's load
+    /// action), replacing whatever campaign <see cref="Awake"/> bootstrapped. The loaded shell carries
+    /// no "initial history" of its own — <see cref="InitialHistory"/> resets to empty, matching a fresh
+    /// load's console-runner equivalent (<c>load</c>) having nothing to replay either.</summary>
+    public void ReplaceShell(CampaignShell shell)
+    {
+        Shell = shell ?? throw new ArgumentNullException(nameof(shell));
+        InitialHistory = Array.Empty<IDomainEvent>();
+    }
 }

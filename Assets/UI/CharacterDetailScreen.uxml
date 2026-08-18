@@ -3,6 +3,9 @@
     <ui:VisualElement name="character-detail-screen" class="screen-root">
         <ui:VisualElement class="diptych">
             <ui:VisualElement class="diptych__leaf diptych__leaf--left">
+                <ui:VisualElement name="character-detail-portrait" class="character-detail-portrait">
+                    <ui:Label name="character-detail-portrait-monogram" text="—" class="character-detail-portrait__monogram" />
+                </ui:VisualElement>
                 <ui:Label name="character-detail-name" text="—" class="character-detail-name" />
                 <ui:Label name="character-detail-subtitle" text="—" class="character-detail-subtitle" />
             </ui:VisualElement>

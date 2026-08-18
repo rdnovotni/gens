@@ -1,0 +1,71 @@
+@import url("Palette.uss");
+@import url("WaxSeal.uss");
+
+/*
+ * The confirmation modal (gens-core-design.md §7.4's event-modal shape: "a smaller floating tablet
+ * over a dimmed background... 2-4 wax-stamped choice buttons below"). Shared by wax-seal confirmations
+ * for consequential decisions, ordinary confirmations for reversible actions, and informational
+ * dismiss-only messages (Phase 9 items 7-8).
+ */
+
+.confirmation-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(42, 35, 27, 0.55);
+    align-items: center;
+    justify-content: center;
+}
+
+.confirmation-tablet {
+    background-color: #E9DFC4;
+    border-width: 2px;
+    border-color: #2A231B;
+    border-radius: 4px;
+    padding: 20px;
+    min-width: 320px;
+    max-width: 480px;
+}
+
+.confirmation-title {
+    color: #2A231B;
+    font-size: 18px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+}
+
+.confirmation-body {
+    color: #2A231B;
+    font-size: 13px;
+    white-space: normal;
+    margin-bottom: 18px;
+}
+
+.confirmation-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.confirmation-button {
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 2px;
+    margin-left: 10px;
+}
+
+.confirmation-button--cancel {
+    background-color: rgba(110, 130, 114, 0.25);
+    color: #2A231B;
+    border-width: 1px;
+    border-color: #6E8272;
+}
+
+.confirmation-button--confirm {
+    background-color: #6E8272;
+    color: #E9DFC4;
+    border-width: 0;
+}

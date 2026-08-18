@@ -1,4 +1,5 @@
 @import url("Palette.uss");
+@import url("WaxSeal.uss");
 
 /*
  * The persistent ink-bar spine (gens-core-design.md §7.4): "gens name · date/season · treasury ·
@@ -34,4 +35,31 @@
 
 .ink-bar__stat--dignitas {
     color: #B9922E;
+}
+
+.ink-bar__clock-status {
+    color: #6E8272;
+    -unity-font-style: italic;
+}
+
+.ink-bar__control {
+    margin-left: 12px;
+    font-size: 12px;
+    padding: 4px 10px;
+    background-color: rgba(233, 223, 196, 0.15);
+    color: #E9DFC4;
+    border-width: 1px;
+    border-color: #6E8272;
+    border-radius: 2px;
+}
+
+.ink-bar__advance {
+    width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    margin-left: 12px;
+}
+
+.ink-bar__advance .wax-seal__glyph {
+    font-size: 14px;
 }

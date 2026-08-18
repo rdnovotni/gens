@@ -6,7 +6,8 @@ namespace Gens.Simulation.Queries;
 
 /// <summary>The character detail screen's projection (Phase 9 item 6): one Character's full sheet —
 /// identity, lifecycle, legal/social standing, attributes, labor skills, condition, current duty,
-/// traits, and spouse. Extends <see cref="CharacterLifecycleQuery"/>'s single-subject shape with
+/// traits, spouse, and visual profile (the placeholder/procedural portrait's own data source, Phase 9
+/// item 8). Extends <see cref="CharacterLifecycleQuery"/>'s single-subject shape with
 /// every field <c>gens-core-design.md</c> §7.4's "Familia individual record" diptych (identity leaf
 /// plus stat-gauge leaf) needs, rather than duplicating that narrower lifecycle-only query.</summary>
 public readonly record struct CharacterDetailProjection(
@@ -25,7 +26,8 @@ public readonly record struct CharacterDetailProjection(
     IReadOnlyList<string> TraitIds,
     string? CurrentSpouseId,
     string? MotherId,
-    string? FatherId);
+    string? FatherId,
+    CharacterVisualProfile VisualProfile);
 
 /// <summary>Projects a single, caller-specified Character's full detail. No <see
 /// cref="KnowledgeState"/> filtering yet, matching <see cref="CharacterLifecycleQuery"/>'s own
@@ -59,7 +61,8 @@ public sealed class CharacterDetailQuery : IWorldQuery<CharacterDetailProjection
             TraitIds: character.Traits.Select(trait => trait.Value).ToArray(),
             CurrentSpouseId: character.CurrentSpouseId?.ToTaggedString(),
             MotherId: character.MotherId?.ToTaggedString(),
-            FatherId: character.FatherId?.ToTaggedString());
+            FatherId: character.FatherId?.ToTaggedString(),
+            VisualProfile: character.VisualProfile);
     }
 
     private static string FormatFullName(Character character) =>
