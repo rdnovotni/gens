@@ -1,5 +1,6 @@
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Events;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Time;
@@ -52,5 +53,77 @@ public sealed class MonthlyReportProjectorTests
         var report = MonthlyReportProjector.Project(new GameDate(0), Array.Empty<IDomainEvent>());
 
         Assert.That(report.Entries, Is.Empty);
+        Assert.That(report.AutomationSummaries, Is.Empty);
+    }
+
+    [Test]
+    public void GroupsAScopedEventByTheRealTaxonomyRatherThanTheNamespacePrefix()
+    {
+        var date = new GameDate(4);
+        var instanceId = new RuntimeIdCounter<EventInstance>().Issue();
+        var fired = new EventFiredEvent(
+            new RuntimeIdCounter<DomainEventEntity>().Issue(), date, instanceId,
+            new DefinitionId<EventDefinition>("some-def"), EventScope.Household, new[] { "household_0000001" }, null);
+
+        var report = MonthlyReportProjector.Project(date, new IDomainEvent[] { fired });
+
+        var entry = report.Entries.Single();
+        Assert.That(entry.Group, Is.EqualTo("household"));
+        Assert.That(entry.Importance, Is.EqualTo(ReportImportance.High));
+        Assert.That(entry.Acknowledgement, Is.EqualTo(ReportAcknowledgementState.Flagged));
+        Assert.That(entry.SourceInstanceId, Is.EqualTo(instanceId.ToTaggedString()));
+    }
+
+    [Test]
+    public void APersonalFiredEventIsAutoResolvedAndMediumImportance()
+    {
+        var date = new GameDate(4);
+        var fired = new EventFiredEvent(
+            new RuntimeIdCounter<DomainEventEntity>().Issue(), date, new RuntimeIdCounter<EventInstance>().Issue(),
+            new DefinitionId<EventDefinition>("some-def"), EventScope.Personal, new[] { "char_0000001" }, null);
+
+        var report = MonthlyReportProjector.Project(date, new IDomainEvent[] { fired });
+
+        var entry = report.Entries.Single();
+        Assert.That(entry.Group, Is.EqualTo("personal"));
+        Assert.That(entry.Importance, Is.EqualTo(ReportImportance.Medium));
+        Assert.That(entry.Acknowledgement, Is.EqualTo(ReportAcknowledgementState.AutoResolved));
+    }
+
+    [Test]
+    public void ManySimilarAutoResolvedEventsCollapseIntoOneAutomationSummary()
+    {
+        var date = new GameDate(4);
+        var events = Enumerable.Range(0, MonthlyReportProjector.AutomationSummaryThreshold)
+            .Select(i => (IDomainEvent)new EventOptionResolvedEvent(
+                RuntimeId<DomainEventEntity>.Parse($"event_{i:D7}"), date, new RuntimeIdCounter<EventInstance>().Issue(),
+                new DefinitionId<EventDefinition>("some-def"), EventScope.Personal,
+                new DefinitionId<EventOptionDefinition>("some-option"), new[] { "char_0000001" }, null))
+            .ToArray();
+
+        var report = MonthlyReportProjector.Project(date, events);
+
+        Assert.That(report.Entries, Is.Empty);
+        var summary = report.AutomationSummaries.Single();
+        Assert.That(summary.Count, Is.EqualTo(MonthlyReportProjector.AutomationSummaryThreshold));
+        Assert.That(summary.Group, Is.EqualTo("personal"));
+        Assert.That(summary.EventType, Is.EqualTo("events.optionResolved"));
+    }
+
+    [Test]
+    public void FewerThanTheThresholdSimilarEventsStayItemized()
+    {
+        var date = new GameDate(4);
+        var events = Enumerable.Range(0, MonthlyReportProjector.AutomationSummaryThreshold - 1)
+            .Select(i => (IDomainEvent)new EventOptionResolvedEvent(
+                RuntimeId<DomainEventEntity>.Parse($"event_{i:D7}"), date, new RuntimeIdCounter<EventInstance>().Issue(),
+                new DefinitionId<EventDefinition>("some-def"), EventScope.Personal,
+                new DefinitionId<EventOptionDefinition>("some-option"), new[] { "char_0000001" }, null))
+            .ToArray();
+
+        var report = MonthlyReportProjector.Project(date, events);
+
+        Assert.That(report.Entries, Has.Count.EqualTo(MonthlyReportProjector.AutomationSummaryThreshold - 1));
+        Assert.That(report.AutomationSummaries, Is.Empty);
     }
 }

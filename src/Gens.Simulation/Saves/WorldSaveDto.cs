@@ -161,6 +161,13 @@ public sealed record WorldSaveDocument
     /// Policy state recorded.</summary>
     [JsonPropertyOrder(25)]
     public IReadOnlyList<HouseholdPolicyStateDto> HouseholdPolicies { get; init; } = Array.Empty<HouseholdPolicyStateDto>();
+
+    /// <summary>Every fired <see cref="Events.EventInstance"/> (Phase 9 item 3), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="HouseholdPolicies"/> above: a
+    /// pre-Phase-9-item-3 save never had any event instances recorded.</summary>
+    [JsonPropertyOrder(26)]
+    public IReadOnlyList<EventInstanceDto> EventInstances { get; init; } = Array.Empty<EventInstanceDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -227,6 +234,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(15)]
     public long StandingContractIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-9-item-3 save has no event
+    /// instances. Additive-only per ADR 0011's policy, matching <see cref="StandingContractIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(16)]
+    public long EventInstanceIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1256,4 +1269,44 @@ public sealed record HouseholdPolicyStateDto
 
     [JsonPropertyOrder(2)]
     public required int LastChangedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Events.EventInstance"/> (Phase 9 item 3).</summary>
+public sealed record EventInstanceDto
+{
+    [JsonPropertyOrder(0)]
+    public required string InstanceId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string DefinitionId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Scope { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required IReadOnlyList<string> SubjectIds { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int CurrentStageIndex { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int FiredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int ExpiresDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? ResolvedOptionId { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public int? ResolvedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public string? ResolvingEventId { get; init; }
 }

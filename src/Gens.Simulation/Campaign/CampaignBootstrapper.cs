@@ -65,6 +65,11 @@ public static class CampaignBootstrapper
     /// cref="PopGroupEmigrationStreamName"/> for the same rule-8 reason.</summary>
     public const string PopGroupImmigrationStreamName = "characters.popGroupImmigration";
 
+    /// <summary>The named random stream <see cref="Events.EventPoolSystem"/> reserves for its monthly
+    /// weighted-pool draws (Phase 9 item 3), kept distinct from every other stream here for the same
+    /// rule-8 reason.</summary>
+    public const string EventPoolStreamName = "events.pool";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -84,6 +89,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(PopGroupGrowthMortalityStreamName, config.Seed);
         streams.AddDerived(PopGroupEmigrationStreamName, config.Seed);
         streams.AddDerived(PopGroupImmigrationStreamName, config.Seed);
+        streams.AddDerived(EventPoolStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

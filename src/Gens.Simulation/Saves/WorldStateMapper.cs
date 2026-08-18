@@ -2,6 +2,7 @@ using System.Text.Json;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Events;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
@@ -46,6 +47,7 @@ public static class WorldStateMapper
                 LedgerTransactionIds = state.LedgerTransactionIds.Peek,
                 DebtRecordIds = state.DebtRecordIds.Peek,
                 StandingContractIds = state.StandingContractIds.Peek,
+                EventInstanceIds = state.EventInstanceIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -87,6 +89,8 @@ public static class WorldStateMapper
             StandingContracts = state.StandingContracts.InAscendingOrder().Select(entry => ToStandingContractDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             HouseholdPolicies = state.HouseholdPolicies.InAscendingOrder().Select(entry => ToHouseholdPolicyStateDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            EventInstances = state.EventInstances.InAscendingOrder().Select(entry => ToEventInstanceDto(entry.Value)).ToArray(),
         };
     }
 
@@ -222,6 +226,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Household>, HouseholdPolicyState>(policy.HouseholdId, policy);
             }));
 
+        var eventInstances = OrderedRegistry<RuntimeId<EventInstance>, EventInstance>.Restore(
+            dto.EventInstances.Select(e =>
+            {
+                var instance = FromEventInstanceDto(e);
+                return new KeyValuePair<RuntimeId<EventInstance>, EventInstance>(instance.InstanceId, instance);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -240,6 +251,7 @@ public static class WorldStateMapper
             ledgerTransactionIds: RuntimeIdCounter<LedgerTransaction>.Restore(dto.Counters.LedgerTransactionIds),
             debtRecordIds: RuntimeIdCounter<DebtRecord>.Restore(dto.Counters.DebtRecordIds),
             standingContractIds: RuntimeIdCounter<StandingContract>.Restore(dto.Counters.StandingContractIds),
+            eventInstanceIds: RuntimeIdCounter<EventInstance>.Restore(dto.Counters.EventInstanceIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -261,6 +273,7 @@ public static class WorldStateMapper
             insolvencyStates: insolvencyStates,
             standingContracts: standingContracts,
             householdPolicies: householdPolicies,
+            eventInstances: eventInstances,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1072,4 +1085,34 @@ public static class WorldStateMapper
         RuntimeId<Household>.Parse(dto.HouseholdId),
         Enum.Parse<RitesBudgetTier>(dto.RitesBudget),
         new GameDate(dto.LastChangedDateTotalMonths));
+
+    private static EventInstanceDto ToEventInstanceDto(EventInstance instance) => new()
+    {
+        InstanceId = instance.InstanceId.ToTaggedString(),
+        DefinitionId = instance.DefinitionId.Value,
+        Scope = instance.Scope.ToString(),
+        SubjectIds = instance.SubjectIds,
+        ActorId = instance.ActorId,
+        CurrentStageIndex = instance.CurrentStageIndex,
+        FiredDateTotalMonths = instance.FiredDate.TotalMonths,
+        ExpiresDateTotalMonths = instance.ExpiresDate.TotalMonths,
+        Status = instance.Status.ToString(),
+        ResolvedOptionId = instance.ResolvedOptionId?.Value,
+        ResolvedDateTotalMonths = instance.ResolvedDate?.TotalMonths,
+        ResolvingEventId = instance.ResolvingEventId,
+    };
+
+    private static EventInstance FromEventInstanceDto(EventInstanceDto dto) => new(
+        RuntimeId<EventInstance>.Parse(dto.InstanceId),
+        new DefinitionId<EventDefinition>(dto.DefinitionId),
+        Enum.Parse<EventScope>(dto.Scope),
+        dto.SubjectIds,
+        dto.ActorId,
+        dto.CurrentStageIndex,
+        new GameDate(dto.FiredDateTotalMonths),
+        new GameDate(dto.ExpiresDateTotalMonths),
+        Enum.Parse<EventInstanceStatus>(dto.Status),
+        dto.ResolvedOptionId is null ? null : new DefinitionId<EventOptionDefinition>(dto.ResolvedOptionId),
+        dto.ResolvedDateTotalMonths is null ? null : new GameDate(dto.ResolvedDateTotalMonths.Value),
+        dto.ResolvingEventId);
 }
