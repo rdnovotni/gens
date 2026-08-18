@@ -1,0 +1,16 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="HouseholdRosterScreen.uss" />
+    <ui:VisualElement name="household-roster-screen" class="screen-root">
+        <ui:VisualElement class="diptych">
+            <ui:VisualElement class="diptych__leaf diptych__leaf--left">
+                <ui:Label text="THE HOUSEHOLD" class="screen-title" />
+                <ui:Label text="Every living member of the familia, from pater/materfamilias to the newest freedman." class="screen-subtitle" />
+            </ui:VisualElement>
+            <ui:VisualElement class="diptych__leaf diptych__leaf--right">
+                <ui:ScrollView>
+                    <ui:VisualElement name="roster-rows" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

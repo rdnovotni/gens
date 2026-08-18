@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="EstateSettlementScreen.uss" />
+    <ui:VisualElement name="estate-settlement-screen" class="screen-root">
+        <ui:VisualElement class="diptych">
+            <ui:VisualElement class="diptych__leaf diptych__leaf--left">
+                <ui:Label text="ESTATE &amp; SETTLEMENT" class="screen-title" />
+                <ui:Label text="Settlement stage" class="screen-subtitle" />
+                <ui:Label name="estate-settlement-stage" text="—" class="screen-subtitle" />
+            </ui:VisualElement>
+            <ui:VisualElement class="diptych__leaf diptych__leaf--right">
+                <ui:ScrollView>
+                    <ui:VisualElement name="estate-holdings" />
+                </ui:ScrollView>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

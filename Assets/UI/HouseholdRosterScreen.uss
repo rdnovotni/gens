@@ -1,0 +1,27 @@
+@import url("Diptych.uss");
+
+.roster-row {
+    flex-direction: column;
+    align-items: flex-start;
+    background-color: rgba(233, 223, 196, 0.4);
+    border-width: 1px;
+    border-color: #6E8272;
+    border-radius: 2px;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+}
+
+.roster-row:hover {
+    background-color: rgba(185, 146, 46, 0.25);
+}
+
+.roster-row__name {
+    color: #2A231B;
+    -unity-font-style: bold;
+    font-size: 14px;
+}
+
+.roster-row__subtitle {
+    color: #6E8272;
+    font-size: 11px;
+}

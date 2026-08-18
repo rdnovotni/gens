@@ -1,0 +1,37 @@
+@import url("Palette.uss");
+
+/*
+ * The persistent ink-bar spine (gens-core-design.md §7.4): "gens name · date/season · treasury ·
+ * dignitas", present at the top of every screen, diptych or not.
+ */
+
+.ink-bar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #2A231B;
+    padding: 6px 16px;
+    border-bottom-width: 2px;
+    border-bottom-color: #B9922E;
+}
+
+.ink-bar__gens-name {
+    color: #E9DFC4;
+    font-size: 16px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+.ink-bar__stat {
+    color: #E9DFC4;
+    font-size: 13px;
+    margin-left: 16px;
+}
+
+.ink-bar__stat--treasury {
+    color: #B9922E;
+}
+
+.ink-bar__stat--dignitas {
+    color: #B9922E;
+}

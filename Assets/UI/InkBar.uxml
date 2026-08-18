@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="InkBar.uss" />
+    <ui:VisualElement name="ink-bar-root" class="ink-bar">
+        <ui:Label name="ink-bar-gens-name" text="—" class="ink-bar__gens-name" />
+        <ui:VisualElement style="flex-direction: row;">
+            <ui:Label name="ink-bar-date" text="—" class="ink-bar__stat" />
+            <ui:Label name="ink-bar-treasury" text="—" class="ink-bar__stat ink-bar__stat--treasury" />
+            <ui:Label name="ink-bar-dignitas" text="—" class="ink-bar__stat ink-bar__stat--dignitas" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
