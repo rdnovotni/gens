@@ -1,0 +1,27 @@
+{
+  "name": "Gens.Presentation.EditModeTests",
+  "rootNamespace": "Gens.Presentation.Tests.EditMode",
+  "references": [
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Gens.Simulation",
+    "Gens.Presentation.Adapters",
+    "Gens.Presentation.Shell",
+    "Gens.Presentation.TestSupport"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
