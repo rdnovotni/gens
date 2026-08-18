@@ -1,0 +1,16 @@
+{
+  "name": "Gens.Presentation.Adapters",
+  "rootNamespace": "Gens.Presentation.Adapters",
+  "references": [
+    "Gens.Simulation"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
