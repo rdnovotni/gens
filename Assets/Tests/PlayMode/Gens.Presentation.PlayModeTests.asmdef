@@ -1,0 +1,25 @@
+{
+  "name": "Gens.Presentation.PlayModeTests",
+  "rootNamespace": "Gens.Presentation.Tests.PlayMode",
+  "references": [
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner",
+    "Gens.Simulation",
+    "Gens.Presentation.Adapters",
+    "Gens.Presentation.Shell",
+    "Gens.Presentation.TestSupport"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
