@@ -76,6 +76,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState> householdPolicies,
         OrderedRegistry<RuntimeId<EventInstance>, EventInstance> eventInstances,
         OrderedRegistry<RuntimeId<Actor>, LivingWorldActor> actors,
+        OrderedRegistry<HouseStandingKey, HouseStanding> houseStandings,
+        OrderedRegistry<RuntimeId<Actor>, RivalDossier> rivalDossiers,
+        OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry> regionalFamiliesEntries,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -120,6 +123,9 @@ public sealed class WorldState
         HouseholdPolicies = householdPolicies;
         EventInstances = eventInstances;
         Actors = actors;
+        HouseStandings = houseStandings;
+        RivalDossiers = rivalDossiers;
+        RegionalFamiliesEntries = regionalFamiliesEntries;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -283,6 +289,22 @@ public sealed class WorldState
     /// rather than mutating one in place, matching <see cref="EventInstances"/>' identical convention.</summary>
     public OrderedRegistry<RuntimeId<Actor>, LivingWorldActor> Actors { get; } = new();
 
+    /// <summary>Every tracked house-pair's <see cref="Actors.HouseStanding"/> (Phase 10 item 5), in
+    /// ascending <see cref="HouseStandingKey"/> order (ADR 0004). Sparse: an untracked pair has no
+    /// entry — see <see cref="Actors.HouseStandingResolver"/> for the default that applies then.</summary>
+    public OrderedRegistry<HouseStandingKey, HouseStanding> HouseStandings { get; } = new();
+
+    /// <summary>Every actor the player has an actual <see cref="Actors.RivalDossier"/> for (Phase 10
+    /// item 5), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Sparse: an actor never
+    /// contacted has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, RivalDossier> RivalDossiers { get; } = new();
+
+    /// <summary>Every actor with lighter, pre-contact regional visibility (Phase 10 item 5;
+    /// <c>gens-rival-houses-design.md</c> §7's "Notable Families of the Region"), in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004). Sparse, and distinct from <see cref="RivalDossiers"/>:
+    /// an actor can appear here without ever having a full dossier.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry> RegionalFamiliesEntries { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -341,6 +363,9 @@ public sealed class WorldState
         ["householdPolicies"] = HouseholdPolicies.Version,
         ["eventInstances"] = EventInstances.Version,
         ["actors"] = Actors.Version,
+        ["houseStandings"] = HouseStandings.Version,
+        ["rivalDossiers"] = RivalDossiers.Version,
+        ["regionalFamiliesEntries"] = RegionalFamiliesEntries.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

@@ -226,6 +226,37 @@ public static class StateHasher
         foreach (var entry in state.Actors.InAscendingOrder())
             hash = MixLivingWorldActor(hash, entry.Value);
 
+        // Already ascending HouseStandingKey order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.HouseStandings.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.ActorAId.Value);
+            hash = MixLong(hash, entry.Key.ActorBId.Value);
+            hash = MixLong(hash, (long)entry.Value.Standing);
+            hash = MixLong(hash, entry.Value.Grudge is null ? 0 : 1);
+            hash = MixString(hash, entry.Value.Grudge?.OriginEngagementId ?? string.Empty);
+            hash = MixLong(hash, entry.Value.Grudge?.OriginDate.TotalMonths ?? 0);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.RivalDossiers.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.Summary);
+            hash = MixString(hash, entry.Value.HeadComboTitle ?? string.Empty);
+            hash = MixLong(hash, entry.Value.LastUpdatedDate.TotalMonths);
+            foreach (var chronicleEntry in entry.Value.RecentChronicleEntries)
+                hash = MixString(hash, chronicleEntry);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.RegionalFamiliesEntries.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.Name);
+            hash = MixLong(hash, (long)entry.Value.StandingTrend);
+            hash = MixLong(hash, entry.Value.IdentityEconomic is null ? -1L : (long)entry.Value.IdentityEconomic.Value);
+        }
+
         return hash;
     }
 

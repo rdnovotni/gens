@@ -94,6 +94,12 @@ public static class WorldStateMapper
             EventInstances = state.EventInstances.InAscendingOrder().Select(entry => ToEventInstanceDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             Actors = state.Actors.InAscendingOrder().Select(entry => ToLivingWorldActorDto(entry.Value)).ToArray(),
+            // Already ascending HouseStandingKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            HouseStandings = state.HouseStandings.InAscendingOrder().Select(entry => ToHouseStandingDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RivalDossiers = state.RivalDossiers.InAscendingOrder().Select(entry => ToRivalDossierDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RegionalFamiliesEntries = state.RegionalFamiliesEntries.InAscendingOrder().Select(entry => ToRegionalFamiliesEntryDto(entry.Value)).ToArray(),
         };
     }
 
@@ -243,6 +249,23 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Actor>, LivingWorldActor>(actor.ActorId, actor);
             }));
 
+        var houseStandings = OrderedRegistry<HouseStandingKey, HouseStanding>.Restore(
+            dto.HouseStandings.Select(FromHouseStandingDto));
+
+        var rivalDossiers = OrderedRegistry<RuntimeId<Actor>, RivalDossier>.Restore(
+            dto.RivalDossiers.Select(d =>
+            {
+                var dossier = FromRivalDossierDto(d);
+                return new KeyValuePair<RuntimeId<Actor>, RivalDossier>(dossier.ActorId, dossier);
+            }));
+
+        var regionalFamiliesEntries = OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry>.Restore(
+            dto.RegionalFamiliesEntries.Select(e =>
+            {
+                var entry = FromRegionalFamiliesEntryDto(e);
+                return new KeyValuePair<RuntimeId<Actor>, RegionalFamiliesEntry>(entry.ActorId, entry);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -285,6 +308,9 @@ public static class WorldStateMapper
             householdPolicies: householdPolicies,
             eventInstances: eventInstances,
             actors: actors,
+            houseStandings: houseStandings,
+            rivalDossiers: rivalDossiers,
+            regionalFamiliesEntries: regionalFamiliesEntries,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1169,4 +1195,53 @@ public static class WorldStateMapper
         RuntimeId<Region>.Parse(dto.RegionId),
         RuntimeId<Settlement>.Parse(dto.HomeSettlementId),
         dto.HeadCharacterId is null ? null : RuntimeId<Character>.Parse(dto.HeadCharacterId));
+
+    private static HouseStandingDto ToHouseStandingDto(HouseStandingKey key, HouseStanding standing) => new()
+    {
+        ActorAId = key.ActorAId.ToTaggedString(),
+        ActorBId = key.ActorBId.ToTaggedString(),
+        Standing = standing.Standing.ToString(),
+        GrudgeOriginEngagementId = standing.Grudge?.OriginEngagementId,
+        GrudgeOriginDateTotalMonths = standing.Grudge?.OriginDate.TotalMonths,
+    };
+
+    private static KeyValuePair<HouseStandingKey, HouseStanding> FromHouseStandingDto(HouseStandingDto dto)
+    {
+        var key = HouseStandingKey.Between(RuntimeId<Actor>.Parse(dto.ActorAId), RuntimeId<Actor>.Parse(dto.ActorBId));
+        var grudge = dto.GrudgeOriginEngagementId is null
+            ? (AncestralGrudge?)null
+            : new AncestralGrudge(dto.GrudgeOriginEngagementId, new GameDate(dto.GrudgeOriginDateTotalMonths!.Value));
+        var standing = new HouseStanding(Enum.Parse<HouseStandingLevel>(dto.Standing), grudge);
+        return new KeyValuePair<HouseStandingKey, HouseStanding>(key, standing);
+    }
+
+    private static RivalDossierDto ToRivalDossierDto(RivalDossier dossier) => new()
+    {
+        ActorId = dossier.ActorId.ToTaggedString(),
+        Summary = dossier.Summary,
+        HeadComboTitle = dossier.HeadComboTitle,
+        LastUpdatedDateTotalMonths = dossier.LastUpdatedDate.TotalMonths,
+        RecentChronicleEntries = dossier.RecentChronicleEntries,
+    };
+
+    private static RivalDossier FromRivalDossierDto(RivalDossierDto dto) => new(
+        RuntimeId<Actor>.Parse(dto.ActorId),
+        dto.Summary,
+        dto.HeadComboTitle,
+        new GameDate(dto.LastUpdatedDateTotalMonths),
+        dto.RecentChronicleEntries);
+
+    private static RegionalFamiliesEntryDto ToRegionalFamiliesEntryDto(RegionalFamiliesEntry entry) => new()
+    {
+        ActorId = entry.ActorId.ToTaggedString(),
+        Name = entry.Name,
+        StandingTrend = entry.StandingTrend.ToString(),
+        IdentityEconomic = entry.IdentityEconomic?.ToString(),
+    };
+
+    private static RegionalFamiliesEntry FromRegionalFamiliesEntryDto(RegionalFamiliesEntryDto dto) => new(
+        RuntimeId<Actor>.Parse(dto.ActorId),
+        dto.Name,
+        Enum.Parse<LivingWorldActorStandingTrend>(dto.StandingTrend),
+        dto.IdentityEconomic is null ? null : Enum.Parse<EconomicIdentityTag>(dto.IdentityEconomic));
 }

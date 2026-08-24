@@ -175,6 +175,24 @@ public sealed record WorldSaveDocument
     /// save never had any living-world actors recorded.</summary>
     [JsonPropertyOrder(27)]
     public IReadOnlyList<LivingWorldActorDto> Actors { get; init; } = Array.Empty<LivingWorldActorDto>();
+
+    /// <summary>Every tracked house-pair's <see cref="Actors.HouseStanding"/> (Phase 10 item 5), already
+    /// in ascending <see cref="Actors.HouseStandingKey"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(28)]
+    public IReadOnlyList<HouseStandingDto> HouseStandings { get; init; } = Array.Empty<HouseStandingDto>();
+
+    /// <summary>Every actor's <see cref="Actors.RivalDossier"/> (Phase 10 item 5), already keyed by
+    /// actor. Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(29)]
+    public IReadOnlyList<RivalDossierDto> RivalDossiers { get; init; } = Array.Empty<RivalDossierDto>();
+
+    /// <summary>Every actor's <see cref="Actors.RegionalFamiliesEntry"/> (Phase 10 item 5), already
+    /// keyed by actor. Not <c>required</c>, and defaults to empty, for the same additive-only reason as
+    /// <see cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(30)]
+    public IReadOnlyList<RegionalFamiliesEntryDto> RegionalFamiliesEntries { get; init; } = Array.Empty<RegionalFamiliesEntryDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1371,4 +1389,58 @@ public sealed record LivingWorldActorDto
 
     [JsonPropertyOrder(16)]
     public required string HomeSettlementId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.HouseStanding"/> entry (Phase 10 item 5).</summary>
+public sealed record HouseStandingDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorAId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ActorBId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Standing { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? GrudgeOriginEngagementId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public int? GrudgeOriginDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.RivalDossier"/> (Phase 10 item 5).</summary>
+public sealed record RivalDossierDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Summary { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? HeadComboTitle { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int LastUpdatedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required IReadOnlyList<string> RecentChronicleEntries { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.RegionalFamiliesEntry"/> (Phase 10 item 5).</summary>
+public sealed record RegionalFamiliesEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string StandingTrend { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? IdentityEconomic { get; init; }
 }
