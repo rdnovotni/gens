@@ -1389,6 +1389,9 @@ public sealed record LivingWorldActorDto
 
     [JsonPropertyOrder(16)]
     public required string HomeSettlementId { get; init; }
+
+    [JsonPropertyOrder(17)]
+    public int? LastContactDateTotalMonths { get; init; }
 }
 
 /// <summary>One <see cref="Gens.Simulation.Actors.HouseStanding"/> entry (Phase 10 item 5).</summary>

@@ -3,6 +3,7 @@ using Gens.Simulation.Economy;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Time;
 
 namespace Gens.Simulation.Actors;
 
@@ -129,6 +130,11 @@ public enum MilitaryStrengthBand
 /// up per <c>gens-rival-houses-design.md</c> §3.2.</param>
 /// <param name="ParentActorId">Populated only when <paramref name="OriginStory"/> is <see
 /// cref="LivingWorldActorOrigin.CadetBranch"/> (§2.2) — the house this one split off from.</param>
+/// <param name="LastContactDate">The most recent month real player contact occurred (§2.3/§2.4) —
+/// null for an actor never yet contacted. Read by the promotion/demotion service (Phase 10 item 3;
+/// <see cref="LivingWorldActorTieringService"/>) to decide whether a quiet <see
+/// cref="LivingWorldActorTier.Noteworthy"/> actor is due to demote back to <see
+/// cref="LivingWorldActorTier.Background"/>.</param>
 public sealed record LivingWorldActor(
     RuntimeId<Actor> ActorId,
     LivingWorldActorType ActorType,
@@ -143,7 +149,8 @@ public sealed record LivingWorldActor(
     LivingWorldActorNetWorth NetWorth,
     LivingWorldActorMilitaryStrength MilitaryStrength,
     RuntimeId<Region> RegionId,
-    RuntimeId<Settlement> HomeSettlementId)
+    RuntimeId<Settlement> HomeSettlementId,
+    GameDate? LastContactDate = null)
 {
     /// <summary>The only supported way to construct a <see cref="LivingWorldActor"/>. Enforces the
     /// invariants the design doc states but a bare positional-record constructor cannot: a non-empty
@@ -163,7 +170,8 @@ public sealed record LivingWorldActor(
         LivingWorldActorMilitaryStrength militaryStrength,
         RuntimeId<Region> regionId,
         RuntimeId<Settlement> homeSettlementId,
-        RuntimeId<Character>? headCharacterId = null)
+        RuntimeId<Character>? headCharacterId = null,
+        GameDate? lastContactDate = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("A LivingWorldActor requires a non-empty name.", nameof(name));
@@ -178,6 +186,6 @@ public sealed record LivingWorldActor(
 
         return new LivingWorldActor(
             actorId, actorType, name, tier, standingTrend, originStory, parentActorId, identityTags,
-            headCharacterId, dignitas, netWorth, militaryStrength, regionId, homeSettlementId);
+            headCharacterId, dignitas, netWorth, militaryStrength, regionId, homeSettlementId, lastContactDate);
     }
 }

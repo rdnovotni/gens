@@ -282,6 +282,7 @@ public static class StateHasher
         hash = MixString(hash, actor.MilitaryStrength.ResolvedForceId ?? string.Empty);
         hash = MixLong(hash, actor.RegionId.Value);
         hash = MixLong(hash, actor.HomeSettlementId.Value);
+        hash = MixLong(hash, actor.LastContactDate?.TotalMonths ?? -1);
         return hash;
     }
 

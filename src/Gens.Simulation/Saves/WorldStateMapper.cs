@@ -1172,6 +1172,7 @@ public static class WorldStateMapper
         MilitaryStrengthResolvedForceId = actor.MilitaryStrength.ResolvedForceId,
         RegionId = actor.RegionId.ToTaggedString(),
         HomeSettlementId = actor.HomeSettlementId.ToTaggedString(),
+        LastContactDateTotalMonths = actor.LastContactDate?.TotalMonths,
     };
 
     private static LivingWorldActor FromLivingWorldActorDto(LivingWorldActorDto dto) => LivingWorldActor.Create(
@@ -1194,7 +1195,8 @@ public static class WorldStateMapper
             dto.MilitaryStrengthResolvedForceId),
         RuntimeId<Region>.Parse(dto.RegionId),
         RuntimeId<Settlement>.Parse(dto.HomeSettlementId),
-        dto.HeadCharacterId is null ? null : RuntimeId<Character>.Parse(dto.HeadCharacterId));
+        dto.HeadCharacterId is null ? null : RuntimeId<Character>.Parse(dto.HeadCharacterId),
+        dto.LastContactDateTotalMonths is null ? null : new GameDate(dto.LastContactDateTotalMonths.Value));
 
     private static HouseStandingDto ToHouseStandingDto(HouseStandingKey key, HouseStanding standing) => new()
     {

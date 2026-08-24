@@ -31,7 +31,8 @@ public sealed class ActorsSaveRoundTripTests
             new LivingWorldActorMilitaryStrength(MilitaryStrengthBand.Notable, "force_placeholder"),
             state.RegionIds.Issue(),
             state.SettlementIds.Issue(),
-            headCharacterId: state.CharacterIds.Issue());
+            headCharacterId: state.CharacterIds.Issue(),
+            lastContactDate: new GameDate(4));
         state.Actors.Add(parentId, parent);
 
         var cadetId = state.ActorIds.Issue();
