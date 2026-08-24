@@ -77,6 +77,11 @@ public static class CampaignBootstrapper
     /// player household's own.</summary>
     public const string RivalHouseHeadGenerationStreamName = "actors.rivalHouseHeadGeneration";
 
+    /// <summary>The named random stream <see cref="Actors.BackgroundHouseDriftSystem"/> reserves for
+    /// its monthly Background-tier fortune/standing-trend rolls (Phase 10 item 3), kept distinct from
+    /// <see cref="RivalHouseHeadGenerationStreamName"/> for the same rule-8 reason.</summary>
+    public const string BackgroundHouseDriftStreamName = "actors.backgroundHouseDrift";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -98,6 +103,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(PopGroupImmigrationStreamName, config.Seed);
         streams.AddDerived(EventPoolStreamName, config.Seed);
         streams.AddDerived(RivalHouseHeadGenerationStreamName, config.Seed);
+        streams.AddDerived(BackgroundHouseDriftStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
