@@ -58,7 +58,29 @@ At the audit point there was no authoritative `WorldState`, campaign bootstrap, 
 
 The authored content catalog contained only `status.placeholder`. The JSON Schema required only an `id` and permitted every other property. The benchmark measured 10,000 random draws rather than a monthly tick. The save code declared names and a version but did not serialize or migrate a campaign. The art-provider seam was intentionally disconnected from gameplay.
 
-**This has since changed.** Phases 0–6 (see "Detailed roadmap" below) have since been implemented and merged: `WorldState`, typed IDs, epoch-aware `GameDate`, phased ticks, command/event envelopes, RNG stream registry, canonical save serialization with migrations, typed content-definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation), a headless campaign bootstrap and console runner, `Character`/Familia lifecycle, and region/settlement/plot/holding, stockpiles, buildings, villas, labor, and a production network with ledger-ready event emission. The player loop, ledger/market, and everything from Phase 7 onward remain unbuilt. Treat the assessment table below as the state at the original audit point, not the current state — see "Detailed roadmap" for what has been completed since.
+**This has since changed substantially.** Phases 0–9 (see "Detailed roadmap" below, and the checklist immediately following this paragraph) have since been implemented and merged, through PR #49: `WorldState`, typed IDs, epoch-aware `GameDate`, phased ticks, command/event envelopes, RNG stream registry, canonical save serialization with migrations, typed content-definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation), a headless campaign bootstrap and console runner, `Character`/Familia lifecycle, region/settlement/plot/holding, stockpiles, buildings, villas, labor, and a production network with ledger-ready event emission, background population groups and employment, household ledgers/markets/debt/contracts, the action/standing-policy layer, the weighted event pool and monthly report projection, the Unity application shell and adapters, the persistent ink bar and four first-class screens, wax-seal/ordinary confirmations, pause/advance/save/load/replay diagnostics, placeholder portraits, and the Phase 9 EditMode/PlayMode presentation-layer test suites (including the 24-month exit-gate soak test). **The vertical-slice acceptance test's engineering scaffolding is now in place end to end; Phase 10 onward (delegation, autonomous rival houses, dynasty continuity, institutions, geography/travel, and beyond) remains unbuilt.** Treat the assessment table below as the state at the original audit point, not the current state — see "Detailed roadmap" for what has been completed since.
+
+### Phase completion checklist (as of this revision)
+
+- [x] **Phase 0** — Restore a green foundation
+- [x] **Phase 1** — Convert design prose into implementable authority
+- [x] **Phase 2** — Harden the deterministic simulation kernel
+- [x] **Phase 3** — Build saves, content contracts, and developer tooling
+- [x] **Phase 4** — Create the bootable headless campaign shell
+- [x] **Phase 5** — Implement Characters and Familia
+- [x] **Phase 6** — Implement land, villa, goods, buildings, and labor
+- [x] **Phase 7** — Implement settlement demographics and background labor
+- [x] **Phase 8** — Implement the economy, ledger, and market
+- [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
+- [ ] **Phase 10** — Add delegation, autonomous action, and rival houses ← **next up**
+- [ ] **Phase 11** — Guarantee dynasty continuity and historical memory
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life
+- [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
+- [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
+- [ ] **Phase 15** — Add advanced commerce, property, and public investment
+- [ ] **Phase 16** — Add espionage, banditry, military force, and diplomacy
+- [ ] **Phase 17** — Add deep relationships, activities, culture, and legacy objects
+- [ ] **Phase 18** — Scale content, presentation, art, performance, and release operations
 
 ### CI status
 
@@ -68,7 +90,7 @@ The workflow still runs only standalone .NET validation. It does not yet perform
 
 ### Skeleton assessment (original audit point)
 
-This table reflects the state at the original audit commit, not the current state. See "Detailed roadmap" below for what Phases 0–6 have since delivered (green CI, `WorldState`/command/event envelopes, epoch-aware time, canonical saves with migrations, typed content families, headless campaign, characters/Familia, and land/goods/buildings/labor/production).
+This table reflects the state at the original audit commit, not the current state. See "Detailed roadmap" below and the phase completion checklist above for what Phases 0–9 have since delivered (green CI, `WorldState`/command/event envelopes, epoch-aware time, canonical saves with migrations, typed content families, headless campaign, characters/Familia, land/goods/buildings/labor/production, background population/employment, ledger/market, and the full action/policy/event/report/Unity player loop through PR #49).
 
 | Area | Status at audit | Assessment |
 | --- | --- | --- |
@@ -122,7 +144,7 @@ These rules should be recorded as architecture decisions before feature work beg
 
 ## Detailed roadmap
 
-### Phase 0 — Restore a green foundation
+### Phase 0 — Restore a green foundation — ✅ COMPLETE
 
 **Outcome:** `main` is trustworthy enough to build upon.
 
@@ -139,7 +161,7 @@ Construction order:
 
 **Primary inputs:** `tech-stack.md`, `CONTRIBUTING.md`, `.github/workflows/standalone.yml`, PR #5.
 
-### Phase 1 — Convert design prose into implementable authority
+### Phase 1 — Convert design prose into implementable authority — ✅ COMPLETE
 
 **Outcome:** the project has one canonical contract per shared concept and a sized first slice.
 
@@ -168,7 +190,7 @@ Construction order:
 
 **Primary design inputs:** `gens-core-design.md`, `gens-characters-design.md`, `gens-traits-design.md`, `gens-familia-design.md`, `gens-estate-settlement-design.md`, `gens-resources-goods-design.md`, `gens-buildings-design.md`, `gens-settlement-demographics-design.md`, `gens-economy-finance-design.md`, `gens-policies-edicts-design.md`, `gens-events-design.md`, `gens-rival-houses-design.md`, and `gens-starting-regions-design.md`.
 
-### Phase 2 — Harden the deterministic simulation kernel
+### Phase 2 — Harden the deterministic simulation kernel — ✅ COMPLETE
 
 **Outcome:** all future mechanics have safe, versioned primitives.
 
@@ -187,7 +209,7 @@ Construction order:
 
 **Exit gate:** the same seed plus the same ordered commands produces identical event logs and state hashes across repeated headless runs. A rejected or failed command leaves state and RNG unchanged.
 
-### Phase 3 — Build saves, content contracts, and developer tooling
+### Phase 3 — Build saves, content contracts, and developer tooling — ✅ COMPLETE
 
 **Outcome:** campaigns and authored definitions are reproducible, inspectable, and migratable.
 
@@ -204,7 +226,7 @@ Construction order:
 
 **Exit gate:** a compiled content pack can bootstrap, save, load, replay, migrate, and reproduce the same state hash. Invalid references and schema violations fail before Unity starts.
 
-### Phase 4 — Create the bootable headless campaign shell
+### Phase 4 — Create the bootable headless campaign shell — ✅ COMPLETE
 
 **Outcome:** Gens can run months without Unity even though most systems are still empty.
 
@@ -221,7 +243,7 @@ Construction order:
 
 **Primary design inputs:** `gens-roman-calendar-design.md`, the time-scale sections of `gens-core-design.md`, and the delivery/report requirements in `gens-events-design.md`.
 
-### Phase 5 — Implement Characters and Familia
+### Phase 5 — Implement Characters and Familia — ✅ COMPLETE
 
 **Outcome:** the world contains persistent named people who age, relate, work, and die.
 
@@ -240,7 +262,7 @@ Construction order:
 
 **Primary design inputs:** `gens-characters-design.md`, `gens-traits-design.md`, `gens-familia-design.md`. Use only the lifecycle/lineage minimum from `gens-romance-sexuality-lineage-design.md` and the position minimum from `gens-companions-court-positions-design.md` at this stage.
 
-### Phase 6 — Implement land, villa, goods, buildings, and labor
+### Phase 6 — Implement land, villa, goods, buildings, and labor — ✅ COMPLETE
 
 **Outcome:** the household owns a place, stores resources, assigns labor, and produces goods.
 
@@ -259,7 +281,7 @@ Construction order:
 
 **Primary design inputs:** `gens-estate-settlement-design.md`, `gens-villa-design.md`, `gens-resources-goods-design.md`, `gens-buildings-design.md`, `gens-labor-slavery-design.md`.
 
-### Phase 7 — Implement settlement demographics and background labor
+### Phase 7 — Implement settlement demographics and background labor — ✅ COMPLETE
 
 **Outcome:** named characters sit atop a living aggregate population rather than an empty map.
 
@@ -276,7 +298,7 @@ Construction order:
 
 **Primary design inputs:** `gens-settlement-demographics-design.md`, `gens-population-wealth-purchasing-power-design.md`, and the aggregate/named boundary in `gens-characters-design.md`.
 
-### Phase 8 — Implement the economy, ledger, and market
+### Phase 8 — Implement the economy, ledger, and market — ✅ COMPLETE
 
 **Outcome:** production and population interact through money, prices, obligations, and scarcity.
 
@@ -295,7 +317,7 @@ Construction order:
 
 **Primary design input:** `gens-economy-finance-design.md`, with demand from `gens-population-wealth-purchasing-power-design.md` and definitions from `gens-resources-goods-design.md`.
 
-### Phase 9 — Build the player loop: actions, policies, events, report, and first Unity slice
+### Phase 9 — Build the player loop: actions, policies, events, report, and first Unity slice — ✅ COMPLETE
 
 **Outcome:** the headless simulation becomes a comprehensible game.
 
@@ -317,7 +339,7 @@ Construction order:
 
 **Primary design inputs:** `gens-core-design.md`, `gens-policies-edicts-design.md`, `gens-events-design.md`, and the visual/UI sections of the core and villa documents.
 
-### Phase 10 — Add delegation, autonomous action, and rival houses
+### Phase 10 — Add delegation, autonomous action, and rival houses — ⬜ NOT STARTED
 
 **Outcome:** the world acts without waiting for the player and the household can be governed indirectly.
 
@@ -335,7 +357,7 @@ Construction order:
 
 **Primary design inputs:** `gens-steward-council-auto-management-design.md`, `gens-rival-houses-design.md`, interaction/scheme sections of `gens-characters-design.md`, and `gens-notable-households-design.md`.
 
-### Phase 11 — Guarantee dynasty continuity and historical memory
+### Phase 11 — Guarantee dynasty continuity and historical memory — ⬜ NOT STARTED
 
 **Outcome:** death changes play rather than ending the simulation arbitrarily.
 
@@ -352,7 +374,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life
+### Phase 12 — Build institutions, reputation, law, religion, and public life — ⬜ NOT STARTED
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -372,7 +394,7 @@ Recommended internal order:
 
 **Primary design inputs:** `gens-politics-patronage-design.md`, `gens-religion-design.md`, `gens-legal-court-design.md`, `gens-crime-punishment-imprisonment-design.md`, `gens-interest-groups-design.md`, `gens-collegia-guilds-design.md`, `gens-notable-households-design.md`, `gens-scandal-design.md`, `gens-celebrities-influential-figures-design.md`, `gens-policies-edicts-design.md`.
 
-### Phase 13 — Add geography, travel, correspondence, culture, and history
+### Phase 13 — Add geography, travel, correspondence, culture, and history — ⬜ NOT STARTED
 
 **Outcome:** distance, language, local rules, and historical time change what is possible.
 
@@ -392,7 +414,7 @@ Construction order:
 
 Region data waves should consume the shared schema, not introduce new mechanics ad hoc. The current region corpus is: `gens-starting-regions-italian-heartland-design.md`, `gens-starting-regions-gallic-frontier-design.md`, `gens-starting-regions-iberian-colony-design.md`, `gens-starting-regions-north-african-colony-design.md`, `gens-starting-regions-greek-east-design.md`, `gens-starting-regions-britannia-design.md`, `gens-starting-regions-egypt-design.md`, `gens-starting-regions-syria-levant-design.md`, `gens-starting-regions-anatolia-design.md`, `gens-starting-regions-balkans-design.md`, `gens-starting-regions-sicily-design.md`, `gens-starting-regions-alpine-provinces-design.md`, `gens-starting-regions-armenia-design.md`, `gens-starting-regions-mesopotamia-design.md`, `gens-starting-regions-nubia-design.md`, `gens-starting-regions-arabia-felix-design.md`, and `gens-starting-regions-bosporan-kingdom-design.md`.
 
-### Phase 14 — Add health, disease, disasters, and mobile populations
+### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 
 **Outcome:** environmental and biological pressure matters without becoming arbitrary save destruction.
 
@@ -408,7 +430,7 @@ Construction order:
 
 **Primary design inputs:** `gens-disease-public-health-design.md`, `gens-natural-disasters-design.md`, `gens-wandering-populations-design.md`.
 
-### Phase 15 — Add advanced commerce, property, and public investment
+### Phase 15 — Add advanced commerce, property, and public investment — ⬜ NOT STARTED
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -429,7 +451,7 @@ Recommended internal order:
 
 **Primary design inputs:** `gens-land-ownership-real-estate-design.md`, `gens-societates-business-partnerships-design.md`, `gens-merchant-families-design.md`, `gens-notable-businesses-design.md`, `gens-business-competition-design.md`, `gens-public-contracts-competitive-bidding-design.md`, `gens-private-infrastructure-design.md`, `gens-private-ships-shipping-ventures-design.md`, `gens-public-works-euergetism-design.md`, `gens-population-wealth-purchasing-power-design.md`.
 
-### Phase 16 — Add espionage, banditry, military force, and diplomacy
+### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 
 **Outcome:** coercion and external danger use the same world rather than a separate minigame state.
 
@@ -446,7 +468,7 @@ Recommended internal order:
 
 **Primary design inputs:** `gens-espionage-design.md`, `gens-piracy-banditry-design.md`, `gens-military-combat-design.md`, `gens-diplomacy-non-roman-peoples-design.md`.
 
-### Phase 17 — Add deep relationships, activities, culture, and legacy objects
+### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
 
@@ -467,7 +489,7 @@ Recommended internal order:
 
 **Primary design inputs:** `gens-companions-court-positions-design.md`, `gens-education-culture-design.md`, `gens-romance-sexuality-lineage-design.md`, `gens-activities-activity-engine-design.md`, `gens-feasts-design.md`, `gens-games-spectacle-design.md`, `gens-books-manuscripts-design.md`, `gens-art-art-commissions-design.md`, `gens-masterworks-unique-crafted-objects-design.md`, `gens-monuments-legacy-building-design.md`. Treat `gens-romance-seduction-design.md` as superseded reference material, not a second implementation source.
 
-### Phase 18 — Scale content, presentation, art, performance, and release operations
+### Phase 18 — Scale content, presentation, art, performance, and release operations — ⬜ NOT STARTED
 
 **Outcome:** the integrated sandbox becomes a maintainable product.
 
@@ -487,34 +509,34 @@ Construction order:
 
 ## The first 24 implementation work packages
 
-These are the recommended first issues or narrowly scoped pull requests, in order:
+These are the recommended first issues or narrowly scoped pull requests, in order. **All 24 are complete** (delivered across PRs #6–#34; see "Detailed roadmap" Phases 0–6 above):
 
-1. Diagnose and fix the current `standalone` and `content` job build failures and restore green CI (see "Immediate red condition" above; the original `Property`-ambiguity report is already resolved, but other build/analyzer errors remain).
-2. Split tests and content compilation into independent required CI jobs.
-3. Add design-authority registry and supersession markers.
-4. Add ADRs for IDs, time, fixed point, tick phases, command atomicity, event envelopes, knowledge, and fidelity tiers.
-5. Add first-slice field/unit/range/owner ledger.
-6. Introduce typed stable IDs and definition IDs.
-7. Introduce partitioned `WorldState` and deterministic indexes.
-8. Define epoch-aware `GameDate` and historical display conversion.
-9. Replace registration-order-only ticks with declared phases/dependencies.
-10. Add command envelope, stable validation errors, change sets, and atomic application.
-11. Add versioned domain-event envelope and event registry.
-12. Formalize random stream registry, seed derivation, and rollback behavior.
-13. Add invariant runner and deterministic world hash.
-14. Implement canonical save serialization and `.gens` archive IO.
-15. Add migration registry and version-1 golden save fixture.
-16. Replace the placeholder content schema with manifest plus typed definition envelope.
-17. Add reference/range/localization validation and deterministic compiled output.
-18. Add headless campaign bootstrap and console runner.
-19. Add scheduled-action queue and empty 1,200-month soak test.
-20. Add canonical Character/Familia records and deterministic generation.
-21. Add lifecycle, household roles, relationships, and save round trips.
-22. Add minimal region/settlement/plot/holding state.
-23. Add goods, stockpiles, building instances, and production recipes.
-24. Add labor assignment and the first three compact production chains.
+1. [x] Diagnose and fix the current `standalone` and `content` job build failures and restore green CI (see "Immediate red condition" above; the original `Property`-ambiguity report is already resolved, but other build/analyzer errors remain).
+2. [x] Split tests and content compilation into independent required CI jobs.
+3. [x] Add design-authority registry and supersession markers.
+4. [x] Add ADRs for IDs, time, fixed point, tick phases, command atomicity, event envelopes, knowledge, and fidelity tiers.
+5. [x] Add first-slice field/unit/range/owner ledger.
+6. [x] Introduce typed stable IDs and definition IDs.
+7. [x] Introduce partitioned `WorldState` and deterministic indexes.
+8. [x] Define epoch-aware `GameDate` and historical display conversion.
+9. [x] Replace registration-order-only ticks with declared phases/dependencies.
+10. [x] Add command envelope, stable validation errors, change sets, and atomic application.
+11. [x] Add versioned domain-event envelope and event registry.
+12. [x] Formalize random stream registry, seed derivation, and rollback behavior.
+13. [x] Add invariant runner and deterministic world hash.
+14. [x] Implement canonical save serialization and `.gens` archive IO.
+15. [x] Add migration registry and version-1 golden save fixture.
+16. [x] Replace the placeholder content schema with manifest plus typed definition envelope.
+17. [x] Add reference/range/localization validation and deterministic compiled output.
+18. [x] Add headless campaign bootstrap and console runner.
+19. [x] Add scheduled-action queue and empty 1,200-month soak test.
+20. [x] Add canonical Character/Familia records and deterministic generation.
+21. [x] Add lifecycle, household roles, relationships, and save round trips.
+22. [x] Add minimal region/settlement/plot/holding state.
+23. [x] Add goods, stockpiles, building instances, and production recipes.
+24. [x] Add labor assignment and the first three compact production chains.
 
-Only after these should the project implement background population, market clearing, the Unity vertical slice, rivals, and the broader systems.
+Background population, market clearing, the Unity vertical slice, and the rest of Phases 7–9 have also since been implemented (see the phase checklist above). **The next unimplemented work is Phase 10** — delegation, autonomous action, and rival houses.
 
 ## Vertical-slice acceptance test
 
@@ -557,9 +579,9 @@ An issue is not ready for implementation until its dependencies, authoritative f
 
 ## Final recommendation
 
-The next milestone should be called **Foundation Contract & Headless Campaign**, not “start implementing Familia” or “build the first screen.” It should encompass Phases 0–4 and end with a green, deterministic, saveable, content-validated campaign shell.
+~~The next milestone should be called **Foundation Contract & Headless Campaign**~~ — ✅ **complete.** Phases 0–4 delivered a green, deterministic, saveable, content-validated campaign shell.
 
-The milestone after that should be **Household Economy Vertical Slice**, encompassing Phases 5–9. Its output is the first genuinely playable Gens loop.
+~~The milestone after that should be **Household Economy Vertical Slice**, encompassing Phases 5–9.~~ — ✅ **complete.** Its output, the first genuinely playable Gens loop (named household, land/production/labor, background population, ledger/market, and the action/policy/event/report/Unity presentation layer), is now in place, through PR #49.
 
-Everything from rival houses onward can then be constructed as extensions of shared contracts instead of isolated simulations. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation.
+**The next milestone is Phase 10 — delegation, autonomous action, and rival houses.** Everything from rival houses onward can now be constructed as extensions of the shared contracts these two milestones established (commands, events, ledgers, read models, knowledge/visibility) instead of isolated simulations. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation.
 
