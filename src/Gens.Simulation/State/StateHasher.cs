@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Goods;
@@ -221,6 +222,35 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.UnsatisfiedDemand);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Actors.InAscendingOrder())
+            hash = MixLivingWorldActor(hash, entry.Value);
+
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="LivingWorldActor"/>'s full state, in field-declaration order
+    /// (Phase 10 item 3).</summary>
+    private static ulong MixLivingWorldActor(ulong hash, LivingWorldActor actor)
+    {
+        hash = MixLong(hash, actor.ActorId.Value);
+        hash = MixLong(hash, (long)actor.ActorType);
+        hash = MixString(hash, actor.Name);
+        hash = MixLong(hash, (long)actor.Tier);
+        hash = MixLong(hash, (long)actor.StandingTrend);
+        hash = MixLong(hash, (long)actor.OriginStory);
+        hash = MixLong(hash, actor.ParentActorId?.Value ?? -1L);
+        hash = MixLong(hash, actor.IdentityTags.Economic is null ? -1L : (long)actor.IdentityTags.Economic.Value);
+        hash = MixLong(hash, actor.IdentityTags.Faction is null ? -1L : (long)actor.IdentityTags.Faction.Value);
+        hash = MixLong(hash, actor.HeadCharacterId?.Value ?? -1L);
+        hash = MixLong(hash, actor.Dignitas);
+        hash = MixLong(hash, (long)actor.NetWorth.Band);
+        hash = MixLong(hash, actor.NetWorth.Figure is null ? 0 : 1);
+        hash = MixLong(hash, actor.NetWorth.Figure?.RawValue ?? 0);
+        hash = MixLong(hash, (long)actor.MilitaryStrength.Band);
+        hash = MixString(hash, actor.MilitaryStrength.ResolvedForceId ?? string.Empty);
+        hash = MixLong(hash, actor.RegionId.Value);
+        hash = MixLong(hash, actor.HomeSettlementId.Value);
         return hash;
     }
 

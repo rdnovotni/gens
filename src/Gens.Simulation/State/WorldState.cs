@@ -1,3 +1,4 @@
+using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
@@ -74,6 +75,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<StandingContract>, StandingContract> standingContracts,
         OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState> householdPolicies,
         OrderedRegistry<RuntimeId<EventInstance>, EventInstance> eventInstances,
+        OrderedRegistry<RuntimeId<Actor>, LivingWorldActor> actors,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -117,6 +119,7 @@ public sealed class WorldState
         StandingContracts = standingContracts;
         HouseholdPolicies = householdPolicies;
         EventInstances = eventInstances;
+        Actors = actors;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -274,6 +277,12 @@ public sealed class WorldState
     /// fields are exactly what the Monthly Report's drill-down (Phase 9 item 4) reads back.</summary>
     public OrderedRegistry<RuntimeId<EventInstance>, EventInstance> EventInstances { get; } = new();
 
+    /// <summary>Every <see cref="LivingWorldActor"/> — rival houses and, later, the other actor kinds
+    /// <c>gens-rival-houses-design.md</c> §6 generalizes to (Phase 10 item 3) — in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004). Immutable record entries: a system replaces an entry
+    /// rather than mutating one in place, matching <see cref="EventInstances"/>' identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, LivingWorldActor> Actors { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -331,6 +340,7 @@ public sealed class WorldState
         ["standingContracts"] = StandingContracts.Version,
         ["householdPolicies"] = HouseholdPolicies.Version,
         ["eventInstances"] = EventInstances.Version,
+        ["actors"] = Actors.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

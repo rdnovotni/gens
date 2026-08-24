@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
@@ -91,6 +92,8 @@ public static class WorldStateMapper
             HouseholdPolicies = state.HouseholdPolicies.InAscendingOrder().Select(entry => ToHouseholdPolicyStateDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             EventInstances = state.EventInstances.InAscendingOrder().Select(entry => ToEventInstanceDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Actors = state.Actors.InAscendingOrder().Select(entry => ToLivingWorldActorDto(entry.Value)).ToArray(),
         };
     }
 
@@ -233,6 +236,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<EventInstance>, EventInstance>(instance.InstanceId, instance);
             }));
 
+        var actors = OrderedRegistry<RuntimeId<Actor>, LivingWorldActor>.Restore(
+            dto.Actors.Select(a =>
+            {
+                var actor = FromLivingWorldActorDto(a);
+                return new KeyValuePair<RuntimeId<Actor>, LivingWorldActor>(actor.ActorId, actor);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -274,6 +284,7 @@ public static class WorldStateMapper
             standingContracts: standingContracts,
             householdPolicies: householdPolicies,
             eventInstances: eventInstances,
+            actors: actors,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1115,4 +1126,47 @@ public static class WorldStateMapper
         dto.ResolvedOptionId is null ? null : new DefinitionId<EventOptionDefinition>(dto.ResolvedOptionId),
         dto.ResolvedDateTotalMonths is null ? null : new GameDate(dto.ResolvedDateTotalMonths.Value),
         dto.ResolvingEventId);
+
+    private static LivingWorldActorDto ToLivingWorldActorDto(LivingWorldActor actor) => new()
+    {
+        ActorId = actor.ActorId.ToTaggedString(),
+        ActorType = actor.ActorType.ToString(),
+        Name = actor.Name,
+        Tier = actor.Tier.ToString(),
+        StandingTrend = actor.StandingTrend.ToString(),
+        OriginStory = actor.OriginStory.ToString(),
+        ParentActorId = actor.ParentActorId?.ToTaggedString(),
+        IdentityEconomic = actor.IdentityTags.Economic?.ToString(),
+        IdentityFaction = actor.IdentityTags.Faction?.ToString(),
+        HeadCharacterId = actor.HeadCharacterId?.ToTaggedString(),
+        Dignitas = actor.Dignitas,
+        NetWorthBand = actor.NetWorth.Band.ToString(),
+        NetWorthFigure = actor.NetWorth.Figure?.RawValue,
+        MilitaryStrengthBand = actor.MilitaryStrength.Band.ToString(),
+        MilitaryStrengthResolvedForceId = actor.MilitaryStrength.ResolvedForceId,
+        RegionId = actor.RegionId.ToTaggedString(),
+        HomeSettlementId = actor.HomeSettlementId.ToTaggedString(),
+    };
+
+    private static LivingWorldActor FromLivingWorldActorDto(LivingWorldActorDto dto) => LivingWorldActor.Create(
+        RuntimeId<Actor>.Parse(dto.ActorId),
+        Enum.Parse<LivingWorldActorType>(dto.ActorType),
+        dto.Name,
+        Enum.Parse<LivingWorldActorTier>(dto.Tier),
+        Enum.Parse<LivingWorldActorStandingTrend>(dto.StandingTrend),
+        Enum.Parse<LivingWorldActorOrigin>(dto.OriginStory),
+        dto.ParentActorId is null ? null : RuntimeId<Actor>.Parse(dto.ParentActorId),
+        new LivingWorldActorIdentity(
+            dto.IdentityEconomic is null ? null : Enum.Parse<EconomicIdentityTag>(dto.IdentityEconomic),
+            dto.IdentityFaction is null ? null : Enum.Parse<FactionTag>(dto.IdentityFaction)),
+        dto.Dignitas,
+        new LivingWorldActorNetWorth(
+            Enum.Parse<HouseholdWealthBand>(dto.NetWorthBand),
+            dto.NetWorthFigure is null ? null : Money.FromMinorUnits(dto.NetWorthFigure.Value)),
+        new LivingWorldActorMilitaryStrength(
+            Enum.Parse<MilitaryStrengthBand>(dto.MilitaryStrengthBand),
+            dto.MilitaryStrengthResolvedForceId),
+        RuntimeId<Region>.Parse(dto.RegionId),
+        RuntimeId<Settlement>.Parse(dto.HomeSettlementId),
+        dto.HeadCharacterId is null ? null : RuntimeId<Character>.Parse(dto.HeadCharacterId));
 }

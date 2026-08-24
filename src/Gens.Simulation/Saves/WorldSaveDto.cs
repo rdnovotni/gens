@@ -168,6 +168,13 @@ public sealed record WorldSaveDocument
     /// pre-Phase-9-item-3 save never had any event instances recorded.</summary>
     [JsonPropertyOrder(26)]
     public IReadOnlyList<EventInstanceDto> EventInstances { get; init; } = Array.Empty<EventInstanceDto>();
+
+    /// <summary>Every <see cref="Actors.LivingWorldActor"/> (Phase 10 item 3), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="EventInstances"/> above: a pre-Phase-10
+    /// save never had any living-world actors recorded.</summary>
+    [JsonPropertyOrder(27)]
+    public IReadOnlyList<LivingWorldActorDto> Actors { get; init; } = Array.Empty<LivingWorldActorDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1309,4 +1316,59 @@ public sealed record EventInstanceDto
 
     [JsonPropertyOrder(11)]
     public string? ResolvingEventId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.LivingWorldActor"/> (Phase 10 item 3).</summary>
+public sealed record LivingWorldActorDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ActorType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Tier { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string StandingTrend { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string OriginStory { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? ParentActorId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? IdentityEconomic { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? IdentityFaction { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? HeadCharacterId { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int Dignitas { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required string NetWorthBand { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public long? NetWorthFigure { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required string MilitaryStrengthBand { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public string? MilitaryStrengthResolvedForceId { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public required string RegionId { get; init; }
+
+    [JsonPropertyOrder(16)]
+    public required string HomeSettlementId { get; init; }
 }
