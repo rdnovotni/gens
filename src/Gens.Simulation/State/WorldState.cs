@@ -9,6 +9,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Stewardship;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.State;
@@ -53,6 +54,7 @@ public sealed class WorldState
         RuntimeIdCounter<DebtRecord> debtRecordIds,
         RuntimeIdCounter<StandingContract> standingContractIds,
         RuntimeIdCounter<EventInstance> eventInstanceIds,
+        RuntimeIdCounter<StewardshipAssignment> stewardshipAssignmentIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -79,6 +81,7 @@ public sealed class WorldState
         OrderedRegistry<HouseStandingKey, HouseStanding> houseStandings,
         OrderedRegistry<RuntimeId<Actor>, RivalDossier> rivalDossiers,
         OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry> regionalFamiliesEntries,
+        OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> stewardshipAssignments,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -100,6 +103,7 @@ public sealed class WorldState
         DebtRecordIds = debtRecordIds;
         StandingContractIds = standingContractIds;
         EventInstanceIds = eventInstanceIds;
+        StewardshipAssignmentIds = stewardshipAssignmentIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -126,6 +130,7 @@ public sealed class WorldState
         HouseStandings = houseStandings;
         RivalDossiers = rivalDossiers;
         RegionalFamiliesEntries = regionalFamiliesEntries;
+        StewardshipAssignments = stewardshipAssignments;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -155,6 +160,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Events.EventInstance"/> (Phase 9 item 3).</summary>
     public RuntimeIdCounter<EventInstance> EventInstanceIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Stewardship.StewardshipAssignment"/> (Phase 10 item 2).</summary>
+    public RuntimeIdCounter<StewardshipAssignment> StewardshipAssignmentIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -305,6 +313,13 @@ public sealed class WorldState
     /// an actor can appear here without ever having a full dossier.</summary>
     public OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry> RegionalFamiliesEntries { get; } = new();
 
+    /// <summary>Every household's delegated-management assignment, past and present (Phase 10 item 2),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept even once ended (<see
+    /// cref="StewardshipAssignment.EndDate"/> set) rather than removed, matching <see
+    /// cref="EventInstances"/>' identical "resolved or not, kept for the campaign's lifetime"
+    /// convention — a later Return Report still needs to read the ended assignment back.</summary>
+    public OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> StewardshipAssignments { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -340,6 +355,7 @@ public sealed class WorldState
         ["debtRecordIds"] = DebtRecordIds.Peek,
         ["standingContractIds"] = StandingContractIds.Peek,
         ["eventInstanceIds"] = EventInstanceIds.Peek,
+        ["stewardshipAssignmentIds"] = StewardshipAssignmentIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -366,6 +382,7 @@ public sealed class WorldState
         ["houseStandings"] = HouseStandings.Version,
         ["rivalDossiers"] = RivalDossiers.Version,
         ["regionalFamiliesEntries"] = RegionalFamiliesEntries.Version,
+        ["stewardshipAssignments"] = StewardshipAssignments.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

@@ -11,6 +11,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.State;
+using Gens.Simulation.Stewardship;
 using Gens.Simulation.Time;
 using Gens.Simulation.Villas;
 
@@ -49,6 +50,7 @@ public static class WorldStateMapper
                 DebtRecordIds = state.DebtRecordIds.Peek,
                 StandingContractIds = state.StandingContractIds.Peek,
                 EventInstanceIds = state.EventInstanceIds.Peek,
+                StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -100,6 +102,8 @@ public static class WorldStateMapper
             RivalDossiers = state.RivalDossiers.InAscendingOrder().Select(entry => ToRivalDossierDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             RegionalFamiliesEntries = state.RegionalFamiliesEntries.InAscendingOrder().Select(entry => ToRegionalFamiliesEntryDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            StewardshipAssignments = state.StewardshipAssignments.InAscendingOrder().Select(entry => ToStewardshipAssignmentDto(entry.Value)).ToArray(),
         };
     }
 
@@ -266,6 +270,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Actor>, RegionalFamiliesEntry>(entry.ActorId, entry);
             }));
 
+        var stewardshipAssignments = OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment>.Restore(
+            dto.StewardshipAssignments.Select(a =>
+            {
+                var assignment = FromStewardshipAssignmentDto(a);
+                return new KeyValuePair<RuntimeId<StewardshipAssignment>, StewardshipAssignment>(assignment.AssignmentId, assignment);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -285,6 +296,7 @@ public static class WorldStateMapper
             debtRecordIds: RuntimeIdCounter<DebtRecord>.Restore(dto.Counters.DebtRecordIds),
             standingContractIds: RuntimeIdCounter<StandingContract>.Restore(dto.Counters.StandingContractIds),
             eventInstanceIds: RuntimeIdCounter<EventInstance>.Restore(dto.Counters.EventInstanceIds),
+            stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -311,6 +323,7 @@ public static class WorldStateMapper
             houseStandings: houseStandings,
             rivalDossiers: rivalDossiers,
             regionalFamiliesEntries: regionalFamiliesEntries,
+            stewardshipAssignments: stewardshipAssignments,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1246,4 +1259,34 @@ public static class WorldStateMapper
         dto.Name,
         Enum.Parse<LivingWorldActorStandingTrend>(dto.StandingTrend),
         dto.IdentityEconomic is null ? null : Enum.Parse<EconomicIdentityTag>(dto.IdentityEconomic));
+
+    private static StewardshipAssignmentDto ToStewardshipAssignmentDto(StewardshipAssignment assignment) => new()
+    {
+        AssignmentId = assignment.AssignmentId.ToTaggedString(),
+        HouseholdId = assignment.HouseholdId.ToTaggedString(),
+        Context = assignment.Context.ToString(),
+        Mode = assignment.Mode.ToString(),
+        AppointeeCharacterId = assignment.AppointeeCharacterId?.ToTaggedString(),
+        CouncilMembers = assignment.CouncilMembers
+            .Select(m => new CouncilMemberDto { Domain = m.Domain.ToString(), CharacterId = m.CharacterId.ToTaggedString() })
+            .ToArray(),
+        CouncilHeadCharacterId = assignment.CouncilHeadCharacterId?.ToTaggedString(),
+        AutonomyLevel = assignment.AutonomyLevel.ToString(),
+        StartDateTotalMonths = assignment.StartDate.TotalMonths,
+        EndDateTotalMonths = assignment.EndDate?.TotalMonths,
+    };
+
+    private static StewardshipAssignment FromStewardshipAssignmentDto(StewardshipAssignmentDto dto) => new(
+        RuntimeId<StewardshipAssignment>.Parse(dto.AssignmentId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<StewardshipContext>(dto.Context),
+        Enum.Parse<StewardshipMode>(dto.Mode),
+        dto.AppointeeCharacterId is null ? null : RuntimeId<Character>.Parse(dto.AppointeeCharacterId),
+        dto.CouncilMembers
+            .Select(m => new CouncilMember(Enum.Parse<CouncilDomain>(m.Domain), RuntimeId<Character>.Parse(m.CharacterId)))
+            .ToArray(),
+        dto.CouncilHeadCharacterId is null ? null : RuntimeId<Character>.Parse(dto.CouncilHeadCharacterId),
+        Enum.Parse<StewardAutonomyLevel>(dto.AutonomyLevel),
+        new GameDate(dto.StartDateTotalMonths),
+        dto.EndDateTotalMonths is null ? null : new GameDate(dto.EndDateTotalMonths.Value));
 }

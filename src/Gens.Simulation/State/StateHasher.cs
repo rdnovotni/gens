@@ -7,6 +7,7 @@ using Gens.Simulation.Goods;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
+using Gens.Simulation.Stewardship;
 
 namespace Gens.Simulation.State;
 
@@ -257,6 +258,32 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.IdentityEconomic is null ? -1L : (long)entry.Value.IdentityEconomic.Value);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.StewardshipAssignments.InAscendingOrder())
+            hash = MixStewardshipAssignment(hash, entry.Value);
+
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="StewardshipAssignment"/>'s full state, in field-declaration order
+    /// (Phase 10 item 2).</summary>
+    private static ulong MixStewardshipAssignment(ulong hash, StewardshipAssignment assignment)
+    {
+        hash = MixLong(hash, assignment.AssignmentId.Value);
+        hash = MixLong(hash, assignment.HouseholdId.Value);
+        hash = MixLong(hash, (long)assignment.Context);
+        hash = MixLong(hash, (long)assignment.Mode);
+        hash = MixLong(hash, assignment.AppointeeCharacterId?.Value ?? -1L);
+        foreach (var member in assignment.CouncilMembers)
+        {
+            hash = MixLong(hash, (long)member.Domain);
+            hash = MixLong(hash, member.CharacterId.Value);
+        }
+
+        hash = MixLong(hash, assignment.CouncilHeadCharacterId?.Value ?? -1L);
+        hash = MixLong(hash, (long)assignment.AutonomyLevel);
+        hash = MixLong(hash, assignment.StartDate.TotalMonths);
+        hash = MixLong(hash, assignment.EndDate?.TotalMonths ?? -1L);
         return hash;
     }
 

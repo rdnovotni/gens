@@ -3,6 +3,7 @@ using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Stewardship;
 
 namespace Gens.Simulation.Identity;
 
@@ -145,6 +146,8 @@ internal static class RuntimeIdTagRegistry
         // Phase 9 item 3 — Gens.Simulation.Events.EventInstance, same "real record as its own tag"
         // convention as LedgerTransaction/DebtRecord/StandingContract above.
         [typeof(EventInstance)] = "eventinst",
+        // Phase 10 item 2 — Gens.Simulation.Stewardship.StewardshipAssignment, same convention.
+        [typeof(StewardshipAssignment)] = "stewardship",
     };
 
     public static string Resolve(Type type) =>

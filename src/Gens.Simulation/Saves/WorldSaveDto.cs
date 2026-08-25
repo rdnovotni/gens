@@ -193,6 +193,12 @@ public sealed record WorldSaveDocument
     /// <see cref="Actors"/> above.</summary>
     [JsonPropertyOrder(30)]
     public IReadOnlyList<RegionalFamiliesEntryDto> RegionalFamiliesEntries { get; init; } = Array.Empty<RegionalFamiliesEntryDto>();
+
+    /// <summary>Every <see cref="Stewardship.StewardshipAssignment"/> (Phase 10 item 2), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// for the same additive-only reason as <see cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(31)]
+    public IReadOnlyList<StewardshipAssignmentDto> StewardshipAssignments { get; init; } = Array.Empty<StewardshipAssignmentDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -265,6 +271,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(16)]
     public long EventInstanceIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10 save has no stewardship
+    /// assignments. Additive-only per ADR 0011's policy, matching <see cref="EventInstanceIds"/>'
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(17)]
+    public long StewardshipAssignmentIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1446,4 +1458,48 @@ public sealed record RegionalFamiliesEntryDto
 
     [JsonPropertyOrder(3)]
     public string? IdentityEconomic { get; init; }
+}
+
+/// <summary>One filled Council seat, part of <see cref="StewardshipAssignmentDto"/>.</summary>
+public sealed record CouncilMemberDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Domain { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.StewardshipAssignment"/> (Phase 10 item 2).</summary>
+public sealed record StewardshipAssignmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string AssignmentId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Context { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Mode { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? AppointeeCharacterId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required IReadOnlyList<CouncilMemberDto> CouncilMembers { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? CouncilHeadCharacterId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string AutonomyLevel { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int StartDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public int? EndDateTotalMonths { get; init; }
 }
