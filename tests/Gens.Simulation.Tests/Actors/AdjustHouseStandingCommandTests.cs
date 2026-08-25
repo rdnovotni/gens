@@ -97,10 +97,64 @@ public sealed class AdjustHouseStandingCommandTests
         var grudge = new AncestralGrudge("engagement_placeholder", new GameDate(1));
         state.HouseStandings.Add(HouseStandingKey.Between(a.ActorId, b.ActorId), new HouseStanding(HouseStandingLevel.Rivalrous, grudge));
 
-        AdjustHouseStandingCommands.Pipeline.Execute(state, MakeCommand(state, a, b, HouseStandingAdjustmentDirection.TowardAlliance));
+        // TowardRivalry (Rivalrous -> Feuding) is the direction NOT blocked by an active grudge — see
+        // TowardAllianceIsBlockedByAnActiveAncestralGrudge below for the blocked direction.
+        var result = AdjustHouseStandingCommands.Pipeline.Execute(
+            state, MakeCommand(state, a, b, HouseStandingAdjustmentDirection.TowardRivalry));
 
+        Assert.That(result.Accepted, Is.True);
         Assert.That(state.HouseStandings.TryGet(HouseStandingKey.Between(a.ActorId, b.ActorId), out var stored), Is.True);
         Assert.That(stored!.Grudge, Is.EqualTo(grudge));
+    }
+
+    [Test]
+    public void TowardAllianceIsBlockedByAnActiveAncestralGrudge()
+    {
+        var (state, a, b) = TwoActors();
+        var grudge = new AncestralGrudge("engagement_placeholder", new GameDate(0));
+        state.HouseStandings.Add(HouseStandingKey.Between(a.ActorId, b.ActorId), new HouseStanding(HouseStandingLevel.Rivalrous, grudge));
+
+        var result = AdjustHouseStandingCommands.Pipeline.Execute(
+            state, MakeCommand(state, a, b, HouseStandingAdjustmentDirection.TowardAlliance));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Accepted, Is.False);
+            Assert.That(result.Error, Is.EqualTo(AdjustHouseStandingCommands.BlockedByAncestralGrudge));
+        });
+    }
+
+    [Test]
+    public void TowardAllianceIsAllowedOnceTheGrudgeHasDecayed()
+    {
+        var (state, a, b) = TwoActors();
+        var grudge = new AncestralGrudge("engagement_placeholder", new GameDate(0));
+        state.HouseStandings.Add(HouseStandingKey.Between(a.ActorId, b.ActorId), new HouseStanding(HouseStandingLevel.Rivalrous, grudge));
+
+        var farFuture = new GameDate(AncestralGrudgeCatalog.DecayMonths);
+        var command = new AdjustHouseStandingCommand(
+            state.CommandIds.Issue(), a.ActorId.ToTaggedString(), farFuture, null, a.ActorId, b.ActorId,
+            HouseStandingAdjustmentDirection.TowardAlliance);
+
+        var result = AdjustHouseStandingCommands.Pipeline.Execute(state, command);
+
+        Assert.That(result.Accepted, Is.True);
+    }
+
+    [Test]
+    public void ReachingFeudingForTheFirstTimeOriginatesAnAncestralGrudge()
+    {
+        var (state, a, b) = TwoActors();
+        state.HouseStandings.Add(HouseStandingKey.Between(a.ActorId, b.ActorId), new HouseStanding(HouseStandingLevel.Rivalrous));
+
+        AdjustHouseStandingCommands.Pipeline.Execute(state, MakeCommand(state, a, b, HouseStandingAdjustmentDirection.TowardRivalry));
+
+        Assert.That(state.HouseStandings.TryGet(HouseStandingKey.Between(a.ActorId, b.ActorId), out var stored), Is.True);
+        Assert.Multiple(() =>
+        {
+            Assert.That(stored!.Standing, Is.EqualTo(HouseStandingLevel.Feuding));
+            Assert.That(stored.Grudge, Is.Not.Null);
+        });
     }
 
     [Test]

@@ -69,6 +69,14 @@ public static class RivalHouseActionDefinitions
         if (direction == HouseStandingAdjustmentDirection.TowardRivalry && current == HouseStandingLevel.Feuding)
             return AdjustHouseStandingCommands.AlreadyAtExtreme;
 
+        if (direction == HouseStandingAdjustmentDirection.TowardAlliance)
+        {
+            var key = HouseStandingKey.Between(initiatorId, targetId);
+            if (state.HouseStandings.TryGet(key, out var existing) && existing!.Grudge is { } grudge &&
+                AncestralGrudgeCatalog.IsActive(invocation.Date, grudge))
+                return AdjustHouseStandingCommands.BlockedByAncestralGrudge;
+        }
+
         return null;
     }
 

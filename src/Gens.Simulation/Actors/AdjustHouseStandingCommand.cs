@@ -56,6 +56,12 @@ public static class AdjustHouseStandingCommands
     public static readonly ValidationErrorCode UnknownActor = new("actors.adjustHouseStanding.unknownActor");
     public static readonly ValidationErrorCode AlreadyAtExtreme = new("actors.adjustHouseStanding.alreadyAtExtreme");
 
+    /// <summary>Reconciliation is blocked while an active <see cref="AncestralGrudge"/> stands between
+    /// the pair (§5.2's "can keep houses Rivalrous for generations") — the only thing that clears it is
+    /// time, via <see cref="AncestralGrudgeCatalog.IsActive"/> eventually returning false, never a
+    /// direct command.</summary>
+    public static readonly ValidationErrorCode BlockedByAncestralGrudge = new("actors.adjustHouseStanding.blockedByAncestralGrudge");
+
     public static readonly CommandPipeline<WorldState, AdjustHouseStandingCommand> Pipeline = new(
         validate: Validate,
         mutate: Mutate,
@@ -75,6 +81,14 @@ public static class AdjustHouseStandingCommands
         if (command.Direction == HouseStandingAdjustmentDirection.TowardRivalry && current == HouseStandingLevel.Feuding)
             return AlreadyAtExtreme;
 
+        if (command.Direction == HouseStandingAdjustmentDirection.TowardAlliance)
+        {
+            var key = HouseStandingKey.Between(command.InitiatorActorId, command.TargetActorId);
+            if (state.HouseStandings.TryGet(key, out var existing) && existing!.Grudge is { } grudge &&
+                AncestralGrudgeCatalog.IsActive(command.SubmittedDate, grudge))
+                return BlockedByAncestralGrudge;
+        }
+
         return null;
     }
 
@@ -85,8 +99,18 @@ public static class AdjustHouseStandingCommands
         var existingGrudge = state.HouseStandings.TryGet(key, out var existing) ? existing!.Grudge : null;
 
         var next = Step(previous, command.Direction);
+
+        // Reaching Feuding for the first time is this codebase's stand-in for §5.2's "a Feud resolving
+        // in Catastrophic Defeat" trigger — no Military & Combat engagement record exists yet (Phase
+        // 16) to distinguish an ordinary Feud from a catastrophic one, so the standing transition itself
+        // is what originates the grudge. Validate's AlreadyAtExtreme guard means this branch only ever
+        // runs on the actual transition into Feuding, never while already there.
+        var grudge = next == HouseStandingLevel.Feuding
+            ? existingGrudge ?? new AncestralGrudge(command.CommandId.ToTaggedString(), command.SubmittedDate)
+            : existingGrudge;
+
         state.HouseStandings.Remove(key);
-        state.HouseStandings.Add(key, new HouseStanding(next, existingGrudge));
+        state.HouseStandings.Add(key, new HouseStanding(next, grudge));
 
         return new IDomainEvent[]
         {
