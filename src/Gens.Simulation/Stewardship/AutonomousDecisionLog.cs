@@ -1,4 +1,5 @@
 using Gens.Simulation.Identity;
+using Gens.Simulation.Ledger;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.Stewardship;
@@ -13,21 +14,23 @@ public enum StewardIncidentType
 }
 
 /// <summary>
-/// One autonomous decision a steward or Council made on the player's behalf (Phase 10 items 2/10;
-/// §10's <c>AutonomousDecisionLog</c> data model). <see cref="CompetenceRollFactor"/>, <see
-/// cref="LoyaltyRiskRollFactor"/>, and <see cref="IncidentType"/> are this package's placeholder shape
-/// only — <see cref="StewardAutonomousDecisionSystem"/> (package 10) always writes them as <c>0</c>/
-/// <c>null</c>; wiring the steward's actual Stewardship attribute and Loyalty condition into real rolls
-/// is package 11's own scope, matching <see cref="State.KnowledgeState"/>'s identical "the storage
-/// shape lands before its real producer does" precedent from Phase 2.
+/// One autonomous decision a steward or Council made on the player's behalf (Phase 10 items 2/10/11;
+/// §10's <c>AutonomousDecisionLog</c> data model). <see cref="CompetenceRollFactor"/> and <see
+/// cref="LoyaltyRiskRollFactor"/> are the percent-chance figures <see
+/// cref="StewardAutonomousDecisionSystem"/> actually rolled against that month (package 11); an
+/// incident and its <see cref="TreasuryImpact"/>, when one occurs, are never revealed to the player as
+/// they happen — only <see cref="ReturnReport"/> (built once the assignment ends) surfaces them, per
+/// §8's "dramatic reveal on return."
 /// </summary>
 /// <param name="DecisionType">The chosen <see cref="Actions.ActionDefinition.Id"/>'s <see
 /// cref="Identity.DefinitionId{T}.Value"/>, or <c>"none"</c> when the steward held rather than acted
-/// this month (no eligible, autonomy-permitted action was found, or the act-consideration simply
-/// didn't fire).</param>
+/// this month (no eligible, autonomy-permitted action was found, or a competence-roll fumble).</param>
 /// <param name="Outcome">A short human-readable summary — the <see
 /// cref="Actions.ActionResultProjection.Summary"/> the chosen action's own projection produced, or a
 /// fixed "held" string.</param>
+/// <param name="TreasuryImpact">This month's net Treasury effect from the decision itself (positive =
+/// a spend like Fund Festival) plus any <see cref="IncidentType"/> loss (always a deduction) — summed
+/// by <see cref="ReturnReportGenerator"/> into the assignment's total.</param>
 public sealed record AutonomousDecisionLog(
     RuntimeId<AutonomousDecisionLog> LogId,
     RuntimeId<StewardshipAssignment> AssignmentId,
@@ -36,4 +39,5 @@ public sealed record AutonomousDecisionLog(
     string Outcome,
     int CompetenceRollFactor,
     int LoyaltyRiskRollFactor,
-    StewardIncidentType? IncidentType = null);
+    StewardIncidentType? IncidentType = null,
+    Money TreasuryImpact = default);

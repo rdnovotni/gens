@@ -87,6 +87,16 @@ public static class CampaignBootstrapper
     /// here for the same rule-8 reason.</summary>
     public const string RivalAmbitionStreamName = "actors.rivalAmbition";
 
+    /// <summary>The named random stream <see cref="Stewardship.StewardAutonomousDecisionSystem"/>
+    /// reserves for its monthly steward competence-execution roll (Phase 10 item 11), kept distinct
+    /// from every other stream here for the same rule-8 reason.</summary>
+    public const string StewardCompetenceStreamName = "stewardship.competence";
+
+    /// <summary>The named random stream <see cref="Stewardship.StewardAutonomousDecisionSystem"/>
+    /// reserves for its monthly steward Loyalty-risk roll (Phase 10 item 11), kept distinct from <see
+    /// cref="StewardCompetenceStreamName"/> for the same rule-8 reason.</summary>
+    public const string StewardLoyaltyStreamName = "stewardship.loyalty";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -110,6 +120,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(RivalHouseHeadGenerationStreamName, config.Seed);
         streams.AddDerived(BackgroundHouseDriftStreamName, config.Seed);
         streams.AddDerived(RivalAmbitionStreamName, config.Seed);
+        streams.AddDerived(StewardCompetenceStreamName, config.Seed);
+        streams.AddDerived(StewardLoyaltyStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

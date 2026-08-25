@@ -150,6 +150,8 @@ internal static class RuntimeIdTagRegistry
         [typeof(StewardshipAssignment)] = "stewardship",
         // Phase 10 item 10 — Gens.Simulation.Stewardship.AutonomousDecisionLog, same convention.
         [typeof(AutonomousDecisionLog)] = "stewarddecision",
+        // Phase 10 item 11 — Gens.Simulation.Stewardship.ReturnReport, same convention.
+        [typeof(ReturnReport)] = "returnreport",
     };
 
     public static string Resolve(Type type) =>

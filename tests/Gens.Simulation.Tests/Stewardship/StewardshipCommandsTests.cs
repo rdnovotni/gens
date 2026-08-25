@@ -145,4 +145,28 @@ public sealed class StewardshipCommandsTests
             Assert.That(stored.EndDate, Is.EqualTo(new GameDate(9)));
         });
     }
+
+    [Test]
+    public void EndGeneratesAReturnReportAndEmitsBothEvents()
+    {
+        var state = new WorldState(new GameDate(3));
+        var householdId = state.HouseholdIds.Issue();
+        var appointResult = StewardshipCommands.AppointPipeline.Execute(state, MakeAppointCommand(state, householdId, state.CharacterIds.Issue()));
+        var assignmentId = ((StewardshipAssignedEvent)appointResult.Events[0]).AssignmentId;
+
+        var result = StewardshipCommands.EndPipeline.Execute(
+            state, new EndStewardshipAssignmentCommand(state.CommandIds.Issue(), householdId.ToTaggedString(), new GameDate(9), null, assignmentId));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Events, Has.Count.EqualTo(2));
+            Assert.That(result.Events[0], Is.InstanceOf<StewardshipEndedEvent>());
+            Assert.That(result.Events[1], Is.InstanceOf<ReturnReportGeneratedEvent>());
+
+            var reportEvent = (ReturnReportGeneratedEvent)result.Events[1];
+            Assert.That(state.ReturnReports.TryGet(reportEvent.ReportId, out var report), Is.True);
+            Assert.That(report!.AssignmentId, Is.EqualTo(assignmentId));
+            Assert.That(reportEvent.ChronicleWorthy, Is.False);
+        });
+    }
 }

@@ -80,6 +80,27 @@ public sealed record StewardshipEndedEvent(
     public Visibility Visibility => Visibility.Public;
 }
 
+/// <summary>Emitted alongside <see cref="StewardshipEndedEvent"/> whenever a <see
+/// cref="ReturnReport"/> is generated (Phase 10 item 11) — the "dramatic reveal" moment itself when
+/// <see cref="ChronicleWorthy"/> is true (§8). Public visibility, matching every other stewardship
+/// event: routing this into a per-observer knowledge/staleness model is future integration work — no
+/// propagation-from-events mechanism exists anywhere in this codebase yet (<see
+/// cref="State.KnowledgeState"/> remains storage-only, per its own doc comment).</summary>
+public sealed record ReturnReportGeneratedEvent(
+    RuntimeId<DomainEventEntity> EventId,
+    GameDate OccurredDate,
+    RuntimeId<ReturnReport> ReportId,
+    RuntimeId<StewardshipAssignment> AssignmentId,
+    RuntimeId<Household> HouseholdId,
+    bool ChronicleWorthy,
+    string? CausationId) : IDomainEvent
+{
+    public string Type => "stewardship.returnReportGenerated";
+    public int SchemaVersion => 1;
+    public IReadOnlyList<string> SubjectIds => new[] { HouseholdId.ToTaggedString(), AssignmentId.ToTaggedString(), ReportId.ToTaggedString() };
+    public Visibility Visibility => Visibility.Public;
+}
+
 /// <summary>Validate/mutate pipelines for the three stewardship commands (ADR 0006).</summary>
 public static class StewardshipCommands
 {
@@ -192,9 +213,20 @@ public static class StewardshipCommands
         state.StewardshipAssignments.Remove(command.AssignmentId);
         state.StewardshipAssignments.Add(command.AssignmentId, existing with { EndDate = command.SubmittedDate });
 
-        return new IDomainEvent[]
+        // §8: the Return Report is built once, right here, at the moment the assignment ends —
+        // ReturnReportGenerator is a pure read over the AutonomousDecisionLog entries already recorded.
+        var reportId = state.ReturnReportIds.Issue();
+        var report = ReturnReportGenerator.Generate(state, reportId, command.AssignmentId);
+        state.ReturnReports.Add(reportId, report);
+
+        var events = new List<IDomainEvent>
         {
             new StewardshipEndedEvent(state.EventIds.Issue(), command.SubmittedDate, command.AssignmentId, householdId, command.CommandId.ToTaggedString()),
+            new ReturnReportGeneratedEvent(
+                state.EventIds.Issue(), command.SubmittedDate, reportId, command.AssignmentId, householdId, report.ChronicleWorthy,
+                command.CommandId.ToTaggedString()),
         };
+
+        return events.ToArray();
     }
 }

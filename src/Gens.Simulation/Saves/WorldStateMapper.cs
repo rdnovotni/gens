@@ -52,6 +52,7 @@ public static class WorldStateMapper
                 EventInstanceIds = state.EventInstanceIds.Peek,
                 StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
+                ReturnReportIds = state.ReturnReportIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -107,6 +108,8 @@ public static class WorldStateMapper
             StewardshipAssignments = state.StewardshipAssignments.InAscendingOrder().Select(entry => ToStewardshipAssignmentDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             AutonomousDecisionLogs = state.AutonomousDecisionLogs.InAscendingOrder().Select(entry => ToAutonomousDecisionLogDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ReturnReports = state.ReturnReports.InAscendingOrder().Select(entry => ToReturnReportDto(entry.Value)).ToArray(),
         };
     }
 
@@ -287,6 +290,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog>(log.LogId, log);
             }));
 
+        var returnReports = OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport>.Restore(
+            dto.ReturnReports.Select(r =>
+            {
+                var report = FromReturnReportDto(r);
+                return new KeyValuePair<RuntimeId<ReturnReport>, ReturnReport>(report.ReportId, report);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -308,6 +318,7 @@ public static class WorldStateMapper
             eventInstanceIds: RuntimeIdCounter<EventInstance>.Restore(dto.Counters.EventInstanceIds),
             stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
             autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
+            returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -336,6 +347,7 @@ public static class WorldStateMapper
             regionalFamiliesEntries: regionalFamiliesEntries,
             stewardshipAssignments: stewardshipAssignments,
             autonomousDecisionLogs: autonomousDecisionLogs,
+            returnReports: returnReports,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1312,6 +1324,7 @@ public static class WorldStateMapper
         CompetenceRollFactor = log.CompetenceRollFactor,
         LoyaltyRiskRollFactor = log.LoyaltyRiskRollFactor,
         IncidentType = log.IncidentType?.ToString(),
+        TreasuryImpact = log.TreasuryImpact.RawValue,
     };
 
     private static AutonomousDecisionLog FromAutonomousDecisionLogDto(AutonomousDecisionLogDto dto) => new(
@@ -1322,5 +1335,30 @@ public static class WorldStateMapper
         dto.Outcome,
         dto.CompetenceRollFactor,
         dto.LoyaltyRiskRollFactor,
-        dto.IncidentType is null ? null : Enum.Parse<StewardIncidentType>(dto.IncidentType));
+        dto.IncidentType is null ? null : Enum.Parse<StewardIncidentType>(dto.IncidentType),
+        Money.FromMinorUnits(dto.TreasuryImpact));
+
+    private static ReturnReportDto ToReturnReportDto(ReturnReport report) => new()
+    {
+        ReportId = report.ReportId.ToTaggedString(),
+        AssignmentId = report.AssignmentId.ToTaggedString(),
+        SummaryEntries = report.SummaryEntries
+            .Select(e => new ReturnReportSummaryEntryDto { MonthTotalMonths = e.Month.TotalMonths, DecisionType = e.DecisionType, Outcome = e.Outcome })
+            .ToArray(),
+        TotalTreasuryImpact = report.TotalTreasuryImpact.RawValue,
+        IncidentsDiscovered = report.IncidentsDiscovered
+            .Select(e => new ReturnReportIncidentEntryDto { MonthTotalMonths = e.Month.TotalMonths, Type = e.Type.ToString(), Amount = e.Amount.RawValue })
+            .ToArray(),
+        ChronicleWorthy = report.ChronicleWorthy,
+    };
+
+    private static ReturnReport FromReturnReportDto(ReturnReportDto dto) => new(
+        RuntimeId<ReturnReport>.Parse(dto.ReportId),
+        RuntimeId<StewardshipAssignment>.Parse(dto.AssignmentId),
+        dto.SummaryEntries.Select(e => new ReturnReportSummaryEntry(new GameDate(e.MonthTotalMonths), e.DecisionType, e.Outcome)).ToArray(),
+        Money.FromMinorUnits(dto.TotalTreasuryImpact),
+        dto.IncidentsDiscovered
+            .Select(e => new ReturnReportIncidentEntry(new GameDate(e.MonthTotalMonths), Enum.Parse<StewardIncidentType>(e.Type), Money.FromMinorUnits(e.Amount)))
+            .ToArray(),
+        dto.ChronicleWorthy);
 }

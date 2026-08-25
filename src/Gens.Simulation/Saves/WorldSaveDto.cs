@@ -205,6 +205,12 @@ public sealed record WorldSaveDocument
     /// to empty, for the same additive-only reason as <see cref="StewardshipAssignments"/> above.</summary>
     [JsonPropertyOrder(32)]
     public IReadOnlyList<AutonomousDecisionLogDto> AutonomousDecisionLogs { get; init; } = Array.Empty<AutonomousDecisionLogDto>();
+
+    /// <summary>Every <see cref="Stewardship.ReturnReport"/> ever generated (Phase 10 item 11), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="AutonomousDecisionLogs"/> above.</summary>
+    [JsonPropertyOrder(33)]
+    public IReadOnlyList<ReturnReportDto> ReturnReports { get; init; } = Array.Empty<ReturnReportDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -289,6 +295,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(18)]
     public long AutonomousDecisionLogIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10 save has no Return Reports.
+    /// Additive-only per ADR 0011's policy, matching <see cref="AutonomousDecisionLogIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(19)]
+    public long ReturnReportIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1542,4 +1554,55 @@ public sealed record AutonomousDecisionLogDto
 
     [JsonPropertyOrder(7)]
     public string? IncidentType { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public long TreasuryImpact { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.ReturnReportSummaryEntry"/>.</summary>
+public sealed record ReturnReportSummaryEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string DecisionType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Outcome { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.ReturnReportIncidentEntry"/>.</summary>
+public sealed record ReturnReportIncidentEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Type { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required long Amount { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.ReturnReport"/> (Phase 10 item 11).</summary>
+public sealed record ReturnReportDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ReportId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string AssignmentId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required IReadOnlyList<ReturnReportSummaryEntryDto> SummaryEntries { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required long TotalTreasuryImpact { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required IReadOnlyList<ReturnReportIncidentEntryDto> IncidentsDiscovered { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool ChronicleWorthy { get; init; }
 }

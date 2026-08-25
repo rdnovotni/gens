@@ -273,6 +273,30 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.CompetenceRollFactor);
             hash = MixLong(hash, entry.Value.LoyaltyRiskRollFactor);
             hash = MixLong(hash, entry.Value.IncidentType is null ? -1L : (long)entry.Value.IncidentType.Value);
+            hash = MixLong(hash, entry.Value.TreasuryImpact.RawValue);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ReturnReports.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.ReportId.Value);
+            hash = MixLong(hash, entry.Value.AssignmentId.Value);
+            foreach (var summaryEntry in entry.Value.SummaryEntries)
+            {
+                hash = MixLong(hash, summaryEntry.Month.TotalMonths);
+                hash = MixString(hash, summaryEntry.DecisionType);
+                hash = MixString(hash, summaryEntry.Outcome);
+            }
+
+            hash = MixLong(hash, entry.Value.TotalTreasuryImpact.RawValue);
+            foreach (var incident in entry.Value.IncidentsDiscovered)
+            {
+                hash = MixLong(hash, incident.Month.TotalMonths);
+                hash = MixLong(hash, (long)incident.Type);
+                hash = MixLong(hash, incident.Amount.RawValue);
+            }
+
+            hash = MixLong(hash, entry.Value.ChronicleWorthy ? 1 : 0);
         }
 
         return hash;
