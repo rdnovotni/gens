@@ -1,11 +1,13 @@
 using System.Text;
 using System.Text.Json;
+using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
+using Gens.Simulation.Stewardship;
 
 namespace Gens.Simulation.State;
 
@@ -221,6 +223,106 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.UnsatisfiedDemand);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Actors.InAscendingOrder())
+            hash = MixLivingWorldActor(hash, entry.Value);
+
+        // Already ascending HouseStandingKey order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.HouseStandings.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.ActorAId.Value);
+            hash = MixLong(hash, entry.Key.ActorBId.Value);
+            hash = MixLong(hash, (long)entry.Value.Standing);
+            hash = MixLong(hash, entry.Value.Grudge is null ? 0 : 1);
+            hash = MixString(hash, entry.Value.Grudge?.OriginEngagementId ?? string.Empty);
+            hash = MixLong(hash, entry.Value.Grudge?.OriginDate.TotalMonths ?? 0);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.RivalDossiers.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.Summary);
+            hash = MixString(hash, entry.Value.HeadComboTitle ?? string.Empty);
+            hash = MixLong(hash, entry.Value.LastUpdatedDate.TotalMonths);
+            foreach (var chronicleEntry in entry.Value.RecentChronicleEntries)
+                hash = MixString(hash, chronicleEntry);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.RegionalFamiliesEntries.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.Name);
+            hash = MixLong(hash, (long)entry.Value.StandingTrend);
+            hash = MixLong(hash, entry.Value.IdentityEconomic is null ? -1L : (long)entry.Value.IdentityEconomic.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.StewardshipAssignments.InAscendingOrder())
+            hash = MixStewardshipAssignment(hash, entry.Value);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.AutonomousDecisionLogs.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.LogId.Value);
+            hash = MixLong(hash, entry.Value.AssignmentId.Value);
+            hash = MixLong(hash, entry.Value.Month.TotalMonths);
+            hash = MixString(hash, entry.Value.DecisionType);
+            hash = MixString(hash, entry.Value.Outcome);
+            hash = MixLong(hash, entry.Value.CompetenceRollFactor);
+            hash = MixLong(hash, entry.Value.LoyaltyRiskRollFactor);
+            hash = MixLong(hash, entry.Value.IncidentType is null ? -1L : (long)entry.Value.IncidentType.Value);
+        }
+
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="StewardshipAssignment"/>'s full state, in field-declaration order
+    /// (Phase 10 item 2).</summary>
+    private static ulong MixStewardshipAssignment(ulong hash, StewardshipAssignment assignment)
+    {
+        hash = MixLong(hash, assignment.AssignmentId.Value);
+        hash = MixLong(hash, assignment.HouseholdId.Value);
+        hash = MixLong(hash, (long)assignment.Context);
+        hash = MixLong(hash, (long)assignment.Mode);
+        hash = MixLong(hash, assignment.AppointeeCharacterId?.Value ?? -1L);
+        foreach (var member in assignment.CouncilMembers)
+        {
+            hash = MixLong(hash, (long)member.Domain);
+            hash = MixLong(hash, member.CharacterId.Value);
+        }
+
+        hash = MixLong(hash, assignment.CouncilHeadCharacterId?.Value ?? -1L);
+        hash = MixLong(hash, (long)assignment.AutonomyLevel);
+        hash = MixLong(hash, assignment.StartDate.TotalMonths);
+        hash = MixLong(hash, assignment.EndDate?.TotalMonths ?? -1L);
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="LivingWorldActor"/>'s full state, in field-declaration order
+    /// (Phase 10 item 3).</summary>
+    private static ulong MixLivingWorldActor(ulong hash, LivingWorldActor actor)
+    {
+        hash = MixLong(hash, actor.ActorId.Value);
+        hash = MixLong(hash, (long)actor.ActorType);
+        hash = MixString(hash, actor.Name);
+        hash = MixLong(hash, (long)actor.Tier);
+        hash = MixLong(hash, (long)actor.StandingTrend);
+        hash = MixLong(hash, (long)actor.OriginStory);
+        hash = MixLong(hash, actor.ParentActorId?.Value ?? -1L);
+        hash = MixLong(hash, actor.IdentityTags.Economic is null ? -1L : (long)actor.IdentityTags.Economic.Value);
+        hash = MixLong(hash, actor.IdentityTags.Faction is null ? -1L : (long)actor.IdentityTags.Faction.Value);
+        hash = MixLong(hash, actor.HeadCharacterId?.Value ?? -1L);
+        hash = MixLong(hash, actor.Dignitas);
+        hash = MixLong(hash, (long)actor.NetWorth.Band);
+        hash = MixLong(hash, actor.NetWorth.Figure is null ? 0 : 1);
+        hash = MixLong(hash, actor.NetWorth.Figure?.RawValue ?? 0);
+        hash = MixLong(hash, (long)actor.MilitaryStrength.Band);
+        hash = MixString(hash, actor.MilitaryStrength.ResolvedForceId ?? string.Empty);
+        hash = MixLong(hash, actor.RegionId.Value);
+        hash = MixLong(hash, actor.HomeSettlementId.Value);
+        hash = MixLong(hash, actor.LastContactDate?.TotalMonths ?? -1);
         return hash;
     }
 

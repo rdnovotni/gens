@@ -168,6 +168,43 @@ public sealed record WorldSaveDocument
     /// pre-Phase-9-item-3 save never had any event instances recorded.</summary>
     [JsonPropertyOrder(26)]
     public IReadOnlyList<EventInstanceDto> EventInstances { get; init; } = Array.Empty<EventInstanceDto>();
+
+    /// <summary>Every <see cref="Actors.LivingWorldActor"/> (Phase 10 item 3), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="EventInstances"/> above: a pre-Phase-10
+    /// save never had any living-world actors recorded.</summary>
+    [JsonPropertyOrder(27)]
+    public IReadOnlyList<LivingWorldActorDto> Actors { get; init; } = Array.Empty<LivingWorldActorDto>();
+
+    /// <summary>Every tracked house-pair's <see cref="Actors.HouseStanding"/> (Phase 10 item 5), already
+    /// in ascending <see cref="Actors.HouseStandingKey"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(28)]
+    public IReadOnlyList<HouseStandingDto> HouseStandings { get; init; } = Array.Empty<HouseStandingDto>();
+
+    /// <summary>Every actor's <see cref="Actors.RivalDossier"/> (Phase 10 item 5), already keyed by
+    /// actor. Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(29)]
+    public IReadOnlyList<RivalDossierDto> RivalDossiers { get; init; } = Array.Empty<RivalDossierDto>();
+
+    /// <summary>Every actor's <see cref="Actors.RegionalFamiliesEntry"/> (Phase 10 item 5), already
+    /// keyed by actor. Not <c>required</c>, and defaults to empty, for the same additive-only reason as
+    /// <see cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(30)]
+    public IReadOnlyList<RegionalFamiliesEntryDto> RegionalFamiliesEntries { get; init; } = Array.Empty<RegionalFamiliesEntryDto>();
+
+    /// <summary>Every <see cref="Stewardship.StewardshipAssignment"/> (Phase 10 item 2), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// for the same additive-only reason as <see cref="Actors"/> above.</summary>
+    [JsonPropertyOrder(31)]
+    public IReadOnlyList<StewardshipAssignmentDto> StewardshipAssignments { get; init; } = Array.Empty<StewardshipAssignmentDto>();
+
+    /// <summary>Every <see cref="Stewardship.AutonomousDecisionLog"/> ever recorded (Phase 10 item 10),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, for the same additive-only reason as <see cref="StewardshipAssignments"/> above.</summary>
+    [JsonPropertyOrder(32)]
+    public IReadOnlyList<AutonomousDecisionLogDto> AutonomousDecisionLogs { get; init; } = Array.Empty<AutonomousDecisionLogDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -240,6 +277,18 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(16)]
     public long EventInstanceIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10 save has no stewardship
+    /// assignments. Additive-only per ADR 0011's policy, matching <see cref="EventInstanceIds"/>'
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(17)]
+    public long StewardshipAssignmentIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10 save has no autonomous decision
+    /// log entries. Additive-only per ADR 0011's policy, matching <see cref="StewardshipAssignmentIds"/>'
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(18)]
+    public long AutonomousDecisionLogIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1309,4 +1358,188 @@ public sealed record EventInstanceDto
 
     [JsonPropertyOrder(11)]
     public string? ResolvingEventId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.LivingWorldActor"/> (Phase 10 item 3).</summary>
+public sealed record LivingWorldActorDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ActorType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Tier { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string StandingTrend { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string OriginStory { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? ParentActorId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? IdentityEconomic { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? IdentityFaction { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? HeadCharacterId { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int Dignitas { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required string NetWorthBand { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public long? NetWorthFigure { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required string MilitaryStrengthBand { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public string? MilitaryStrengthResolvedForceId { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public required string RegionId { get; init; }
+
+    [JsonPropertyOrder(16)]
+    public required string HomeSettlementId { get; init; }
+
+    [JsonPropertyOrder(17)]
+    public int? LastContactDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.HouseStanding"/> entry (Phase 10 item 5).</summary>
+public sealed record HouseStandingDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorAId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ActorBId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Standing { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? GrudgeOriginEngagementId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public int? GrudgeOriginDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.RivalDossier"/> (Phase 10 item 5).</summary>
+public sealed record RivalDossierDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Summary { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? HeadComboTitle { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int LastUpdatedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required IReadOnlyList<string> RecentChronicleEntries { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Actors.RegionalFamiliesEntry"/> (Phase 10 item 5).</summary>
+public sealed record RegionalFamiliesEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string StandingTrend { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? IdentityEconomic { get; init; }
+}
+
+/// <summary>One filled Council seat, part of <see cref="StewardshipAssignmentDto"/>.</summary>
+public sealed record CouncilMemberDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Domain { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.StewardshipAssignment"/> (Phase 10 item 2).</summary>
+public sealed record StewardshipAssignmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string AssignmentId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Context { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Mode { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? AppointeeCharacterId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required IReadOnlyList<CouncilMemberDto> CouncilMembers { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? CouncilHeadCharacterId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string AutonomyLevel { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int StartDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public int? EndDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.AutonomousDecisionLog"/> (Phase 10 item 10).</summary>
+public sealed record AutonomousDecisionLogDto
+{
+    [JsonPropertyOrder(0)]
+    public required string LogId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string AssignmentId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string DecisionType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Outcome { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int CompetenceRollFactor { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int LoyaltyRiskRollFactor { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? IncidentType { get; init; }
 }

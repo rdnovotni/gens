@@ -18,6 +18,11 @@ public enum ActionTargetKind
     Household,
     Holding,
     Settlement,
+
+    /// <summary>Targets a <see cref="Gens.Simulation.Actors.LivingWorldActor"/> (Phase 10 item 5/6) —
+    /// e.g. seeking alliance with or declaring rivalry against a house. Added additively (ADR 0011);
+    /// no earlier <see cref="ActionDefinition"/> used this value.</summary>
+    Actor,
 }
 
 /// <summary>Confirmation weight an Action's own consequences call for before the player commits to it

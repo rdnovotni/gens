@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
@@ -10,6 +11,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.State;
+using Gens.Simulation.Stewardship;
 using Gens.Simulation.Time;
 using Gens.Simulation.Villas;
 
@@ -48,6 +50,8 @@ public static class WorldStateMapper
                 DebtRecordIds = state.DebtRecordIds.Peek,
                 StandingContractIds = state.StandingContractIds.Peek,
                 EventInstanceIds = state.EventInstanceIds.Peek,
+                StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
+                AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -91,6 +95,18 @@ public static class WorldStateMapper
             HouseholdPolicies = state.HouseholdPolicies.InAscendingOrder().Select(entry => ToHouseholdPolicyStateDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             EventInstances = state.EventInstances.InAscendingOrder().Select(entry => ToEventInstanceDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Actors = state.Actors.InAscendingOrder().Select(entry => ToLivingWorldActorDto(entry.Value)).ToArray(),
+            // Already ascending HouseStandingKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            HouseStandings = state.HouseStandings.InAscendingOrder().Select(entry => ToHouseStandingDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RivalDossiers = state.RivalDossiers.InAscendingOrder().Select(entry => ToRivalDossierDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RegionalFamiliesEntries = state.RegionalFamiliesEntries.InAscendingOrder().Select(entry => ToRegionalFamiliesEntryDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            StewardshipAssignments = state.StewardshipAssignments.InAscendingOrder().Select(entry => ToStewardshipAssignmentDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            AutonomousDecisionLogs = state.AutonomousDecisionLogs.InAscendingOrder().Select(entry => ToAutonomousDecisionLogDto(entry.Value)).ToArray(),
         };
     }
 
@@ -233,6 +249,44 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<EventInstance>, EventInstance>(instance.InstanceId, instance);
             }));
 
+        var actors = OrderedRegistry<RuntimeId<Actor>, LivingWorldActor>.Restore(
+            dto.Actors.Select(a =>
+            {
+                var actor = FromLivingWorldActorDto(a);
+                return new KeyValuePair<RuntimeId<Actor>, LivingWorldActor>(actor.ActorId, actor);
+            }));
+
+        var houseStandings = OrderedRegistry<HouseStandingKey, HouseStanding>.Restore(
+            dto.HouseStandings.Select(FromHouseStandingDto));
+
+        var rivalDossiers = OrderedRegistry<RuntimeId<Actor>, RivalDossier>.Restore(
+            dto.RivalDossiers.Select(d =>
+            {
+                var dossier = FromRivalDossierDto(d);
+                return new KeyValuePair<RuntimeId<Actor>, RivalDossier>(dossier.ActorId, dossier);
+            }));
+
+        var regionalFamiliesEntries = OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry>.Restore(
+            dto.RegionalFamiliesEntries.Select(e =>
+            {
+                var entry = FromRegionalFamiliesEntryDto(e);
+                return new KeyValuePair<RuntimeId<Actor>, RegionalFamiliesEntry>(entry.ActorId, entry);
+            }));
+
+        var stewardshipAssignments = OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment>.Restore(
+            dto.StewardshipAssignments.Select(a =>
+            {
+                var assignment = FromStewardshipAssignmentDto(a);
+                return new KeyValuePair<RuntimeId<StewardshipAssignment>, StewardshipAssignment>(assignment.AssignmentId, assignment);
+            }));
+
+        var autonomousDecisionLogs = OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog>.Restore(
+            dto.AutonomousDecisionLogs.Select(l =>
+            {
+                var log = FromAutonomousDecisionLogDto(l);
+                return new KeyValuePair<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog>(log.LogId, log);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -252,6 +306,8 @@ public static class WorldStateMapper
             debtRecordIds: RuntimeIdCounter<DebtRecord>.Restore(dto.Counters.DebtRecordIds),
             standingContractIds: RuntimeIdCounter<StandingContract>.Restore(dto.Counters.StandingContractIds),
             eventInstanceIds: RuntimeIdCounter<EventInstance>.Restore(dto.Counters.EventInstanceIds),
+            stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
+            autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -274,6 +330,12 @@ public static class WorldStateMapper
             standingContracts: standingContracts,
             householdPolicies: householdPolicies,
             eventInstances: eventInstances,
+            actors: actors,
+            houseStandings: houseStandings,
+            rivalDossiers: rivalDossiers,
+            regionalFamiliesEntries: regionalFamiliesEntries,
+            stewardshipAssignments: stewardshipAssignments,
+            autonomousDecisionLogs: autonomousDecisionLogs,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1115,4 +1177,150 @@ public static class WorldStateMapper
         dto.ResolvedOptionId is null ? null : new DefinitionId<EventOptionDefinition>(dto.ResolvedOptionId),
         dto.ResolvedDateTotalMonths is null ? null : new GameDate(dto.ResolvedDateTotalMonths.Value),
         dto.ResolvingEventId);
+
+    private static LivingWorldActorDto ToLivingWorldActorDto(LivingWorldActor actor) => new()
+    {
+        ActorId = actor.ActorId.ToTaggedString(),
+        ActorType = actor.ActorType.ToString(),
+        Name = actor.Name,
+        Tier = actor.Tier.ToString(),
+        StandingTrend = actor.StandingTrend.ToString(),
+        OriginStory = actor.OriginStory.ToString(),
+        ParentActorId = actor.ParentActorId?.ToTaggedString(),
+        IdentityEconomic = actor.IdentityTags.Economic?.ToString(),
+        IdentityFaction = actor.IdentityTags.Faction?.ToString(),
+        HeadCharacterId = actor.HeadCharacterId?.ToTaggedString(),
+        Dignitas = actor.Dignitas,
+        NetWorthBand = actor.NetWorth.Band.ToString(),
+        NetWorthFigure = actor.NetWorth.Figure?.RawValue,
+        MilitaryStrengthBand = actor.MilitaryStrength.Band.ToString(),
+        MilitaryStrengthResolvedForceId = actor.MilitaryStrength.ResolvedForceId,
+        RegionId = actor.RegionId.ToTaggedString(),
+        HomeSettlementId = actor.HomeSettlementId.ToTaggedString(),
+        LastContactDateTotalMonths = actor.LastContactDate?.TotalMonths,
+    };
+
+    private static LivingWorldActor FromLivingWorldActorDto(LivingWorldActorDto dto) => LivingWorldActor.Create(
+        RuntimeId<Actor>.Parse(dto.ActorId),
+        Enum.Parse<LivingWorldActorType>(dto.ActorType),
+        dto.Name,
+        Enum.Parse<LivingWorldActorTier>(dto.Tier),
+        Enum.Parse<LivingWorldActorStandingTrend>(dto.StandingTrend),
+        Enum.Parse<LivingWorldActorOrigin>(dto.OriginStory),
+        dto.ParentActorId is null ? null : RuntimeId<Actor>.Parse(dto.ParentActorId),
+        new LivingWorldActorIdentity(
+            dto.IdentityEconomic is null ? null : Enum.Parse<EconomicIdentityTag>(dto.IdentityEconomic),
+            dto.IdentityFaction is null ? null : Enum.Parse<FactionTag>(dto.IdentityFaction)),
+        dto.Dignitas,
+        new LivingWorldActorNetWorth(
+            Enum.Parse<HouseholdWealthBand>(dto.NetWorthBand),
+            dto.NetWorthFigure is null ? null : Money.FromMinorUnits(dto.NetWorthFigure.Value)),
+        new LivingWorldActorMilitaryStrength(
+            Enum.Parse<MilitaryStrengthBand>(dto.MilitaryStrengthBand),
+            dto.MilitaryStrengthResolvedForceId),
+        RuntimeId<Region>.Parse(dto.RegionId),
+        RuntimeId<Settlement>.Parse(dto.HomeSettlementId),
+        dto.HeadCharacterId is null ? null : RuntimeId<Character>.Parse(dto.HeadCharacterId),
+        dto.LastContactDateTotalMonths is null ? null : new GameDate(dto.LastContactDateTotalMonths.Value));
+
+    private static HouseStandingDto ToHouseStandingDto(HouseStandingKey key, HouseStanding standing) => new()
+    {
+        ActorAId = key.ActorAId.ToTaggedString(),
+        ActorBId = key.ActorBId.ToTaggedString(),
+        Standing = standing.Standing.ToString(),
+        GrudgeOriginEngagementId = standing.Grudge?.OriginEngagementId,
+        GrudgeOriginDateTotalMonths = standing.Grudge?.OriginDate.TotalMonths,
+    };
+
+    private static KeyValuePair<HouseStandingKey, HouseStanding> FromHouseStandingDto(HouseStandingDto dto)
+    {
+        var key = HouseStandingKey.Between(RuntimeId<Actor>.Parse(dto.ActorAId), RuntimeId<Actor>.Parse(dto.ActorBId));
+        var grudge = dto.GrudgeOriginEngagementId is null
+            ? (AncestralGrudge?)null
+            : new AncestralGrudge(dto.GrudgeOriginEngagementId, new GameDate(dto.GrudgeOriginDateTotalMonths!.Value));
+        var standing = new HouseStanding(Enum.Parse<HouseStandingLevel>(dto.Standing), grudge);
+        return new KeyValuePair<HouseStandingKey, HouseStanding>(key, standing);
+    }
+
+    private static RivalDossierDto ToRivalDossierDto(RivalDossier dossier) => new()
+    {
+        ActorId = dossier.ActorId.ToTaggedString(),
+        Summary = dossier.Summary,
+        HeadComboTitle = dossier.HeadComboTitle,
+        LastUpdatedDateTotalMonths = dossier.LastUpdatedDate.TotalMonths,
+        RecentChronicleEntries = dossier.RecentChronicleEntries,
+    };
+
+    private static RivalDossier FromRivalDossierDto(RivalDossierDto dto) => new(
+        RuntimeId<Actor>.Parse(dto.ActorId),
+        dto.Summary,
+        dto.HeadComboTitle,
+        new GameDate(dto.LastUpdatedDateTotalMonths),
+        dto.RecentChronicleEntries);
+
+    private static RegionalFamiliesEntryDto ToRegionalFamiliesEntryDto(RegionalFamiliesEntry entry) => new()
+    {
+        ActorId = entry.ActorId.ToTaggedString(),
+        Name = entry.Name,
+        StandingTrend = entry.StandingTrend.ToString(),
+        IdentityEconomic = entry.IdentityEconomic?.ToString(),
+    };
+
+    private static RegionalFamiliesEntry FromRegionalFamiliesEntryDto(RegionalFamiliesEntryDto dto) => new(
+        RuntimeId<Actor>.Parse(dto.ActorId),
+        dto.Name,
+        Enum.Parse<LivingWorldActorStandingTrend>(dto.StandingTrend),
+        dto.IdentityEconomic is null ? null : Enum.Parse<EconomicIdentityTag>(dto.IdentityEconomic));
+
+    private static StewardshipAssignmentDto ToStewardshipAssignmentDto(StewardshipAssignment assignment) => new()
+    {
+        AssignmentId = assignment.AssignmentId.ToTaggedString(),
+        HouseholdId = assignment.HouseholdId.ToTaggedString(),
+        Context = assignment.Context.ToString(),
+        Mode = assignment.Mode.ToString(),
+        AppointeeCharacterId = assignment.AppointeeCharacterId?.ToTaggedString(),
+        CouncilMembers = assignment.CouncilMembers
+            .Select(m => new CouncilMemberDto { Domain = m.Domain.ToString(), CharacterId = m.CharacterId.ToTaggedString() })
+            .ToArray(),
+        CouncilHeadCharacterId = assignment.CouncilHeadCharacterId?.ToTaggedString(),
+        AutonomyLevel = assignment.AutonomyLevel.ToString(),
+        StartDateTotalMonths = assignment.StartDate.TotalMonths,
+        EndDateTotalMonths = assignment.EndDate?.TotalMonths,
+    };
+
+    private static StewardshipAssignment FromStewardshipAssignmentDto(StewardshipAssignmentDto dto) => new(
+        RuntimeId<StewardshipAssignment>.Parse(dto.AssignmentId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<StewardshipContext>(dto.Context),
+        Enum.Parse<StewardshipMode>(dto.Mode),
+        dto.AppointeeCharacterId is null ? null : RuntimeId<Character>.Parse(dto.AppointeeCharacterId),
+        dto.CouncilMembers
+            .Select(m => new CouncilMember(Enum.Parse<CouncilDomain>(m.Domain), RuntimeId<Character>.Parse(m.CharacterId)))
+            .ToArray(),
+        dto.CouncilHeadCharacterId is null ? null : RuntimeId<Character>.Parse(dto.CouncilHeadCharacterId),
+        Enum.Parse<StewardAutonomyLevel>(dto.AutonomyLevel),
+        new GameDate(dto.StartDateTotalMonths),
+        dto.EndDateTotalMonths is null ? null : new GameDate(dto.EndDateTotalMonths.Value));
+
+    private static AutonomousDecisionLogDto ToAutonomousDecisionLogDto(AutonomousDecisionLog log) => new()
+    {
+        LogId = log.LogId.ToTaggedString(),
+        AssignmentId = log.AssignmentId.ToTaggedString(),
+        MonthTotalMonths = log.Month.TotalMonths,
+        DecisionType = log.DecisionType,
+        Outcome = log.Outcome,
+        CompetenceRollFactor = log.CompetenceRollFactor,
+        LoyaltyRiskRollFactor = log.LoyaltyRiskRollFactor,
+        IncidentType = log.IncidentType?.ToString(),
+    };
+
+    private static AutonomousDecisionLog FromAutonomousDecisionLogDto(AutonomousDecisionLogDto dto) => new(
+        RuntimeId<AutonomousDecisionLog>.Parse(dto.LogId),
+        RuntimeId<StewardshipAssignment>.Parse(dto.AssignmentId),
+        new GameDate(dto.MonthTotalMonths),
+        dto.DecisionType,
+        dto.Outcome,
+        dto.CompetenceRollFactor,
+        dto.LoyaltyRiskRollFactor,
+        dto.IncidentType is null ? null : Enum.Parse<StewardIncidentType>(dto.IncidentType));
 }

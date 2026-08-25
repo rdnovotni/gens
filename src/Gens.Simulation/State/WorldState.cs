@@ -1,3 +1,4 @@
+using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
@@ -8,6 +9,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Stewardship;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.State;
@@ -52,6 +54,8 @@ public sealed class WorldState
         RuntimeIdCounter<DebtRecord> debtRecordIds,
         RuntimeIdCounter<StandingContract> standingContractIds,
         RuntimeIdCounter<EventInstance> eventInstanceIds,
+        RuntimeIdCounter<StewardshipAssignment> stewardshipAssignmentIds,
+        RuntimeIdCounter<AutonomousDecisionLog> autonomousDecisionLogIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -74,6 +78,12 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<StandingContract>, StandingContract> standingContracts,
         OrderedRegistry<RuntimeId<Household>, HouseholdPolicyState> householdPolicies,
         OrderedRegistry<RuntimeId<EventInstance>, EventInstance> eventInstances,
+        OrderedRegistry<RuntimeId<Actor>, LivingWorldActor> actors,
+        OrderedRegistry<HouseStandingKey, HouseStanding> houseStandings,
+        OrderedRegistry<RuntimeId<Actor>, RivalDossier> rivalDossiers,
+        OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry> regionalFamiliesEntries,
+        OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> stewardshipAssignments,
+        OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> autonomousDecisionLogs,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -95,6 +105,8 @@ public sealed class WorldState
         DebtRecordIds = debtRecordIds;
         StandingContractIds = standingContractIds;
         EventInstanceIds = eventInstanceIds;
+        StewardshipAssignmentIds = stewardshipAssignmentIds;
+        AutonomousDecisionLogIds = autonomousDecisionLogIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -117,6 +129,12 @@ public sealed class WorldState
         StandingContracts = standingContracts;
         HouseholdPolicies = householdPolicies;
         EventInstances = eventInstances;
+        Actors = actors;
+        HouseStandings = houseStandings;
+        RivalDossiers = rivalDossiers;
+        RegionalFamiliesEntries = regionalFamiliesEntries;
+        StewardshipAssignments = stewardshipAssignments;
+        AutonomousDecisionLogs = autonomousDecisionLogs;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -146,6 +164,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Events.EventInstance"/> (Phase 9 item 3).</summary>
     public RuntimeIdCounter<EventInstance> EventInstanceIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Stewardship.StewardshipAssignment"/> (Phase 10 item 2).</summary>
+    public RuntimeIdCounter<StewardshipAssignment> StewardshipAssignmentIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Stewardship.AutonomousDecisionLog"/> (Phase 10 item 10).</summary>
+    public RuntimeIdCounter<AutonomousDecisionLog> AutonomousDecisionLogIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -274,6 +298,41 @@ public sealed class WorldState
     /// fields are exactly what the Monthly Report's drill-down (Phase 9 item 4) reads back.</summary>
     public OrderedRegistry<RuntimeId<EventInstance>, EventInstance> EventInstances { get; } = new();
 
+    /// <summary>Every <see cref="LivingWorldActor"/> — rival houses and, later, the other actor kinds
+    /// <c>gens-rival-houses-design.md</c> §6 generalizes to (Phase 10 item 3) — in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004). Immutable record entries: a system replaces an entry
+    /// rather than mutating one in place, matching <see cref="EventInstances"/>' identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, LivingWorldActor> Actors { get; } = new();
+
+    /// <summary>Every tracked house-pair's <see cref="Actors.HouseStanding"/> (Phase 10 item 5), in
+    /// ascending <see cref="HouseStandingKey"/> order (ADR 0004). Sparse: an untracked pair has no
+    /// entry — see <see cref="Actors.HouseStandingResolver"/> for the default that applies then.</summary>
+    public OrderedRegistry<HouseStandingKey, HouseStanding> HouseStandings { get; } = new();
+
+    /// <summary>Every actor the player has an actual <see cref="Actors.RivalDossier"/> for (Phase 10
+    /// item 5), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Sparse: an actor never
+    /// contacted has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, RivalDossier> RivalDossiers { get; } = new();
+
+    /// <summary>Every actor with lighter, pre-contact regional visibility (Phase 10 item 5;
+    /// <c>gens-rival-houses-design.md</c> §7's "Notable Families of the Region"), in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004). Sparse, and distinct from <see cref="RivalDossiers"/>:
+    /// an actor can appear here without ever having a full dossier.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry> RegionalFamiliesEntries { get; } = new();
+
+    /// <summary>Every household's delegated-management assignment, past and present (Phase 10 item 2),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept even once ended (<see
+    /// cref="StewardshipAssignment.EndDate"/> set) rather than removed, matching <see
+    /// cref="EventInstances"/>' identical "resolved or not, kept for the campaign's lifetime"
+    /// convention — a later Return Report still needs to read the ended assignment back.</summary>
+    public OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> StewardshipAssignments { get; } = new();
+
+    /// <summary>Every autonomous decision any steward/Council has ever logged (Phase 10 item 10), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — an append-only audit log, matching <see
+    /// cref="Ledger.LedgerTransactions"/>' identical convention. A future Return Report (package 11)
+    /// reads the entries for one <see cref="Stewardship.StewardshipAssignment"/> back out of here.</summary>
+    public OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> AutonomousDecisionLogs { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -309,6 +368,8 @@ public sealed class WorldState
         ["debtRecordIds"] = DebtRecordIds.Peek,
         ["standingContractIds"] = StandingContractIds.Peek,
         ["eventInstanceIds"] = EventInstanceIds.Peek,
+        ["stewardshipAssignmentIds"] = StewardshipAssignmentIds.Peek,
+        ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -331,6 +392,12 @@ public sealed class WorldState
         ["standingContracts"] = StandingContracts.Version,
         ["householdPolicies"] = HouseholdPolicies.Version,
         ["eventInstances"] = EventInstances.Version,
+        ["actors"] = Actors.Version,
+        ["houseStandings"] = HouseStandings.Version,
+        ["rivalDossiers"] = RivalDossiers.Version,
+        ["regionalFamiliesEntries"] = RegionalFamiliesEntries.Version,
+        ["stewardshipAssignments"] = StewardshipAssignments.Version,
+        ["autonomousDecisionLogs"] = AutonomousDecisionLogs.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

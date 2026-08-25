@@ -70,6 +70,23 @@ public static class CampaignBootstrapper
     /// rule-8 reason.</summary>
     public const string EventPoolStreamName = "events.pool";
 
+    /// <summary>The named random stream <see cref="Actors.LivingWorldActorHeadGenerator"/> reserves for
+    /// lazily generating a rival house's head Character (Phase 10 item 4), kept distinct from <see
+    /// cref="CharacterGenerationStreamName"/> for the same rule-8 reason even though both draw a full
+    /// Character identity — a rival house's generation must not perturb, or be perturbed by, the
+    /// player household's own.</summary>
+    public const string RivalHouseHeadGenerationStreamName = "actors.rivalHouseHeadGeneration";
+
+    /// <summary>The named random stream <see cref="Actors.BackgroundHouseDriftSystem"/> reserves for
+    /// its monthly Background-tier fortune/standing-trend rolls (Phase 10 item 3), kept distinct from
+    /// <see cref="RivalHouseHeadGenerationStreamName"/> for the same rule-8 reason.</summary>
+    public const string BackgroundHouseDriftStreamName = "actors.backgroundHouseDrift";
+
+    /// <summary>The named random stream <see cref="Actors.RivalAmbitionSystem"/> reserves for its
+    /// monthly Noteworthy-tier act-chance roll (Phase 10 item 4), kept distinct from every other stream
+    /// here for the same rule-8 reason.</summary>
+    public const string RivalAmbitionStreamName = "actors.rivalAmbition";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -90,6 +107,9 @@ public static class CampaignBootstrapper
         streams.AddDerived(PopGroupEmigrationStreamName, config.Seed);
         streams.AddDerived(PopGroupImmigrationStreamName, config.Seed);
         streams.AddDerived(EventPoolStreamName, config.Seed);
+        streams.AddDerived(RivalHouseHeadGenerationStreamName, config.Seed);
+        streams.AddDerived(BackgroundHouseDriftStreamName, config.Seed);
+        streams.AddDerived(RivalAmbitionStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
