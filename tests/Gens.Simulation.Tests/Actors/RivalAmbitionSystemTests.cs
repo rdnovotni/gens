@@ -3,6 +3,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
+using Gens.Simulation.Schemes;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 using NUnit.Framework;
@@ -62,7 +63,7 @@ public sealed class RivalAmbitionSystemTests
     [Test]
     public void DeclaresTheRelationshipsActorsPhaseAndPrerequisite()
     {
-        var system = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
+        var system = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), SchemeActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
 
         Assert.Multiple(() =>
         {
@@ -86,7 +87,7 @@ public sealed class RivalAmbitionSystemTests
         state.Actors.Remove(actor.ActorId);
         state.Actors.Add(actor.ActorId, actor with { HeadCharacterId = headId, Tier = LivingWorldActorTier.Noteworthy });
 
-        var system = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
+        var system = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), SchemeActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
         var events = system.Tick(state, new MonthlyTickContext(new GameDate(0), Streams(1)));
 
         Assert.That(events, Is.Empty);
@@ -96,7 +97,7 @@ public sealed class RivalAmbitionSystemTests
     public void AMaximallyAmbitiousBoldHeadEventuallyChangesStandingWithItsTarget()
     {
         var (state, actor, target) = SetUpNoteworthyActorWithATarget(ambition: 100, bold: true);
-        var system = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
+        var system = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), SchemeActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
 
         var initialStanding = HouseStandingResolver.GetEffectiveStanding(state, actor.ActorId, target.ActorId);
         var streams = Streams(0);
@@ -111,15 +112,44 @@ public sealed class RivalAmbitionSystemTests
     }
 
     [Test]
+    public void AFeudingPairWithBothStandingMovesBlockedInitiatesASchemeInstead()
+    {
+        var (state, actor, target) = SetUpNoteworthyActorWithATarget(ambition: 100, bold: true);
+
+        // Give the target a head Character too, so it's a valid scheme target, and force both
+        // House Standing directions to be ineligible: DeclareRivalry via AlreadyAtExtreme (already
+        // Feuding), SeekAlliance via an active Ancestral Grudge.
+        var targetHeadId = state.CharacterIds.Issue();
+        state.Characters.Add(targetHeadId, CharacterTestFixtures.Minimal(targetHeadId, praenomen: "Quintus"));
+        state.Actors.Remove(target.ActorId);
+        state.Actors.Add(target.ActorId, target with { HeadCharacterId = targetHeadId, Tier = LivingWorldActorTier.Noteworthy });
+
+        var key = HouseStandingKey.Between(actor.ActorId, target.ActorId);
+        state.HouseStandings.Remove(key);
+        state.HouseStandings.Add(key, new HouseStanding(HouseStandingLevel.Feuding, new AncestralGrudge("engagement_placeholder", new GameDate(0))));
+
+        var system = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), SchemeActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
+        var streams = Streams(0);
+        var initiated = false;
+        for (var month = 0; month < 50 && !initiated; month++)
+        {
+            var events = system.Tick(state, new MonthlyTickContext(new GameDate(month), streams));
+            initiated = events.Any(e => e is SchemeInitiatedEvent);
+        }
+
+        Assert.That(initiated, Is.True);
+    }
+
+    [Test]
     public void SameSeedProducesTheSameOutcomeEveryTime()
     {
         var (stateA, actorA, targetA) = SetUpNoteworthyActorWithATarget(ambition: 100, bold: true);
-        var systemA = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
+        var systemA = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), SchemeActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
         systemA.Tick(stateA, new MonthlyTickContext(new GameDate(0), Streams(5)));
         var standingA = HouseStandingResolver.GetEffectiveStanding(stateA, actorA.ActorId, targetA.ActorId);
 
         var (stateB, actorB, targetB) = SetUpNoteworthyActorWithATarget(ambition: 100, bold: true);
-        var systemB = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
+        var systemB = new RivalAmbitionSystem(RivalHouseActionDefinitions.BuildCatalog(), SchemeActionDefinitions.BuildCatalog(), BuildTraitCatalog(), "actors.rivalAmbition");
         systemB.Tick(stateB, new MonthlyTickContext(new GameDate(0), Streams(5)));
         var standingB = HouseStandingResolver.GetEffectiveStanding(stateB, actorB.ActorId, targetB.ActorId);
 
