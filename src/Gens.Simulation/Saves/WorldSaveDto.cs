@@ -211,6 +211,12 @@ public sealed record WorldSaveDocument
     /// empty, for the same additive-only reason as <see cref="AutonomousDecisionLogs"/> above.</summary>
     [JsonPropertyOrder(33)]
     public IReadOnlyList<ReturnReportDto> ReturnReports { get; init; } = Array.Empty<ReturnReportDto>();
+
+    /// <summary>Every <see cref="Schemes.SchemeInstance"/> (Phase 10 item 12), already in ascending-
+    /// <see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty, for the
+    /// same additive-only reason as <see cref="ReturnReports"/> above.</summary>
+    [JsonPropertyOrder(34)]
+    public IReadOnlyList<SchemeInstanceDto> Schemes { get; init; } = Array.Empty<SchemeInstanceDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -301,6 +307,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(19)]
     public long ReturnReportIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10 save has no schemes.
+    /// Additive-only per ADR 0011's policy, matching <see cref="ReturnReportIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(20)]
+    public long SchemeIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1605,4 +1617,44 @@ public sealed record ReturnReportDto
 
     [JsonPropertyOrder(5)]
     public required bool ChronicleWorthy { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Schemes.SchemeInstance"/> (Phase 10 item 12).</summary>
+public sealed record SchemeInstanceDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SchemeId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Type { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string InitiatorCharacterId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string TargetCharacterId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? AssistingAgentCharacterId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int InitiatedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int Progress { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int DiscoveryRisk { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string Stage { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public int? CounterPlayDeadlineTotalMonths { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? Outcome { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public int? ResolvedDateTotalMonths { get; init; }
 }

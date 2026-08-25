@@ -7,6 +7,7 @@ using Gens.Simulation.Goods;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
+using Gens.Simulation.Schemes;
 using Gens.Simulation.Stewardship;
 
 namespace Gens.Simulation.State;
@@ -297,6 +298,23 @@ public static class StateHasher
             }
 
             hash = MixLong(hash, entry.Value.ChronicleWorthy ? 1 : 0);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Schemes.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.SchemeId.Value);
+            hash = MixLong(hash, (long)entry.Value.Type);
+            hash = MixLong(hash, entry.Value.InitiatorCharacterId.Value);
+            hash = MixLong(hash, entry.Value.TargetCharacterId.Value);
+            hash = MixLong(hash, entry.Value.AssistingAgentCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, entry.Value.InitiatedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.Progress);
+            hash = MixLong(hash, entry.Value.DiscoveryRisk);
+            hash = MixLong(hash, (long)entry.Value.Stage);
+            hash = MixLong(hash, entry.Value.CounterPlayDeadline?.TotalMonths ?? -1L);
+            hash = MixLong(hash, entry.Value.Outcome is null ? -1L : (long)entry.Value.Outcome.Value);
+            hash = MixLong(hash, entry.Value.ResolvedDate?.TotalMonths ?? -1L);
         }
 
         return hash;

@@ -10,6 +10,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Schemes;
 using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Time;
@@ -53,6 +54,7 @@ public static class WorldStateMapper
                 StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
                 ReturnReportIds = state.ReturnReportIds.Peek,
+                SchemeIds = state.SchemeIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -110,6 +112,8 @@ public static class WorldStateMapper
             AutonomousDecisionLogs = state.AutonomousDecisionLogs.InAscendingOrder().Select(entry => ToAutonomousDecisionLogDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ReturnReports = state.ReturnReports.InAscendingOrder().Select(entry => ToReturnReportDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Schemes = state.Schemes.InAscendingOrder().Select(entry => ToSchemeInstanceDto(entry.Value)).ToArray(),
         };
     }
 
@@ -297,6 +301,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<ReturnReport>, ReturnReport>(report.ReportId, report);
             }));
 
+        var schemes = OrderedRegistry<RuntimeId<SchemeInstance>, SchemeInstance>.Restore(
+            dto.Schemes.Select(s =>
+            {
+                var scheme = FromSchemeInstanceDto(s);
+                return new KeyValuePair<RuntimeId<SchemeInstance>, SchemeInstance>(scheme.SchemeId, scheme);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -319,6 +330,7 @@ public static class WorldStateMapper
             stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
             autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
             returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
+            schemeIds: RuntimeIdCounter<SchemeInstance>.Restore(dto.Counters.SchemeIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -348,6 +360,7 @@ public static class WorldStateMapper
             stewardshipAssignments: stewardshipAssignments,
             autonomousDecisionLogs: autonomousDecisionLogs,
             returnReports: returnReports,
+            schemes: schemes,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1361,4 +1374,34 @@ public static class WorldStateMapper
             .Select(e => new ReturnReportIncidentEntry(new GameDate(e.MonthTotalMonths), Enum.Parse<StewardIncidentType>(e.Type), Money.FromMinorUnits(e.Amount)))
             .ToArray(),
         dto.ChronicleWorthy);
+
+    private static SchemeInstanceDto ToSchemeInstanceDto(SchemeInstance scheme) => new()
+    {
+        SchemeId = scheme.SchemeId.ToTaggedString(),
+        Type = scheme.Type.ToString(),
+        InitiatorCharacterId = scheme.InitiatorCharacterId.ToTaggedString(),
+        TargetCharacterId = scheme.TargetCharacterId.ToTaggedString(),
+        AssistingAgentCharacterId = scheme.AssistingAgentCharacterId?.ToTaggedString(),
+        InitiatedDateTotalMonths = scheme.InitiatedDate.TotalMonths,
+        Progress = scheme.Progress,
+        DiscoveryRisk = scheme.DiscoveryRisk,
+        Stage = scheme.Stage.ToString(),
+        CounterPlayDeadlineTotalMonths = scheme.CounterPlayDeadline?.TotalMonths,
+        Outcome = scheme.Outcome?.ToString(),
+        ResolvedDateTotalMonths = scheme.ResolvedDate?.TotalMonths,
+    };
+
+    private static SchemeInstance FromSchemeInstanceDto(SchemeInstanceDto dto) => new(
+        RuntimeId<SchemeInstance>.Parse(dto.SchemeId),
+        Enum.Parse<SchemeType>(dto.Type),
+        RuntimeId<Character>.Parse(dto.InitiatorCharacterId),
+        RuntimeId<Character>.Parse(dto.TargetCharacterId),
+        dto.AssistingAgentCharacterId is null ? null : RuntimeId<Character>.Parse(dto.AssistingAgentCharacterId),
+        new GameDate(dto.InitiatedDateTotalMonths),
+        dto.Progress,
+        dto.DiscoveryRisk,
+        Enum.Parse<SchemeStage>(dto.Stage),
+        dto.CounterPlayDeadlineTotalMonths is null ? null : new GameDate(dto.CounterPlayDeadlineTotalMonths.Value),
+        dto.Outcome is null ? null : Enum.Parse<SchemeOutcome>(dto.Outcome),
+        dto.ResolvedDateTotalMonths is null ? null : new GameDate(dto.ResolvedDateTotalMonths.Value));
 }

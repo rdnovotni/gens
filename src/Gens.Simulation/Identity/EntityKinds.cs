@@ -3,6 +3,7 @@ using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Schemes;
 using Gens.Simulation.Stewardship;
 
 namespace Gens.Simulation.Identity;
@@ -152,6 +153,8 @@ internal static class RuntimeIdTagRegistry
         [typeof(AutonomousDecisionLog)] = "stewarddecision",
         // Phase 10 item 11 — Gens.Simulation.Stewardship.ReturnReport, same convention.
         [typeof(ReturnReport)] = "returnreport",
+        // Phase 10 item 12 — Gens.Simulation.Schemes.SchemeInstance, same convention.
+        [typeof(SchemeInstance)] = "scheme",
     };
 
     public static string Resolve(Type type) =>

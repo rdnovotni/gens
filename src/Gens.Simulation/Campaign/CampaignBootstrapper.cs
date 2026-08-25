@@ -97,6 +97,11 @@ public static class CampaignBootstrapper
     /// cref="StewardCompetenceStreamName"/> for the same rule-8 reason.</summary>
     public const string StewardLoyaltyStreamName = "stewardship.loyalty";
 
+    /// <summary>The named random stream <see cref="Schemes.SchemeProgressSystem"/> reserves for its
+    /// monthly Progress/Discovery/final-outcome rolls (Phase 10 item 12), kept distinct from every
+    /// other stream here for the same rule-8 reason.</summary>
+    public const string SchemeProgressStreamName = "schemes.progress";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -122,6 +127,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(RivalAmbitionStreamName, config.Seed);
         streams.AddDerived(StewardCompetenceStreamName, config.Seed);
         streams.AddDerived(StewardLoyaltyStreamName, config.Seed);
+        streams.AddDerived(SchemeProgressStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

@@ -9,6 +9,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Schemes;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Time;
 
@@ -57,6 +58,7 @@ public sealed class WorldState
         RuntimeIdCounter<StewardshipAssignment> stewardshipAssignmentIds,
         RuntimeIdCounter<AutonomousDecisionLog> autonomousDecisionLogIds,
         RuntimeIdCounter<ReturnReport> returnReportIds,
+        RuntimeIdCounter<SchemeInstance> schemeIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -86,6 +88,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> stewardshipAssignments,
         OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> autonomousDecisionLogs,
         OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport> returnReports,
+        OrderedRegistry<RuntimeId<SchemeInstance>, SchemeInstance> schemes,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -110,6 +113,7 @@ public sealed class WorldState
         StewardshipAssignmentIds = stewardshipAssignmentIds;
         AutonomousDecisionLogIds = autonomousDecisionLogIds;
         ReturnReportIds = returnReportIds;
+        SchemeIds = schemeIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -139,6 +143,7 @@ public sealed class WorldState
         StewardshipAssignments = stewardshipAssignments;
         AutonomousDecisionLogs = autonomousDecisionLogs;
         ReturnReports = returnReports;
+        Schemes = schemes;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -177,6 +182,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Stewardship.ReturnReport"/> (Phase 10 item 11).</summary>
     public RuntimeIdCounter<ReturnReport> ReturnReportIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Schemes.SchemeInstance"/> (Phase 10 item 12).</summary>
+    public RuntimeIdCounter<SchemeInstance> SchemeIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -345,6 +353,12 @@ public sealed class WorldState
     /// cref="EventInstances"/>, so a player can revisit an old report.</summary>
     public OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport> ReturnReports { get; } = new();
 
+    /// <summary>Every <see cref="Schemes.SchemeInstance"/>, in progress or resolved (Phase 10 item 12),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept even once resolved, matching <see
+    /// cref="EventInstances"/>' identical "resolved or not, kept for the campaign's lifetime"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<SchemeInstance>, SchemeInstance> Schemes { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -383,6 +397,7 @@ public sealed class WorldState
         ["stewardshipAssignmentIds"] = StewardshipAssignmentIds.Peek,
         ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["returnReportIds"] = ReturnReportIds.Peek,
+        ["schemeIds"] = SchemeIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -412,6 +427,7 @@ public sealed class WorldState
         ["stewardshipAssignments"] = StewardshipAssignments.Version,
         ["autonomousDecisionLogs"] = AutonomousDecisionLogs.Version,
         ["returnReports"] = ReturnReports.Version,
+        ["schemes"] = Schemes.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
