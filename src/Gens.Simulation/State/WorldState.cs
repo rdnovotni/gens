@@ -55,6 +55,7 @@ public sealed class WorldState
         RuntimeIdCounter<StandingContract> standingContractIds,
         RuntimeIdCounter<EventInstance> eventInstanceIds,
         RuntimeIdCounter<StewardshipAssignment> stewardshipAssignmentIds,
+        RuntimeIdCounter<AutonomousDecisionLog> autonomousDecisionLogIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -82,6 +83,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Actor>, RivalDossier> rivalDossiers,
         OrderedRegistry<RuntimeId<Actor>, RegionalFamiliesEntry> regionalFamiliesEntries,
         OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> stewardshipAssignments,
+        OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> autonomousDecisionLogs,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -104,6 +106,7 @@ public sealed class WorldState
         StandingContractIds = standingContractIds;
         EventInstanceIds = eventInstanceIds;
         StewardshipAssignmentIds = stewardshipAssignmentIds;
+        AutonomousDecisionLogIds = autonomousDecisionLogIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -131,6 +134,7 @@ public sealed class WorldState
         RivalDossiers = rivalDossiers;
         RegionalFamiliesEntries = regionalFamiliesEntries;
         StewardshipAssignments = stewardshipAssignments;
+        AutonomousDecisionLogs = autonomousDecisionLogs;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -163,6 +167,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Stewardship.StewardshipAssignment"/> (Phase 10 item 2).</summary>
     public RuntimeIdCounter<StewardshipAssignment> StewardshipAssignmentIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Stewardship.AutonomousDecisionLog"/> (Phase 10 item 10).</summary>
+    public RuntimeIdCounter<AutonomousDecisionLog> AutonomousDecisionLogIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -320,6 +327,12 @@ public sealed class WorldState
     /// convention — a later Return Report still needs to read the ended assignment back.</summary>
     public OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> StewardshipAssignments { get; } = new();
 
+    /// <summary>Every autonomous decision any steward/Council has ever logged (Phase 10 item 10), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — an append-only audit log, matching <see
+    /// cref="Ledger.LedgerTransactions"/>' identical convention. A future Return Report (package 11)
+    /// reads the entries for one <see cref="Stewardship.StewardshipAssignment"/> back out of here.</summary>
+    public OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> AutonomousDecisionLogs { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -356,6 +369,7 @@ public sealed class WorldState
         ["standingContractIds"] = StandingContractIds.Peek,
         ["eventInstanceIds"] = EventInstanceIds.Peek,
         ["stewardshipAssignmentIds"] = StewardshipAssignmentIds.Peek,
+        ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -383,6 +397,7 @@ public sealed class WorldState
         ["rivalDossiers"] = RivalDossiers.Version,
         ["regionalFamiliesEntries"] = RegionalFamiliesEntries.Version,
         ["stewardshipAssignments"] = StewardshipAssignments.Version,
+        ["autonomousDecisionLogs"] = AutonomousDecisionLogs.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

@@ -199,6 +199,12 @@ public sealed record WorldSaveDocument
     /// for the same additive-only reason as <see cref="Actors"/> above.</summary>
     [JsonPropertyOrder(31)]
     public IReadOnlyList<StewardshipAssignmentDto> StewardshipAssignments { get; init; } = Array.Empty<StewardshipAssignmentDto>();
+
+    /// <summary>Every <see cref="Stewardship.AutonomousDecisionLog"/> ever recorded (Phase 10 item 10),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, for the same additive-only reason as <see cref="StewardshipAssignments"/> above.</summary>
+    [JsonPropertyOrder(32)]
+    public IReadOnlyList<AutonomousDecisionLogDto> AutonomousDecisionLogs { get; init; } = Array.Empty<AutonomousDecisionLogDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -277,6 +283,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(17)]
     public long StewardshipAssignmentIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10 save has no autonomous decision
+    /// log entries. Additive-only per ADR 0011's policy, matching <see cref="StewardshipAssignmentIds"/>'
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(18)]
+    public long AutonomousDecisionLogIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1502,4 +1514,32 @@ public sealed record StewardshipAssignmentDto
 
     [JsonPropertyOrder(9)]
     public int? EndDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.AutonomousDecisionLog"/> (Phase 10 item 10).</summary>
+public sealed record AutonomousDecisionLogDto
+{
+    [JsonPropertyOrder(0)]
+    public required string LogId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string AssignmentId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string DecisionType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Outcome { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int CompetenceRollFactor { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int LoyaltyRiskRollFactor { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? IncidentType { get; init; }
 }

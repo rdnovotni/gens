@@ -51,6 +51,7 @@ public static class WorldStateMapper
                 StandingContractIds = state.StandingContractIds.Peek,
                 EventInstanceIds = state.EventInstanceIds.Peek,
                 StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
+                AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -104,6 +105,8 @@ public static class WorldStateMapper
             RegionalFamiliesEntries = state.RegionalFamiliesEntries.InAscendingOrder().Select(entry => ToRegionalFamiliesEntryDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             StewardshipAssignments = state.StewardshipAssignments.InAscendingOrder().Select(entry => ToStewardshipAssignmentDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            AutonomousDecisionLogs = state.AutonomousDecisionLogs.InAscendingOrder().Select(entry => ToAutonomousDecisionLogDto(entry.Value)).ToArray(),
         };
     }
 
@@ -277,6 +280,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<StewardshipAssignment>, StewardshipAssignment>(assignment.AssignmentId, assignment);
             }));
 
+        var autonomousDecisionLogs = OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog>.Restore(
+            dto.AutonomousDecisionLogs.Select(l =>
+            {
+                var log = FromAutonomousDecisionLogDto(l);
+                return new KeyValuePair<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog>(log.LogId, log);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -297,6 +307,7 @@ public static class WorldStateMapper
             standingContractIds: RuntimeIdCounter<StandingContract>.Restore(dto.Counters.StandingContractIds),
             eventInstanceIds: RuntimeIdCounter<EventInstance>.Restore(dto.Counters.EventInstanceIds),
             stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
+            autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -324,6 +335,7 @@ public static class WorldStateMapper
             rivalDossiers: rivalDossiers,
             regionalFamiliesEntries: regionalFamiliesEntries,
             stewardshipAssignments: stewardshipAssignments,
+            autonomousDecisionLogs: autonomousDecisionLogs,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1289,4 +1301,26 @@ public static class WorldStateMapper
         Enum.Parse<StewardAutonomyLevel>(dto.AutonomyLevel),
         new GameDate(dto.StartDateTotalMonths),
         dto.EndDateTotalMonths is null ? null : new GameDate(dto.EndDateTotalMonths.Value));
+
+    private static AutonomousDecisionLogDto ToAutonomousDecisionLogDto(AutonomousDecisionLog log) => new()
+    {
+        LogId = log.LogId.ToTaggedString(),
+        AssignmentId = log.AssignmentId.ToTaggedString(),
+        MonthTotalMonths = log.Month.TotalMonths,
+        DecisionType = log.DecisionType,
+        Outcome = log.Outcome,
+        CompetenceRollFactor = log.CompetenceRollFactor,
+        LoyaltyRiskRollFactor = log.LoyaltyRiskRollFactor,
+        IncidentType = log.IncidentType?.ToString(),
+    };
+
+    private static AutonomousDecisionLog FromAutonomousDecisionLogDto(AutonomousDecisionLogDto dto) => new(
+        RuntimeId<AutonomousDecisionLog>.Parse(dto.LogId),
+        RuntimeId<StewardshipAssignment>.Parse(dto.AssignmentId),
+        new GameDate(dto.MonthTotalMonths),
+        dto.DecisionType,
+        dto.Outcome,
+        dto.CompetenceRollFactor,
+        dto.LoyaltyRiskRollFactor,
+        dto.IncidentType is null ? null : Enum.Parse<StewardIncidentType>(dto.IncidentType));
 }

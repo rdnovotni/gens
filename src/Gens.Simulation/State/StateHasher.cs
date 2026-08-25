@@ -262,6 +262,19 @@ public static class StateHasher
         foreach (var entry in state.StewardshipAssignments.InAscendingOrder())
             hash = MixStewardshipAssignment(hash, entry.Value);
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.AutonomousDecisionLogs.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Value.LogId.Value);
+            hash = MixLong(hash, entry.Value.AssignmentId.Value);
+            hash = MixLong(hash, entry.Value.Month.TotalMonths);
+            hash = MixString(hash, entry.Value.DecisionType);
+            hash = MixString(hash, entry.Value.Outcome);
+            hash = MixLong(hash, entry.Value.CompetenceRollFactor);
+            hash = MixLong(hash, entry.Value.LoyaltyRiskRollFactor);
+            hash = MixLong(hash, entry.Value.IncidentType is null ? -1L : (long)entry.Value.IncidentType.Value);
+        }
+
         return hash;
     }
 
