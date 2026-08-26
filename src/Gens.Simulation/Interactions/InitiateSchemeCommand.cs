@@ -31,7 +31,7 @@ public sealed record SchemeInitiatedEvent(
     RuntimeId<Scheme> SchemeId,
     RuntimeId<Character> InitiatorCharacterId,
     RuntimeId<Character> TargetCharacterId,
-    SchemeType Type,
+    SchemeType SchemeType,
     string? CausationId) : IDomainEvent
 {
     public string Type => "interactions.schemeInitiated";
