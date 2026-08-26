@@ -205,6 +205,13 @@ public sealed record WorldSaveDocument
     /// to empty, for the same additive-only reason as <see cref="StewardshipAssignments"/> above.</summary>
     [JsonPropertyOrder(32)]
     public IReadOnlyList<AutonomousDecisionLogDto> AutonomousDecisionLogs { get; init; } = Array.Empty<AutonomousDecisionLogDto>();
+
+    /// <summary>Every <see cref="Interactions.Scheme"/>, in-progress or resolved (Phase 10 item 6),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, for the same additive-only reason as <see cref="AutonomousDecisionLogs"/>
+    /// above.</summary>
+    [JsonPropertyOrder(33)]
+    public IReadOnlyList<SchemeDto> Schemes { get; init; } = Array.Empty<SchemeDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -289,6 +296,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(18)]
     public long AutonomousDecisionLogIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10-item-6 save has no Schemes.
+    /// Additive-only per ADR 0011's policy, matching <see cref="AutonomousDecisionLogIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(19)]
+    public long SchemeIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1542,4 +1555,35 @@ public sealed record AutonomousDecisionLogDto
 
     [JsonPropertyOrder(7)]
     public string? IncidentType { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Interactions.Scheme"/> (Phase 10 item 6).</summary>
+public sealed record SchemeDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SchemeId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string InitiatorCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string TargetCharacterId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Type { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int Progress { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int DiscoveryRisk { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int InitiatedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int LastProgressedDateTotalMonths { get; init; }
 }

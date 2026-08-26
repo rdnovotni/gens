@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
+using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Stewardship;
@@ -150,6 +151,9 @@ internal static class RuntimeIdTagRegistry
         [typeof(StewardshipAssignment)] = "stewardship",
         // Phase 10 item 10 — Gens.Simulation.Stewardship.AutonomousDecisionLog, same convention.
         [typeof(AutonomousDecisionLog)] = "stewarddecision",
+        // Phase 10 item 6 — Gens.Simulation.Interactions.Scheme, same "real record as its own tag"
+        // convention as StewardshipAssignment/AutonomousDecisionLog above.
+        [typeof(Scheme)] = "scheme",
     };
 
     public static string Resolve(Type type) =>

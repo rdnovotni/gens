@@ -87,6 +87,18 @@ public static class CampaignBootstrapper
     /// here for the same rule-8 reason.</summary>
     public const string RivalAmbitionStreamName = "actors.rivalAmbition";
 
+    /// <summary>The named random stream <see cref="Actors.LivingWorldActorExtinctionSystem"/> reserves
+    /// for its monthly Background-tier extinction roll (Phase 10 item 4), kept distinct from every
+    /// other stream here for the same rule-8 reason — the Noteworthy-tier half of that system's check is
+    /// a deterministic genealogy lookup and draws no random numbers at all.</summary>
+    public const string ActorExtinctionStreamName = "actors.extinction";
+
+    /// <summary>The named random stream <see cref="Interactions.SchemeProgressSystem"/> reserves for
+    /// its monthly resolution rolls (counter-play foil-vs-escalate, clean success-vs-quiet-failure —
+    /// Phase 10 item 6), kept distinct from every other stream here for the same rule-8 reason. Progress
+    /// and discovery-risk advancement themselves are deterministic formulas and draw no random numbers.</summary>
+    public const string SchemeProgressStreamName = "interactions.schemeProgress";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -110,6 +122,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(RivalHouseHeadGenerationStreamName, config.Seed);
         streams.AddDerived(BackgroundHouseDriftStreamName, config.Seed);
         streams.AddDerived(RivalAmbitionStreamName, config.Seed);
+        streams.AddDerived(ActorExtinctionStreamName, config.Seed);
+        streams.AddDerived(SchemeProgressStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

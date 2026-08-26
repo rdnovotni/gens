@@ -6,6 +6,7 @@ using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
@@ -52,6 +53,7 @@ public static class WorldStateMapper
                 EventInstanceIds = state.EventInstanceIds.Peek,
                 StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
+                SchemeIds = state.SchemeIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -107,6 +109,8 @@ public static class WorldStateMapper
             StewardshipAssignments = state.StewardshipAssignments.InAscendingOrder().Select(entry => ToStewardshipAssignmentDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             AutonomousDecisionLogs = state.AutonomousDecisionLogs.InAscendingOrder().Select(entry => ToAutonomousDecisionLogDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Schemes = state.Schemes.InAscendingOrder().Select(entry => ToSchemeDto(entry.Value)).ToArray(),
         };
     }
 
@@ -287,6 +291,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog>(log.LogId, log);
             }));
 
+        var schemes = OrderedRegistry<RuntimeId<Scheme>, Scheme>.Restore(
+            dto.Schemes.Select(s =>
+            {
+                var scheme = FromSchemeDto(s);
+                return new KeyValuePair<RuntimeId<Scheme>, Scheme>(scheme.SchemeId, scheme);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -308,6 +319,7 @@ public static class WorldStateMapper
             eventInstanceIds: RuntimeIdCounter<EventInstance>.Restore(dto.Counters.EventInstanceIds),
             stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
             autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
+            schemeIds: RuntimeIdCounter<Scheme>.Restore(dto.Counters.SchemeIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -336,6 +348,7 @@ public static class WorldStateMapper
             regionalFamiliesEntries: regionalFamiliesEntries,
             stewardshipAssignments: stewardshipAssignments,
             autonomousDecisionLogs: autonomousDecisionLogs,
+            schemes: schemes,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1323,4 +1336,28 @@ public static class WorldStateMapper
         dto.CompetenceRollFactor,
         dto.LoyaltyRiskRollFactor,
         dto.IncidentType is null ? null : Enum.Parse<StewardIncidentType>(dto.IncidentType));
+
+    private static SchemeDto ToSchemeDto(Scheme scheme) => new()
+    {
+        SchemeId = scheme.SchemeId.ToTaggedString(),
+        InitiatorCharacterId = scheme.InitiatorCharacterId.ToTaggedString(),
+        TargetCharacterId = scheme.TargetCharacterId.ToTaggedString(),
+        Type = scheme.Type.ToString(),
+        Status = scheme.Status.ToString(),
+        Progress = scheme.Progress,
+        DiscoveryRisk = scheme.DiscoveryRisk,
+        InitiatedDateTotalMonths = scheme.InitiatedDate.TotalMonths,
+        LastProgressedDateTotalMonths = scheme.LastProgressedDate.TotalMonths,
+    };
+
+    private static Scheme FromSchemeDto(SchemeDto dto) => new(
+        RuntimeId<Scheme>.Parse(dto.SchemeId),
+        RuntimeId<Character>.Parse(dto.InitiatorCharacterId),
+        RuntimeId<Character>.Parse(dto.TargetCharacterId),
+        Enum.Parse<SchemeType>(dto.Type),
+        Enum.Parse<SchemeStatus>(dto.Status),
+        dto.Progress,
+        dto.DiscoveryRisk,
+        new GameDate(dto.InitiatedDateTotalMonths),
+        new GameDate(dto.LastProgressedDateTotalMonths));
 }

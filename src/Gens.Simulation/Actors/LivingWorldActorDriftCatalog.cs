@@ -27,4 +27,14 @@ public static class LivingWorldActorDriftCatalog
     /// cref="LivingWorldActorStandingTrend"/> itself randomly moves to a neighboring trend — representing
     /// a house's fortunes turning without requiring a specific triggering event.</summary>
     public const int StandingTrendDriftChancePercent = 5;
+
+    /// <summary>Percent chance (0-100), per processed tick, that a <see
+    /// cref="LivingWorldActorStandingTrend.Declining"/> Background actor goes extinct
+    /// (Phase 10 item 4; <c>gens-rival-houses-design.md</c> §2.1's "a Declining house is the natural
+    /// target for absorption" and §5.3's "a house goes extinct when its line runs out entirely"). A
+    /// Background house has no tracked head Character to check for a living heir against, so extinction
+    /// here is the same kind of abstract roll <see cref="NetWorthDriftChancePercent"/> already is,
+    /// rather than a genealogy check — <see cref="LivingWorldActorExtinctionSystem"/> only runs the real
+    /// heir check against a <see cref="LivingWorldActorTier.Noteworthy"/> actor's actual head.</summary>
+    public const int BackgroundExtinctionChancePercent = 2;
 }
