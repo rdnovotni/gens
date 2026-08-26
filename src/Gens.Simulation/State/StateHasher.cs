@@ -47,6 +47,7 @@ public static class StateHasher
         hash = MixLong(hash, state.ScheduledActionIds.Peek);
         hash = MixLong(hash, state.HoldingIds.Peek);
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
+        hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())

@@ -58,7 +58,7 @@ public sealed class LivingWorldActorExtinctionSystem : IMonthlySystem<WorldState
     public string Id => "actors.extinction";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "actors", "characters", "houseStandings" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "actors", "houseStandings" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "actors", "houseStandings", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)

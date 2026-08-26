@@ -48,8 +48,9 @@ public sealed record SchemeResolvedEvent(
 /// the plan is necessary but not sufficient").</item>
 /// </list>
 ///
-/// A Scheme whose initiator has died, or whose target no longer exists at all, resolves immediately as
-/// <see cref="SchemeStatus.FailedQuietly"/> rather than continuing to progress against nobody. Every
+/// A Scheme whose initiator has died, or whose target has died or no longer exists at all, resolves
+/// immediately as <see cref="SchemeStatus.FailedQuietly"/> rather than continuing to progress against
+/// nobody — mirroring <see cref="InitiateSchemeCommands"/>' own initiation-time liveness checks. Every
 /// numeric constant here is this codebase's own untuned first pass — see <see
 /// cref="SchemeProgressCatalog"/>'s own doc comments.
 /// </summary>
@@ -58,7 +59,7 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
     public string Id => "interactions.schemeProgress";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "schemes", "characters" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "schemes" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "schemes", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -77,7 +78,7 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
         foreach (var (schemeId, scheme) in inProgress)
         {
             if (!state.Characters.TryGet(scheme.InitiatorCharacterId, out var initiator) || !initiator.IsAlive ||
-                !state.Characters.TryGet(scheme.TargetCharacterId, out var target))
+                !state.Characters.TryGet(scheme.TargetCharacterId, out var target) || !target.IsAlive)
             {
                 Resolve(state, schemeId, scheme, SchemeStatus.FailedQuietly, context.Date, events);
                 continue;

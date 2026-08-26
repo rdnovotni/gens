@@ -1,6 +1,7 @@
 using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
@@ -45,7 +46,7 @@ public sealed class LivingWorldActorExtinctionSystemTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "actors", "characters", "houseStandings" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "actors", "houseStandings" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[] { "actors", "houseStandings", "eventIds" }));
         });
     }
 

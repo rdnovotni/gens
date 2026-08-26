@@ -78,7 +78,7 @@ public sealed class SchemeProgressSystemTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "schemes", "characters" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "schemes" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[] { "schemes", "eventIds" }));
         });
     }
 
@@ -138,6 +138,28 @@ public sealed class SchemeProgressSystemTests
         state.Characters.Add(initiatorId, WithIntrigue(initiatorId, 50, new DeathRecord(new GameDate(0), DeathCause.OldAge, 70)));
         var targetId = state.CharacterIds.Issue();
         state.Characters.Add(targetId, WithIntrigue(targetId, 50));
+        var schemeId = state.SchemeIds.Issue();
+        state.Schemes.Add(schemeId, Scheme.Create(schemeId, initiatorId, targetId, SchemeType.Coercive, new GameDate(0)));
+
+        var events = new SchemeProgressSystem().Tick(state, new MonthlyTickContext(new GameDate(1), Streams(1)));
+
+        state.Schemes.TryGet(schemeId, out var scheme);
+        Assert.Multiple(() =>
+        {
+            Assert.That(scheme!.Status, Is.EqualTo(SchemeStatus.FailedQuietly));
+            Assert.That(events, Has.Count.EqualTo(1));
+            Assert.That(events[0], Is.InstanceOf<SchemeResolvedEvent>());
+        });
+    }
+
+    [Test]
+    public void ResolvesAsFailedQuietlyWhenTheTargetHasDied()
+    {
+        var state = new WorldState(new GameDate(0));
+        var initiatorId = state.CharacterIds.Issue();
+        state.Characters.Add(initiatorId, WithIntrigue(initiatorId, 50));
+        var targetId = state.CharacterIds.Issue();
+        state.Characters.Add(targetId, WithIntrigue(targetId, 50, new DeathRecord(new GameDate(0), DeathCause.OldAge, 70)));
         var schemeId = state.SchemeIds.Issue();
         state.Schemes.Add(schemeId, Scheme.Create(schemeId, initiatorId, targetId, SchemeType.Coercive, new GameDate(0)));
 
