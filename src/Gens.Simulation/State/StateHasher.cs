@@ -4,6 +4,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
@@ -46,6 +47,7 @@ public static class StateHasher
         hash = MixLong(hash, state.ScheduledActionIds.Peek);
         hash = MixLong(hash, state.HoldingIds.Peek);
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
+        hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -275,6 +277,26 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.IncidentType is null ? -1L : (long)entry.Value.IncidentType.Value);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Schemes.InAscendingOrder())
+            hash = MixScheme(hash, entry.Value);
+
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="Interactions.Scheme"/>'s full state, in field-declaration order
+    /// (Phase 10 item 6).</summary>
+    private static ulong MixScheme(ulong hash, Scheme scheme)
+    {
+        hash = MixLong(hash, scheme.SchemeId.Value);
+        hash = MixLong(hash, scheme.InitiatorCharacterId.Value);
+        hash = MixLong(hash, scheme.TargetCharacterId.Value);
+        hash = MixLong(hash, (long)scheme.Type);
+        hash = MixLong(hash, (long)scheme.Status);
+        hash = MixLong(hash, scheme.Progress);
+        hash = MixLong(hash, scheme.DiscoveryRisk);
+        hash = MixLong(hash, scheme.InitiatedDate.TotalMonths);
+        hash = MixLong(hash, scheme.LastProgressedDate.TotalMonths);
         return hash;
     }
 
