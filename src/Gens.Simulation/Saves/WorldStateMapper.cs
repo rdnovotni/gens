@@ -13,6 +13,7 @@ using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
+using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
 using Gens.Simulation.Villas;
 
@@ -55,6 +56,7 @@ public static class WorldStateMapper
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
                 SchemeIds = state.SchemeIds.Peek,
                 ReturnReportIds = state.ReturnReportIds.Peek,
+                SuccessionDisputeIds = state.SuccessionDisputeIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -114,6 +116,12 @@ public static class WorldStateMapper
             Schemes = state.Schemes.InAscendingOrder().Select(entry => ToSchemeDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ReturnReports = state.ReturnReports.InAscendingOrder().Select(entry => ToReturnReportDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            HouseholdHeadships = state.HouseholdHeadships.InAscendingOrder().Select(entry => ToHouseholdHeadshipDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            HeirDesignations = state.HeirDesignations.InAscendingOrder().Select(entry => ToHeirDesignationDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            SuccessionDisputes = state.SuccessionDisputes.InAscendingOrder().Select(entry => ToSuccessionDisputeDto(entry.Value)).ToArray(),
         };
     }
 
@@ -308,6 +316,27 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<ReturnReport>, ReturnReport>(report.ReportId, report);
             }));
 
+        var householdHeadships = OrderedRegistry<RuntimeId<Household>, HouseholdHeadship>.Restore(
+            dto.HouseholdHeadships.Select(h =>
+            {
+                var headship = FromHouseholdHeadshipDto(h);
+                return new KeyValuePair<RuntimeId<Household>, HouseholdHeadship>(headship.HouseholdId, headship);
+            }));
+
+        var heirDesignations = OrderedRegistry<RuntimeId<Household>, HeirDesignation>.Restore(
+            dto.HeirDesignations.Select(h =>
+            {
+                var designation = FromHeirDesignationDto(h);
+                return new KeyValuePair<RuntimeId<Household>, HeirDesignation>(designation.HouseholdId, designation);
+            }));
+
+        var successionDisputes = OrderedRegistry<RuntimeId<SuccessionDispute>, SuccessionDispute>.Restore(
+            dto.SuccessionDisputes.Select(d =>
+            {
+                var dispute = FromSuccessionDisputeDto(d);
+                return new KeyValuePair<RuntimeId<SuccessionDispute>, SuccessionDispute>(dispute.DisputeId, dispute);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -331,6 +360,7 @@ public static class WorldStateMapper
             autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
             schemeIds: RuntimeIdCounter<Scheme>.Restore(dto.Counters.SchemeIds),
             returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
+            successionDisputeIds: RuntimeIdCounter<SuccessionDispute>.Restore(dto.Counters.SuccessionDisputeIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -361,6 +391,9 @@ public static class WorldStateMapper
             autonomousDecisionLogs: autonomousDecisionLogs,
             schemes: schemes,
             returnReports: returnReports,
+            householdHeadships: householdHeadships,
+            heirDesignations: heirDesignations,
+            successionDisputes: successionDisputes,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1390,4 +1423,64 @@ public static class WorldStateMapper
         Money.FromMinorUnits(dto.TotalTreasuryImpactRawValue),
         dto.IncidentsDiscovered.Select(RuntimeId<AutonomousDecisionLog>.Parse).ToArray(),
         dto.ChronicleWorthy);
+
+    private static HouseholdHeadshipDto ToHouseholdHeadshipDto(HouseholdHeadship headship) => new()
+    {
+        HouseholdId = headship.HouseholdId.ToTaggedString(),
+        HeadCharacterId = headship.HeadCharacterId.ToTaggedString(),
+        SinceDateTotalMonths = headship.SinceDate.TotalMonths,
+        RegentCharacterId = headship.RegentCharacterId?.ToTaggedString(),
+    };
+
+    private static HouseholdHeadship FromHouseholdHeadshipDto(HouseholdHeadshipDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Character>.Parse(dto.HeadCharacterId),
+        new GameDate(dto.SinceDateTotalMonths),
+        dto.RegentCharacterId is null ? null : RuntimeId<Character>.Parse(dto.RegentCharacterId));
+
+    private static HeirDesignationDto ToHeirDesignationDto(HeirDesignation designation) => new()
+    {
+        HouseholdId = designation.HouseholdId.ToTaggedString(),
+        PreferredHeirId = designation.PreferredHeirId?.ToTaggedString(),
+        FormallyDeclaredHeirId = designation.FormallyDeclaredHeirId?.ToTaggedString(),
+        DeclaredDateTotalMonths = designation.DeclaredDate?.TotalMonths,
+        DisownedCharacterIds = designation.DisownedCharacterIds.Select(id => id.ToTaggedString()).ToArray(),
+        AdoptedChildIds = designation.AdoptedChildIds.Select(id => id.ToTaggedString()).ToArray(),
+        AcknowledgedIllegitimateChildIds = designation.AcknowledgedIllegitimateChildIds.Select(id => id.ToTaggedString()).ToArray(),
+    };
+
+    private static HeirDesignation FromHeirDesignationDto(HeirDesignationDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.PreferredHeirId is null ? null : RuntimeId<Character>.Parse(dto.PreferredHeirId),
+        dto.FormallyDeclaredHeirId is null ? null : RuntimeId<Character>.Parse(dto.FormallyDeclaredHeirId),
+        dto.DeclaredDateTotalMonths is { } declared ? new GameDate(declared) : null,
+        dto.DisownedCharacterIds.Select(RuntimeId<Character>.Parse).ToArray(),
+        dto.AdoptedChildIds.Select(RuntimeId<Character>.Parse).ToArray(),
+        dto.AcknowledgedIllegitimateChildIds.Select(RuntimeId<Character>.Parse).ToArray());
+
+    private static SuccessionDisputeDto ToSuccessionDisputeDto(SuccessionDispute dispute) => new()
+    {
+        DisputeId = dispute.DisputeId.ToTaggedString(),
+        HouseholdId = dispute.HouseholdId.ToTaggedString(),
+        DeceasedHeadId = dispute.DeceasedHeadId.ToTaggedString(),
+        ClaimantIds = dispute.ClaimantIds.Select(id => id.ToTaggedString()).ToArray(),
+        OpenedDateTotalMonths = dispute.OpenedDate.TotalMonths,
+        ResolutionDueDateTotalMonths = dispute.ResolutionDueDate.TotalMonths,
+        Status = dispute.Status.ToString(),
+        WinnerCharacterId = dispute.WinnerCharacterId?.ToTaggedString(),
+        SplinterClaimantId = dispute.SplinterClaimantId?.ToTaggedString(),
+        SplinterHouseholdId = dispute.SplinterHouseholdId?.ToTaggedString(),
+    };
+
+    private static SuccessionDispute FromSuccessionDisputeDto(SuccessionDisputeDto dto) => new(
+        RuntimeId<SuccessionDispute>.Parse(dto.DisputeId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Character>.Parse(dto.DeceasedHeadId),
+        dto.ClaimantIds.Select(RuntimeId<Character>.Parse).ToArray(),
+        new GameDate(dto.OpenedDateTotalMonths),
+        new GameDate(dto.ResolutionDueDateTotalMonths),
+        Enum.Parse<SuccessionDisputeStatus>(dto.Status),
+        dto.WinnerCharacterId is null ? null : RuntimeId<Character>.Parse(dto.WinnerCharacterId),
+        dto.SplinterClaimantId is null ? null : RuntimeId<Character>.Parse(dto.SplinterClaimantId),
+        dto.SplinterHouseholdId is null ? null : RuntimeId<Household>.Parse(dto.SplinterHouseholdId));
 }

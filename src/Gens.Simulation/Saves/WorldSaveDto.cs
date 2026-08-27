@@ -218,6 +218,24 @@ public sealed record WorldSaveDocument
     /// defaults to empty, for the same additive-only reason as <see cref="Schemes"/> above.</summary>
     [JsonPropertyOrder(34)]
     public IReadOnlyList<ReturnReportDto> ReturnReports { get; init; } = Array.Empty<ReturnReportDto>();
+
+    /// <summary>Every <see cref="Succession.HouseholdHeadship"/> (Phase 11 item 1), already keyed by
+    /// household. Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="ReturnReports"/> above.</summary>
+    [JsonPropertyOrder(35)]
+    public IReadOnlyList<HouseholdHeadshipDto> HouseholdHeadships { get; init; } = Array.Empty<HouseholdHeadshipDto>();
+
+    /// <summary>Every <see cref="Succession.HeirDesignation"/> (Phase 11 item 1), already keyed by
+    /// household. Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="HouseholdHeadships"/> above.</summary>
+    [JsonPropertyOrder(36)]
+    public IReadOnlyList<HeirDesignationDto> HeirDesignations { get; init; } = Array.Empty<HeirDesignationDto>();
+
+    /// <summary>Every <see cref="Succession.SuccessionDispute"/>, pending or resolved (Phase 11 item 1),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, for the same additive-only reason as <see cref="HeirDesignations"/> above.</summary>
+    [JsonPropertyOrder(37)]
+    public IReadOnlyList<SuccessionDisputeDto> SuccessionDisputes { get; init; } = Array.Empty<SuccessionDisputeDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -314,6 +332,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(20)]
     public long ReturnReportIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-11-item-1 save has no succession
+    /// disputes. Additive-only per ADR 0011's policy, matching <see cref="ReturnReportIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(21)]
+    public long SuccessionDisputeIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1620,4 +1644,79 @@ public sealed record ReturnReportDto
 
     [JsonPropertyOrder(5)]
     public required bool ChronicleWorthy { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Succession.HouseholdHeadship"/> (Phase 11 item 1).</summary>
+public sealed record HouseholdHeadshipDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HeadCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int SinceDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? RegentCharacterId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Succession.HeirDesignation"/> (Phase 11 item 1).</summary>
+public sealed record HeirDesignationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? PreferredHeirId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? FormallyDeclaredHeirId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public int? DeclaredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required IReadOnlyList<string> DisownedCharacterIds { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required IReadOnlyList<string> AdoptedChildIds { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required IReadOnlyList<string> AcknowledgedIllegitimateChildIds { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Succession.SuccessionDispute"/> (Phase 11 item 1).</summary>
+public sealed record SuccessionDisputeDto
+{
+    [JsonPropertyOrder(0)]
+    public required string DisputeId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string DeceasedHeadId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required IReadOnlyList<string> ClaimantIds { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int OpenedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int ResolutionDueDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? WinnerCharacterId { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? SplinterClaimantId { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? SplinterHouseholdId { get; init; }
 }

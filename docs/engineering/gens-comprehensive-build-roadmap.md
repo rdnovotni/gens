@@ -361,6 +361,17 @@ Construction order:
 
 **Outcome:** death changes play rather than ending the simulation arbitrarily.
 
+**Item 1 progress:** heirs, eligibility, designation, adoption, disputed succession, asset/obligation
+transfer, and household extinction are implemented (`src/Gens.Simulation/Succession/`) —
+`HouseholdHeadship`/`HeirDesignation`/`SuccessionDispute` state, `SetPreferredHeirCommand`/
+`DeclareHeirCommand`/`DisownHeirCommand`/`AcknowledgeIllegitimateChildCommand`/`AdoptChildCommand`,
+and the `SuccessionHandoffSystem`/`SuccessionDisputeResolutionSystem` monthly pair (dispute →
+favor-score resolution → optional splinter household). Asset/obligation transfer reuses the existing
+household-keyed ledger/debt model rather than a new mechanism; item 6's fixtures (ordinary
+inheritance, contested inheritance, adoption, debt inheritance, absent heirs, extinction) are covered
+in `tests/Gens.Simulation.Tests/Succession/`. Items 2–5 (player-character handoff, Dynasty Chronicle,
+funerals/mourning/memoria, epithets/titles) remain.
+
 Construction order:
 
 1. Implement heirs, eligibility, designation, adoption, wills/inheritance rules, disputed succession, asset and obligation transfer, and household extinction.

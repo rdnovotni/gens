@@ -5,6 +5,7 @@ using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Stewardship;
+using Gens.Simulation.Succession;
 
 namespace Gens.Simulation.Identity;
 
@@ -157,6 +158,9 @@ internal static class RuntimeIdTagRegistry
         // Phase 10 package 13 — Gens.Simulation.Stewardship.ReturnReport, same "real record as its
         // own tag" convention as StewardshipAssignment/AutonomousDecisionLog/Scheme above.
         [typeof(ReturnReport)] = "returnreport",
+        // Phase 11 item 1 — Gens.Simulation.Succession.SuccessionDispute, same "real record as its
+        // own tag" convention as ReturnReport/Scheme above.
+        [typeof(SuccessionDispute)] = "succdispute",
     };
 
     public static string Resolve(Type type) =>

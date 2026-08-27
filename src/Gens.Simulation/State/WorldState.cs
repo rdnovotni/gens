@@ -11,6 +11,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.Stewardship;
+using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.State;
@@ -59,6 +60,7 @@ public sealed class WorldState
         RuntimeIdCounter<AutonomousDecisionLog> autonomousDecisionLogIds,
         RuntimeIdCounter<Scheme> schemeIds,
         RuntimeIdCounter<ReturnReport> returnReportIds,
+        RuntimeIdCounter<SuccessionDispute> successionDisputeIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -89,6 +91,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> autonomousDecisionLogs,
         OrderedRegistry<RuntimeId<Scheme>, Scheme> schemes,
         OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport> returnReports,
+        OrderedRegistry<RuntimeId<Household>, HouseholdHeadship> householdHeadships,
+        OrderedRegistry<RuntimeId<Household>, HeirDesignation> heirDesignations,
+        OrderedRegistry<RuntimeId<SuccessionDispute>, SuccessionDispute> successionDisputes,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -114,6 +119,7 @@ public sealed class WorldState
         AutonomousDecisionLogIds = autonomousDecisionLogIds;
         SchemeIds = schemeIds;
         ReturnReportIds = returnReportIds;
+        SuccessionDisputeIds = successionDisputeIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -144,6 +150,9 @@ public sealed class WorldState
         AutonomousDecisionLogs = autonomousDecisionLogs;
         Schemes = schemes;
         ReturnReports = returnReports;
+        HouseholdHeadships = householdHeadships;
+        HeirDesignations = heirDesignations;
+        SuccessionDisputes = successionDisputes;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -185,6 +194,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Stewardship.ReturnReport"/> (Phase 10 package 13).</summary>
     public RuntimeIdCounter<ReturnReport> ReturnReportIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Succession.SuccessionDispute"/> (Phase 11 item 1).</summary>
+    public RuntimeIdCounter<SuccessionDispute> SuccessionDisputeIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -360,6 +372,25 @@ public sealed class WorldState
     /// lifetime like <see cref="AutonomousDecisionLogs"/>.</summary>
     public OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport> ReturnReports { get; } = new();
 
+    /// <summary>Which Character currently heads each tracked Household (Phase 11 item 1), keyed by
+    /// household. Sparse: a Household with no explicitly established head has no entry — see <see
+    /// cref="Succession.EstablishHouseholdHeadCommand"/>. Immutable record entries: <see
+    /// cref="Succession.SuccessionHandoffSystem"/> replaces an entry (remove then re-add) rather than
+    /// mutating one in place, matching <see cref="EventInstances"/>' identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdHeadship> HouseholdHeadships { get; } = new();
+
+    /// <summary>Each Household's succession bookkeeping — preference, Formal Declaration, disownments,
+    /// adoptions, and acknowledged Illegitimate children (Phase 11 item 1; §2-§4) — keyed by household.
+    /// Sparse: a Household with none of these ever recorded has no entry, matching <see
+    /// cref="HouseholdPolicies"/>' identical "no entry means the default" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HeirDesignation> HeirDesignations { get; } = new();
+
+    /// <summary>Every contested succession, pending or resolved (Phase 11 item 1; §5.2), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once resolved rather than removed,
+    /// matching <see cref="Schemes"/>' identical "resolved or not, kept for the campaign's lifetime"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<SuccessionDispute>, SuccessionDispute> SuccessionDisputes { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -399,6 +430,7 @@ public sealed class WorldState
         ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["schemeIds"] = SchemeIds.Peek,
         ["returnReportIds"] = ReturnReportIds.Peek,
+        ["successionDisputeIds"] = SuccessionDisputeIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -429,6 +461,9 @@ public sealed class WorldState
         ["autonomousDecisionLogs"] = AutonomousDecisionLogs.Version,
         ["schemes"] = Schemes.Version,
         ["returnReports"] = ReturnReports.Version,
+        ["householdHeadships"] = HouseholdHeadships.Version,
+        ["heirDesignations"] = HeirDesignations.Version,
+        ["successionDisputes"] = SuccessionDisputes.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
