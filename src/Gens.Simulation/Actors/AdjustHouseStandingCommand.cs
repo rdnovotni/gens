@@ -112,6 +112,13 @@ public static class AdjustHouseStandingCommands
         state.HouseStandings.Remove(key);
         state.HouseStandings.Add(key, new HouseStanding(next, grudge));
 
+        // Genuine contact for both sides (Phase 10 package 14; §7's "contact, correspondence, a shared
+        // event"): whichever party is a tracked rival gets its dossier refreshed, reusing this command's
+        // own outcome as the summary rather than authoring new prose.
+        var summary = $"Standing with the other house shifted from {previous} to {next}.";
+        RivalDossierRefresh.Refresh(state, command.InitiatorActorId, command.SubmittedDate, summary);
+        RivalDossierRefresh.Refresh(state, command.TargetActorId, command.SubmittedDate, summary);
+
         return new IDomainEvent[]
         {
             new HouseStandingChangedEvent(

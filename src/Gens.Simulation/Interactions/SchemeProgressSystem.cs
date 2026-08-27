@@ -1,3 +1,4 @@
+using Gens.Simulation.Actors;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
@@ -58,8 +59,8 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
 {
     public string Id => "interactions.schemeProgress";
     public TickPhase Phase => TickPhase.RelationshipsActors;
-    public IReadOnlyCollection<string> Reads { get; } = new[] { "schemes", "characters" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "schemes", "eventIds" };
+    public IReadOnlyCollection<string> Reads { get; } = new[] { "schemes", "characters", "actors" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "schemes", "eventIds", "rivalDossiers" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -128,6 +129,13 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
         state.Schemes.Remove(schemeId);
         state.Schemes.Add(schemeId, scheme with { Status = status, LastProgressedDate = date });
         events.Add(new SchemeResolvedEvent(state.EventIds.Issue(), date, schemeId, scheme.InitiatorCharacterId, scheme.TargetCharacterId, status));
+
+        // Genuine contact for both participants (Phase 10 package 14) — a Scheme resolving against or
+        // by a tracked rival's own head Character is exactly the "shared event" §7 names; a no-op for
+        // whichever side is not currently a LivingWorldActor head (e.g. the player's own character).
+        var summary = $"A Scheme between the two houses resolved: {status}.";
+        RivalDossierRefresh.RefreshForCharacter(state, scheme.InitiatorCharacterId, date, summary);
+        RivalDossierRefresh.RefreshForCharacter(state, scheme.TargetCharacterId, date, summary);
     }
 
     /// <summary>The named random stream this system draws from for its resolution rolls (Phase 10 item
