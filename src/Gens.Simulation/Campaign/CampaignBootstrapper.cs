@@ -3,6 +3,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
+using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
 
 namespace Gens.Simulation.Campaign;
@@ -106,6 +107,21 @@ public static class CampaignBootstrapper
     /// draws no random numbers.</summary>
     public const string StewardLoyaltyRiskStreamName = "stewardship.loyaltyRisk";
 
+    /// <summary>The named random stream <see cref="SuccessionHandoffSystem"/> reserves for its monthly
+    /// succession-drama trigger roll (Phase 11 item 1), kept distinct from every other stream here for
+    /// the same rule-8 reason.</summary>
+    public const string SuccessionDisputeTriggerStreamName = SuccessionHandoffSystem.DisputeTriggerStreamName;
+
+    /// <summary>The named random stream <see cref="SuccessionDisputeResolutionSystem"/> reserves for
+    /// its per-claimant scoring tiebreak (Phase 11 item 1), kept distinct from every other stream here
+    /// for the same rule-8 reason.</summary>
+    public const string SuccessionDisputeScoringStreamName = SuccessionDisputeResolutionSystem.ScoringStreamName;
+
+    /// <summary>The named random stream <see cref="SuccessionDisputeResolutionSystem"/> reserves for
+    /// its runner-up splinter-house roll (Phase 11 item 1), kept distinct from <see
+    /// cref="SuccessionDisputeScoringStreamName"/> for the same rule-8 reason.</summary>
+    public const string SuccessionDisputeSplinterStreamName = SuccessionDisputeResolutionSystem.SplinterStreamName;
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -132,6 +148,9 @@ public static class CampaignBootstrapper
         streams.AddDerived(ActorExtinctionStreamName, config.Seed);
         streams.AddDerived(SchemeProgressStreamName, config.Seed);
         streams.AddDerived(StewardLoyaltyRiskStreamName, config.Seed);
+        streams.AddDerived(SuccessionDisputeTriggerStreamName, config.Seed);
+        streams.AddDerived(SuccessionDisputeScoringStreamName, config.Seed);
+        streams.AddDerived(SuccessionDisputeSplinterStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
