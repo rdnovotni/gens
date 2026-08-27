@@ -58,7 +58,7 @@ At the audit point there was no authoritative `WorldState`, campaign bootstrap, 
 
 The authored content catalog contained only `status.placeholder`. The JSON Schema required only an `id` and permitted every other property. The benchmark measured 10,000 random draws rather than a monthly tick. The save code declared names and a version but did not serialize or migrate a campaign. The art-provider seam was intentionally disconnected from gameplay.
 
-**This has since changed substantially.** Phases 0–9 (see "Detailed roadmap" below, and the checklist immediately following this paragraph) have since been implemented and merged, through PR #49: `WorldState`, typed IDs, epoch-aware `GameDate`, phased ticks, command/event envelopes, RNG stream registry, canonical save serialization with migrations, typed content-definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation), a headless campaign bootstrap and console runner, `Character`/Familia lifecycle, region/settlement/plot/holding, stockpiles, buildings, villas, labor, and a production network with ledger-ready event emission, background population groups and employment, household ledgers/markets/debt/contracts, the action/standing-policy layer, the weighted event pool and monthly report projection, the Unity application shell and adapters, the persistent ink bar and four first-class screens, wax-seal/ordinary confirmations, pause/advance/save/load/replay diagnostics, placeholder portraits, and the Phase 9 EditMode/PlayMode presentation-layer test suites (including the 24-month exit-gate soak test). **The vertical-slice acceptance test's engineering scaffolding is now in place end to end; Phase 10 onward (delegation, autonomous rival houses, dynasty continuity, institutions, geography/travel, and beyond) remains unbuilt.** Treat the assessment table below as the state at the original audit point, not the current state — see "Detailed roadmap" for what has been completed since.
+**This has since changed substantially.** Phases 0–10 (see "Detailed roadmap" below, and the checklist immediately following this paragraph) have since been implemented and merged: `WorldState`, typed IDs, epoch-aware `GameDate`, phased ticks, command/event envelopes, RNG stream registry, canonical save serialization with migrations, typed content-definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation), a headless campaign bootstrap and console runner, `Character`/Familia lifecycle, region/settlement/plot/holding, stockpiles, buildings, villas, labor, and a production network with ledger-ready event emission, background population groups and employment, household ledgers/markets/debt/contracts, the action/standing-policy layer, the weighted event pool and monthly report projection, the Unity application shell and adapters, the persistent ink bar and four first-class screens, wax-seal/ordinary confirmations, pause/advance/save/load/replay diagnostics, placeholder portraits, the Phase 9 EditMode/PlayMode presentation-layer test suites (including the 24-month exit-gate soak test), and Phase 10's `LivingWorldActor` Background/Noteworthy tiers, rival-house lifecycle, Ancestral Grudges, the shared `ActionSelector`, steward/Council autonomy with real competence/loyalty rolls and Return Reports, the Scheme engine, `RivalDossier` refresh/staleness, and a combined 200-year rival-house/stewardship soak test. **The vertical-slice acceptance test's engineering scaffolding is now in place end to end, and the world can act without waiting on the player; Phase 11 onward (dynasty continuity, institutions, geography/travel, and beyond) remains unbuilt.** Treat the assessment table below as the state at the original audit point, not the current state — see "Detailed roadmap" for what has been completed since.
 
 ### Phase completion checklist (as of this revision)
 
@@ -72,8 +72,8 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 7** — Implement settlement demographics and background labor
 - [x] **Phase 8** — Implement the economy, ledger, and market
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
-- [ ] **Phase 10** — Add delegation, autonomous action, and rival houses ← **next up**
-- [ ] **Phase 11** — Guarantee dynasty continuity and historical memory
+- [x] **Phase 10** — Add delegation, autonomous action, and rival houses
+- [ ] **Phase 11** — Guarantee dynasty continuity and historical memory ← **next up**
 - [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
@@ -339,9 +339,9 @@ Construction order:
 
 **Primary design inputs:** `gens-core-design.md`, `gens-policies-edicts-design.md`, `gens-events-design.md`, and the visual/UI sections of the core and villa documents.
 
-### Phase 10 — Add delegation, autonomous action, and rival houses — ⬜ NOT STARTED
+### Phase 10 — Add delegation, autonomous action, and rival houses — ✅ COMPLETE
 
-**Outcome:** the world acts without waiting for the player and the household can be governed indirectly.
+**Outcome:** the world acts without waiting for the player and the household can be governed indirectly. Delivered across 15 packages: the `LivingWorldActor` core/registry and Background/Noteworthy fidelity tiers; `HouseStanding`/`RivalDossier`/`RegionalFamiliesEntry` storage; rival-house creation (ancient seed, *novus homo*, cadet branch) with lazy head-Character generation; the shared `ActionSelector` reused by both the Noteworthy `RivalAmbitionSystem` and the steward autonomous decision loop; the Background-tier abstract drift tick with its per-tick processing cap; Ancestral Grudge formation/blocking/decay; `StewardshipAssignment` with autonomy-level commands; real steward competence (Stewardship attribute) and Loyalty-risk rolls driving Skimming/Embezzlement/Active-Sabotage incidents through the ordinary ledger/policy command paths, folded into a `ReturnReport` on assignment end; house extinction; the actor-agnostic `Scheme` interaction engine; and `RivalDossier` refresh-on-genuine-contact with a staleness display helper. A combined 200-year exit-gate soak test exercises rival houses, an active `StewardshipAssignment`, and a `Scheme` together.
 
 Construction order:
 
@@ -536,7 +536,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, and the rest of Phases 7–9 have also since been implemented (see the phase checklist above). **The next unimplemented work is Phase 10** — delegation, autonomous action, and rival houses.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, and Phase 10's delegation/autonomous-action/rival-houses work have also since been implemented (see the phase checklist above). **The next unimplemented work is Phase 11** — dynasty continuity and historical memory.
 
 ## Vertical-slice acceptance test
 
@@ -583,5 +583,7 @@ An issue is not ready for implementation until its dependencies, authoritative f
 
 ~~The milestone after that should be **Household Economy Vertical Slice**, encompassing Phases 5–9.~~ — ✅ **complete.** Its output, the first genuinely playable Gens loop (named household, land/production/labor, background population, ledger/market, and the action/policy/event/report/Unity presentation layer), is now in place, through PR #49.
 
-**The next milestone is Phase 10 — delegation, autonomous action, and rival houses.** Everything from rival houses onward can now be constructed as extensions of the shared contracts these two milestones established (commands, events, ledgers, read models, knowledge/visibility) instead of isolated simulations. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation.
+~~The milestone after that should be **Delegation, Autonomous Action, and Rival Houses**, encompassing Phase 10.~~ — ✅ **complete.** `LivingWorldActor` tiers, rival-house lifecycle, Ancestral Grudges, the shared `ActionSelector`, steward/Council autonomy with real competence/loyalty rolls and Return Reports, the Scheme engine, and the 200-year combined soak are all in place.
+
+**The next milestone is Phase 11 — dynasty continuity and historical memory.** Death, succession, and the Dynasty Chronicle can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility) every prior milestone has used, including the actor/genealogy machinery Phase 10 just added. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation.
 
