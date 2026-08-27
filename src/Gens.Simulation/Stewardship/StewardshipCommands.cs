@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Ledger;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -75,6 +76,27 @@ public sealed record StewardshipEndedEvent(
     string? CausationId) : IDomainEvent
 {
     public string Type => "stewardship.ended";
+    public int SchemaVersion => 1;
+    public IReadOnlyList<string> SubjectIds => new[] { HouseholdId.ToTaggedString(), AssignmentId.ToTaggedString() };
+    public Visibility Visibility => Visibility.Public;
+}
+
+/// <summary>Emitted alongside <see cref="StewardshipEndedEvent"/> whenever <see cref="MutateEnd"/>
+/// builds a <see cref="ReturnReport"/> (Phase 10 package 13) — a new event rather than a field added to
+/// <see cref="StewardshipEndedEvent"/>, since exactly one report is produced per end but a future
+/// consumer (Dynasty Chronicle) cares specifically about <see cref="ChronicleWorthy"/> without needing
+/// to know anything else about the assignment ending, matching this codebase's "one event, one
+/// reason to change" convention elsewhere.</summary>
+public sealed record ReturnReportGeneratedEvent(
+    RuntimeId<DomainEventEntity> EventId,
+    GameDate OccurredDate,
+    RuntimeId<StewardshipAssignment> AssignmentId,
+    RuntimeId<Household> HouseholdId,
+    RuntimeId<ReturnReport> ReportId,
+    bool ChronicleWorthy,
+    string? CausationId) : IDomainEvent
+{
+    public string Type => "stewardship.returnReportGenerated";
     public int SchemaVersion => 1;
     public IReadOnlyList<string> SubjectIds => new[] { HouseholdId.ToTaggedString(), AssignmentId.ToTaggedString() };
     public Visibility Visibility => Visibility.Public;
@@ -192,9 +214,67 @@ public static class StewardshipCommands
         state.StewardshipAssignments.Remove(command.AssignmentId);
         state.StewardshipAssignments.Add(command.AssignmentId, existing with { EndDate = command.SubmittedDate });
 
+        var report = BuildReturnReport(state, command.AssignmentId);
+        state.ReturnReports.Add(report.ReportId, report);
+
         return new IDomainEvent[]
         {
             new StewardshipEndedEvent(state.EventIds.Issue(), command.SubmittedDate, command.AssignmentId, householdId, command.CommandId.ToTaggedString()),
+            new ReturnReportGeneratedEvent(
+                state.EventIds.Issue(), command.SubmittedDate, command.AssignmentId, householdId, report.ReportId,
+                report.ChronicleWorthy, command.CommandId.ToTaggedString()),
         };
+    }
+
+    /// <summary>Folds every <see cref="AutonomousDecisionLog"/> recorded for an ending assignment into
+    /// its <see cref="ReturnReport"/> (§8; Phase 10 package 13) — the single point that builds one,
+    /// matching the plan's "extend <see cref="MutateEnd"/>, don't add a second command" instruction.
+    /// <see cref="ReturnReport.TotalTreasuryImpact"/> is recovered from <see
+    /// cref="WorldState.LedgerTransactions"/> by matching each incident log's own id against a
+    /// transaction's <see cref="LedgerTransaction.Reference"/> — the linkage <see
+    /// cref="StewardAutonomousDecisionSystem"/>'s own incident posting establishes by setting that
+    /// field to the log's id — and summing that transaction's household-side posting (already signed:
+    /// negative for money the household lost).</summary>
+    private static ReturnReport BuildReturnReport(WorldState state, RuntimeId<StewardshipAssignment> assignmentId)
+    {
+        var logs = state.AutonomousDecisionLogs.InAscendingOrder()
+            .Where(entry => entry.Value.AssignmentId == assignmentId)
+            .Select(entry => entry.Value)
+            .ToArray();
+
+        var summaryEntries = logs.Select(log => log.Outcome).ToArray();
+        var incidentsDiscovered = logs.Where(log => log.IncidentType is not null).Select(log => log.LogId).ToArray();
+
+        var totalTreasuryImpact = Money.Zero;
+        foreach (var log in logs)
+        {
+            if (log.IncidentType is null)
+                continue;
+
+            var reference = log.LogId.ToTaggedString();
+            foreach (var transactionEntry in state.LedgerTransactions.InAscendingOrder())
+            {
+                var transaction = transactionEntry.Value;
+                if (transaction.Reference != reference)
+                    continue;
+
+                foreach (var posting in transaction.Postings)
+                {
+                    if (posting.Account.Kind == LedgerAccountKind.Household)
+                        totalTreasuryImpact += posting.Amount;
+                }
+            }
+        }
+
+        // Chronicle-worthy (§8: "a sufficiently eventful absence... a genuinely well-run one, or a
+        // genuinely disastrous one") when anything more severe than a single Skimming incident
+        // occurred: any Embezzlement/Active Sabotage at all, more than one incident of any kind, or
+        // the Treasury impact alone clears the invented threshold.
+        var chronicleWorthy = incidentsDiscovered.Length > 1 ||
+            logs.Any(log => log.IncidentType is StewardIncidentType.Embezzlement or StewardIncidentType.ActiveSabotage) ||
+            totalTreasuryImpact.Abs() >= Money.FromDenarii(StewardIncidentCatalog.ChronicleWorthyTreasuryImpactDenarii);
+
+        var reportId = state.ReturnReportIds.Issue();
+        return new ReturnReport(reportId, assignmentId, summaryEntries, totalTreasuryImpact, incidentsDiscovered, chronicleWorthy);
     }
 }

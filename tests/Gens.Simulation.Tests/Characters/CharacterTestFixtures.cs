@@ -48,7 +48,8 @@ public static class CharacterTestFixtures
         RegimenSettings? regimen = null,
         FledRecord? flight = null,
         PursuitRecord? pursuit = null,
-        ManumissionPlan? manumissionPlan = null) =>
+        ManumissionPlan? manumissionPlan = null,
+        CoreAttributes? attributes = null) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
@@ -62,7 +63,7 @@ public static class CharacterTestFixtures
             culture: new DefinitionId<Culture>("roman"),
             location: location ?? default(RuntimeId<Settlement>),
             household: household,
-            attributes: new CoreAttributes(10, 10, 10, 10, 10),
+            attributes: attributes ?? new CoreAttributes(10, 10, 10, 10, 10),
             skills: skills ?? new LaborSkills(10, 10, 10, 10, 10),
             condition: condition ?? new Condition(80, 0, 50, 20, 50),
             source: CharacterSource.Familia,

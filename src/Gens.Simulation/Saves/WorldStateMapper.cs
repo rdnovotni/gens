@@ -54,6 +54,7 @@ public static class WorldStateMapper
                 StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
                 SchemeIds = state.SchemeIds.Peek,
+                ReturnReportIds = state.ReturnReportIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -111,6 +112,8 @@ public static class WorldStateMapper
             AutonomousDecisionLogs = state.AutonomousDecisionLogs.InAscendingOrder().Select(entry => ToAutonomousDecisionLogDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             Schemes = state.Schemes.InAscendingOrder().Select(entry => ToSchemeDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ReturnReports = state.ReturnReports.InAscendingOrder().Select(entry => ToReturnReportDto(entry.Value)).ToArray(),
         };
     }
 
@@ -298,6 +301,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Scheme>, Scheme>(scheme.SchemeId, scheme);
             }));
 
+        var returnReports = OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport>.Restore(
+            dto.ReturnReports.Select(r =>
+            {
+                var report = FromReturnReportDto(r);
+                return new KeyValuePair<RuntimeId<ReturnReport>, ReturnReport>(report.ReportId, report);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -320,6 +330,7 @@ public static class WorldStateMapper
             stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
             autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
             schemeIds: RuntimeIdCounter<Scheme>.Restore(dto.Counters.SchemeIds),
+            returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -349,6 +360,7 @@ public static class WorldStateMapper
             stewardshipAssignments: stewardshipAssignments,
             autonomousDecisionLogs: autonomousDecisionLogs,
             schemes: schemes,
+            returnReports: returnReports,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1360,4 +1372,22 @@ public static class WorldStateMapper
         dto.DiscoveryRisk,
         new GameDate(dto.InitiatedDateTotalMonths),
         new GameDate(dto.LastProgressedDateTotalMonths));
+
+    private static ReturnReportDto ToReturnReportDto(ReturnReport report) => new()
+    {
+        ReportId = report.ReportId.ToTaggedString(),
+        AssignmentId = report.AssignmentId.ToTaggedString(),
+        SummaryEntries = report.SummaryEntries.ToArray(),
+        TotalTreasuryImpactRawValue = report.TotalTreasuryImpact.RawValue,
+        IncidentsDiscovered = report.IncidentsDiscovered.Select(id => id.ToTaggedString()).ToArray(),
+        ChronicleWorthy = report.ChronicleWorthy,
+    };
+
+    private static ReturnReport FromReturnReportDto(ReturnReportDto dto) => new(
+        RuntimeId<ReturnReport>.Parse(dto.ReportId),
+        RuntimeId<StewardshipAssignment>.Parse(dto.AssignmentId),
+        dto.SummaryEntries.ToArray(),
+        Money.FromMinorUnits(dto.TotalTreasuryImpactRawValue),
+        dto.IncidentsDiscovered.Select(RuntimeId<AutonomousDecisionLog>.Parse).ToArray(),
+        dto.ChronicleWorthy);
 }
