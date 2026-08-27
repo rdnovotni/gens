@@ -99,6 +99,13 @@ public static class CampaignBootstrapper
     /// and discovery-risk advancement themselves are deterministic formulas and draw no random numbers.</summary>
     public const string SchemeProgressStreamName = "interactions.schemeProgress";
 
+    /// <summary>The named random stream <see cref="Stewardship.StewardAutonomousDecisionSystem"/>
+    /// reserves for its monthly steward/Council Loyalty-risk and incident-type rolls (Phase 10 package
+    /// 13; <c>gens-steward-council-auto-management-design.md</c> §6), kept distinct from every other
+    /// stream here for the same rule-8 reason — competence itself is a deterministic stat readout and
+    /// draws no random numbers.</summary>
+    public const string StewardLoyaltyRiskStreamName = "stewardship.loyaltyRisk";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -124,6 +131,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(RivalAmbitionStreamName, config.Seed);
         streams.AddDerived(ActorExtinctionStreamName, config.Seed);
         streams.AddDerived(SchemeProgressStreamName, config.Seed);
+        streams.AddDerived(StewardLoyaltyRiskStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

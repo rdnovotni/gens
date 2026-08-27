@@ -154,6 +154,9 @@ internal static class RuntimeIdTagRegistry
         // Phase 10 item 6 — Gens.Simulation.Interactions.Scheme, same "real record as its own tag"
         // convention as StewardshipAssignment/AutonomousDecisionLog above.
         [typeof(Scheme)] = "scheme",
+        // Phase 10 package 13 — Gens.Simulation.Stewardship.ReturnReport, same "real record as its
+        // own tag" convention as StewardshipAssignment/AutonomousDecisionLog/Scheme above.
+        [typeof(ReturnReport)] = "returnreport",
     };
 
     public static string Resolve(Type type) =>

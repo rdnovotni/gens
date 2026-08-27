@@ -212,6 +212,12 @@ public sealed record WorldSaveDocument
     /// above.</summary>
     [JsonPropertyOrder(33)]
     public IReadOnlyList<SchemeDto> Schemes { get; init; } = Array.Empty<SchemeDto>();
+
+    /// <summary>Every <see cref="Stewardship.ReturnReport"/> ever produced (Phase 10 package 13),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, for the same additive-only reason as <see cref="Schemes"/> above.</summary>
+    [JsonPropertyOrder(34)]
+    public IReadOnlyList<ReturnReportDto> ReturnReports { get; init; } = Array.Empty<ReturnReportDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -302,6 +308,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(19)]
     public long SchemeIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10-package-13 save has no Return
+    /// Reports. Additive-only per ADR 0011's policy, matching <see cref="SchemeIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(20)]
+    public long ReturnReportIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1586,4 +1598,26 @@ public sealed record SchemeDto
 
     [JsonPropertyOrder(8)]
     public required int LastProgressedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Stewardship.ReturnReport"/> (Phase 10 package 13).</summary>
+public sealed record ReturnReportDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ReportId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string AssignmentId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required IReadOnlyList<string> SummaryEntries { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required long TotalTreasuryImpactRawValue { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required IReadOnlyList<string> IncidentsDiscovered { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool ChronicleWorthy { get; init; }
 }

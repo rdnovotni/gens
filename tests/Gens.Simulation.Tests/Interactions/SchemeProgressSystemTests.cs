@@ -1,4 +1,6 @@
+using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Economy;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
@@ -77,9 +79,29 @@ public sealed class SchemeProgressSystemTests
         Assert.Multiple(() =>
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
-            Assert.That(system.Reads, Is.EquivalentTo(new[] { "schemes", "characters" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "schemes", "eventIds" }));
+            Assert.That(system.Reads, Is.EquivalentTo(new[] { "schemes", "characters", "actors" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[] { "schemes", "eventIds", "rivalDossiers" }));
         });
+    }
+
+    [Test]
+    public void ResolvingASchemeRefreshesTheTargetsRivalDossierWhenTheyHeadAnActor()
+    {
+        var (state, schemeId) = SetUp(initiatorIntrigue: 90, targetIntrigue: 5);
+        state.Schemes.TryGet(schemeId, out var scheme);
+
+        var netWorth = new LivingWorldActorNetWorth(HouseholdWealthBand.Modest, Figure: null);
+        var military = new LivingWorldActorMilitaryStrength(MilitaryStrengthBand.Modest);
+        var rivalActor = RivalHouseCreationService.CreateAncientSeed(
+            state, "Cornelia", LivingWorldActorStandingTrend.Established, LivingWorldActorIdentity.None,
+            0, netWorth, military, state.RegionIds.Issue(), state.SettlementIds.Issue());
+        state.Actors.Remove(rivalActor.ActorId);
+        state.Actors.Add(rivalActor.ActorId, rivalActor with { HeadCharacterId = scheme!.TargetCharacterId });
+
+        RunUntilResolved(state, schemeId, Streams(1));
+
+        Assert.That(state.RivalDossiers.TryGet(rivalActor.ActorId, out var dossier), Is.True);
+        Assert.That(dossier!.Summary, Does.Contain("Scheme"));
     }
 
     [Test]

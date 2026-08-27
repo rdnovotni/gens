@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Ledger;
 using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Time;
@@ -143,6 +144,57 @@ public sealed class StewardshipCommandsTests
             Assert.That(state.StewardshipAssignments.TryGet(assignmentId, out var stored), Is.True);
             Assert.That(stored!.IsActive, Is.False);
             Assert.That(stored.EndDate, Is.EqualTo(new GameDate(9)));
+        });
+    }
+
+    [Test]
+    public void EndBuildsAReturnReportFoldingEveryLoggedMonthForTheAssignment()
+    {
+        var state = new WorldState(new GameDate(3));
+        var householdId = state.HouseholdIds.Issue();
+        var appointResult = StewardshipCommands.AppointPipeline.Execute(state, MakeAppointCommand(state, householdId, state.CharacterIds.Issue()));
+        var assignmentId = ((StewardshipAssignedEvent)appointResult.Events[0]).AssignmentId;
+
+        var heldLogId = state.AutonomousDecisionLogIds.Issue();
+        state.AutonomousDecisionLogs.Add(heldLogId, new AutonomousDecisionLog(heldLogId, assignmentId, new GameDate(4), "none", "held", 40, 90));
+
+        var incidentLogId = state.AutonomousDecisionLogIds.Issue();
+        state.AutonomousDecisionLogs.Add(
+            incidentLogId,
+            new AutonomousDecisionLog(
+                incidentLogId, assignmentId, new GameDate(5), "none", "The steward was discovered embezzling 30.00 denarii.",
+                20, 5, StewardIncidentType.Embezzlement));
+
+        var amount = Money.FromDenarii(30);
+        LedgerService.Post(
+            state, new GameDate(5), LedgerTransactionCategory.Treasury,
+            new[]
+            {
+                new LedgerPosting(LedgerAccountKey.ForHousehold(householdId), -amount),
+                new LedgerPosting(LedgerAccountKey.Mint, amount),
+            },
+            incidentLogId.ToTaggedString());
+
+        var unrelatedAssignmentId = state.StewardshipAssignmentIds.Issue();
+        var unrelatedLogId = state.AutonomousDecisionLogIds.Issue();
+        state.AutonomousDecisionLogs.Add(
+            unrelatedLogId, new AutonomousDecisionLog(unrelatedLogId, unrelatedAssignmentId, new GameDate(4), "none", "held", 10, 10));
+
+        var result = StewardshipCommands.EndPipeline.Execute(
+            state, new EndStewardshipAssignmentCommand(state.CommandIds.Issue(), householdId.ToTaggedString(), new GameDate(9), null, assignmentId));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Accepted, Is.True);
+            Assert.That(result.Events.Any(e => e is ReturnReportGeneratedEvent), Is.True);
+            var reportId = ((ReturnReportGeneratedEvent)result.Events.Single(e => e is ReturnReportGeneratedEvent)).ReportId;
+
+            Assert.That(state.ReturnReports.TryGet(reportId, out var report), Is.True);
+            Assert.That(report!.AssignmentId, Is.EqualTo(assignmentId));
+            Assert.That(report.SummaryEntries, Is.EqualTo(new[] { "held", "The steward was discovered embezzling 30.00 denarii." }));
+            Assert.That(report.IncidentsDiscovered, Is.EqualTo(new[] { incidentLogId }));
+            Assert.That(report.TotalTreasuryImpact, Is.EqualTo(-amount));
+            Assert.That(report.ChronicleWorthy, Is.True);
         });
     }
 }
