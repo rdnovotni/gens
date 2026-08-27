@@ -236,6 +236,12 @@ public sealed record WorldSaveDocument
     /// to empty, for the same additive-only reason as <see cref="HeirDesignations"/> above.</summary>
     [JsonPropertyOrder(37)]
     public IReadOnlyList<SuccessionDisputeDto> SuccessionDisputes { get; init; } = Array.Empty<SuccessionDisputeDto>();
+
+    /// <summary>Every <see cref="Succession.PlayerControlState"/> (Phase 11 item 2), already keyed by
+    /// household. Not <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="SuccessionDisputes"/> above.</summary>
+    [JsonPropertyOrder(38)]
+    public IReadOnlyList<PlayerControlDto> PlayerControls { get; init; } = Array.Empty<PlayerControlDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1719,4 +1725,17 @@ public sealed record SuccessionDisputeDto
 
     [JsonPropertyOrder(9)]
     public string? SplinterHouseholdId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Succession.PlayerControlState"/> (Phase 11 item 2).</summary>
+public sealed record PlayerControlDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? ControlledCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Mode { get; init; }
 }

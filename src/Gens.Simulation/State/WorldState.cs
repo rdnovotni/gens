@@ -94,6 +94,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HouseholdHeadship> householdHeadships,
         OrderedRegistry<RuntimeId<Household>, HeirDesignation> heirDesignations,
         OrderedRegistry<RuntimeId<SuccessionDispute>, SuccessionDispute> successionDisputes,
+        OrderedRegistry<RuntimeId<Household>, PlayerControlState> playerControls,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -153,6 +154,7 @@ public sealed class WorldState
         HouseholdHeadships = householdHeadships;
         HeirDesignations = heirDesignations;
         SuccessionDisputes = successionDisputes;
+        PlayerControls = playerControls;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -391,6 +393,15 @@ public sealed class WorldState
     /// convention.</summary>
     public OrderedRegistry<RuntimeId<SuccessionDispute>, SuccessionDispute> SuccessionDisputes { get; } = new();
 
+    /// <summary>Which Character the player currently controls, and how (Phase 11 item 2; §6.2), keyed
+    /// by household. Sparse: at most one entry across a whole campaign today (one player household),
+    /// with no entry until <see cref="Succession.EstablishPlayerControlCommand"/> establishes one — see
+    /// <see cref="Succession.PlayerControlState"/>'s own doc comment for why this is still a registry
+    /// rather than a bespoke singleton field. Immutable record entries: <see
+    /// cref="Succession.PlayerControlHandoffSystem"/> replaces an entry (remove then re-add) rather
+    /// than mutating one in place, matching <see cref="HouseholdHeadships"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, PlayerControlState> PlayerControls { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -464,6 +475,7 @@ public sealed class WorldState
         ["householdHeadships"] = HouseholdHeadships.Version,
         ["heirDesignations"] = HeirDesignations.Version,
         ["successionDisputes"] = SuccessionDisputes.Version,
+        ["playerControls"] = PlayerControls.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

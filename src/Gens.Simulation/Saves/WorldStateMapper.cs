@@ -122,6 +122,8 @@ public static class WorldStateMapper
             HeirDesignations = state.HeirDesignations.InAscendingOrder().Select(entry => ToHeirDesignationDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             SuccessionDisputes = state.SuccessionDisputes.InAscendingOrder().Select(entry => ToSuccessionDisputeDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PlayerControls = state.PlayerControls.InAscendingOrder().Select(entry => ToPlayerControlDto(entry.Value)).ToArray(),
         };
     }
 
@@ -337,6 +339,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<SuccessionDispute>, SuccessionDispute>(dispute.DisputeId, dispute);
             }));
 
+        var playerControls = OrderedRegistry<RuntimeId<Household>, PlayerControlState>.Restore(
+            dto.PlayerControls.Select(p =>
+            {
+                var control = FromPlayerControlDto(p);
+                return new KeyValuePair<RuntimeId<Household>, PlayerControlState>(control.HouseholdId, control);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -394,6 +403,7 @@ public static class WorldStateMapper
             householdHeadships: householdHeadships,
             heirDesignations: heirDesignations,
             successionDisputes: successionDisputes,
+            playerControls: playerControls,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1483,4 +1493,16 @@ public static class WorldStateMapper
         dto.WinnerCharacterId is null ? null : RuntimeId<Character>.Parse(dto.WinnerCharacterId),
         dto.SplinterClaimantId is null ? null : RuntimeId<Character>.Parse(dto.SplinterClaimantId),
         dto.SplinterHouseholdId is null ? null : RuntimeId<Household>.Parse(dto.SplinterHouseholdId));
+
+    private static PlayerControlDto ToPlayerControlDto(PlayerControlState control) => new()
+    {
+        HouseholdId = control.HouseholdId.ToTaggedString(),
+        ControlledCharacterId = control.ControlledCharacterId?.ToTaggedString(),
+        Mode = control.Mode.ToString(),
+    };
+
+    private static PlayerControlState FromPlayerControlDto(PlayerControlDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.ControlledCharacterId is null ? null : RuntimeId<Character>.Parse(dto.ControlledCharacterId),
+        Enum.Parse<PlayerControlMode>(dto.Mode));
 }

@@ -369,8 +369,26 @@ and the `SuccessionHandoffSystem`/`SuccessionDisputeResolutionSystem` monthly pa
 favor-score resolution → optional splinter household). Asset/obligation transfer reuses the existing
 household-keyed ledger/debt model rather than a new mechanism; item 6's fixtures (ordinary
 inheritance, contested inheritance, adoption, debt inheritance, absent heirs, extinction) are covered
-in `tests/Gens.Simulation.Tests/Succession/`. Items 2–5 (player-character handoff, Dynasty Chronicle,
-funerals/mourning/memoria, epithets/titles) remain.
+in `tests/Gens.Simulation.Tests/Succession/`.
+
+**Item 2 progress:** the player-character handoff is implemented (`src/Gens.Simulation/Succession/PlayerControl.cs`,
+`RegencySystem.cs`, `PlayerControlHandoffSystem.cs`) — `PlayerControlState` (household, controlled
+Character or none, and one of `DirectHead`/`RegentInTrust`/`AutoManaged`/`Extinguished`, §6.2) is now
+first-class state distinct from `HouseholdHeadship`, established explicitly via
+`EstablishPlayerControlCommand` and kept in sync monthly by `PlayerControlHandoffSystem`, which only
+writes and emits `PlayerControlChangedEvent` when the computed target actually differs from what is
+stored. Closes a real gap left in item 1: `SuccessionHandoffSystem`'s minor-heir branch previously fell
+through to an outright transfer with no Regent at all when there was no surviving spouse, leaving a
+minor head ungoverned; `RegencySystem` now appoints a non-family Regent (the household's own
+highest-Stewardship living adult, via a `Regency`-context `StewardshipAssignment`, reusing Phase 10's
+Steward/Council auto-management wholesale per §6.2) when one is needed, and ends the Regency once the
+heir comes of age — the "future Regency-ends-when-the-heir-comes-of-age system" `SuccessionHandoffSystem`'s
+own doc comment named as out of item 1's scope. Both new systems run in the `RelationshipsActors` phase
+after `succession.handoff` and `succession.disputeResolution` (and, for `PlayerControlHandoffSystem`,
+after `succession.regency` too), so a month's headship changes are always fully settled before player
+control is recomputed. Covered in `tests/Gens.Simulation.Tests/Succession/PlayerControlTests.cs`,
+including a save/load round trip and the deterministic state hash. Items 3–6 (Dynasty Chronicle,
+funerals/mourning/memoria, epithets/titles, succession fixtures) remain.
 
 Construction order:
 
