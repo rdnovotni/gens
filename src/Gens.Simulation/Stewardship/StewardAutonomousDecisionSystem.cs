@@ -38,8 +38,18 @@ public sealed class StewardAutonomousDecisionSystem : IMonthlySystem<WorldState>
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "stewardshipAssignments", "householdPolicies", "ledgerAccounts", "characters" };
 
+    // Includes the counter partitions this system's own command submissions (TryExecute's
+    // ChangeRitesBudgetCommand/FundFestivalCommand, and package 13's incident handling issuing a
+    // Command/Event/LedgerTransaction/AutonomousDecisionLog id and bumping the shared command
+    // sequence) touch, alongside the ordered-registry partitions those submissions write into —
+    // ADR 0005's declared write-set must name every partition CapturePartitionVersions tracks that
+    // this system can actually change, not just the "obvious" ones.
     public IReadOnlyCollection<string> Writes { get; } =
-        new[] { "householdPolicies", "ledgerAccounts", "ledgerTransactions", "autonomousDecisionLogs" };
+        new[]
+        {
+            "householdPolicies", "ledgerAccounts", "ledgerTransactions", "autonomousDecisionLogs",
+            "commandIds", "eventIds", "ledgerTransactionIds", "autonomousDecisionLogIds", "commandSequence",
+        };
 
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
