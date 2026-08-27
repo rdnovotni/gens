@@ -336,6 +336,14 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.SplinterHouseholdId?.Value ?? -1L);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.PlayerControls.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.ControlledCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, (long)entry.Value.Mode);
+        }
+
         return hash;
     }
 
