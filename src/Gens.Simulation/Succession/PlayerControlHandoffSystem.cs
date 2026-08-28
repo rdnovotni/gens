@@ -25,7 +25,7 @@ public sealed class PlayerControlHandoffSystem : IMonthlySystem<WorldState>
 {
     public string Id => "succession.playerControlHandoff";
     public TickPhase Phase => TickPhase.RelationshipsActors;
-    public IReadOnlyCollection<string> Reads { get; } = new[] { "playerControls", "householdHeadships", "stewardshipAssignments" };
+    public IReadOnlyCollection<string> Reads { get; } = new[] { "playerControls", "householdHeadships", "stewardshipAssignments", "characters" };
     public IReadOnlyCollection<string> Writes { get; } = new[] { "playerControls", "eventIds" };
 
     public IReadOnlyCollection<string> Prerequisites { get; } =

@@ -40,6 +40,10 @@ public enum RegencyEndReason
 
 /// <summary>Emitted whenever a Regency ends, either because its heir has come of age or because the
 /// Regent themself died first (<see cref="RegencyEndReason"/>; Phase 11 item 2; §6.2).</summary>
+/// <remarks><see cref="SchemaVersion"/> is 2, not 1: the <see cref="Reason"/> field was added after
+/// this event first shipped (in the PR that fixed the "Regent dies while the heir is still a minor"
+/// gap), changing the payload shape — the same "bump on payload change" convention this codebase
+/// already follows elsewhere for a versioned event envelope.</remarks>
 public sealed record RegencyEndedEvent(
     RuntimeId<DomainEventEntity> EventId,
     GameDate OccurredDate,
@@ -50,7 +54,7 @@ public sealed record RegencyEndedEvent(
     string? CausationId) : IDomainEvent
 {
     public string Type => "succession.regencyEnded";
-    public int SchemaVersion => 1;
+    public int SchemaVersion => 2;
     public IReadOnlyList<string> SubjectIds => new[] { HouseholdId.ToTaggedString(), FormerHeirNowHeadCharacterId.ToTaggedString(), FormerRegentCharacterId.ToTaggedString() };
     public Visibility Visibility => Visibility.Public;
 }

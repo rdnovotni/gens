@@ -65,7 +65,7 @@ public sealed class PlayerControlTests
         Assert.Multiple(() =>
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
-            Assert.That(system.Reads, Is.EquivalentTo(new[] { "playerControls", "householdHeadships", "stewardshipAssignments" }));
+            Assert.That(system.Reads, Is.EquivalentTo(new[] { "playerControls", "householdHeadships", "stewardshipAssignments", "characters" }));
             Assert.That(system.Writes, Is.EquivalentTo(new[] { "playerControls", "eventIds" }));
             Assert.That(system.Prerequisites, Is.EquivalentTo(new[] { "succession.handoff", "succession.disputeResolution", "succession.regency" }));
         });
