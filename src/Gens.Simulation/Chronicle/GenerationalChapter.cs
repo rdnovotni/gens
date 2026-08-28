@@ -16,6 +16,11 @@ public readonly record struct GenerationalChapterKey(RuntimeId<Household> Househ
         var householdComparison = HouseholdId.CompareTo(other.HouseholdId);
         return householdComparison != 0 ? householdComparison : StartMonthTotalMonths.CompareTo(other.StartMonthTotalMonths);
     }
+
+    public static bool operator <(GenerationalChapterKey left, GenerationalChapterKey right) => left.CompareTo(right) < 0;
+    public static bool operator >(GenerationalChapterKey left, GenerationalChapterKey right) => left.CompareTo(right) > 0;
+    public static bool operator <=(GenerationalChapterKey left, GenerationalChapterKey right) => left.CompareTo(right) <= 0;
+    public static bool operator >=(GenerationalChapterKey left, GenerationalChapterKey right) => left.CompareTo(right) >= 0;
 }
 
 /// <summary>
