@@ -1356,7 +1356,7 @@ public static class WorldStateMapper
     /// whole save unloadable. Matches this codebase's pre-v1 "no real campaign saves exist yet"
     /// additive-only save policy (ADR 0011) — silently dropping a handful of unresolvable dossier
     /// references is preferable to refusing the load entirely.</summary>
-    private static IReadOnlyList<RuntimeId<ChronicleEntry>> ParseChronicleEntryIds(IReadOnlyList<string> raw)
+    private static List<RuntimeId<ChronicleEntry>> ParseChronicleEntryIds(IReadOnlyList<string> raw)
     {
         var parsed = new List<RuntimeId<ChronicleEntry>>(raw.Count);
         foreach (var value in raw)
