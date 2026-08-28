@@ -2,7 +2,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Gens.Simulation.Campaign;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
@@ -119,29 +121,42 @@ public sealed class CampaignShell
 
     /// <summary>The sole write path (ADR 0013): runs <paramref name="command"/> through its own
     /// <paramref name="pipeline"/> against the shell's <see cref="WorldState"/>. Adapters and screens
-    /// never set a field on a domain object directly, under any circumstance.</summary>
+    /// never set a field on a domain object directly, under any circumstance. Also runs <see
+    /// cref="ChronicleGenerationSystem.Generate"/> over the command's own events (Phase 11 item 3) —
+    /// many Chronicle-worthy facts (a marriage, an adoption, a heir declaration) are player commands
+    /// rather than monthly-system output, so <see cref="AdvanceMonth"/> alone would never chronicle
+    /// them; the merged result includes any resulting <c>chronicle.*</c> events alongside the
+    /// command's own.</summary>
     public CommandResult Submit<TCommand>(CommandPipeline<WorldState, TCommand> pipeline, TCommand command)
         where TCommand : ICommand
     {
         if (pipeline is null)
             throw new ArgumentNullException(nameof(pipeline));
 
-        return pipeline.Execute(State, command);
+        var result = pipeline.Execute(State, command);
+        if (!result.Accepted)
+            return result;
+
+        var chronicleEvents = ChronicleGenerationSystem.Generate(State, result.Events);
+        return chronicleEvents.Count == 0 ? result : result with { Events = result.Events.Concat(chronicleEvents).ToArray() };
     }
 
     /// <summary>Advances the campaign one month, mirroring <c>AdvanceCommand</c>'s pairing of a
-    /// <see cref="WriteSetVerifyingSimulation"/> tick with <see cref="WorldState.AdvanceMonth"/>. The
-    /// pause/advance UI (Phase 9 item 8, <c>GensUIController</c>) owns when to call this; this method
-    /// only owns the state transition itself.</summary>
+    /// <see cref="WriteSetVerifyingSimulation"/> tick with <see cref="WorldState.AdvanceMonth"/> —
+    /// including that same command's <see cref="ChronicleGenerationSystem.Generate"/> call (Phase 11
+    /// item 3), so the Dynasty Chronicle populates during ordinary play, not only from the
+    /// content-compiler CLI. The pause/advance UI (Phase 9 item 8, <c>GensUIController</c>) owns when
+    /// to call this; this method only owns the state transition itself.</summary>
     public IReadOnlyList<IDomainEvent> AdvanceMonth(IEnumerable<IMonthlySystem<WorldState>> systems)
     {
         if (systems is null)
             throw new ArgumentNullException(nameof(systems));
 
         var simulation = new WriteSetVerifyingSimulation(systems);
-        var events = simulation.Tick(State, State.Date, RandomStreams);
+        var tickEvents = simulation.Tick(State, State.Date, RandomStreams);
+        var chronicleEvents = ChronicleGenerationSystem.Generate(State, tickEvents);
         State.AdvanceMonth();
-        return events;
+        return tickEvents.Concat(chronicleEvents).ToArray();
     }
 }
 

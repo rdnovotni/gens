@@ -24,7 +24,11 @@ public static class RivalDossierCatalog
 /// Reuses whatever narrative summary the triggering command/event already produced rather than
 /// authoring new prose — <see cref="Stewardship.AutonomousDecisionLog.Outcome"/>'s identical "reuse the
 /// projection's own summary" convention. <see cref="RivalDossier.LastUpdatedDate"/> never regresses:
-/// an out-of-order or earlier-dated event replayed against an already-fresher dossier is a no-op.
+/// an out-of-order, strictly-earlier-dated event replayed against an already-fresher dossier is a
+/// no-op — a second refresh on the exact same date is not (Phase 11 item 3's own Chronicle cross-post
+/// commonly follows a same-month, same-date refresh a triggering system already made, e.g. <see
+/// cref="Interactions.SchemeProgressSystem"/>'s own resolution-summary refresh; rejecting that as
+/// "no newer than the dossier already has" would silently drop the Chronicle entry ID it carries).
 /// Deliberately not a scheduled/monthly system — it is invoked directly from whichever command's own
 /// mutate step already represents genuine contact (<see cref="AdjustHouseStandingCommand"/>, <see
 /// cref="Interactions.SchemeProgressSystem"/>'s resolution), never from ambient background drift (<see
@@ -45,7 +49,7 @@ public static class RivalDossierRefresh
             throw new ArgumentNullException(nameof(summary));
 
         var hasExisting = state.RivalDossiers.TryGet(actorId, out var existing);
-        if (hasExisting && existing!.LastUpdatedDate.TotalMonths >= eventDate.TotalMonths)
+        if (hasExisting && existing!.LastUpdatedDate.TotalMonths > eventDate.TotalMonths)
             return;
 
         var recentEntries = existing?.RecentChronicleEntries ?? Array.Empty<RuntimeId<ChronicleEntry>>();

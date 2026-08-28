@@ -71,6 +71,31 @@ public sealed class ChronicleTests
     }
 
     [Test]
+    public void DeathIsStillLegendaryWhenPlayerControlHasAlreadyHandedOffToTheSuccessorThisSameTick()
+    {
+        // Mirrors a full monthly tick's real ordering: PlayerControlHandoffSystem runs (and already
+        // updates PlayerControls to the successor) before ChronicleGenerationSystem.Generate ever sees
+        // state — so a plain "is state.PlayerControls currently pointing at the deceased" check would
+        // wrongly read this as an ordinary death.
+        var (state, householdId, headId) = HouseholdWithHead();
+        state.Characters.Remove(headId);
+        state.Characters.Add(headId, CharacterTestFixtures.Minimal(
+            headId, household: householdId, birthDate: new GameDate(-360),
+            deathRecord: new DeathRecord(new GameDate(10), DeathCause.OldAge, 30)));
+        var heirId = state.CharacterIds.Issue();
+        state.Characters.Add(heirId, CharacterTestFixtures.Minimal(heirId, household: householdId, birthDate: new GameDate(-240)));
+        state.PlayerControls.Add(householdId, new PlayerControlState(householdId, heirId, PlayerControlMode.DirectHead));
+
+        var died = new CharacterDiedEvent(state.EventIds.Issue(), new GameDate(10), headId, null, new DeathRecord(new GameDate(10), DeathCause.OldAge, 30));
+        var handoff = new PlayerControlChangedEvent(
+            state.EventIds.Issue(), new GameDate(10), householdId, headId, heirId, PlayerControlMode.DirectHead, PlayerControlMode.DirectHead);
+        ChronicleGenerationSystem.Generate(state, new IDomainEvent[] { died, handoff });
+
+        var deathEntry = state.ChronicleEntries.InAscendingOrder().First(e => e.Value.SourceSystem == died.Type).Value;
+        Assert.That(deathEntry.Tier, Is.EqualTo(ChronicleTier.Legendary));
+    }
+
+    [Test]
     public void HeadshipEstablishedAndTransferredOpenAndCloseGenerationalChapters()
     {
         var (state, householdId, headId) = HouseholdWithHead();

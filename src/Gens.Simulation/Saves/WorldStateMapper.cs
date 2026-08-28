@@ -1348,7 +1348,39 @@ public static class WorldStateMapper
         dto.Summary,
         dto.HeadComboTitle,
         new GameDate(dto.LastUpdatedDateTotalMonths),
-        dto.RecentChronicleEntries.Select(RuntimeId<ChronicleEntry>.Parse).ToArray());
+        ParseChronicleEntryIds(dto.RecentChronicleEntries));
+
+    /// <summary>Skips, rather than throws on, any value that isn't a real <c>chronentry_*</c> reference
+    /// — a pre-Phase-11-item-3 save's <see cref="RivalDossierDto.RecentChronicleEntries"/> could carry
+    /// this field's former arbitrary-placeholder-string stopgap shape, which would otherwise make the
+    /// whole save unloadable. Matches this codebase's pre-v1 "no real campaign saves exist yet"
+    /// additive-only save policy (ADR 0011) — silently dropping a handful of unresolvable dossier
+    /// references is preferable to refusing the load entirely.</summary>
+    private static IReadOnlyList<RuntimeId<ChronicleEntry>> ParseChronicleEntryIds(IReadOnlyList<string> raw)
+    {
+        var parsed = new List<RuntimeId<ChronicleEntry>>(raw.Count);
+        foreach (var value in raw)
+        {
+            if (TryParseChronicleEntryId(value, out var entryId))
+                parsed.Add(entryId);
+        }
+
+        return parsed;
+    }
+
+    private static bool TryParseChronicleEntryId(string tagged, out RuntimeId<ChronicleEntry> entryId)
+    {
+        try
+        {
+            entryId = RuntimeId<ChronicleEntry>.Parse(tagged);
+            return true;
+        }
+        catch (FormatException)
+        {
+            entryId = default;
+            return false;
+        }
+    }
 
     private static RegionalFamiliesEntryDto ToRegionalFamiliesEntryDto(RegionalFamiliesEntry entry) => new()
     {

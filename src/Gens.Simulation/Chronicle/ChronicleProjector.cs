@@ -53,10 +53,12 @@ public static class ChronicleProjector
         if (events is null)
             throw new ArgumentNullException(nameof(events));
 
+        var playerControlledCharacterIds = CollectPlayerControlledCharacterIds(state, events);
+
         var drafts = new List<ChronicleEntryDraft>();
         foreach (var evt in events)
         {
-            var draft = ProjectOne(state, evt);
+            var draft = ProjectOne(state, evt, playerControlledCharacterIds);
             if (draft is { } value)
                 drafts.Add(value);
         }
@@ -64,7 +66,33 @@ public static class ChronicleProjector
         return drafts;
     }
 
-    private static ChronicleEntryDraft? ProjectOne(WorldState state, IDomainEvent evt) => evt switch
+    /// <summary>Every Character player-controlled at any point relevant to this batch — both right now
+    /// (<see cref="WorldState.PlayerControls"/>) and, per <see cref="PlayerControlChangedEvent.PreviousCharacterId"/>,
+    /// right before this same batch's own handoff. Needed because <see cref="ChronicleGenerationSystem"/>
+    /// runs strictly after the full monthly tick: by the time it reads <see
+    /// cref="WorldState.PlayerControls"/>, <see cref="Succession.PlayerControlHandoffSystem"/> has
+    /// already moved control to the successor, so a plain "is currently controlled" check would read a
+    /// same-tick death of the player-controlled head as no longer player-controlled at all.</summary>
+    private static HashSet<RuntimeId<Character>> CollectPlayerControlledCharacterIds(WorldState state, IReadOnlyList<IDomainEvent> events)
+    {
+        var ids = new HashSet<RuntimeId<Character>>();
+        foreach (var entry in state.PlayerControls.InAscendingOrder())
+        {
+            if (entry.Value.ControlledCharacterId is { } controlled)
+                ids.Add(controlled);
+        }
+
+        foreach (var evt in events)
+        {
+            if (evt is PlayerControlChangedEvent { PreviousCharacterId: { } previous })
+                ids.Add(previous);
+        }
+
+        return ids;
+    }
+
+    private static ChronicleEntryDraft? ProjectOne(
+        WorldState state, IDomainEvent evt, HashSet<RuntimeId<Character>> playerControlledCharacterIds) => evt switch
     {
         CharacterBornEvent born => new ChronicleEntryDraft(
             born.OccurredDate,
@@ -83,7 +111,7 @@ public static class ChronicleProjector
         CharacterDiedEvent died => new ChronicleEntryDraft(
             died.OccurredDate,
             ChronicleCategory.BirthsAndDeaths,
-            IsPlayerControlled(state, died.CharacterId) ? ChronicleTier.Legendary : ChronicleTier.Major,
+            playerControlledCharacterIds.Contains(died.CharacterId) ? ChronicleTier.Legendary : ChronicleTier.Major,
             $"{Name(state, died.CharacterId)} died at the age of {died.DeathRecord.AgeAtDeath}.",
             died.SpouseId is { } spouse ? new[] { died.CharacterId, spouse } : new[] { died.CharacterId },
             died.Type,
@@ -252,15 +280,4 @@ public static class ChronicleProjector
 
     private static RuntimeId<Household>? HouseholdOf(WorldState state, RuntimeId<Character> characterId) =>
         state.Characters.TryGet(characterId, out var character) ? character.Household : null;
-
-    private static bool IsPlayerControlled(WorldState state, RuntimeId<Character> characterId)
-    {
-        foreach (var entry in state.PlayerControls.InAscendingOrder())
-        {
-            if (entry.Value.ControlledCharacterId == characterId)
-                return true;
-        }
-
-        return false;
-    }
 }
