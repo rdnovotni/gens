@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
+using Gens.Simulation.Funerary;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
@@ -164,6 +165,9 @@ internal static class RuntimeIdTagRegistry
         [typeof(SuccessionDispute)] = "succdispute",
         // Phase 11 item 3 — Gens.Simulation.Chronicle.ChronicleEntry, same convention.
         [typeof(ChronicleEntry)] = "chronentry",
+        // Phase 11 item 4 — Gens.Simulation.Funerary.FuneralRecord, same "real record as its own tag"
+        // convention as ChronicleEntry/SuccessionDispute above.
+        [typeof(FuneralRecord)] = "funeral",
     };
 
     public static string Resolve(Type type) =>

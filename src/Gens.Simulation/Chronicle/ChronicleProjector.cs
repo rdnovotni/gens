@@ -2,6 +2,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Funerary;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.State;
@@ -264,6 +265,39 @@ public static class ChronicleProjector
                 scheme.Type,
                 scheme.EventId.ToTaggedString(),
                 HouseholdOf(state, scheme.InitiatorCharacterId) ?? HouseholdOf(state, scheme.TargetCharacterId)),
+
+            // Phase 11 item 4: §8's "the laudatio funebris is a natural, real Chronicle-eligible moment
+            // in its own right" — held funerals are chronicled; the laudatio itself is not (it needs
+            // Rhetoric/orator mechanics, Politics & Patronage, not yet built). Tier follows FuneralTier
+            // directly rather than dynamically from MemoriaGained/ImaginesDisplayed, matching every
+            // other static tier mapping in this method.
+            FuneralHeldEvent held => new ChronicleEntryDraft(
+                held.OccurredDate,
+                ChronicleCategory.BirthsAndDeaths,
+                held.Tier switch
+                {
+                    FuneralTier.Grand => ChronicleTier.Major,
+                    FuneralTier.Proper => ChronicleTier.Notable,
+                    _ => ChronicleTier.Minor,
+                },
+                $"{Name(state, held.DeceasedCharacterId)} was laid to rest with a {held.Tier.ToString().ToLowerInvariant()} funeral.",
+                new[] { held.DeceasedCharacterId },
+                held.Type,
+                held.EventId.ToTaggedString(),
+                held.HouseholdId),
+
+            // §8's "an early-broken mourning period... is a real, new Scandal source" — Scandal (Phase
+            // 12, not yet built) has nothing to fire into yet, so this Chronicle entry is the one real
+            // consequence this pass can actually deliver for it.
+            MourningBrokenEarlyEvent broken => new ChronicleEntryDraft(
+                broken.OccurredDate,
+                ChronicleCategory.FaithAndScandal,
+                ChronicleTier.Notable,
+                $"The household's mourning for {Name(state, broken.TriggeringDeathCharacterId)} was broken before its time.",
+                new[] { broken.TriggeringDeathCharacterId },
+                broken.Type,
+                broken.EventId.ToTaggedString(),
+                broken.HouseholdId),
 
             _ => null,
         };

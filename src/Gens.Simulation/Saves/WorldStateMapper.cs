@@ -5,6 +5,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
+using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
@@ -59,6 +60,7 @@ public static class WorldStateMapper
                 ReturnReportIds = state.ReturnReportIds.Peek,
                 SuccessionDisputeIds = state.SuccessionDisputeIds.Peek,
                 ChronicleEntryIds = state.ChronicleEntryIds.Peek,
+                FuneralRecordIds = state.FuneralRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -130,6 +132,12 @@ public static class WorldStateMapper
             ChronicleEntries = state.ChronicleEntries.InAscendingOrder().Select(entry => ToChronicleEntryDto(entry.Value)).ToArray(),
             // Already ascending GenerationalChapterKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             GenerationalChapters = state.GenerationalChapters.InAscendingOrder().Select(entry => ToGenerationalChapterDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            FuneralRecords = state.FuneralRecords.InAscendingOrder().Select(entry => ToFuneralRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            MourningPeriods = state.MourningPeriods.InAscendingOrder().Select(entry => ToMourningPeriodDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            MemoriaStates = state.MemoriaStates.InAscendingOrder().Select(entry => ToMemoriaStateDto(entry.Value)).ToArray(),
         };
     }
 
@@ -367,6 +375,27 @@ public static class WorldStateMapper
                 return new KeyValuePair<GenerationalChapterKey, GenerationalChapter>(key, chapter);
             }));
 
+        var funeralRecords = OrderedRegistry<RuntimeId<FuneralRecord>, FuneralRecord>.Restore(
+            dto.FuneralRecords.Select(f =>
+            {
+                var funeral = FromFuneralRecordDto(f);
+                return new KeyValuePair<RuntimeId<FuneralRecord>, FuneralRecord>(funeral.FuneralId, funeral);
+            }));
+
+        var mourningPeriods = OrderedRegistry<RuntimeId<Household>, MourningPeriod>.Restore(
+            dto.MourningPeriods.Select(m =>
+            {
+                var period = FromMourningPeriodDto(m);
+                return new KeyValuePair<RuntimeId<Household>, MourningPeriod>(period.HouseholdId, period);
+            }));
+
+        var memoriaStates = OrderedRegistry<RuntimeId<Household>, MemoriaState>.Restore(
+            dto.MemoriaStates.Select(m =>
+            {
+                var memoria = FromMemoriaStateDto(m);
+                return new KeyValuePair<RuntimeId<Household>, MemoriaState>(memoria.HouseholdId, memoria);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -392,6 +421,7 @@ public static class WorldStateMapper
             returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
             successionDisputeIds: RuntimeIdCounter<SuccessionDispute>.Restore(dto.Counters.SuccessionDisputeIds),
             chronicleEntryIds: RuntimeIdCounter<ChronicleEntry>.Restore(dto.Counters.ChronicleEntryIds),
+            funeralRecordIds: RuntimeIdCounter<FuneralRecord>.Restore(dto.Counters.FuneralRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -428,6 +458,9 @@ public static class WorldStateMapper
             playerControls: playerControls,
             chronicleEntries: chronicleEntries,
             generationalChapters: generationalChapters,
+            funeralRecords: funeralRecords,
+            mourningPeriods: mourningPeriods,
+            memoriaStates: memoriaStates,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1607,4 +1640,62 @@ public static class WorldStateMapper
         new GameDate(dto.StartMonthTotalMonths),
         dto.EndMonthTotalMonths is { } end ? new GameDate(end) : null,
         dto.ChapterSummary);
+
+    private static FuneralRecordDto ToFuneralRecordDto(FuneralRecord funeral) => new()
+    {
+        FuneralId = funeral.FuneralId.ToTaggedString(),
+        HouseholdId = funeral.HouseholdId.ToTaggedString(),
+        DeceasedCharacterId = funeral.DeceasedCharacterId.ToTaggedString(),
+        DeathDateTotalMonths = funeral.DeathDate.TotalMonths,
+        Status = funeral.Status.ToString(),
+        Tier = funeral.Tier?.ToString(),
+        BurialMethod = funeral.BurialMethod?.ToString(),
+        InterredAt = funeral.InterredAt?.ToString(),
+        HeldDateTotalMonths = funeral.HeldDate?.TotalMonths,
+        CostRawValue = funeral.Cost?.RawValue,
+        MemoriaGained = funeral.MemoriaGained,
+        ImaginesDisplayed = funeral.ImaginesDisplayed,
+    };
+
+    private static FuneralRecord FromFuneralRecordDto(FuneralRecordDto dto) => new(
+        RuntimeId<FuneralRecord>.Parse(dto.FuneralId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Character>.Parse(dto.DeceasedCharacterId),
+        new GameDate(dto.DeathDateTotalMonths),
+        Enum.Parse<FuneralStatus>(dto.Status),
+        dto.Tier is null ? null : Enum.Parse<FuneralTier>(dto.Tier),
+        dto.BurialMethod is null ? null : Enum.Parse<BurialMethod>(dto.BurialMethod),
+        dto.InterredAt is null ? null : Enum.Parse<IntermentDestination>(dto.InterredAt),
+        dto.HeldDateTotalMonths is { } held ? new GameDate(held) : null,
+        dto.CostRawValue is { } cost ? Money.FromMinorUnits(cost) : null,
+        dto.MemoriaGained,
+        dto.ImaginesDisplayed);
+
+    private static MourningPeriodDto ToMourningPeriodDto(MourningPeriod period) => new()
+    {
+        HouseholdId = period.HouseholdId.ToTaggedString(),
+        TriggeringDeathCharacterId = period.TriggeringDeathCharacterId.ToTaggedString(),
+        StartDateTotalMonths = period.StartDate.TotalMonths,
+        EndDateTotalMonths = period.EndDate.TotalMonths,
+        BrokenEarly = period.BrokenEarly,
+    };
+
+    private static MourningPeriod FromMourningPeriodDto(MourningPeriodDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Character>.Parse(dto.TriggeringDeathCharacterId),
+        new GameDate(dto.StartDateTotalMonths),
+        new GameDate(dto.EndDateTotalMonths),
+        dto.BrokenEarly);
+
+    private static MemoriaStateDto ToMemoriaStateDto(MemoriaState memoria) => new()
+    {
+        HouseholdId = memoria.HouseholdId.ToTaggedString(),
+        Memoria = memoria.Memoria,
+        LastParentaliaObservedDateTotalMonths = memoria.LastParentaliaObservedDate?.TotalMonths,
+    };
+
+    private static MemoriaState FromMemoriaStateDto(MemoriaStateDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.Memoria,
+        dto.LastParentaliaObservedDateTotalMonths is { } observed ? new GameDate(observed) : null);
 }

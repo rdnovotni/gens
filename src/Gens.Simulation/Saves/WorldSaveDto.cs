@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Funerary;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Numerics;
 
@@ -255,6 +256,24 @@ public sealed record WorldSaveDocument
     /// above.</summary>
     [JsonPropertyOrder(40)]
     public IReadOnlyList<GenerationalChapterDto> GenerationalChapters { get; init; } = Array.Empty<GenerationalChapterDto>();
+
+    /// <summary>Every <see cref="Funerary.FuneralRecord"/>, pending or held (Phase 11 item 4), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="GenerationalChapters"/> above.</summary>
+    [JsonPropertyOrder(41)]
+    public IReadOnlyList<FuneralRecordDto> FuneralRecords { get; init; } = Array.Empty<FuneralRecordDto>();
+
+    /// <summary>Every household's current <see cref="Funerary.MourningPeriod"/> (Phase 11 item 4),
+    /// already keyed by household. Not <c>required</c>, and defaults to empty, for the same
+    /// additive-only reason as <see cref="FuneralRecords"/> above.</summary>
+    [JsonPropertyOrder(42)]
+    public IReadOnlyList<MourningPeriodDto> MourningPeriods { get; init; } = Array.Empty<MourningPeriodDto>();
+
+    /// <summary>Every household's running <see cref="Funerary.MemoriaState"/> (Phase 11 item 4), already
+    /// keyed by household. Not <c>required</c>, and defaults to empty, for the same additive-only
+    /// reason as <see cref="FuneralRecords"/> above.</summary>
+    [JsonPropertyOrder(43)]
+    public IReadOnlyList<MemoriaStateDto> MemoriaStates { get; init; } = Array.Empty<MemoriaStateDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -363,6 +382,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(22)]
     public long ChronicleEntryIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-11-item-4 save has no Funeral
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="ChronicleEntryIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(23)]
+    public long FuneralRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1816,4 +1841,78 @@ public sealed record GenerationalChapterDto
 
     [JsonPropertyOrder(4)]
     public required string ChapterSummary { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Funerary.FuneralRecord"/> (Phase 11 item 4).</summary>
+public sealed record FuneralRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string FuneralId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string DeceasedCharacterId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int DeathDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? Tier { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? BurialMethod { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? InterredAt { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public int? HeldDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public long? CostRawValue { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public int? MemoriaGained { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required bool ImaginesDisplayed { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Funerary.MourningPeriod"/> (Phase 11 item 4), keyed by
+/// household.</summary>
+public sealed record MourningPeriodDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string TriggeringDeathCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int StartDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int EndDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool BrokenEarly { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Funerary.MemoriaState"/> (Phase 11 item 4), keyed by
+/// household.</summary>
+public sealed record MemoriaStateDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Memoria { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public int? LastParentaliaObservedDateTotalMonths { get; init; }
 }

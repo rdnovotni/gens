@@ -4,6 +4,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
+using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
@@ -63,6 +64,7 @@ public sealed class WorldState
         RuntimeIdCounter<ReturnReport> returnReportIds,
         RuntimeIdCounter<SuccessionDispute> successionDisputeIds,
         RuntimeIdCounter<ChronicleEntry> chronicleEntryIds,
+        RuntimeIdCounter<FuneralRecord> funeralRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -99,6 +101,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, PlayerControlState> playerControls,
         OrderedRegistry<RuntimeId<ChronicleEntry>, ChronicleEntry> chronicleEntries,
         OrderedRegistry<GenerationalChapterKey, GenerationalChapter> generationalChapters,
+        OrderedRegistry<RuntimeId<FuneralRecord>, FuneralRecord> funeralRecords,
+        OrderedRegistry<RuntimeId<Household>, MourningPeriod> mourningPeriods,
+        OrderedRegistry<RuntimeId<Household>, MemoriaState> memoriaStates,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -126,6 +131,7 @@ public sealed class WorldState
         ReturnReportIds = returnReportIds;
         SuccessionDisputeIds = successionDisputeIds;
         ChronicleEntryIds = chronicleEntryIds;
+        FuneralRecordIds = funeralRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -162,6 +168,9 @@ public sealed class WorldState
         PlayerControls = playerControls;
         ChronicleEntries = chronicleEntries;
         GenerationalChapters = generationalChapters;
+        FuneralRecords = funeralRecords;
+        MourningPeriods = mourningPeriods;
+        MemoriaStates = memoriaStates;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -209,6 +218,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Chronicle.ChronicleEntry"/> (Phase 11 item 3).</summary>
     public RuntimeIdCounter<ChronicleEntry> ChronicleEntryIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Funerary.FuneralRecord"/> (Phase 11 item 4).</summary>
+    public RuntimeIdCounter<FuneralRecord> FuneralRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -427,6 +439,25 @@ public sealed class WorldState
     /// identical convention.</summary>
     public OrderedRegistry<GenerationalChapterKey, GenerationalChapter> GenerationalChapters { get; } = new();
 
+    /// <summary>Every <see cref="Funerary.FuneralRecord"/>, pending or held (Phase 11 item 4), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once held rather than removed,
+    /// matching <see cref="SuccessionDisputes"/>' identical "resolved or not, kept for the campaign's
+    /// lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<FuneralRecord>, FuneralRecord> FuneralRecords { get; } = new();
+
+    /// <summary>Each household's current <see cref="Funerary.MourningPeriod"/> (Phase 11 item 4;
+    /// §4.1), keyed by household. Sparse: a household never touched by a death has no entry, matching
+    /// <see cref="HouseholdPolicies"/>' identical convention. Immutable record entries: <see
+    /// cref="Funerary.FuneralOpeningSystem"/> and <see cref="Funerary.BreakMourningEarlyCommand"/>
+    /// replace an entry (remove then re-add) rather than mutating one in place, matching <see
+    /// cref="HouseholdHeadships"/>' identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, MourningPeriod> MourningPeriods { get; } = new();
+
+    /// <summary>Each household's running Memoria total (Phase 11 item 4; §6's "third axis"), keyed by
+    /// household. Sparse: a household this item never touches has no entry, matching <see
+    /// cref="HouseholdPolicies"/>' identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, MemoriaState> MemoriaStates { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -468,6 +499,7 @@ public sealed class WorldState
         ["returnReportIds"] = ReturnReportIds.Peek,
         ["successionDisputeIds"] = SuccessionDisputeIds.Peek,
         ["chronicleEntryIds"] = ChronicleEntryIds.Peek,
+        ["funeralRecordIds"] = FuneralRecordIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -504,6 +536,9 @@ public sealed class WorldState
         ["playerControls"] = PlayerControls.Version,
         ["chronicleEntries"] = ChronicleEntries.Version,
         ["generationalChapters"] = GenerationalChapters.Version,
+        ["funeralRecords"] = FuneralRecords.Version,
+        ["mourningPeriods"] = MourningPeriods.Version,
+        ["memoriaStates"] = MemoriaStates.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
