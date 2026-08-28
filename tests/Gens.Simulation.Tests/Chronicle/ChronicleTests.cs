@@ -112,7 +112,7 @@ public sealed class ChronicleTests
         var chapter = state.GenerationalChapters.InAscendingOrder().First().Value;
         Assert.That(chapter.EndMonth, Is.EqualTo(new GameDate(30)));
 
-        var extinctionEntry = state.ChronicleEntries.InAscendingOrder().First().Value;
+        var extinctionEntry = state.ChronicleEntries.InAscendingOrder().Last().Value;
         Assert.That(extinctionEntry.Tier, Is.EqualTo(ChronicleTier.Legendary));
     }
 
