@@ -1,4 +1,5 @@
 using Gens.Simulation.Characters;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
 using Gens.Simulation.Interactions;
@@ -161,6 +162,8 @@ internal static class RuntimeIdTagRegistry
         // Phase 11 item 1 — Gens.Simulation.Succession.SuccessionDispute, same "real record as its
         // own tag" convention as ReturnReport/Scheme above.
         [typeof(SuccessionDispute)] = "succdispute",
+        // Phase 11 item 3 — Gens.Simulation.Chronicle.ChronicleEntry, same convention.
+        [typeof(ChronicleEntry)] = "chronentry",
     };
 
     public static string Resolve(Type type) =>

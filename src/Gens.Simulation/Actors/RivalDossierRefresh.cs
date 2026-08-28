@@ -1,4 +1,5 @@
 using Gens.Simulation.Characters;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Identity;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -35,7 +36,8 @@ public static class RivalDossierRefresh
     /// exists yet — first contact is exactly when a dossier should first appear (<see
     /// cref="RivalDossier"/>'s own "sparse: no entry until contact" doc comment).</summary>
     public static void Refresh(
-        WorldState state, RuntimeId<Actor> actorId, GameDate eventDate, string summary, string? chronicleEntry = null)
+        WorldState state, RuntimeId<Actor> actorId, GameDate eventDate, string summary,
+        RuntimeId<ChronicleEntry>? chronicleEntryId = null)
     {
         if (state is null)
             throw new ArgumentNullException(nameof(state));
@@ -46,11 +48,11 @@ public static class RivalDossierRefresh
         if (hasExisting && existing!.LastUpdatedDate.TotalMonths >= eventDate.TotalMonths)
             return;
 
-        var recentEntries = existing?.RecentChronicleEntries ?? Array.Empty<string>();
-        if (chronicleEntry is not null)
+        var recentEntries = existing?.RecentChronicleEntries ?? Array.Empty<RuntimeId<ChronicleEntry>>();
+        if (chronicleEntryId is { } entryId)
         {
             recentEntries = recentEntries
-                .Append(chronicleEntry)
+                .Append(entryId)
                 .TakeLast(RivalDossierCatalog.MaxRecentChronicleEntries)
                 .ToArray();
         }
@@ -68,7 +70,8 @@ public static class RivalDossierRefresh
     /// keyed by Character rather than Actor (<c>gens-characters-design.md</c> §10's own participant
     /// shape).</summary>
     public static void RefreshForCharacter(
-        WorldState state, RuntimeId<Character> characterId, GameDate eventDate, string summary, string? chronicleEntry = null)
+        WorldState state, RuntimeId<Character> characterId, GameDate eventDate, string summary,
+        RuntimeId<ChronicleEntry>? chronicleEntryId = null)
     {
         if (state is null)
             throw new ArgumentNullException(nameof(state));
@@ -77,7 +80,7 @@ public static class RivalDossierRefresh
         {
             if (entry.Value.HeadCharacterId == characterId)
             {
-                Refresh(state, entry.Key, eventDate, summary, chronicleEntry);
+                Refresh(state, entry.Key, eventDate, summary, chronicleEntryId);
                 return;
             }
         }

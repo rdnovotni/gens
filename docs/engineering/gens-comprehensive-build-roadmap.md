@@ -387,8 +387,30 @@ own doc comment named as out of item 1's scope. Both new systems run in the `Rel
 after `succession.handoff` and `succession.disputeResolution` (and, for `PlayerControlHandoffSystem`,
 after `succession.regency` too), so a month's headship changes are always fully settled before player
 control is recomputed. Covered in `tests/Gens.Simulation.Tests/Succession/PlayerControlTests.cs`,
-including a save/load round trip and the deterministic state hash. Items 3–6 (Dynasty Chronicle,
-funerals/mourning/memoria, epithets/titles, succession fixtures) remain.
+including a save/load round trip and the deterministic state hash. Items 4–6 (funerals/mourning/
+memoria, epithets/titles, succession fixtures) remain.
+
+**Item 3 progress:** the Dynasty Chronicle is implemented (`src/Gens.Simulation/Chronicle/`) —
+`ChronicleEntry` (category, significance tier, prose, linked Characters, source system/event, pin,
+player annotation) and `GenerationalChapter` (one per head's tenure) are new `WorldState` partitions.
+`ChronicleProjector` reads a month's already-emitted domain events (never raw state, per ADR 0007) and
+maps the succession-cluster events (headship established/transferred/extinguished, disputes
+opened/resolved, splinter households), births/deaths/marriages, a rival house's own extinction, the
+Insolvency ladder's terminal "Fall of the House" rung (`gens-economy-finance-design.md` §9 rung 5,
+closing the gap `InsolvencySystem`'s own doc comment named), and a discovered-and-escalated Scheme onto
+§6's default tier mapping; `ChronicleGenerationSystem.Generate` (deliberately not an `IMonthlySystem` —
+see its own doc comment) persists the resulting entries, opens/closes `GenerationalChapter`s on
+headship transitions, and cross-posts Major/Legendary entries to a rival's own `RivalDossier` (§9) —
+retiring that record's former plain-`string` `RecentChronicleEntries` stopgap in favor of real
+`RuntimeId<ChronicleEntry>` references. `SetChronicleEntryPinnedCommand`/`AnnotateChronicleEntryCommand`/
+`AddChronicleNoteCommand` cover §7's player pinning/annotation/diary-note tools, and
+`Queries/ChronicleQuery` projects one household's filtered, chapter-grouped read (§4), excluding
+Minor-tier entries from the default view unless pinned, per §3. The design doc's §5 Milestone-as-
+goal-tracker mechanism is deliberately out of this item's scope — the roadmap line above never names
+it — and `buildings.constructionCompleted` is the one named Chronicle-worthy event left out for now,
+since nothing yet resolves a Holding back to an owning Household. Covered in
+`tests/Gens.Simulation.Tests/Chronicle/ChronicleTests.cs`, including a save/load round trip and the
+deterministic state hash.
 
 Construction order:
 

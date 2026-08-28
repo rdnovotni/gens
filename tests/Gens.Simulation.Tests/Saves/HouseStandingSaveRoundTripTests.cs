@@ -28,7 +28,7 @@ public sealed class HouseStandingSaveRoundTripTests
             "A long-standing rivalry over a contested plot.",
             "the Unyielding",
             new GameDate(5),
-            new[] { "chronicle_placeholder_1", "chronicle_placeholder_2" });
+            new[] { state.ChronicleEntryIds.Issue(), state.ChronicleEntryIds.Issue() });
         state.RivalDossiers.Add(actorA, dossier);
 
         var regionalEntry = new RegionalFamiliesEntry(actorB, "Gens Cornelia", LivingWorldActorStandingTrend.Rising, EconomicIdentityTag.Mercantile);

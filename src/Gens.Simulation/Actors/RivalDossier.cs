@@ -1,3 +1,4 @@
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Time;
 
@@ -17,12 +18,15 @@ namespace Gens.Simulation.Actors;
 /// <param name="HeadComboTitle">The head Character's Combo Title (Traits §7) as dossier headline
 /// flavor — a plain string rather than a typed reference, since no Combo Title record exists in this
 /// codebase yet.</param>
-/// <param name="RecentChronicleEntries">Plain string references: no Dynasty Chronicle record exists
-/// yet (Phase 11), matching <see cref="LivingWorldActorMilitaryStrength.ResolvedForceId"/>'s identical
-/// "reference an entity kind that does not exist yet as a plain string" convention.</param>
+/// <param name="RecentChronicleEntries">§9's own mechanism: "a House of Note maintains its own
+/// lightweight Chronicle, generally populated at Major/Legendary tier only." Real <see
+/// cref="ChronicleEntry"/> references now that the Dynasty Chronicle exists (Phase 11 item 3) —
+/// replacing this field's former plain-string stopgap, matching <see
+/// cref="LivingWorldActorMilitaryStrength.ResolvedForceId"/>'s once-identical "reference an entity
+/// kind that does not exist yet as a plain string" convention, now resolved.</param>
 public sealed record RivalDossier(
     RuntimeId<Actor> ActorId,
     string Summary,
     string? HeadComboTitle,
     GameDate LastUpdatedDate,
-    IReadOnlyList<string> RecentChronicleEntries);
+    IReadOnlyList<RuntimeId<ChronicleEntry>> RecentChronicleEntries);

@@ -1,6 +1,7 @@
 using Gens.Simulation.Actors;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
@@ -81,12 +82,17 @@ public sealed class RivalDossierRefreshTests
     public void RefreshAppendsAndTrimsRecentChronicleEntries()
     {
         var (state, a, _) = TwoActors();
+        var entryIds = new List<RuntimeId<ChronicleEntry>>();
         for (var month = 0; month < RivalDossierCatalog.MaxRecentChronicleEntries + 3; month++)
-            RivalDossierRefresh.Refresh(state, a.ActorId, new GameDate(month), $"Month {month}.", $"entry-{month}");
+        {
+            var entryId = state.ChronicleEntryIds.Issue();
+            entryIds.Add(entryId);
+            RivalDossierRefresh.Refresh(state, a.ActorId, new GameDate(month), $"Month {month}.", entryId);
+        }
 
         state.RivalDossiers.TryGet(a.ActorId, out var dossier);
         Assert.That(dossier!.RecentChronicleEntries, Has.Count.EqualTo(RivalDossierCatalog.MaxRecentChronicleEntries));
-        Assert.That(dossier.RecentChronicleEntries[^1], Is.EqualTo($"entry-{RivalDossierCatalog.MaxRecentChronicleEntries + 2}"));
+        Assert.That(dossier.RecentChronicleEntries[^1], Is.EqualTo(entryIds[^1]));
     }
 
     [Test]
@@ -153,7 +159,7 @@ public sealed class RivalDossierRefreshTests
     [Test]
     public void StalenessDescribesMonthsSinceTheLastUpdate()
     {
-        var dossier = new RivalDossier(default(RuntimeId<Actor>), "Summary.", null, new GameDate(10), Array.Empty<string>());
+        var dossier = new RivalDossier(default(RuntimeId<Actor>), "Summary.", null, new GameDate(10), Array.Empty<RuntimeId<ChronicleEntry>>());
 
         Assert.Multiple(() =>
         {
