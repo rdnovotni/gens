@@ -22,3 +22,4 @@
 TestResults/
 BenchmarkDotNet.Artifacts/
 artifacts/
+.claude/
