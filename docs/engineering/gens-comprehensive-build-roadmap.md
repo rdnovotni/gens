@@ -387,8 +387,8 @@ own doc comment named as out of item 1's scope. Both new systems run in the `Rel
 after `succession.handoff` and `succession.disputeResolution` (and, for `PlayerControlHandoffSystem`,
 after `succession.regency` too), so a month's headship changes are always fully settled before player
 control is recomputed. Covered in `tests/Gens.Simulation.Tests/Succession/PlayerControlTests.cs`,
-including a save/load round trip and the deterministic state hash. Items 4–6 (funerals/mourning/
-memoria, epithets/titles, succession fixtures) remain.
+including a save/load round trip and the deterministic state hash. Items 5–6 (epithets/titles,
+succession fixtures) remain.
 
 **Item 3 progress:** the Dynasty Chronicle is implemented (`src/Gens.Simulation/Chronicle/`) —
 `ChronicleEntry` (category, significance tier, prose, linked Characters, source system/event, pin,
@@ -411,6 +411,52 @@ it — and `buildings.constructionCompleted` is the one named Chronicle-worthy e
 since nothing yet resolves a Holding back to an owning Household. Covered in
 `tests/Gens.Simulation.Tests/Chronicle/ChronicleTests.cs`, including a save/load round trip and the
 deterministic state hash.
+
+**Item 4 progress:** funerals, mourning, and Memoria are implemented (`src/Gens.Simulation/Funerary/`)
+— `MemoriaState` (a household's running Memoria total) and `HouseholdPolicyState`-shaped sparse
+per-household partitions, `FuneralRecord` (a `RuntimeId`-keyed entity kind, "funeral" tag, kept once
+held like `SuccessionDispute`), and `MourningPeriod` are new `WorldState` partitions, following the
+exact sparse-per-household/kept-entity shapes those two named types already use. `FuneralOpeningSystem`
+detects a death directly from raw `Character.IsAlive` state (matching `SuccessionHandoffSystem`'s own
+convention — both run in the `RelationshipsActors` phase, strictly after `CharacterLifecycleSystem`'s
+earlier `Lifecycle` phase, so a month's deaths are already visible) and opens a `Pending` `FuneralRecord`
+plus starts (or extends) a household `MourningPeriod` for *any* household member's death, not only a
+tracked head's — broader than Succession's own "who inherits" question, per §2's "every death... now
+routes through the same real sequence". It declares no `Prerequisites` against `succession.handoff`
+(the two never read each other's writes) but is named `funerary.funeralOpening` specifically so it
+sorts ordinally before `succession.handoff` in the same phase's deterministic tiebreak — the design
+doc's own sequencing intent without touching Succession's own declared `Prerequisites`.
+`ChooseFuneralTierCommand` (the funeral-tier choice command the task calls for) and
+`FuneralAutoResolutionSystem` (a stale `Pending` funeral resolves at a Modest default after two months,
+matching `SuccessionDisputeResolutionSystem`'s own "resolve automatically after N months" shape, so a
+background/NPC household is never stuck) share one `FuneralResolution.Hold` helper for the actual
+Treasury-cost-against-Memoria-yield trade (§2.2), scaling a Grand funeral's yield by the household's
+own existing Major/Legendary Dynasty Chronicle entry count (§2.2, §6.1) — Dignitas is deliberately left
+out of that trade entirely, since (per `DeclareHeirCommand`'s own doc comment) no personal or household
+Dignitas stat exists yet, only `LivingWorldActor.Dignitas` for rival houses. `ManesObservanceSystem` is
+the ongoing Manes-cult/*Parentalia* Memoria trickle the task names directly, mirroring
+`FundFestivalCommand`'s Rites-Budget-adjacent shape: every February it tries a small automatic Treasury
+draw for every tracked household, crediting Memoria (base gain plus a capped per-Major/Legendary-entry
+trickle, realizing item 3's own "a Dynasty Chronicle entry for any ancestor... contributes a small,
+permanent Memoria trickle" note) on success or applying a small Memoria loss on insufficient funds — no
+separate "record observance" command needed since Travel does not exist yet to model the design's other
+named skip reason (absence). `BreakMourningEarlyCommand` sets `MourningPeriod.BrokenEarly` but cannot
+fire the real consequence the design doc names (a Scandal, Phase 12, not yet built) — the flag is the
+documented hook a future Scandal integration reads directly. `FuneralHeldEvent` and
+`MourningBrokenEarlyEvent` both route into `ChronicleProjector`'s existing event-to-entry mapping, so a
+held funeral and a broken mourning period actually appear in the Dynasty Chronicle, closing the loop
+§8 describes. Three deliberate scope cuts, each named in its own file's doc comment the way item 3's own
+`buildings.constructionCompleted` gap was named: (1) burial method is a hardcoded `Cremation` default
+rather than the design's culture/faith-tenet-driven soft drift (§3) — Cultures and Religions of the
+Known World (Phase 13) do not exist yet to own that tenet system, and this item does not attempt a
+stand-in for it; (2) the widow's *tempus lugendi* (§4.2) and the settlement-scale *iustitium* (§4.3) are
+both left unbuilt rather than half-built, since the first needs Romance, Sexuality & Lineage's
+remarriage-timing machinery and the second needs Politics & Patronage's Prominence gate, neither of
+which exists yet; (3) the *laudatio funebris* (§7) is skipped entirely — it needs Rhetoric/orator
+mechanics this codebase does not have. Covered in `tests/Gens.Simulation.Tests/Funerary/FuneralTests.cs`,
+including a funeral raising Memoria (scaled by ancestral Chronicle achievement at Grand tier), a skipped
+*Parentalia* lowering it against a well-funded one raising it, a full funeral/mourning/Memoria state
+round trip through save/load, and the deterministic state hash staying stable.
 
 Construction order:
 

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
@@ -50,6 +51,7 @@ public static class StateHasher
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
         hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.SuccessionDisputeIds.Peek);
+        hash = MixLong(hash, state.FuneralRecordIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -370,6 +372,41 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.HeadCharacterId.Value);
             hash = MixLong(hash, entry.Value.EndMonth?.TotalMonths ?? -1L);
             hash = MixString(hash, entry.Value.ChapterSummary);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.FuneralRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.HouseholdId.Value);
+            hash = MixLong(hash, entry.Value.DeceasedCharacterId.Value);
+            hash = MixLong(hash, entry.Value.DeathDate.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.Status);
+            hash = MixLong(hash, entry.Value.Tier is { } tier ? (long)tier : -1L);
+            hash = MixLong(hash, entry.Value.BurialMethod is { } burial ? (long)burial : -1L);
+            hash = MixLong(hash, entry.Value.InterredAt is { } interredAt ? (long)interredAt : -1L);
+            hash = MixLong(hash, entry.Value.HeldDate?.TotalMonths ?? -1L);
+            hash = MixLong(hash, entry.Value.Cost?.RawValue ?? -1L);
+            hash = MixLong(hash, entry.Value.MemoriaGained ?? -1L);
+            hash = MixLong(hash, entry.Value.ImaginesDisplayed ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.MourningPeriods.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.TriggeringDeathCharacterId.Value);
+            hash = MixLong(hash, entry.Value.StartDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.EndDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.BrokenEarly ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.MemoriaStates.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.Memoria);
+            hash = MixLong(hash, entry.Value.LastParentaliaObservedDate?.TotalMonths ?? -1L);
         }
 
         return hash;
