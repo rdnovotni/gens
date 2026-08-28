@@ -25,15 +25,28 @@ public sealed record NonFamilyRegencyEstablishedEvent(
     public Visibility Visibility => Visibility.Public;
 }
 
-/// <summary>Emitted whenever a Regency ends because its heir has come of age (Phase 11 item 2; §6.2 —
-/// this is the "future Regency-ends-when-the-heir-comes-of-age system" <see
-/// cref="SuccessionHandoffSystem"/>'s own doc comment named as out of that item's scope).</summary>
+/// <summary>Why a Regency ended (Phase 11 item 2) — either §6.2's ordinary "heir comes of age" case
+/// (<see cref="SuccessionHandoffSystem"/>'s own doc comment named this the "future Regency-ends-when-
+/// the-heir-comes-of-age system" out of item 1's scope), or the Regent themself dying while the heir
+/// is still a minor, which needs the same cleanup (clear the stale <see
+/// cref="HouseholdHeadship.RegentCharacterId"/>, end any backing <see cref="StewardshipAssignment"/>)
+/// even though the heir isn't of age yet — a still-minor head with no Regent is exactly the
+/// <see cref="RegencySystem"/> gap this system's own first responsibility re-fills, next tick.</summary>
+public enum RegencyEndReason
+{
+    HeirCameOfAge,
+    RegentDied,
+}
+
+/// <summary>Emitted whenever a Regency ends, either because its heir has come of age or because the
+/// Regent themself died first (<see cref="RegencyEndReason"/>; Phase 11 item 2; §6.2).</summary>
 public sealed record RegencyEndedEvent(
     RuntimeId<DomainEventEntity> EventId,
     GameDate OccurredDate,
     RuntimeId<Household> HouseholdId,
     RuntimeId<Character> FormerHeirNowHeadCharacterId,
     RuntimeId<Character> FormerRegentCharacterId,
+    RegencyEndReason Reason,
     string? CausationId) : IDomainEvent
 {
     public string Type => "succession.regencyEnded";
@@ -55,17 +68,31 @@ public sealed record RegencyEndedEvent(
 /// Regency <see cref="StewardshipAssignment"/> — the Regent candidate is the living adult (§6.2's
 /// Adult floor) household member with the highest effective Stewardship attribute, tie-broken by
 /// lowest <see cref="RuntimeId{T}"/> value (this codebase's everywhere-else deterministic tie-break).
-/// If no eligible candidate exists in the household at all, the headship is left as-is this month — an
-/// honestly-reached edge case this implementation names rather than hides (matching §10's "untuned
-/// numbers" convention of naming open gaps), not a crash.</item>
-/// <item>End a Regency once its heir is no longer a minor (§6.2), ending the backing <see
-/// cref="StewardshipAssignment"/> if one exists (the spouse-in-trust path never created one) and
-/// clearing <see cref="HouseholdHeadship.RegentCharacterId"/> either way.</item>
+/// Any other still-active assignment for that household (e.g. a Travel or Second-Settlement
+/// Procurator appointment already in force when the head died) is ended first — the graver Regency
+/// need supersedes it, and <see cref="Stewardship.StewardshipCommands.AppointPipeline"/> would
+/// otherwise reject the new appointment outright since a household may only ever have one active
+/// assignment at a time. If no eligible candidate exists in the household at all, the headship is left
+/// as-is this month — an honestly-reached edge case this implementation names rather than hides
+/// (matching §10's "untuned numbers" convention of naming open gaps), not a crash.</item>
+/// <item>End a Regency once its heir is no longer a minor, <em>or</em> once the Regent themself has
+/// died while the heir is still a minor (<see cref="RegencyEndReason"/>) — either way ending the
+/// backing <see cref="StewardshipAssignment"/> if one exists (the spouse-in-trust path never created
+/// one) and clearing <see cref="HouseholdHeadship.RegentCharacterId"/>. A Regent's death leaves the
+/// heir minor and un-governed again, exactly like the gap responsibility 1 fills — the next tick's
+/// pass through responsibility 1 picks a replacement, the same one-month honestly-reached gap as the
+/// no-candidate case above.</item>
+/// <item>Clean up any Regency <see cref="StewardshipAssignment"/> left active after its own household's
+/// <see cref="HouseholdHeadship"/> disappears entirely (§7.1 extinction) — <see
+/// cref="SuccessionHandoffSystem"/> can remove a headship outright without this system ever seeing it
+/// in responsibilities 1-2's headship-keyed loop, and an orphaned active assignment would otherwise let
+/// <see cref="Stewardship.StewardAutonomousDecisionSystem"/> keep acting for a household that no
+/// longer exists.</item>
 /// </list>
 ///
 /// Draws no random numbers: candidate selection is a deterministic attribute comparison and Regency
-/// end is a deterministic age comparison, matching <see cref="HeirEligibilityService"/>'s own "pure
-/// lookup, no RNG" note.
+/// end is a deterministic age/liveness comparison, matching <see cref="HeirEligibilityService"/>'s own
+/// "pure lookup, no RNG" note.
 /// </summary>
 public sealed class RegencySystem : IMonthlySystem<WorldState>
 {
@@ -107,9 +134,14 @@ public sealed class RegencySystem : IMonthlySystem<WorldState>
                 continue;
             }
 
+            var regentDied = !IsAlive(state, headship.RegentCharacterId.Value);
             if (!isMinor)
-                EndRegency(state, householdId, headship, context, events);
+                EndRegency(state, householdId, headship, context, events, RegencyEndReason.HeirCameOfAge);
+            else if (regentDied)
+                EndRegency(state, householdId, headship, context, events, RegencyEndReason.RegentDied);
         }
+
+        CleanUpOrphanedRegencyAssignments(state, context, events, headships.Select(h => h.Key).ToHashSet());
 
         return events;
     }
@@ -123,6 +155,21 @@ public sealed class RegencySystem : IMonthlySystem<WorldState>
         var candidateId = FindRegentCandidate(state, householdId, headship.HeadCharacterId, context.Date);
         if (candidateId is null)
             return;
+
+        // The graver Regency need supersedes any other still-active assignment (Travel, Second-
+        // Settlement Procurator) already in force for this household — AppointPipeline would otherwise
+        // reject the new appointment outright, since only one assignment may be active at a time.
+        var existingAssignment = state.StewardshipAssignments.InAscendingOrder()
+            .Where(entry => entry.Value.HouseholdId == householdId && entry.Value.IsActive)
+            .Select(entry => entry.Value)
+            .FirstOrDefault();
+        if (existingAssignment is not null)
+        {
+            var supersedeCommand = new EndStewardshipAssignmentCommand(state.CommandIds.Issue(), "system", context.Date, null, existingAssignment.AssignmentId);
+            var supersedeResult = StewardshipCommands.EndPipeline.Execute(state, supersedeCommand);
+            if (supersedeResult.Accepted)
+                events.AddRange(supersedeResult.Events);
+        }
 
         var appointCommand = new AppointStewardshipCommand(
             state.CommandIds.Issue(), "system", context.Date, null, householdId, StewardshipContext.Regency,
@@ -142,7 +189,8 @@ public sealed class RegencySystem : IMonthlySystem<WorldState>
     }
 
     private static void EndRegency(
-        WorldState state, RuntimeId<Household> householdId, HouseholdHeadship headship, MonthlyTickContext context, List<IDomainEvent> events)
+        WorldState state, RuntimeId<Household> householdId, HouseholdHeadship headship, MonthlyTickContext context,
+        List<IDomainEvent> events, RegencyEndReason reason)
     {
         var activeRegency = state.StewardshipAssignments.InAscendingOrder()
             .Where(entry => entry.Value.HouseholdId == householdId && entry.Value.IsActive && entry.Value.Context == StewardshipContext.Regency)
@@ -162,8 +210,34 @@ public sealed class RegencySystem : IMonthlySystem<WorldState>
         state.HouseholdHeadships.Add(householdId, headship with { RegentCharacterId = null });
 
         events.Add(new RegencyEndedEvent(
-            state.EventIds.Issue(), context.Date, householdId, headship.HeadCharacterId, formerRegentId, CausationId: null));
+            state.EventIds.Issue(), context.Date, householdId, headship.HeadCharacterId, formerRegentId, reason, CausationId: null));
     }
+
+    /// <summary>Ends any active Regency <see cref="StewardshipAssignment"/> whose own household no
+    /// longer has a <see cref="HouseholdHeadship"/> at all — reached only via extinction (§7.1), since
+    /// <paramref name="stillExtantHouseholdIds"/> is this tick's own headship snapshot taken before
+    /// <see cref="SuccessionHandoffSystem"/>'s and this system's own headship-keyed loop above could
+    /// have removed one out from under an active Regency.</summary>
+    private static void CleanUpOrphanedRegencyAssignments(
+        WorldState state, MonthlyTickContext context, List<IDomainEvent> events, HashSet<RuntimeId<Household>> stillExtantHouseholdIds)
+    {
+        var orphaned = state.StewardshipAssignments.InAscendingOrder()
+            .Where(entry => entry.Value.IsActive && entry.Value.Context == StewardshipContext.Regency
+                && !stillExtantHouseholdIds.Contains(entry.Value.HouseholdId))
+            .Select(entry => entry.Value)
+            .ToArray();
+
+        foreach (var assignment in orphaned)
+        {
+            var endCommand = new EndStewardshipAssignmentCommand(state.CommandIds.Issue(), "system", context.Date, null, assignment.AssignmentId);
+            var endResult = StewardshipCommands.EndPipeline.Execute(state, endCommand);
+            if (endResult.Accepted)
+                events.AddRange(endResult.Events);
+        }
+    }
+
+    private static bool IsAlive(WorldState state, RuntimeId<Character> characterId) =>
+        state.Characters.TryGet(characterId, out var character) && character!.IsAlive;
 
     private static bool HasActiveRegency(WorldState state, RuntimeId<Household> householdId) =>
         state.StewardshipAssignments.InAscendingOrder()

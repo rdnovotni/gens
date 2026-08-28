@@ -131,15 +131,33 @@ internal static class PlayerControlResolver
             return new PlayerControlState(householdId, ControlledCharacterId: null, PlayerControlMode.Extinguished);
 
         if (headship!.RegentCharacterId is null)
-            return new PlayerControlState(householdId, headship.HeadCharacterId, PlayerControlMode.DirectHead);
+        {
+            // A dead head lingers here for the length of a pending SuccessionDispute
+            // (SuccessionHandoffSystem deliberately leaves HeadCharacterId pointed at them until the
+            // dispute resolves) — nobody is actually controllable in the meantime, so this falls back
+            // to AutoManaged exactly like a non-family Regency does, rather than reporting the player
+            // as still directly controlling a dead character.
+            return IsAlive(state, headship.HeadCharacterId)
+                ? new PlayerControlState(householdId, headship.HeadCharacterId, PlayerControlMode.DirectHead)
+                : new PlayerControlState(householdId, ControlledCharacterId: null, PlayerControlMode.AutoManaged);
+        }
 
         var hasActiveRegencyAssignment = state.StewardshipAssignments.InAscendingOrder().Any(entry =>
             entry.Value.HouseholdId == householdId && entry.Value.IsActive && entry.Value.Context == StewardshipContext.Regency);
 
-        return hasActiveRegencyAssignment
-            ? new PlayerControlState(householdId, ControlledCharacterId: null, PlayerControlMode.AutoManaged)
-            : new PlayerControlState(householdId, headship.RegentCharacterId, PlayerControlMode.RegentInTrust);
+        if (hasActiveRegencyAssignment)
+            return new PlayerControlState(householdId, ControlledCharacterId: null, PlayerControlMode.AutoManaged);
+
+        // A spouse Regent who has since died is cleared by RegencySystem within the same tick
+        // (RelationshipsActors runs after Lifecycle, so a death this month is already visible), but
+        // this fallback keeps Resolve honest even if it is ever called before that cleanup runs.
+        return IsAlive(state, headship.RegentCharacterId!.Value)
+            ? new PlayerControlState(householdId, headship.RegentCharacterId, PlayerControlMode.RegentInTrust)
+            : new PlayerControlState(householdId, ControlledCharacterId: null, PlayerControlMode.AutoManaged);
     }
+
+    private static bool IsAlive(WorldState state, RuntimeId<Character> characterId) =>
+        state.Characters.TryGet(characterId, out var character) && character!.IsAlive;
 }
 
 /// <summary>The validate/mutate pipeline for <see cref="EstablishPlayerControlCommand"/> (ADR 0006).</summary>
