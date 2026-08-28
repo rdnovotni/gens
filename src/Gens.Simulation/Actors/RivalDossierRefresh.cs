@@ -1,4 +1,5 @@
 using Gens.Simulation.Characters;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Identity;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -23,7 +24,11 @@ public static class RivalDossierCatalog
 /// Reuses whatever narrative summary the triggering command/event already produced rather than
 /// authoring new prose — <see cref="Stewardship.AutonomousDecisionLog.Outcome"/>'s identical "reuse the
 /// projection's own summary" convention. <see cref="RivalDossier.LastUpdatedDate"/> never regresses:
-/// an out-of-order or earlier-dated event replayed against an already-fresher dossier is a no-op.
+/// an out-of-order, strictly-earlier-dated event replayed against an already-fresher dossier is a
+/// no-op — a second refresh on the exact same date is not (Phase 11 item 3's own Chronicle cross-post
+/// commonly follows a same-month, same-date refresh a triggering system already made, e.g. <see
+/// cref="Interactions.SchemeProgressSystem"/>'s own resolution-summary refresh; rejecting that as
+/// "no newer than the dossier already has" would silently drop the Chronicle entry ID it carries).
 /// Deliberately not a scheduled/monthly system — it is invoked directly from whichever command's own
 /// mutate step already represents genuine contact (<see cref="AdjustHouseStandingCommand"/>, <see
 /// cref="Interactions.SchemeProgressSystem"/>'s resolution), never from ambient background drift (<see
@@ -35,7 +40,8 @@ public static class RivalDossierRefresh
     /// exists yet — first contact is exactly when a dossier should first appear (<see
     /// cref="RivalDossier"/>'s own "sparse: no entry until contact" doc comment).</summary>
     public static void Refresh(
-        WorldState state, RuntimeId<Actor> actorId, GameDate eventDate, string summary, string? chronicleEntry = null)
+        WorldState state, RuntimeId<Actor> actorId, GameDate eventDate, string summary,
+        RuntimeId<ChronicleEntry>? chronicleEntryId = null)
     {
         if (state is null)
             throw new ArgumentNullException(nameof(state));
@@ -43,14 +49,14 @@ public static class RivalDossierRefresh
             throw new ArgumentNullException(nameof(summary));
 
         var hasExisting = state.RivalDossiers.TryGet(actorId, out var existing);
-        if (hasExisting && existing!.LastUpdatedDate.TotalMonths >= eventDate.TotalMonths)
+        if (hasExisting && existing!.LastUpdatedDate.TotalMonths > eventDate.TotalMonths)
             return;
 
-        var recentEntries = existing?.RecentChronicleEntries ?? Array.Empty<string>();
-        if (chronicleEntry is not null)
+        var recentEntries = existing?.RecentChronicleEntries ?? Array.Empty<RuntimeId<ChronicleEntry>>();
+        if (chronicleEntryId is { } entryId)
         {
             recentEntries = recentEntries
-                .Append(chronicleEntry)
+                .Append(entryId)
                 .TakeLast(RivalDossierCatalog.MaxRecentChronicleEntries)
                 .ToArray();
         }
@@ -68,7 +74,8 @@ public static class RivalDossierRefresh
     /// keyed by Character rather than Actor (<c>gens-characters-design.md</c> §10's own participant
     /// shape).</summary>
     public static void RefreshForCharacter(
-        WorldState state, RuntimeId<Character> characterId, GameDate eventDate, string summary, string? chronicleEntry = null)
+        WorldState state, RuntimeId<Character> characterId, GameDate eventDate, string summary,
+        RuntimeId<ChronicleEntry>? chronicleEntryId = null)
     {
         if (state is null)
             throw new ArgumentNullException(nameof(state));
@@ -77,7 +84,7 @@ public static class RivalDossierRefresh
         {
             if (entry.Value.HeadCharacterId == characterId)
             {
-                Refresh(state, entry.Key, eventDate, summary, chronicleEntry);
+                Refresh(state, entry.Key, eventDate, summary, chronicleEntryId);
                 return;
             }
         }

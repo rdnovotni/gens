@@ -249,8 +249,8 @@ public static class StateHasher
             hash = MixString(hash, entry.Value.Summary);
             hash = MixString(hash, entry.Value.HeadComboTitle ?? string.Empty);
             hash = MixLong(hash, entry.Value.LastUpdatedDate.TotalMonths);
-            foreach (var chronicleEntry in entry.Value.RecentChronicleEntries)
-                hash = MixString(hash, chronicleEntry);
+            foreach (var chronicleEntryId in entry.Value.RecentChronicleEntries)
+                hash = MixLong(hash, chronicleEntryId.Value);
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
@@ -342,6 +342,34 @@ public static class StateHasher
             hash = MixLong(hash, entry.Key.Value);
             hash = MixLong(hash, entry.Value.ControlledCharacterId?.Value ?? -1L);
             hash = MixLong(hash, (long)entry.Value.Mode);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ChronicleEntries.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.HouseholdId?.Value ?? -1L);
+            hash = MixLong(hash, entry.Value.Month.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.Category);
+            hash = MixLong(hash, (long)entry.Value.Tier);
+            hash = MixString(hash, entry.Value.Prose);
+            foreach (var characterId in entry.Value.LinkedCharacterIds)
+                hash = MixLong(hash, characterId.Value);
+            hash = MixString(hash, entry.Value.SourceSystem);
+            hash = MixLong(hash, (long)entry.Value.Source);
+            hash = MixLong(hash, entry.Value.Pinned ? 1L : 0L);
+            hash = MixString(hash, entry.Value.PlayerAnnotation ?? string.Empty);
+            hash = MixLong(hash, entry.Value.CrossHouseLinkedEntryId?.Value ?? -1L);
+        }
+
+        // Already ascending GenerationalChapterKey order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.GenerationalChapters.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.HouseholdId.Value);
+            hash = MixLong(hash, entry.Key.StartMonthTotalMonths);
+            hash = MixLong(hash, entry.Value.HeadCharacterId.Value);
+            hash = MixLong(hash, entry.Value.EndMonth?.TotalMonths ?? -1L);
+            hash = MixString(hash, entry.Value.ChapterSummary);
         }
 
         return hash;

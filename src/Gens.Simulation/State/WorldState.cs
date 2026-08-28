@@ -1,6 +1,7 @@
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
 using Gens.Simulation.Goods;
@@ -61,6 +62,7 @@ public sealed class WorldState
         RuntimeIdCounter<Scheme> schemeIds,
         RuntimeIdCounter<ReturnReport> returnReportIds,
         RuntimeIdCounter<SuccessionDispute> successionDisputeIds,
+        RuntimeIdCounter<ChronicleEntry> chronicleEntryIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -95,6 +97,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HeirDesignation> heirDesignations,
         OrderedRegistry<RuntimeId<SuccessionDispute>, SuccessionDispute> successionDisputes,
         OrderedRegistry<RuntimeId<Household>, PlayerControlState> playerControls,
+        OrderedRegistry<RuntimeId<ChronicleEntry>, ChronicleEntry> chronicleEntries,
+        OrderedRegistry<GenerationalChapterKey, GenerationalChapter> generationalChapters,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -121,6 +125,7 @@ public sealed class WorldState
         SchemeIds = schemeIds;
         ReturnReportIds = returnReportIds;
         SuccessionDisputeIds = successionDisputeIds;
+        ChronicleEntryIds = chronicleEntryIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -155,6 +160,8 @@ public sealed class WorldState
         HeirDesignations = heirDesignations;
         SuccessionDisputes = successionDisputes;
         PlayerControls = playerControls;
+        ChronicleEntries = chronicleEntries;
+        GenerationalChapters = generationalChapters;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -199,6 +206,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Succession.SuccessionDispute"/> (Phase 11 item 1).</summary>
     public RuntimeIdCounter<SuccessionDispute> SuccessionDisputeIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Chronicle.ChronicleEntry"/> (Phase 11 item 3).</summary>
+    public RuntimeIdCounter<ChronicleEntry> ChronicleEntryIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -402,6 +412,21 @@ public sealed class WorldState
     /// than mutating one in place, matching <see cref="HouseholdHeadships"/>'s identical convention.</summary>
     public OrderedRegistry<RuntimeId<Household>, PlayerControlState> PlayerControls { get; } = new();
 
+    /// <summary>Every <see cref="Chronicle.ChronicleEntry"/> ever recorded, across every household
+    /// (Phase 11 item 3), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — <see
+    /// cref="Queries.ChronicleQuery"/> is what narrows this to one household's own read. Kept once
+    /// recorded rather than removed, matching <see cref="EventInstances"/>' identical "kept for the
+    /// campaign's lifetime" convention; a pin or annotation replaces an entry (remove then re-add
+    /// under the same <see cref="Chronicle.ChronicleEntry.EntryId"/>) rather than mutating one in
+    /// place.</summary>
+    public OrderedRegistry<RuntimeId<ChronicleEntry>, ChronicleEntry> ChronicleEntries { get; } = new();
+
+    /// <summary>Every generational chapter, past and present, across every household (Phase 11 item
+    /// 3; §4), in ascending <see cref="GenerationalChapterKey"/> (household, then start month) order
+    /// (ADR 0004). Kept once closed rather than removed, matching <see cref="ChronicleEntries"/>'
+    /// identical convention.</summary>
+    public OrderedRegistry<GenerationalChapterKey, GenerationalChapter> GenerationalChapters { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -442,6 +467,7 @@ public sealed class WorldState
         ["schemeIds"] = SchemeIds.Peek,
         ["returnReportIds"] = ReturnReportIds.Peek,
         ["successionDisputeIds"] = SuccessionDisputeIds.Peek,
+        ["chronicleEntryIds"] = ChronicleEntryIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -476,6 +502,8 @@ public sealed class WorldState
         ["heirDesignations"] = HeirDesignations.Version,
         ["successionDisputes"] = SuccessionDisputes.Version,
         ["playerControls"] = PlayerControls.Version,
+        ["chronicleEntries"] = ChronicleEntries.Version,
+        ["generationalChapters"] = GenerationalChapters.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

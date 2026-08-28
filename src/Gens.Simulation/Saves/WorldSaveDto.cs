@@ -242,6 +242,19 @@ public sealed record WorldSaveDocument
     /// cref="SuccessionDisputes"/> above.</summary>
     [JsonPropertyOrder(38)]
     public IReadOnlyList<PlayerControlDto> PlayerControls { get; init; } = Array.Empty<PlayerControlDto>();
+
+    /// <summary>Every <see cref="Chronicle.ChronicleEntry"/> ever recorded (Phase 11 item 3), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="PlayerControls"/> above.</summary>
+    [JsonPropertyOrder(39)]
+    public IReadOnlyList<ChronicleEntryDto> ChronicleEntries { get; init; } = Array.Empty<ChronicleEntryDto>();
+
+    /// <summary>Every <see cref="Chronicle.GenerationalChapter"/>, past and present (Phase 11 item 3),
+    /// already in ascending <see cref="Chronicle.GenerationalChapterKey"/> order. Not <c>required</c>,
+    /// and defaults to empty, for the same additive-only reason as <see cref="ChronicleEntries"/>
+    /// above.</summary>
+    [JsonPropertyOrder(40)]
+    public IReadOnlyList<GenerationalChapterDto> GenerationalChapters { get; init; } = Array.Empty<GenerationalChapterDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -344,6 +357,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(21)]
     public long SuccessionDisputeIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-11-item-3 save has no Chronicle
+    /// entries. Additive-only per ADR 0011's policy, matching <see cref="SuccessionDisputeIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(22)]
+    public long ChronicleEntryIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1738,4 +1757,63 @@ public sealed record PlayerControlDto
 
     [JsonPropertyOrder(2)]
     public required string Mode { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Chronicle.ChronicleEntry"/> (Phase 11 item 3).</summary>
+public sealed record ChronicleEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string EntryId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Category { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Tier { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string Prose { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required IReadOnlyList<string> LinkedCharacterIds { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string SourceSystem { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string Source { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool Pinned { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? PlayerAnnotation { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public string? CrossHouseLinkedEntryId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Chronicle.GenerationalChapter"/> (Phase 11 item 3).</summary>
+public sealed record GenerationalChapterDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HeadCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int StartMonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public int? EndMonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string ChapterSummary { get; init; }
 }

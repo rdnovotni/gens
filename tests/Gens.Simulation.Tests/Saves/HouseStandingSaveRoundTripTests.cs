@@ -28,7 +28,7 @@ public sealed class HouseStandingSaveRoundTripTests
             "A long-standing rivalry over a contested plot.",
             "the Unyielding",
             new GameDate(5),
-            new[] { "chronicle_placeholder_1", "chronicle_placeholder_2" });
+            new[] { state.ChronicleEntryIds.Issue(), state.ChronicleEntryIds.Issue() });
         state.RivalDossiers.Add(actorA, dossier);
 
         var regionalEntry = new RegionalFamiliesEntry(actorB, "Gens Cornelia", LivingWorldActorStandingTrend.Rising, EconomicIdentityTag.Mercantile);
@@ -42,7 +42,15 @@ public sealed class HouseStandingSaveRoundTripTests
             Assert.That(restored.HouseStandings.TryGet(key, out var restoredStanding), Is.True);
             Assert.That(restoredStanding, Is.EqualTo(standing));
             Assert.That(restored.RivalDossiers.TryGet(actorA, out var restoredDossier), Is.True);
-            Assert.That(restoredDossier, Is.EqualTo(dossier));
+            Assert.That(restoredDossier!.ActorId, Is.EqualTo(dossier.ActorId));
+            Assert.That(restoredDossier.Summary, Is.EqualTo(dossier.Summary));
+            Assert.That(restoredDossier.HeadComboTitle, Is.EqualTo(dossier.HeadComboTitle));
+            Assert.That(restoredDossier.LastUpdatedDate, Is.EqualTo(dossier.LastUpdatedDate));
+            // Compared directly (not as a RivalDossier field) so NUnit's collection-aware comparison
+            // applies: RivalDossier's own record-generated Equals compares this IReadOnlyList field by
+            // reference, which two independently-deserialized arrays never satisfy even when equal
+            // element-for-element.
+            Assert.That(restoredDossier.RecentChronicleEntries, Is.EqualTo(dossier.RecentChronicleEntries));
             Assert.That(restored.RegionalFamiliesEntries.TryGet(actorB, out var restoredEntry), Is.True);
             Assert.That(restoredEntry, Is.EqualTo(regionalEntry));
         });

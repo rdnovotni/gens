@@ -1,4 +1,5 @@
 using Gens.Simulation.Campaign;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
@@ -31,7 +32,9 @@ public static class AdvanceCommand
         for (var i = 0; i < months; i++)
         {
             var simulation = new WriteSetVerifyingSimulation(new IMonthlySystem<WorldState>[] { new ScheduledActionSystem() });
-            allEvents.AddRange(simulation.Tick(state, state.Date, streams));
+            var monthEvents = simulation.Tick(state, state.Date, streams);
+            allEvents.AddRange(monthEvents);
+            allEvents.AddRange(ChronicleGenerationSystem.Generate(state, monthEvents));
             state.AdvanceMonth();
         }
 

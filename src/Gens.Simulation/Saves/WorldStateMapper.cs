@@ -2,6 +2,7 @@ using System.Text.Json;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Events;
 using Gens.Simulation.Goods;
@@ -57,6 +58,7 @@ public static class WorldStateMapper
                 SchemeIds = state.SchemeIds.Peek,
                 ReturnReportIds = state.ReturnReportIds.Peek,
                 SuccessionDisputeIds = state.SuccessionDisputeIds.Peek,
+                ChronicleEntryIds = state.ChronicleEntryIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -124,6 +126,10 @@ public static class WorldStateMapper
             SuccessionDisputes = state.SuccessionDisputes.InAscendingOrder().Select(entry => ToSuccessionDisputeDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             PlayerControls = state.PlayerControls.InAscendingOrder().Select(entry => ToPlayerControlDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ChronicleEntries = state.ChronicleEntries.InAscendingOrder().Select(entry => ToChronicleEntryDto(entry.Value)).ToArray(),
+            // Already ascending GenerationalChapterKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            GenerationalChapters = state.GenerationalChapters.InAscendingOrder().Select(entry => ToGenerationalChapterDto(entry.Value)).ToArray(),
         };
     }
 
@@ -346,6 +352,21 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Household>, PlayerControlState>(control.HouseholdId, control);
             }));
 
+        var chronicleEntries = OrderedRegistry<RuntimeId<ChronicleEntry>, ChronicleEntry>.Restore(
+            dto.ChronicleEntries.Select(e =>
+            {
+                var entry = FromChronicleEntryDto(e);
+                return new KeyValuePair<RuntimeId<ChronicleEntry>, ChronicleEntry>(entry.EntryId, entry);
+            }));
+
+        var generationalChapters = OrderedRegistry<GenerationalChapterKey, GenerationalChapter>.Restore(
+            dto.GenerationalChapters.Select(c =>
+            {
+                var chapter = FromGenerationalChapterDto(c);
+                var key = new GenerationalChapterKey(chapter.HouseholdId, chapter.StartMonth.TotalMonths);
+                return new KeyValuePair<GenerationalChapterKey, GenerationalChapter>(key, chapter);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -370,6 +391,7 @@ public static class WorldStateMapper
             schemeIds: RuntimeIdCounter<Scheme>.Restore(dto.Counters.SchemeIds),
             returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
             successionDisputeIds: RuntimeIdCounter<SuccessionDispute>.Restore(dto.Counters.SuccessionDisputeIds),
+            chronicleEntryIds: RuntimeIdCounter<ChronicleEntry>.Restore(dto.Counters.ChronicleEntryIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -404,6 +426,8 @@ public static class WorldStateMapper
             heirDesignations: heirDesignations,
             successionDisputes: successionDisputes,
             playerControls: playerControls,
+            chronicleEntries: chronicleEntries,
+            generationalChapters: generationalChapters,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1316,7 +1340,7 @@ public static class WorldStateMapper
         Summary = dossier.Summary,
         HeadComboTitle = dossier.HeadComboTitle,
         LastUpdatedDateTotalMonths = dossier.LastUpdatedDate.TotalMonths,
-        RecentChronicleEntries = dossier.RecentChronicleEntries,
+        RecentChronicleEntries = dossier.RecentChronicleEntries.Select(id => id.ToTaggedString()).ToArray(),
     };
 
     private static RivalDossier FromRivalDossierDto(RivalDossierDto dto) => new(
@@ -1324,7 +1348,39 @@ public static class WorldStateMapper
         dto.Summary,
         dto.HeadComboTitle,
         new GameDate(dto.LastUpdatedDateTotalMonths),
-        dto.RecentChronicleEntries);
+        ParseChronicleEntryIds(dto.RecentChronicleEntries));
+
+    /// <summary>Skips, rather than throws on, any value that isn't a real <c>chronentry_*</c> reference
+    /// — a pre-Phase-11-item-3 save's <see cref="RivalDossierDto.RecentChronicleEntries"/> could carry
+    /// this field's former arbitrary-placeholder-string stopgap shape, which would otherwise make the
+    /// whole save unloadable. Matches this codebase's pre-v1 "no real campaign saves exist yet"
+    /// additive-only save policy (ADR 0011) — silently dropping a handful of unresolvable dossier
+    /// references is preferable to refusing the load entirely.</summary>
+    private static List<RuntimeId<ChronicleEntry>> ParseChronicleEntryIds(IReadOnlyList<string> raw)
+    {
+        var parsed = new List<RuntimeId<ChronicleEntry>>(raw.Count);
+        foreach (var value in raw)
+        {
+            if (TryParseChronicleEntryId(value, out var entryId))
+                parsed.Add(entryId);
+        }
+
+        return parsed;
+    }
+
+    private static bool TryParseChronicleEntryId(string tagged, out RuntimeId<ChronicleEntry> entryId)
+    {
+        try
+        {
+            entryId = RuntimeId<ChronicleEntry>.Parse(tagged);
+            return true;
+        }
+        catch (FormatException)
+        {
+            entryId = default;
+            return false;
+        }
+    }
 
     private static RegionalFamiliesEntryDto ToRegionalFamiliesEntryDto(RegionalFamiliesEntry entry) => new()
     {
@@ -1505,4 +1561,50 @@ public static class WorldStateMapper
         RuntimeId<Household>.Parse(dto.HouseholdId),
         dto.ControlledCharacterId is null ? null : RuntimeId<Character>.Parse(dto.ControlledCharacterId),
         Enum.Parse<PlayerControlMode>(dto.Mode));
+
+    private static ChronicleEntryDto ToChronicleEntryDto(ChronicleEntry entry) => new()
+    {
+        EntryId = entry.EntryId.ToTaggedString(),
+        HouseholdId = entry.HouseholdId?.ToTaggedString(),
+        MonthTotalMonths = entry.Month.TotalMonths,
+        Category = entry.Category.ToString(),
+        Tier = entry.Tier.ToString(),
+        Prose = entry.Prose,
+        LinkedCharacterIds = entry.LinkedCharacterIds.Select(id => id.ToTaggedString()).ToArray(),
+        SourceSystem = entry.SourceSystem,
+        Source = entry.Source.ToString(),
+        Pinned = entry.Pinned,
+        PlayerAnnotation = entry.PlayerAnnotation,
+        CrossHouseLinkedEntryId = entry.CrossHouseLinkedEntryId?.ToTaggedString(),
+    };
+
+    private static ChronicleEntry FromChronicleEntryDto(ChronicleEntryDto dto) => new(
+        RuntimeId<ChronicleEntry>.Parse(dto.EntryId),
+        dto.HouseholdId is null ? null : RuntimeId<Household>.Parse(dto.HouseholdId),
+        new GameDate(dto.MonthTotalMonths),
+        Enum.Parse<ChronicleCategory>(dto.Category),
+        Enum.Parse<ChronicleTier>(dto.Tier),
+        dto.Prose,
+        dto.LinkedCharacterIds.Select(RuntimeId<Character>.Parse).ToArray(),
+        dto.SourceSystem,
+        Enum.Parse<ChronicleEntrySource>(dto.Source),
+        dto.Pinned,
+        dto.PlayerAnnotation,
+        dto.CrossHouseLinkedEntryId is null ? null : RuntimeId<ChronicleEntry>.Parse(dto.CrossHouseLinkedEntryId));
+
+    private static GenerationalChapterDto ToGenerationalChapterDto(GenerationalChapter chapter) => new()
+    {
+        HouseholdId = chapter.HouseholdId.ToTaggedString(),
+        HeadCharacterId = chapter.HeadCharacterId.ToTaggedString(),
+        StartMonthTotalMonths = chapter.StartMonth.TotalMonths,
+        EndMonthTotalMonths = chapter.EndMonth?.TotalMonths,
+        ChapterSummary = chapter.ChapterSummary,
+    };
+
+    private static GenerationalChapter FromGenerationalChapterDto(GenerationalChapterDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Character>.Parse(dto.HeadCharacterId),
+        new GameDate(dto.StartMonthTotalMonths),
+        dto.EndMonthTotalMonths is { } end ? new GameDate(end) : null,
+        dto.ChapterSummary);
 }
