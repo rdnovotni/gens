@@ -6,7 +6,9 @@ using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Random;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Succession;
@@ -81,13 +83,19 @@ public sealed class SuccessionDynastyExitGateTests
             Assert.That(debt.Principal, Is.EqualTo(Money.FromDenarii(500)));
 
             // History (item 3): the Dynasty Chronicle recorded every headship transition for this
-            // Household — three transfers/resolutions plus (item 4) three held funerals.
+            // Household — specifically, a PoliticsAndOffice entry naming each of the three incoming
+            // heads (the contested winner and both ordinary successors), not just some entry count that
+            // a missing individual projection could still satisfy via the dispute-opened/-resolved pair
+            // alone — plus (item 4) at least one funeral/death entry.
             var entries = outcome.FinalState.ChronicleEntries.InAscendingOrder()
                 .Select(e => e.Value)
                 .Where(e => e.HouseholdId == outcome.HouseholdId)
                 .ToArray();
-            Assert.That(entries.Count(e => e.Category == ChronicleCategory.PoliticsAndOffice), Is.GreaterThanOrEqualTo(3),
-                "Expected a Chronicle entry for each of the three headship transitions.");
+            bool HasPoliticsEntryFor(RuntimeId<Character> characterId) =>
+                entries.Any(e => e.Category == ChronicleCategory.PoliticsAndOffice && e.LinkedCharacterIds.Contains(characterId));
+            Assert.That(HasPoliticsEntryFor(outcome.Gen1HeadId), Is.True, "Expected a Chronicle entry naming the contested succession's winner.");
+            Assert.That(HasPoliticsEntryFor(outcome.Gen2HeadId), Is.True, "Expected a Chronicle entry naming the Gen1→Gen2 ordinary successor.");
+            Assert.That(HasPoliticsEntryFor(outcome.Gen3HeadId), Is.True, "Expected a Chronicle entry naming the Gen2→Gen3 ordinary successor.");
             Assert.That(entries.Any(e => e.Category == ChronicleCategory.BirthsAndDeaths), Is.True,
                 "Expected at least one funeral/death Chronicle entry across three generations of head deaths.");
 
@@ -109,14 +117,31 @@ public sealed class SuccessionDynastyExitGateTests
             Assert.That(outcome.FinalState.PlayerControls.TryGet(outcome.HouseholdId, out var control), Is.True);
             Assert.That(control!.ControlledCharacterId, Is.EqualTo(outcome.Gen3HeadId));
 
-            // Relationship referential integrity survives three generations of deaths and handoffs.
+            // Relationship referential integrity survives three generations of deaths and handoffs —
+            // exercised against a real, non-vacuous Relationship record (the sibling tie recorded
+            // between Gen0's two sons at setup), not just an empty registry that trivially has no
+            // violations.
             var violations = new RelationshipReferentialIntegrityCheck().Check(outcome.FinalState).ToArray();
             Assert.That(violations, Is.Empty);
+            Assert.That(outcome.FinalState.Relationships.TryGet(outcome.SiblingRelationshipKey, out var siblingTie), Is.True,
+                "The sibling relationship recorded at setup must survive three generations of handoffs and reloads.");
+            Assert.That(siblingTie.Opinion, Is.EqualTo(15));
+            Assert.That(siblingTie.Bonds, Is.EqualTo(BondTag.Sibling));
 
-            // Saves (item 6's own exit-gate clause): the mid-run and final state hashes both survived
-            // a save/load round trip untouched.
+            // Property (the roadmap's own word, alongside ledgers/relationships/history/saves): a
+            // Holding owned by this Household must still exist, under the same owner, after three
+            // handoffs and both reloads — CampaignBootstrapper itself creates no Holding, so this
+            // scenario seeds one specifically to exercise that claim.
+            Assert.That(outcome.FinalState.Holdings.TryGet(outcome.HoldingId, out var holding), Is.True);
+            Assert.That(holding!.OwnerId, Is.EqualTo(outcome.HouseholdId.ToTaggedString()));
+
+            // Saves (item 6's own exit-gate clause): the mid-run and final state hashes, and the
+            // random-stream states those succession/dispute draws actually consumed, both survived a
+            // save/load round trip untouched — not just the WorldState half of it.
             Assert.That(outcome.MidRunReloadedHash, Is.EqualTo(outcome.MidRunHashBeforeSave));
+            Assert.That(outcome.MidRunStreamsReloaded, Is.EqualTo(outcome.MidRunStreamsBeforeSave));
             Assert.That(outcome.FinalReloadedHash, Is.EqualTo(StateHasher.Hash(outcome.FinalState)));
+            Assert.That(outcome.FinalStreamsReloaded, Is.EqualTo(outcome.FinalStreamsBeforeSave));
         });
     }
 
@@ -124,8 +149,11 @@ public sealed class SuccessionDynastyExitGateTests
         WorldState FinalState,
         RuntimeId<Household> HouseholdId,
         RuntimeId<Character> Gen1HeadId,
+        RuntimeId<Character> Gen2HeadId,
         RuntimeId<Character> Gen3HeadId,
         RuntimeId<DebtRecord> DebtId,
+        RuntimeId<Holding> HoldingId,
+        RelationshipKey SiblingRelationshipKey,
         bool DisputeOpened,
         bool DisputeResolvedToAWinner,
         int OrdinaryHandoffCount,
@@ -133,7 +161,11 @@ public sealed class SuccessionDynastyExitGateTests
         int HeldFuneralCount,
         ulong MidRunHashBeforeSave,
         ulong MidRunReloadedHash,
-        ulong FinalReloadedHash);
+        IReadOnlyDictionary<string, Pcg32State> MidRunStreamsBeforeSave,
+        IReadOnlyDictionary<string, Pcg32State> MidRunStreamsReloaded,
+        ulong FinalReloadedHash,
+        IReadOnlyDictionary<string, Pcg32State> FinalStreamsBeforeSave,
+        IReadOnlyDictionary<string, Pcg32State> FinalStreamsReloaded);
 
     private static ScenarioOutcome RunScenario(ulong seed)
     {
@@ -157,7 +189,26 @@ public sealed class SuccessionDynastyExitGateTests
         MakeChild(state, "Sextus", sonAId, birthMonth: -20, household: householdId);
         MakeChild(state, "Titus", sonBId, birthMonth: -20, household: householdId);
 
+        // A real, non-vacuous Relationship record (neither succession, funerary, nor Chronicle system
+        // touches state.Relationships, so this must survive the whole run and both reloads untouched)
+        // to exercise RelationshipReferentialIntegrityCheck against something other than an empty
+        // registry.
+        var siblingKey = new RelationshipKey(sonAId, sonBId);
+        var recordSiblingBond = RecordInteractionCommands.Pipeline.Execute(
+            state, new RecordInteractionCommand(
+                state.CommandIds.Issue(), sonAId.ToTaggedString(), state.Date, null, sonAId, sonBId, 15,
+                BondTag.Sibling, BondTag.None, RelationshipOrigin.Family));
+        Assert.That(recordSiblingBond.Accepted, Is.True);
+
         state.HouseholdHeadships.Add(householdId, new HouseholdHeadship(householdId, gen0HeadId, state.Date));
+
+        // A Holding owned by this Household — CampaignBootstrapper creates none itself — so the
+        // roadmap's "property... remain[s] consistent" clause has something concrete to check across
+        // three handoffs and both reloads.
+        var holdingId = state.HoldingIds.Issue();
+        state.Holdings.Add(holdingId, Holding.Create(
+            holdingId, campaign.SettlementId, ownerId: householdId.ToTaggedString(), occupantId: householdId.ToTaggedString(),
+            residentCapacity: 8));
 
         var establishControl = PlayerControlCommands.EstablishPipeline.Execute(
             state, new EstablishPlayerControlCommand(state.CommandIds.Issue(), gen0HeadId.ToTaggedString(), state.Date, null, householdId));
@@ -188,6 +239,8 @@ public sealed class SuccessionDynastyExitGateTests
 
         var midRunHashBeforeSave = 0UL;
         var midRunReloadedHash = 0UL;
+        IReadOnlyDictionary<string, Pcg32State> midRunStreamsBeforeSave = new Dictionary<string, Pcg32State>();
+        IReadOnlyDictionary<string, Pcg32State> midRunStreamsReloaded = new Dictionary<string, Pcg32State>();
 
         const int totalMonths = 900;
         var gen1Killed = false;
@@ -251,12 +304,22 @@ public sealed class SuccessionDynastyExitGateTests
             if (month == 450)
             {
                 midRunHashBeforeSave = StateHasher.Hash(state);
+                midRunStreamsBeforeSave = streams.CaptureStates();
                 var path = Path.Combine(Path.GetTempPath(), $"gens-phase11-soak-{Guid.NewGuid():N}.gens");
                 try
                 {
                     SaveWriter.Write(path, state, streams, "0.0.0-test", config.ContentPackHash);
                     var loaded = SaveReader.Read(path);
                     midRunReloadedHash = StateHasher.Hash(loaded.State);
+                    midRunStreamsReloaded = loaded.RandomStreams.CaptureStates();
+
+                    // Continue the soak from the reloaded state and streams themselves, not just the
+                    // originals — the way FamiliaHouseholdSoakTests' own save/load round trip does —
+                    // so the run's remaining two successions actually exercise the reloaded RNG rather
+                    // than merely comparing it and discarding it.
+                    state = loaded.State;
+                    streams = loaded.RandomStreams;
+                    simulation = NewSimulation();
                 }
                 finally
                 {
@@ -276,17 +339,22 @@ public sealed class SuccessionDynastyExitGateTests
             // is no point running the remaining months just to discard the result.
             if (month == 1 && !disputeOpened)
                 return new ScenarioOutcome(
-                    state, householdId, gen1HeadId, gen3HeadId, debt.Id, disputeOpened, disputeResolvedToAWinner,
-                    ordinaryHandoffCount, householdExtinguished, heldFuneralCount, midRunHashBeforeSave, midRunReloadedHash,
-                    FinalReloadedHash: 0);
+                    state, householdId, gen1HeadId, gen2HeadId, gen3HeadId, debt.Id, holdingId, siblingKey,
+                    disputeOpened, disputeResolvedToAWinner, ordinaryHandoffCount, householdExtinguished, heldFuneralCount,
+                    midRunHashBeforeSave, midRunReloadedHash, midRunStreamsBeforeSave, midRunStreamsReloaded,
+                    FinalReloadedHash: 0, FinalStreamsBeforeSave: midRunStreamsBeforeSave, FinalStreamsReloaded: midRunStreamsReloaded);
         }
 
+        var finalStreamsBeforeSave = streams.CaptureStates();
         var finalReloadPath = Path.Combine(Path.GetTempPath(), $"gens-phase11-soak-final-{Guid.NewGuid():N}.gens");
         ulong finalReloadedHash;
+        IReadOnlyDictionary<string, Pcg32State> finalStreamsReloaded;
         try
         {
             SaveWriter.Write(finalReloadPath, state, streams, "0.0.0-test", config.ContentPackHash);
-            finalReloadedHash = StateHasher.Hash(SaveReader.Read(finalReloadPath).State);
+            var loadedFinal = SaveReader.Read(finalReloadPath);
+            finalReloadedHash = StateHasher.Hash(loadedFinal.State);
+            finalStreamsReloaded = loadedFinal.RandomStreams.CaptureStates();
         }
         finally
         {
@@ -294,9 +362,10 @@ public sealed class SuccessionDynastyExitGateTests
         }
 
         return new ScenarioOutcome(
-            state, householdId, gen1HeadId, gen3HeadId, debt.Id, disputeOpened, disputeResolvedToAWinner,
-            ordinaryHandoffCount, householdExtinguished, heldFuneralCount, midRunHashBeforeSave, midRunReloadedHash,
-            finalReloadedHash);
+            state, householdId, gen1HeadId, gen2HeadId, gen3HeadId, debt.Id, holdingId, siblingKey,
+            disputeOpened, disputeResolvedToAWinner, ordinaryHandoffCount, householdExtinguished, heldFuneralCount,
+            midRunHashBeforeSave, midRunReloadedHash, midRunStreamsBeforeSave, midRunStreamsReloaded,
+            finalReloadedHash, finalStreamsBeforeSave, finalStreamsReloaded);
     }
 
     /// <summary>Adds a new adult, legitimate child of <paramref name="fatherId"/> and returns its ID.</summary>
