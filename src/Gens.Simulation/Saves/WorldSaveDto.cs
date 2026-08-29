@@ -329,6 +329,24 @@ public sealed record WorldSaveDocument
     /// and defaults to empty, matching <see cref="CharacterFactionAlignments"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(52)]
     public IReadOnlyList<MagistracyRecordDto> MagistracyRecords { get; init; } = Array.Empty<MagistracyRecordDto>();
+
+    /// <summary>Each household's <see cref="Gens.Simulation.Religion.HouseholdReligion"/> (Phase 12
+    /// item 3), already keyed by household. Not <c>required</c>, and defaults to empty, matching <see
+    /// cref="MagistracyRecords"/>'s identical additive-only ADR 0011 reasoning.</summary>
+    [JsonPropertyOrder(53)]
+    public IReadOnlyList<HouseholdReligionDto> HouseholdReligions { get; init; } = Array.Empty<HouseholdReligionDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Religion.OmenEvent"/> ever raised (Phase 12 item 3),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="HouseholdReligions"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(54)]
+    public IReadOnlyList<OmenEventDto> OmenEvents { get; init; } = Array.Empty<OmenEventDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Religion.PriesthoodRecord"/> ever created (Phase 12
+    /// item 3), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, matching <see cref="OmenEvents"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(55)]
+    public IReadOnlyList<PriesthoodRecordDto> PriesthoodRecords { get; init; } = Array.Empty<PriesthoodRecordDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -467,6 +485,18 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(27)]
     public long MagistracyRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-3 save has no Omen Events.
+    /// Additive-only per ADR 0011's policy, matching <see cref="MagistracyRecordIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(28)]
+    public long OmenEventIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-3 save has no Priesthood
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="OmenEventIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(29)]
+    public long PriesthoodRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2170,4 +2200,71 @@ public sealed record MagistracyRecordDto
 
     [JsonPropertyOrder(7)]
     public string? CoHolderId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Religion.HouseholdReligion"/> (Phase 12 item 3), keyed by
+/// household.</summary>
+public sealed record HouseholdReligionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string PatronDeity { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int Favor { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string ConsecratedUnderHeadCharacterId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Religion.OmenEvent"/> (Phase 12 item 3).</summary>
+public sealed record OmenEventDto
+{
+    [JsonPropertyOrder(0)]
+    public required string OmenId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int RaisedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string ThemedDeity { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int Severity { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? PlayerChoice { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string Outcome { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Religion.PriesthoodRecord"/> (Phase 12 item 3).</summary>
+public sealed record PriesthoodRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string RecordId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HolderId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Office { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int AppointedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? FlamenDeity { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public int? EndDateTotalMonths { get; init; }
 }

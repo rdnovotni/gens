@@ -15,6 +15,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -73,6 +74,8 @@ public sealed class WorldState
         RuntimeIdCounter<InheritedCognomenDecision> inheritedCognomenDecisionIds,
         RuntimeIdCounter<FavorObligation> favorObligationIds,
         RuntimeIdCounter<MagistracyRecord> magistracyRecordIds,
+        RuntimeIdCounter<OmenEvent> omenEventIds,
+        RuntimeIdCounter<PriesthoodRecord> priesthoodRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -121,6 +124,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HouseholdInfluence> householdInfluences,
         OrderedRegistry<RuntimeId<Character>, CharacterFactionAlignment> characterFactionAlignments,
         OrderedRegistry<RuntimeId<MagistracyRecord>, MagistracyRecord> magistracyRecords,
+        OrderedRegistry<RuntimeId<Household>, HouseholdReligion> householdReligions,
+        OrderedRegistry<RuntimeId<OmenEvent>, OmenEvent> omenEvents,
+        OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> priesthoodRecords,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -153,6 +159,8 @@ public sealed class WorldState
         InheritedCognomenDecisionIds = inheritedCognomenDecisionIds;
         FavorObligationIds = favorObligationIds;
         MagistracyRecordIds = magistracyRecordIds;
+        OmenEventIds = omenEventIds;
+        PriesthoodRecordIds = priesthoodRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -201,6 +209,9 @@ public sealed class WorldState
         HouseholdInfluences = householdInfluences;
         CharacterFactionAlignments = characterFactionAlignments;
         MagistracyRecords = magistracyRecords;
+        HouseholdReligions = householdReligions;
+        OmenEvents = omenEvents;
+        PriesthoodRecords = priesthoodRecords;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -263,6 +274,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Magistracies.MagistracyRecord"/> (Phase 12 item 2).</summary>
     public RuntimeIdCounter<MagistracyRecord> MagistracyRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Religion.OmenEvent"/> (Phase 12 item 3).</summary>
+    public RuntimeIdCounter<OmenEvent> OmenEventIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Religion.PriesthoodRecord"/> (Phase 12 item 3).</summary>
+    public RuntimeIdCounter<PriesthoodRecord> PriesthoodRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -552,6 +569,23 @@ public sealed class WorldState
     /// not, kept for the campaign's lifetime" convention.</summary>
     public OrderedRegistry<RuntimeId<MagistracyRecord>, MagistracyRecord> MagistracyRecords { get; } = new();
 
+    /// <summary>Each household's chosen Patron Deity and running Favor total (Phase 12 item 3; <see
+    /// cref="Religion.HouseholdReligion"/>), keyed by household. Sparse: a household that has never
+    /// issued <see cref="Religion.SetPatronDeityCommand"/> has no entry, matching <see
+    /// cref="HouseholdReputations"/>'s identical "no entry means the default" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdReligion> HouseholdReligions { get; } = new();
+
+    /// <summary>Every <see cref="Religion.OmenEvent"/> ever raised, resolved or not (Phase 12 item 3),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once resolved rather than removed,
+    /// matching <see cref="FavorObligations"/>'s identical "resolved or not, kept for the campaign's
+    /// lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<OmenEvent>, OmenEvent> OmenEvents { get; } = new();
+
+    /// <summary>Every <see cref="Religion.PriesthoodRecord"/> ever created, active or ended (Phase 12
+    /// item 3), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once created,
+    /// matching <see cref="MagistracyRecords"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> PriesthoodRecords { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -598,6 +632,8 @@ public sealed class WorldState
         ["inheritedCognomenDecisionIds"] = InheritedCognomenDecisionIds.Peek,
         ["favorObligationIds"] = FavorObligationIds.Peek,
         ["magistracyRecordIds"] = MagistracyRecordIds.Peek,
+        ["omenEventIds"] = OmenEventIds.Peek,
+        ["priesthoodRecordIds"] = PriesthoodRecordIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -646,6 +682,9 @@ public sealed class WorldState
         ["householdInfluences"] = HouseholdInfluences.Version,
         ["characterFactionAlignments"] = CharacterFactionAlignments.Version,
         ["magistracyRecords"] = MagistracyRecords.Version,
+        ["householdReligions"] = HouseholdReligions.Version,
+        ["omenEvents"] = OmenEvents.Version,
+        ["priesthoodRecords"] = PriesthoodRecords.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
