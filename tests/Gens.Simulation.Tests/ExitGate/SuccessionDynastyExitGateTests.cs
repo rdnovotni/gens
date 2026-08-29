@@ -125,7 +125,7 @@ public sealed class SuccessionDynastyExitGateTests
         RuntimeId<Household> HouseholdId,
         RuntimeId<Character> Gen1HeadId,
         RuntimeId<Character> Gen3HeadId,
-        RuntimeId<Economy.DebtRecord> DebtId,
+        RuntimeId<DebtRecord> DebtId,
         bool DisputeOpened,
         bool DisputeResolvedToAWinner,
         int OrdinaryHandoffCount,
