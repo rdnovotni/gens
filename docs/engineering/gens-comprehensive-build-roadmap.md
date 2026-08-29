@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life ← **next up**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (item 1 of 9 done — see "Item 1 progress" below) ← **next up: item 2**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,9 +530,54 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — ⬜ NOT STARTED
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 1 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
+
+**Item 1 progress:** the shared Dignitas/reputation/favor-obligation primitive is implemented
+(`src/Gens.Simulation/Reputation/`) — `HouseholdReputation` (a household-level Dignitas total) and
+`FavorObligation` (a generic, kind-agnostic favor/obligation ledger between two Characters) are new
+`WorldState` partitions, following `MemoriaState`'s sparse-per-household and `FuneralRecord`'s
+kept-entity conventions respectively. `HouseholdReputation` is the field a long chain of earlier phases'
+own doc comments named as missing outright — `DeclareHeirCommand` (Phase 11 item 1), `Agnomen`'s
+`DignitasEffect` and `FuneraryCatalog`'s Grand-tier trade (Phase 11 items 4-5), and `InkBarQuery`'s
+reserved ink-bar slot (Phase 9 item 6) all say some version of "no personal or household Dignitas stat
+exists yet, only `LivingWorldActor.Dignitas` for rival houses" — because the player's own `Household` is
+never itself a `LivingWorldActor` and so never had anywhere to keep one. `AdjustDignitasCommand` is the
+one command path (rule 2) every future Dignitas-moving trigger — a Politics & Patronage Salutatio, a won
+magistracy, a Legal & Court verdict, a Scandal, a defaulted debt (`gens-politics-patronage-design.md`
+§2) — is meant to route through, exercised directly by this item's own tests standing in for those
+future callers. `GrantFavorCommand`/`SettleFavorCommand`/`FavorExpirationSystem` give item 2's own
+Clientela system (§4.2's "a favor drawn on too often without reciprocation costs the relationship-web
+opinion... Clientela is reciprocal, not a free resource tap") the generic ledger shape to build on,
+without this item building Clientela itself or deciding how a specific favor should move
+`Relationship.Opinion` — that policy judgment is left to whichever system actually knows what kind of
+favor it was. Audience-specific visibility is real rather than a separate invented model: a
+`DignitasChangedEvent` is always `Visibility.Public` (per `gens-celebrities-influential-figures-design.md`
+§4, Dignitas is "legible to Curiales, Rival Houses, and the political class" by definition, not a fact
+that has to propagate through contact first), while `FavorGrantedEvent`/`FavorSettledEvent`/
+`FavorExpiredEvent` are all `Visibility.Private` to the two Characters involved — the same `Visibility`
+mechanism every other system in this codebase already reads knowledge through (ADR 0008), not a parallel
+audience model built just for this item. `InkBarQuery`'s Dignitas field now reads
+`DignitasResolver.Current` instead of a hardcoded 0 — a safe, non-mutating read wired in immediately;
+`Agnomen.DignitasEffect` and the Funerary Grand-tier trade are deliberately **not** retrofitted, since
+both are already-shipped, already-tested Phase 11 items built and asserted against a null/absent value,
+and reopening them is out of this item's scope. Two further, explicitly named cuts: Fame is not built at
+all — per `gens-games-spectacle-design.md` §2 and the Celebrities document's own §1, Fame is a universal
+0-100 Character field owned by Games & Spectacle (Phase 17) and widened by Celebrities & Influential
+Figures, neither built — so this item does not invent a stand-in field, matching `Agnomen`'s own
+precedent for `FameEffect` staying permanently `null` until that system actually exists; and the
+richer, audience-differentiated "how famous is this Character to the crowd versus the political class"
+question the task description gestures at has no real answer to give yet for exactly that reason — there
+is no Fame field for a wider-public audience to read, only Dignitas, which the political-class audience
+already reads directly and unconditionally, so building a bespoke "perceived Dignitas per audience"
+query on top would be inventing complexity the design docs never ask for. Covered in
+`tests/Gens.Simulation.Tests/Reputation/ReputationTests.cs`, including Dignitas accumulation/negative
+totals, all three favor-lifecycle commands and their validation, `FavorExpirationSystem`'s age-gated
+lapse, the `InkBarQuery` wiring, a save/load round trip, and the deterministic state hash staying stable.
+Items 2-9 (Clientela/offices, Religion, Legal, Crime & Punishment, Interest Groups/Collegia, Scandal,
+Fame/Celebrity, and full Edicts) remain — this item alone does not close Phase 12's own exit gate, which
+needs those systems' own legal/religious/factional consequences to actually exist.
 
 Recommended internal order:
 
@@ -692,7 +737,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above). **The next unimplemented work is Phase 12** — institutions, reputation, law, religion, and public life.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 item 1 (Dignitas/reputation/favor-obligation primitive) is now done too. **The next unimplemented work is Phase 12 item 2** — patronage/clientela and office/appointment foundations.
 
 ## Vertical-slice acceptance test
 
@@ -743,5 +788,5 @@ An issue is not ready for implementation until its dependencies, authoritative f
 
 ~~The milestone after that should be **Dynasty Continuity and Historical Memory**, encompassing Phase 11.~~ — ✅ **complete.** Heirs/succession/disputed inheritance, the player-control handoff and Regency, the Dynasty Chronicle, funerals/mourning/Memoria, and rules-and-provenance epithets are all in place, proven together by a three-succession (one contested) exit-gate soak.
 
-**The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation.
+**The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation. Item 1 (the shared Dignitas/reputation/favor-obligation primitive) is complete; items 2–9 remain.
 

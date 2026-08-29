@@ -7,6 +7,7 @@ using Gens.Simulation.Funerary;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 
@@ -175,6 +176,11 @@ internal static class RuntimeIdTagRegistry
         // Phase 11 item 5 — Gens.Simulation.Epithets.InheritedCognomenDecision, same convention.
         // DynasticEpithet needs no entry: it's keyed by RuntimeId<Household>, not RuntimeId<DynasticEpithet>.
         [typeof(InheritedCognomenDecision)] = "inheritedcognomen",
+        // Phase 12 item 1 — Gens.Simulation.Reputation.FavorObligation, same "real record as its own
+        // tag" convention as InheritedCognomenDecision/Agnomen/FuneralRecord above. HouseholdReputation
+        // needs no entry: it's keyed by RuntimeId<Household>, not RuntimeId<HouseholdReputation>,
+        // matching DynasticEpithet's identical exemption above.
+        [typeof(FavorObligation)] = "favor",
     };
 
     public static string Resolve(Type type) =>

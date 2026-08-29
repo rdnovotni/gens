@@ -13,6 +13,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
@@ -68,6 +69,7 @@ public sealed class WorldState
         RuntimeIdCounter<FuneralRecord> funeralRecordIds,
         RuntimeIdCounter<Agnomen> agnomenIds,
         RuntimeIdCounter<InheritedCognomenDecision> inheritedCognomenDecisionIds,
+        RuntimeIdCounter<FavorObligation> favorObligationIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -110,6 +112,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Agnomen>, Agnomen> agnomens,
         OrderedRegistry<RuntimeId<InheritedCognomenDecision>, InheritedCognomenDecision> inheritedCognomenDecisions,
         OrderedRegistry<RuntimeId<Household>, DynasticEpithet> dynasticEpithets,
+        OrderedRegistry<RuntimeId<Household>, HouseholdReputation> householdReputations,
+        OrderedRegistry<RuntimeId<FavorObligation>, FavorObligation> favorObligations,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -140,6 +144,7 @@ public sealed class WorldState
         FuneralRecordIds = funeralRecordIds;
         AgnomenIds = agnomenIds;
         InheritedCognomenDecisionIds = inheritedCognomenDecisionIds;
+        FavorObligationIds = favorObligationIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -182,6 +187,8 @@ public sealed class WorldState
         Agnomens = agnomens;
         InheritedCognomenDecisions = inheritedCognomenDecisions;
         DynasticEpithets = dynasticEpithets;
+        HouseholdReputations = householdReputations;
+        FavorObligations = favorObligations;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -238,6 +245,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Epithets.InheritedCognomenDecision"/> (Phase 11 item 5).</summary>
     public RuntimeIdCounter<InheritedCognomenDecision> InheritedCognomenDecisionIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Reputation.FavorObligation"/> (Phase 12 item 1).</summary>
+    public RuntimeIdCounter<FavorObligation> FavorObligationIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -492,6 +502,18 @@ public sealed class WorldState
     /// matching <see cref="HouseholdPolicies"/>' identical "no entry means the default" convention.</summary>
     public OrderedRegistry<RuntimeId<Household>, DynasticEpithet> DynasticEpithets { get; } = new();
 
+    /// <summary>Each household's running <see cref="Reputation.HouseholdReputation"/> Dignitas total
+    /// (Phase 12 item 1; <c>gens-politics-patronage-design.md</c> §2), keyed by household. Sparse: a
+    /// household this item never touches has no entry, matching <see cref="MemoriaStates"/>'s identical
+    /// "no entry means the default" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdReputation> HouseholdReputations { get; } = new();
+
+    /// <summary>Every <see cref="Reputation.FavorObligation"/> ever granted, resolved or not (Phase 12
+    /// item 1), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once resolved rather than
+    /// removed, matching <see cref="SuccessionDisputes"/>'s identical "resolved or not, kept for the
+    /// campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<FavorObligation>, FavorObligation> FavorObligations { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -536,6 +558,7 @@ public sealed class WorldState
         ["funeralRecordIds"] = FuneralRecordIds.Peek,
         ["agnomenIds"] = AgnomenIds.Peek,
         ["inheritedCognomenDecisionIds"] = InheritedCognomenDecisionIds.Peek,
+        ["favorObligationIds"] = FavorObligationIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -578,6 +601,8 @@ public sealed class WorldState
         ["agnomens"] = Agnomens.Version,
         ["inheritedCognomenDecisions"] = InheritedCognomenDecisions.Version,
         ["dynasticEpithets"] = DynasticEpithets.Version,
+        ["householdReputations"] = HouseholdReputations.Version,
+        ["favorObligations"] = FavorObligations.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
