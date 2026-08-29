@@ -3,6 +3,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
+using Gens.Simulation.Clientela;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
@@ -12,6 +13,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.Reputation;
@@ -66,6 +68,7 @@ public static class WorldStateMapper
                 AgnomenIds = state.AgnomenIds.Peek,
                 InheritedCognomenDecisionIds = state.InheritedCognomenDecisionIds.Peek,
                 FavorObligationIds = state.FavorObligationIds.Peek,
+                MagistracyRecordIds = state.MagistracyRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -153,6 +156,15 @@ public static class WorldStateMapper
             HouseholdReputations = state.HouseholdReputations.InAscendingOrder().Select(entry => ToHouseholdReputationDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             FavorObligations = state.FavorObligations.InAscendingOrder().Select(entry => ToFavorObligationDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ClientelaEntries = state.ClientelaEntries.InAscendingOrder().Select(entry => ToClientelaEntryDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            HouseholdInfluences = state.HouseholdInfluences.InAscendingOrder().Select(entry => ToHouseholdInfluenceDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            CharacterFactionAlignments = state.CharacterFactionAlignments.InAscendingOrder()
+                .Select(entry => ToCharacterFactionAlignmentDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            MagistracyRecords = state.MagistracyRecords.InAscendingOrder().Select(entry => ToMagistracyRecordDto(entry.Value)).ToArray(),
         };
     }
 
@@ -446,6 +458,34 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<FavorObligation>, FavorObligation>(favor.FavorId, favor);
             }));
 
+        var clientelaEntries = OrderedRegistry<RuntimeId<Character>, ClientelaEntry>.Restore(
+            dto.ClientelaEntries.Select(c =>
+            {
+                var entry = FromClientelaEntryDto(c);
+                return new KeyValuePair<RuntimeId<Character>, ClientelaEntry>(entry.ClientId, entry);
+            }));
+
+        var householdInfluences = OrderedRegistry<RuntimeId<Household>, HouseholdInfluence>.Restore(
+            dto.HouseholdInfluences.Select(i =>
+            {
+                var influence = FromHouseholdInfluenceDto(i);
+                return new KeyValuePair<RuntimeId<Household>, HouseholdInfluence>(influence.HouseholdId, influence);
+            }));
+
+        var characterFactionAlignments = OrderedRegistry<RuntimeId<Character>, CharacterFactionAlignment>.Restore(
+            dto.CharacterFactionAlignments.Select(f =>
+            {
+                var alignment = FromCharacterFactionAlignmentDto(f);
+                return new KeyValuePair<RuntimeId<Character>, CharacterFactionAlignment>(alignment.CharacterId, alignment);
+            }));
+
+        var magistracyRecords = OrderedRegistry<RuntimeId<MagistracyRecord>, MagistracyRecord>.Restore(
+            dto.MagistracyRecords.Select(m =>
+            {
+                var record = FromMagistracyRecordDto(m);
+                return new KeyValuePair<RuntimeId<MagistracyRecord>, MagistracyRecord>(record.RecordId, record);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -475,6 +515,7 @@ public static class WorldStateMapper
             agnomenIds: RuntimeIdCounter<Agnomen>.Restore(dto.Counters.AgnomenIds),
             inheritedCognomenDecisionIds: RuntimeIdCounter<InheritedCognomenDecision>.Restore(dto.Counters.InheritedCognomenDecisionIds),
             favorObligationIds: RuntimeIdCounter<FavorObligation>.Restore(dto.Counters.FavorObligationIds),
+            magistracyRecordIds: RuntimeIdCounter<MagistracyRecord>.Restore(dto.Counters.MagistracyRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -519,6 +560,10 @@ public static class WorldStateMapper
             dynasticEpithets: dynasticEpithets,
             householdReputations: householdReputations,
             favorObligations: favorObligations,
+            clientelaEntries: clientelaEntries,
+            householdInfluences: householdInfluences,
+            characterFactionAlignments: characterFactionAlignments,
+            magistracyRecords: magistracyRecords,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1842,4 +1887,62 @@ public static class WorldStateMapper
         new GameDate(dto.GrantedDateTotalMonths),
         Enum.Parse<FavorStatus>(dto.Status),
         dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null);
+
+    private static ClientelaEntryDto ToClientelaEntryDto(ClientelaEntry entry) => new()
+    {
+        ClientId = entry.ClientId.ToTaggedString(),
+        PatronHouseholdId = entry.PatronHouseholdId.ToTaggedString(),
+        Specialty = entry.Specialty.ToString(),
+        RecruitedDateTotalMonths = entry.RecruitedDate.TotalMonths,
+        LastFavorCalledDateTotalMonths = entry.LastFavorCalledDate?.TotalMonths,
+    };
+
+    private static ClientelaEntry FromClientelaEntryDto(ClientelaEntryDto dto) => new(
+        RuntimeId<Character>.Parse(dto.ClientId),
+        RuntimeId<Household>.Parse(dto.PatronHouseholdId),
+        Enum.Parse<ClientSpecialty>(dto.Specialty),
+        new GameDate(dto.RecruitedDateTotalMonths),
+        dto.LastFavorCalledDateTotalMonths is { } lastFavor ? new GameDate(lastFavor) : null);
+
+    private static HouseholdInfluenceDto ToHouseholdInfluenceDto(HouseholdInfluence influence) => new()
+    {
+        HouseholdId = influence.HouseholdId.ToTaggedString(),
+        Influence = influence.Influence,
+    };
+
+    private static HouseholdInfluence FromHouseholdInfluenceDto(HouseholdInfluenceDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.Influence);
+
+    private static CharacterFactionAlignmentDto ToCharacterFactionAlignmentDto(CharacterFactionAlignment alignment) => new()
+    {
+        CharacterId = alignment.CharacterId.ToTaggedString(),
+        Faction = alignment.Faction.ToString(),
+    };
+
+    private static CharacterFactionAlignment FromCharacterFactionAlignmentDto(CharacterFactionAlignmentDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        Enum.Parse<PoliticalFaction>(dto.Faction));
+
+    private static MagistracyRecordDto ToMagistracyRecordDto(MagistracyRecord record) => new()
+    {
+        RecordId = record.RecordId.ToTaggedString(),
+        HolderId = record.HolderId.ToTaggedString(),
+        Office = record.Office.ToString(),
+        SettlementId = record.SettlementId.ToTaggedString(),
+        TermStartDateTotalMonths = record.TermStartDate.TotalMonths,
+        TermEndDateTotalMonths = record.TermEndDate?.TotalMonths,
+        LossReason = record.LossReason?.ToString(),
+        CoHolderId = record.CoHolderId?.ToTaggedString(),
+    };
+
+    private static MagistracyRecord FromMagistracyRecordDto(MagistracyRecordDto dto) => new(
+        RuntimeId<MagistracyRecord>.Parse(dto.RecordId),
+        RuntimeId<Character>.Parse(dto.HolderId),
+        Enum.Parse<MagistracyOffice>(dto.Office),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        new GameDate(dto.TermStartDateTotalMonths),
+        dto.TermEndDateTotalMonths is { } end ? new GameDate(end) : null,
+        dto.LossReason is { } loss ? Enum.Parse<MagistracyLossReason>(loss) : null,
+        dto.CoHolderId is { } coHolder ? RuntimeId<Character>.Parse(coHolder) : null);
 }

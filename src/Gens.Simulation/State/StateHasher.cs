@@ -3,11 +3,13 @@ using System.Text.Json;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Clientela;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Stewardship;
@@ -56,6 +58,7 @@ public static class StateHasher
         hash = MixLong(hash, state.AgnomenIds.Peek);
         hash = MixLong(hash, state.InheritedCognomenDecisionIds.Peek);
         hash = MixLong(hash, state.FavorObligationIds.Peek);
+        hash = MixLong(hash, state.MagistracyRecordIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -466,6 +469,43 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.GrantedDate.TotalMonths);
             hash = MixLong(hash, (long)entry.Value.Status);
             hash = MixLong(hash, entry.Value.ResolvedDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ClientelaEntries.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.PatronHouseholdId.Value);
+            hash = MixLong(hash, (long)entry.Value.Specialty);
+            hash = MixLong(hash, entry.Value.RecruitedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.LastFavorCalledDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.HouseholdInfluences.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.Influence);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.CharacterFactionAlignments.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)entry.Value.Faction);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.MagistracyRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.HolderId.Value);
+            hash = MixLong(hash, (long)entry.Value.Office);
+            hash = MixLong(hash, entry.Value.SettlementId.Value);
+            hash = MixLong(hash, entry.Value.TermStartDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.TermEndDate?.TotalMonths ?? -1L);
+            hash = MixLong(hash, entry.Value.LossReason is { } reason ? (long)reason : -1L);
+            hash = MixLong(hash, entry.Value.CoHolderId?.Value ?? -1L);
         }
 
         return hash;

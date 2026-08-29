@@ -305,6 +305,30 @@ public sealed record WorldSaveDocument
     /// defaults to empty, matching <see cref="HouseholdReputations"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(48)]
     public IReadOnlyList<FavorObligationDto> FavorObligations { get; init; } = Array.Empty<FavorObligationDto>();
+
+    /// <summary>Every Character's <see cref="Gens.Simulation.Clientela.ClientelaEntry"/> Clientela
+    /// roster membership (Phase 12 item 2), already keyed by client. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="FavorObligations"/>'s identical additive-only ADR 0011 reasoning.</summary>
+    [JsonPropertyOrder(49)]
+    public IReadOnlyList<ClientelaEntryDto> ClientelaEntries { get; init; } = Array.Empty<ClientelaEntryDto>();
+
+    /// <summary>Every household's <see cref="Gens.Simulation.Clientela.HouseholdInfluence"/> total
+    /// (Phase 12 item 2), already keyed by household. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="ClientelaEntries"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(50)]
+    public IReadOnlyList<HouseholdInfluenceDto> HouseholdInfluences { get; init; } = Array.Empty<HouseholdInfluenceDto>();
+
+    /// <summary>Every Character's <see cref="Gens.Simulation.Clientela.CharacterFactionAlignment"/>
+    /// (Phase 12 item 2), already keyed by Character. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="HouseholdInfluences"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(51)]
+    public IReadOnlyList<CharacterFactionAlignmentDto> CharacterFactionAlignments { get; init; } = Array.Empty<CharacterFactionAlignmentDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Magistracies.MagistracyRecord"/> ever created (Phase
+    /// 12 item 2), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, matching <see cref="CharacterFactionAlignments"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(52)]
+    public IReadOnlyList<MagistracyRecordDto> MagistracyRecords { get; init; } = Array.Empty<MagistracyRecordDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -437,6 +461,12 @@ public sealed record CounterSetDto
     /// cref="InheritedCognomenDecisionIds"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(26)]
     public long FavorObligationIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-2 save has no Magistracy
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="FavorObligationIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(27)]
+    public long MagistracyRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2070,4 +2100,74 @@ public sealed record FavorObligationDto
 
     [JsonPropertyOrder(6)]
     public int? ResolvedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Clientela.ClientelaEntry"/> (Phase 12 item 2), keyed by
+/// client.</summary>
+public sealed record ClientelaEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ClientId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string PatronHouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Specialty { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int RecruitedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public int? LastFavorCalledDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Clientela.HouseholdInfluence"/> (Phase 12 item 2), keyed by
+/// household.</summary>
+public sealed record HouseholdInfluenceDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Influence { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Clientela.CharacterFactionAlignment"/> (Phase 12 item 2),
+/// keyed by Character.</summary>
+public sealed record CharacterFactionAlignmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Faction { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Magistracies.MagistracyRecord"/> (Phase 12 item 2).</summary>
+public sealed record MagistracyRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string RecordId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HolderId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Office { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int TermStartDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public int? TermEndDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? LossReason { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? CoHolderId { get; init; }
 }
