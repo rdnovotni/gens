@@ -66,6 +66,7 @@ public static class RespondToOmenCommands
     public static readonly ValidationErrorCode AlreadyResolved = new("religion.respondToOmen.alreadyResolved");
     public static readonly ValidationErrorCode CharacterNotFound = new("religion.respondToOmen.characterNotFound");
     public static readonly ValidationErrorCode CharacterDeceased = new("religion.respondToOmen.characterDeceased");
+    public static readonly ValidationErrorCode CharacterNotInHousehold = new("religion.respondToOmen.characterNotInHousehold");
 
     public static CommandPipeline<WorldState, RespondToOmenCommand> CreatePipeline(RandomStreamSet randomStreams)
     {
@@ -88,6 +89,8 @@ public static class RespondToOmenCommands
             return CharacterNotFound;
         if (!character!.IsAlive)
             return CharacterDeceased;
+        if (character.Household != omen.HouseholdId)
+            return CharacterNotInHousehold;
 
         return null;
     }

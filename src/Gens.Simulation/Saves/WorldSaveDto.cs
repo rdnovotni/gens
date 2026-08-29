@@ -2217,6 +2217,12 @@ public sealed record HouseholdReligionDto
 
     [JsonPropertyOrder(3)]
     public required string ConsecratedUnderHeadCharacterId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? LastObservedFeastDay { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public int? LastObservedFeastDateTotalMonths { get; init; }
 }
 
 /// <summary>One <see cref="Gens.Simulation.Religion.OmenEvent"/> (Phase 12 item 3).</summary>

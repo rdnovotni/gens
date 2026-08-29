@@ -717,4 +717,68 @@ public sealed class ReligionTests
             Assert.That(StateHasher.Hash(restored), Is.EqualTo(beforeHash));
         });
     }
+
+    // ---- Review-flagged regressions -----------------------------------------------------------
+
+    [Test]
+    public void ObserveFeastDayCommandRejectsTheSameFeastDayAgainWithinTheSameYearButAllowsItAfterAYear()
+    {
+        var (state, _, headId) = HouseholdWithHead();
+        var householdId = WithPatron(state, headId);
+
+        ObserveFeastDayCommands.Pipeline.Execute(
+            state, new ObserveFeastDayCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, "Vestalia"));
+
+        var repeat = ObserveFeastDayCommands.Pipeline.Execute(
+            state, new ObserveFeastDayCommand(state.CommandIds.Issue(), "player", new GameDate(2), null, householdId, "Vestalia"));
+        Assert.That(repeat.Error, Is.EqualTo(ObserveFeastDayCommands.AlreadyObservedThisYear));
+
+        var differentFeast = ObserveFeastDayCommands.Pipeline.Execute(
+            state, new ObserveFeastDayCommand(state.CommandIds.Issue(), "player", new GameDate(2), null, householdId, "Cerealia"));
+        Assert.That(differentFeast.Accepted, Is.True);
+
+        var aYearLater = ObserveFeastDayCommands.Pipeline.Execute(
+            state, new ObserveFeastDayCommand(state.CommandIds.Issue(), "player", new GameDate(13), null, householdId, "Vestalia"));
+        Assert.That(aYearLater.Accepted, Is.True);
+
+        Assert.That(
+            HouseholdReligionResolver.CurrentFavor(state, householdId),
+            Is.EqualTo(3 * ReligionCatalog.PassiveFeastDayFavorGain));
+    }
+
+    [Test]
+    public void RespondToOmenCommandRejectsAResponderFromAnotherHousehold()
+    {
+        var (state, _, headId) = HouseholdWithHead();
+        var householdId = WithPatron(state, headId);
+        RaiseOmenCommands.Pipeline.Execute(
+            state, new RaiseOmenCommand(state.CommandIds.Issue(), "system", new GameDate(1), null, householdId, 2));
+        var omenId = state.OmenEvents.InAscendingOrder().First().Key;
+
+        var outsiderId = state.CharacterIds.Issue();
+        state.Characters.Add(outsiderId, CharacterTestFixtures.Minimal(outsiderId, nomen: "Outsider", household: state.HouseholdIds.Issue()));
+
+        var result = RespondToOmenPipeline().Execute(
+            state, new RespondToOmenCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, omenId, outsiderId, OmenChoice.Heeded));
+
+        Assert.That(result.Error, Is.EqualTo(RespondToOmenCommands.CharacterNotInHousehold));
+    }
+
+    [Test]
+    public void PriesthoodTrickleSystemAndFavorCycleSystemDeclareEveryPartitionTheyWrite()
+    {
+        var (state, settlementId, householdId, characterId) = DevoutLearnedCitizen();
+        WithPatron(state, characterId);
+        AppointPriesthoodCommands.Pipeline.Execute(
+            state,
+            new AppointPriesthoodCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null, characterId, settlementId, PriesthoodOffice.Augur, null));
+
+        var simulation = new WriteSetVerifyingSimulation(new IMonthlySystem<WorldState>[] { new FavorCycleSystem(), new PriesthoodTrickleSystem() });
+
+        Assert.That(
+            () => simulation.Tick(state, new GameDate(2), new RandomStreamSet()),
+            Throws.Nothing,
+            "Every state partition FavorCycleSystem/PriesthoodTrickleSystem mutate (including the shared command/ledger-transaction id counters exercised through AdjustDignitasCommand/LedgerService.Post) must be declared in their own Writes set.");
+    }
 }

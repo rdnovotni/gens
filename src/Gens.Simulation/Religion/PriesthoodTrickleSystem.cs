@@ -40,7 +40,10 @@ public sealed class PriesthoodTrickleSystem : IMonthlySystem<WorldState>
     public string Id => "religion.priesthoodTrickle";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "priesthoodRecords", "characters", "householdReligions" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "priesthoodRecords", "householdReputations", "householdReligions", "eventIds" };
+    public IReadOnlyCollection<string> Writes { get; } = new[]
+    {
+        "priesthoodRecords", "householdReputations", "householdReligions", "eventIds", "commandIds", "commandSequence",
+    };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)

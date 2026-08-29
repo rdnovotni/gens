@@ -40,7 +40,10 @@ public sealed class FavorCycleSystem : IMonthlySystem<WorldState>
     public string Id => "religion.favorCycle";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "householdReligions", "householdPolicies", "ledgerAccounts" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "householdReligions", "ledgerAccounts", "ledgerTransactions", "eventIds" };
+    public IReadOnlyCollection<string> Writes { get; } = new[]
+    {
+        "householdReligions", "ledgerAccounts", "ledgerTransactions", "eventIds", "ledgerTransactionIds",
+    };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)

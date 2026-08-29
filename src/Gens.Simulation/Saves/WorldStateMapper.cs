@@ -1984,13 +1984,17 @@ public static class WorldStateMapper
         PatronDeity = religion.PatronDeity.ToString(),
         Favor = religion.Favor,
         ConsecratedUnderHeadCharacterId = religion.ConsecratedUnderHeadCharacterId.ToTaggedString(),
+        LastObservedFeastDay = religion.LastObservedFeastDay,
+        LastObservedFeastDateTotalMonths = religion.LastObservedFeastDate?.TotalMonths,
     };
 
     private static HouseholdReligion FromHouseholdReligionDto(HouseholdReligionDto dto) => new(
         RuntimeId<Household>.Parse(dto.HouseholdId),
         Enum.Parse<PatronDeity>(dto.PatronDeity),
         dto.Favor,
-        RuntimeId<Character>.Parse(dto.ConsecratedUnderHeadCharacterId));
+        RuntimeId<Character>.Parse(dto.ConsecratedUnderHeadCharacterId),
+        dto.LastObservedFeastDay,
+        dto.LastObservedFeastDateTotalMonths is { } months ? new GameDate(months) : null);
 
     private static OmenEventDto ToOmenEventDto(OmenEvent omen) => new()
     {

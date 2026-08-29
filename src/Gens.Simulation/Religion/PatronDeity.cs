@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.State;
+using Gens.Simulation.Time;
 
 namespace Gens.Simulation.Religion;
 
@@ -60,11 +61,19 @@ public enum PatronDeity
 /// paterfamilias or materfamilias assumes headship" (§2.1) at all, since nothing else in this record
 /// remembers who last consecrated the household's patron.
 /// </summary>
+/// <param name="LastObservedFeastDay">The most recent <see cref="ObserveFeastDayCommand.FeastDay"/> the
+/// household passively observed, or <see langword="null"/> if it never has — paired with <see
+/// cref="LastObservedFeastDate"/> so <see cref="ObserveFeastDayCommands.Validate"/> can reject a repeat
+/// observance of the same named feast inside the same real-world year it already collected §5's "small
+/// automatic Favor tick" for, closing the otherwise-unlimited free Favor source a caller could open by
+/// resubmitting the same command.</param>
 public sealed record HouseholdReligion(
     RuntimeId<Household> HouseholdId,
     PatronDeity PatronDeity,
     int Favor,
-    RuntimeId<Character> ConsecratedUnderHeadCharacterId);
+    RuntimeId<Character> ConsecratedUnderHeadCharacterId,
+    string? LastObservedFeastDay = null,
+    GameDate? LastObservedFeastDate = null);
 
 /// <summary>Read/write helpers over <see cref="WorldState.HouseholdReligions"/>, matching <see
 /// cref="Reputation.DignitasResolver"/>'s identical "no entry means the default" and "replace, don't

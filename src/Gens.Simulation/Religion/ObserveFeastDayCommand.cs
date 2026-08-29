@@ -43,6 +43,7 @@ public static class ObserveFeastDayCommands
 {
     public static readonly ValidationErrorCode NoPatronDeityYet = new("religion.observeFeastDay.noPatronDeityYet");
     public static readonly ValidationErrorCode EmptyFeastDay = new("religion.observeFeastDay.emptyFeastDay");
+    public static readonly ValidationErrorCode AlreadyObservedThisYear = new("religion.observeFeastDay.alreadyObservedThisYear");
 
     public static readonly CommandPipeline<WorldState, ObserveFeastDayCommand> Pipeline = new(
         validate: Validate,
@@ -56,12 +57,33 @@ public static class ObserveFeastDayCommands
         if (string.IsNullOrWhiteSpace(command.FeastDay))
             return EmptyFeastDay;
 
+        // §5's "small automatic Favor tick" is one per named feast day per year — without a real
+        // calendar this domain doesn't yet own (§11), the closest enforceable invariant is "not the
+        // same feast day again inside the twelve months since it was last observed," which is exactly
+        // enough to close the otherwise-unlimited free-Favor loop a repeated submission would open.
+        state.HouseholdReligions.TryGet(command.HouseholdId, out var religion);
+        if (religion is { LastObservedFeastDay: { } lastFeastDay, LastObservedFeastDate: { } lastDate } &&
+            string.Equals(lastFeastDay, command.FeastDay, StringComparison.OrdinalIgnoreCase) &&
+            command.SubmittedDate.TotalMonths - lastDate.TotalMonths < 12)
+        {
+            return AlreadyObservedThisYear;
+        }
+
         return null;
     }
 
     private static IDomainEvent[] Mutate(WorldState state, ObserveFeastDayCommand command)
     {
-        HouseholdReligionResolver.ApplyFavorDelta(state, command.HouseholdId, ReligionCatalog.PassiveFeastDayFavorGain);
+        state.HouseholdReligions.TryGet(command.HouseholdId, out var religion);
+        state.HouseholdReligions.Remove(command.HouseholdId);
+        state.HouseholdReligions.Add(
+            command.HouseholdId,
+            religion! with
+            {
+                Favor = religion.Favor + ReligionCatalog.PassiveFeastDayFavorGain,
+                LastObservedFeastDay = command.FeastDay,
+                LastObservedFeastDate = command.SubmittedDate,
+            });
 
         return new IDomainEvent[]
         {
