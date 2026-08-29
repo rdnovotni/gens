@@ -4,6 +4,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
@@ -61,6 +62,8 @@ public static class WorldStateMapper
                 SuccessionDisputeIds = state.SuccessionDisputeIds.Peek,
                 ChronicleEntryIds = state.ChronicleEntryIds.Peek,
                 FuneralRecordIds = state.FuneralRecordIds.Peek,
+                AgnomenIds = state.AgnomenIds.Peek,
+                InheritedCognomenDecisionIds = state.InheritedCognomenDecisionIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -138,6 +141,12 @@ public static class WorldStateMapper
             MourningPeriods = state.MourningPeriods.InAscendingOrder().Select(entry => ToMourningPeriodDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             MemoriaStates = state.MemoriaStates.InAscendingOrder().Select(entry => ToMemoriaStateDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Agnomens = state.Agnomens.InAscendingOrder().Select(entry => ToAgnomenDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            InheritedCognomenDecisions = state.InheritedCognomenDecisions.InAscendingOrder().Select(entry => ToInheritedCognomenDecisionDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            DynasticEpithets = state.DynasticEpithets.InAscendingOrder().Select(entry => ToDynasticEpithetDto(entry.Value)).ToArray(),
         };
     }
 
@@ -396,6 +405,27 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Household>, MemoriaState>(memoria.HouseholdId, memoria);
             }));
 
+        var agnomens = OrderedRegistry<RuntimeId<Agnomen>, Agnomen>.Restore(
+            dto.Agnomens.Select(a =>
+            {
+                var agnomen = FromAgnomenDto(a);
+                return new KeyValuePair<RuntimeId<Agnomen>, Agnomen>(agnomen.AgnomenId, agnomen);
+            }));
+
+        var inheritedCognomenDecisions = OrderedRegistry<RuntimeId<InheritedCognomenDecision>, InheritedCognomenDecision>.Restore(
+            dto.InheritedCognomenDecisions.Select(d =>
+            {
+                var decision = FromInheritedCognomenDecisionDto(d);
+                return new KeyValuePair<RuntimeId<InheritedCognomenDecision>, InheritedCognomenDecision>(decision.DecisionId, decision);
+            }));
+
+        var dynasticEpithets = OrderedRegistry<RuntimeId<Household>, DynasticEpithet>.Restore(
+            dto.DynasticEpithets.Select(e =>
+            {
+                var epithet = FromDynasticEpithetDto(e);
+                return new KeyValuePair<RuntimeId<Household>, DynasticEpithet>(epithet.HouseholdId, epithet);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -422,6 +452,8 @@ public static class WorldStateMapper
             successionDisputeIds: RuntimeIdCounter<SuccessionDispute>.Restore(dto.Counters.SuccessionDisputeIds),
             chronicleEntryIds: RuntimeIdCounter<ChronicleEntry>.Restore(dto.Counters.ChronicleEntryIds),
             funeralRecordIds: RuntimeIdCounter<FuneralRecord>.Restore(dto.Counters.FuneralRecordIds),
+            agnomenIds: RuntimeIdCounter<Agnomen>.Restore(dto.Counters.AgnomenIds),
+            inheritedCognomenDecisionIds: RuntimeIdCounter<InheritedCognomenDecision>.Restore(dto.Counters.InheritedCognomenDecisionIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -461,6 +493,9 @@ public static class WorldStateMapper
             funeralRecords: funeralRecords,
             mourningPeriods: mourningPeriods,
             memoriaStates: memoriaStates,
+            agnomens: agnomens,
+            inheritedCognomenDecisions: inheritedCognomenDecisions,
+            dynasticEpithets: dynasticEpithets,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1698,4 +1733,60 @@ public static class WorldStateMapper
         RuntimeId<Household>.Parse(dto.HouseholdId),
         dto.Memoria,
         dto.LastParentaliaObservedDateTotalMonths is { } observed ? new GameDate(observed) : null);
+
+    private static AgnomenDto ToAgnomenDto(Agnomen agnomen) => new()
+    {
+        AgnomenId = agnomen.AgnomenId.ToTaggedString(),
+        CharacterId = agnomen.CharacterId.ToTaggedString(),
+        AgnomenType = agnomen.AgnomenType.ToString(),
+        Name = agnomen.Name,
+        GrantMethod = agnomen.GrantMethod.ToString(),
+        GrantedDateTotalMonths = agnomen.GrantedDate.TotalMonths,
+        SourceChronicleEntryIds = agnomen.SourceChronicleEntryIds.Select(id => id.ToTaggedString()).ToArray(),
+        SourceSuccessionDisputeId = agnomen.SourceSuccessionDisputeId?.ToTaggedString(),
+        DignitasEffect = agnomen.DignitasEffect,
+        FameEffect = agnomen.FameEffect,
+        IsSuppressible = agnomen.IsSuppressible,
+    };
+
+    private static Agnomen FromAgnomenDto(AgnomenDto dto) => new(
+        RuntimeId<Agnomen>.Parse(dto.AgnomenId),
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        Enum.Parse<AgnomenType>(dto.AgnomenType),
+        dto.Name,
+        Enum.Parse<AgnomenGrantMethod>(dto.GrantMethod),
+        new GameDate(dto.GrantedDateTotalMonths),
+        dto.SourceChronicleEntryIds.Select(RuntimeId<ChronicleEntry>.Parse).ToArray(),
+        dto.SourceSuccessionDisputeId is null ? null : RuntimeId<SuccessionDispute>.Parse(dto.SourceSuccessionDisputeId),
+        dto.DignitasEffect,
+        dto.FameEffect,
+        dto.IsSuppressible);
+
+    private static InheritedCognomenDecisionDto ToInheritedCognomenDecisionDto(InheritedCognomenDecision decision) => new()
+    {
+        DecisionId = decision.DecisionId.ToTaggedString(),
+        OriginalAgnomenId = decision.OriginalAgnomenId.ToTaggedString(),
+        DecidingHouseholdId = decision.DecidingHouseholdId.ToTaggedString(),
+        AdoptedAsPermanentCognomen = decision.AdoptedAsPermanentCognomen,
+        EffectiveFromDateTotalMonths = decision.EffectiveFromDate.TotalMonths,
+    };
+
+    private static InheritedCognomenDecision FromInheritedCognomenDecisionDto(InheritedCognomenDecisionDto dto) => new(
+        RuntimeId<InheritedCognomenDecision>.Parse(dto.DecisionId),
+        RuntimeId<Agnomen>.Parse(dto.OriginalAgnomenId),
+        RuntimeId<Household>.Parse(dto.DecidingHouseholdId),
+        dto.AdoptedAsPermanentCognomen,
+        new GameDate(dto.EffectiveFromDateTotalMonths));
+
+    private static DynasticEpithetDto ToDynasticEpithetDto(DynasticEpithet epithet) => new()
+    {
+        HouseholdId = epithet.HouseholdId.ToTaggedString(),
+        EpithetText = epithet.EpithetText,
+        DerivedFromChronicleEntryIds = epithet.DerivedFromChronicleEntryIds.Select(id => id.ToTaggedString()).ToArray(),
+    };
+
+    private static DynasticEpithet FromDynasticEpithetDto(DynasticEpithetDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.EpithetText,
+        dto.DerivedFromChronicleEntryIds.Select(RuntimeId<ChronicleEntry>.Parse).ToArray());
 }

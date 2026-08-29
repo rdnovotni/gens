@@ -458,6 +458,41 @@ including a funeral raising Memoria (scaled by ancestral Chronicle achievement a
 *Parentalia* lowering it against a well-funded one raising it, a full funeral/mourning/Memoria state
 round trip through save/load, and the deterministic state hash staying stable.
 
+**Item 5 progress:** rules-and-provenance epithet/title awards are implemented
+(`src/Gens.Simulation/Epithets/`) — `Agnomen` (`AgnomenType`/`AgnomenGrantMethod`, a Character's real
+earned name with `SourceChronicleEntryIds`/`SourceSuccessionDisputeId` provenance rather than free
+text), `InheritedCognomenDecision` (§5's real, permanent adopt-as-family-cognomen decision), and
+`DynasticEpithet` (§6's whole-house flavor-tier reputation text, derived from accumulated Major/
+Legendary Dynasty Chronicle entries) are new `WorldState` partitions, following Chronicle's own kept-
+entity/sparse-per-household conventions. `EpithetGenerationSystem.Generate` — deliberately not an
+`IMonthlySystem`, for the identical reason `ChronicleGenerationSystem` isn't one (see that type's own
+doc comment) — is invoked immediately after it at the same three call sites (`AdvanceCommand`,
+`CampaignShell.Submit`/`AdvanceMonth`), reading the same-month's own newly-recorded Chronicle entries to
+award the `Magnus` achievement agnomen (a Character's own personally-linked Major/Legendary Chronicle
+entries crossing a threshold) and the `Felix` agnomen (prevailing in a resolved
+`SuccessionDisputeResolvedEvent`), and to set a household's `DynasticEpithet` off its own accumulated
+Major/Legendary record once it crosses a threshold. `AdoptAgnomenAsCognomenCommand` records §5's real
+decision and, via `InheritedCognomenResolver`, actually changes how the next generation is named:
+`BirthCharacterCommand` now overrides a newborn's freshly generated cognomen with the household's
+adopted Agnomen name when one has been adopted, realizing §5's own "changes how every subsequent
+generation is actually named" rather than only recording the decision as inert bookkeeping. Three
+deliberate scope cuts, each named directly in `Agnomen`'s own doc comment the way item 4's own burial-
+method simplification was named: (1) `AgnomenType.Conquest` is modeled but never minted — it needs
+Military & Combat and Diplomacy with Non-Roman Peoples (Phase 16) to resolve a real campaign outcome,
+neither built yet; (2) `AgnomenType.CrowdGivenNickname` is likewise modeled but never minted — Fame does
+not exist anywhere in this codebase yet (Games & Spectacle/Celebrities, Phase 17); (3)
+`AgnomenType.MockingNickname` (§7's real "the name sticks anyway" case) is modeled but never minted —
+Scandal (Phase 12) does not exist yet to source one from, and `IsSuppressible`/Damage Control accordingly
+never applies. `DignitasEffect`/`FameEffect` are likewise always `null`: no personal or household
+Dignitas stat exists on `Character` yet (only `LivingWorldActor.Dignitas` tracks a bare int for rival
+houses, the same gap `DeclareHeirCommand` already documents), and Fame does not exist at all. Every
+Agnomen this pass mints therefore carries `AgnomenGrantMethod.OrganicCrowdOrigin`, never
+`FormalSenateOrCuriaGrant` — a real Senate/Curia vote needs Politics & Patronage (Phase 12) to actually
+convene one. Covered in `tests/Gens.Simulation.Tests/Epithets/EpithetTests.cs`, including achievement and
+succession-victory awards, award idempotency, dynastic epithet threshold crossing, cognomen-adoption
+validation and its effect on a subsequent birth, a save/load round trip, and the deterministic state hash
+staying stable. Item 6 (succession fixtures) remains.
+
 Construction order:
 
 1. Implement heirs, eligibility, designation, adoption, wills/inheritance rules, disputed succession, asset and obligation transfer, and household extinction.

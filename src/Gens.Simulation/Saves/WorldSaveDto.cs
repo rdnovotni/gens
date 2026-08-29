@@ -274,6 +274,24 @@ public sealed record WorldSaveDocument
     /// reason as <see cref="FuneralRecords"/> above.</summary>
     [JsonPropertyOrder(43)]
     public IReadOnlyList<MemoriaStateDto> MemoriaStates { get; init; } = Array.Empty<MemoriaStateDto>();
+
+    /// <summary>Every <see cref="Epithets.Agnomen"/> ever granted (Phase 11 item 5), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// for the same additive-only reason as <see cref="MemoriaStates"/> above.</summary>
+    [JsonPropertyOrder(44)]
+    public IReadOnlyList<AgnomenDto> Agnomens { get; init; } = Array.Empty<AgnomenDto>();
+
+    /// <summary>Every <see cref="Epithets.InheritedCognomenDecision"/> ever recorded (Phase 11 item 5),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, for the same additive-only reason as <see cref="Agnomens"/> above.</summary>
+    [JsonPropertyOrder(45)]
+    public IReadOnlyList<InheritedCognomenDecisionDto> InheritedCognomenDecisions { get; init; } = Array.Empty<InheritedCognomenDecisionDto>();
+
+    /// <summary>Every household's current <see cref="Epithets.DynasticEpithet"/> (Phase 11 item 5),
+    /// already keyed by household. Not <c>required</c>, and defaults to empty, for the same
+    /// additive-only reason as <see cref="InheritedCognomenDecisions"/> above.</summary>
+    [JsonPropertyOrder(46)]
+    public IReadOnlyList<DynasticEpithetDto> DynasticEpithets { get; init; } = Array.Empty<DynasticEpithetDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -388,6 +406,18 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(23)]
     public long FuneralRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-11-item-5 save has no Agnomina.
+    /// Additive-only per ADR 0011's policy, matching <see cref="FuneralRecordIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(24)]
+    public long AgnomenIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-11-item-5 save has no Inherited
+    /// Cognomen Decisions. Additive-only per ADR 0011's policy, matching <see cref="AgnomenIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(25)]
+    public long InheritedCognomenDecisionIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1915,4 +1945,74 @@ public sealed record MemoriaStateDto
 
     [JsonPropertyOrder(2)]
     public int? LastParentaliaObservedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Epithets.Agnomen"/> (Phase 11 item 5).</summary>
+public sealed record AgnomenDto
+{
+    [JsonPropertyOrder(0)]
+    public required string AgnomenId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string AgnomenType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string GrantMethod { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int GrantedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required IReadOnlyList<string> SourceChronicleEntryIds { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? SourceSuccessionDisputeId { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public int? DignitasEffect { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public int? FameEffect { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required bool IsSuppressible { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Epithets.InheritedCognomenDecision"/> (Phase 11 item 5).</summary>
+public sealed record InheritedCognomenDecisionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string DecisionId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string OriginalAgnomenId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string DecidingHouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool AdoptedAsPermanentCognomen { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int EffectiveFromDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Epithets.DynasticEpithet"/> (Phase 11 item 5), keyed by
+/// household.</summary>
+public sealed record DynasticEpithetDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string EpithetText { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required IReadOnlyList<string> DerivedFromChronicleEntryIds { get; init; }
 }

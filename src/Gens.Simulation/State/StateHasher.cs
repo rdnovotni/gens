@@ -52,6 +52,8 @@ public static class StateHasher
         hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.SuccessionDisputeIds.Peek);
         hash = MixLong(hash, state.FuneralRecordIds.Peek);
+        hash = MixLong(hash, state.AgnomenIds.Peek);
+        hash = MixLong(hash, state.InheritedCognomenDecisionIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -407,6 +409,42 @@ public static class StateHasher
             hash = MixLong(hash, entry.Key.Value);
             hash = MixLong(hash, entry.Value.Memoria);
             hash = MixLong(hash, entry.Value.LastParentaliaObservedDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Agnomens.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.CharacterId.Value);
+            hash = MixLong(hash, (long)entry.Value.AgnomenType);
+            hash = MixString(hash, entry.Value.Name);
+            hash = MixLong(hash, (long)entry.Value.GrantMethod);
+            hash = MixLong(hash, entry.Value.GrantedDate.TotalMonths);
+            foreach (var sourceId in entry.Value.SourceChronicleEntryIds)
+                hash = MixLong(hash, sourceId.Value);
+            hash = MixLong(hash, entry.Value.SourceSuccessionDisputeId?.Value ?? -1L);
+            hash = MixLong(hash, entry.Value.DignitasEffect ?? long.MinValue);
+            hash = MixLong(hash, entry.Value.FameEffect ?? long.MinValue);
+            hash = MixLong(hash, entry.Value.IsSuppressible ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.InheritedCognomenDecisions.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.OriginalAgnomenId.Value);
+            hash = MixLong(hash, entry.Value.DecidingHouseholdId.Value);
+            hash = MixLong(hash, entry.Value.AdoptedAsPermanentCognomen ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.EffectiveFromDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.DynasticEpithets.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.EpithetText);
+            foreach (var sourceId in entry.Value.DerivedFromChronicleEntryIds)
+                hash = MixLong(hash, sourceId.Value);
         }
 
         return hash;
