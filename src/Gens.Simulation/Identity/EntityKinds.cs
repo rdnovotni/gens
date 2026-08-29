@@ -8,6 +8,7 @@ using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
+using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -187,6 +188,12 @@ internal static class RuntimeIdTagRegistry
         // CharacterFactionAlignment need no entry: each is keyed by RuntimeId<Character> or
         // RuntimeId<Household>, not by its own RuntimeId, matching DynasticEpithet's identical exemption.
         [typeof(MagistracyRecord)] = "magistracy",
+        // Phase 12 item 3 — Gens.Simulation.Religion.OmenEvent and Gens.Simulation.Religion.
+        // PriesthoodRecord, same "real record as its own tag" convention as MagistracyRecord above.
+        // HouseholdReligion needs no entry: it's keyed by RuntimeId<Household>, not by its own
+        // RuntimeId, matching DynasticEpithet's identical exemption.
+        [typeof(OmenEvent)] = "omen",
+        [typeof(PriesthoodRecord)] = "priesthood",
     };
 
     public static string Resolve(Type type) =>

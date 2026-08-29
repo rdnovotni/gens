@@ -16,6 +16,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
@@ -69,6 +70,8 @@ public static class WorldStateMapper
                 InheritedCognomenDecisionIds = state.InheritedCognomenDecisionIds.Peek,
                 FavorObligationIds = state.FavorObligationIds.Peek,
                 MagistracyRecordIds = state.MagistracyRecordIds.Peek,
+                OmenEventIds = state.OmenEventIds.Peek,
+                PriesthoodRecordIds = state.PriesthoodRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -165,6 +168,9 @@ public static class WorldStateMapper
                 .Select(entry => ToCharacterFactionAlignmentDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             MagistracyRecords = state.MagistracyRecords.InAscendingOrder().Select(entry => ToMagistracyRecordDto(entry.Value)).ToArray(),
+            HouseholdReligions = state.HouseholdReligions.InAscendingOrder().Select(entry => ToHouseholdReligionDto(entry.Value)).ToArray(),
+            OmenEvents = state.OmenEvents.InAscendingOrder().Select(entry => ToOmenEventDto(entry.Value)).ToArray(),
+            PriesthoodRecords = state.PriesthoodRecords.InAscendingOrder().Select(entry => ToPriesthoodRecordDto(entry.Value)).ToArray(),
         };
     }
 
@@ -486,6 +492,27 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<MagistracyRecord>, MagistracyRecord>(record.RecordId, record);
             }));
 
+        var householdReligions = OrderedRegistry<RuntimeId<Household>, HouseholdReligion>.Restore(
+            dto.HouseholdReligions.Select(r =>
+            {
+                var religion = FromHouseholdReligionDto(r);
+                return new KeyValuePair<RuntimeId<Household>, HouseholdReligion>(religion.HouseholdId, religion);
+            }));
+
+        var omenEvents = OrderedRegistry<RuntimeId<OmenEvent>, OmenEvent>.Restore(
+            dto.OmenEvents.Select(o =>
+            {
+                var omen = FromOmenEventDto(o);
+                return new KeyValuePair<RuntimeId<OmenEvent>, OmenEvent>(omen.OmenId, omen);
+            }));
+
+        var priesthoodRecords = OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord>.Restore(
+            dto.PriesthoodRecords.Select(p =>
+            {
+                var record = FromPriesthoodRecordDto(p);
+                return new KeyValuePair<RuntimeId<PriesthoodRecord>, PriesthoodRecord>(record.RecordId, record);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -516,6 +543,8 @@ public static class WorldStateMapper
             inheritedCognomenDecisionIds: RuntimeIdCounter<InheritedCognomenDecision>.Restore(dto.Counters.InheritedCognomenDecisionIds),
             favorObligationIds: RuntimeIdCounter<FavorObligation>.Restore(dto.Counters.FavorObligationIds),
             magistracyRecordIds: RuntimeIdCounter<MagistracyRecord>.Restore(dto.Counters.MagistracyRecordIds),
+            omenEventIds: RuntimeIdCounter<OmenEvent>.Restore(dto.Counters.OmenEventIds),
+            priesthoodRecordIds: RuntimeIdCounter<PriesthoodRecord>.Restore(dto.Counters.PriesthoodRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -564,6 +593,9 @@ public static class WorldStateMapper
             householdInfluences: householdInfluences,
             characterFactionAlignments: characterFactionAlignments,
             magistracyRecords: magistracyRecords,
+            householdReligions: householdReligions,
+            omenEvents: omenEvents,
+            priesthoodRecords: priesthoodRecords,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1945,4 +1977,58 @@ public static class WorldStateMapper
         dto.TermEndDateTotalMonths is { } end ? new GameDate(end) : null,
         dto.LossReason is { } loss ? Enum.Parse<MagistracyLossReason>(loss) : null,
         dto.CoHolderId is { } coHolder ? RuntimeId<Character>.Parse(coHolder) : null);
+
+    private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
+    {
+        HouseholdId = religion.HouseholdId.ToTaggedString(),
+        PatronDeity = religion.PatronDeity.ToString(),
+        Favor = religion.Favor,
+        ConsecratedUnderHeadCharacterId = religion.ConsecratedUnderHeadCharacterId.ToTaggedString(),
+    };
+
+    private static HouseholdReligion FromHouseholdReligionDto(HouseholdReligionDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<PatronDeity>(dto.PatronDeity),
+        dto.Favor,
+        RuntimeId<Character>.Parse(dto.ConsecratedUnderHeadCharacterId));
+
+    private static OmenEventDto ToOmenEventDto(OmenEvent omen) => new()
+    {
+        OmenId = omen.OmenId.ToTaggedString(),
+        HouseholdId = omen.HouseholdId.ToTaggedString(),
+        RaisedDateTotalMonths = omen.RaisedDate.TotalMonths,
+        ThemedDeity = omen.ThemedDeity.ToString(),
+        Severity = omen.Severity,
+        PlayerChoice = omen.PlayerChoice?.ToString(),
+        Outcome = omen.Outcome.ToString(),
+    };
+
+    private static OmenEvent FromOmenEventDto(OmenEventDto dto) => new(
+        RuntimeId<OmenEvent>.Parse(dto.OmenId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        new GameDate(dto.RaisedDateTotalMonths),
+        Enum.Parse<PatronDeity>(dto.ThemedDeity),
+        dto.Severity,
+        dto.PlayerChoice is { } choice ? Enum.Parse<OmenChoice>(choice) : null,
+        Enum.Parse<OmenOutcome>(dto.Outcome));
+
+    private static PriesthoodRecordDto ToPriesthoodRecordDto(PriesthoodRecord record) => new()
+    {
+        RecordId = record.RecordId.ToTaggedString(),
+        HolderId = record.HolderId.ToTaggedString(),
+        Office = record.Office.ToString(),
+        SettlementId = record.SettlementId.ToTaggedString(),
+        AppointedDateTotalMonths = record.AppointedDate.TotalMonths,
+        FlamenDeity = record.FlamenDeity?.ToString(),
+        EndDateTotalMonths = record.EndDate?.TotalMonths,
+    };
+
+    private static PriesthoodRecord FromPriesthoodRecordDto(PriesthoodRecordDto dto) => new(
+        RuntimeId<PriesthoodRecord>.Parse(dto.RecordId),
+        RuntimeId<Character>.Parse(dto.HolderId),
+        Enum.Parse<PriesthoodOffice>(dto.Office),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        new GameDate(dto.AppointedDateTotalMonths),
+        dto.FlamenDeity is { } deity ? Enum.Parse<PatronDeity>(deity) : null,
+        dto.EndDateTotalMonths is { } end ? new GameDate(end) : null);
 }

@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (item 2 of 9 done — see "Item 2 progress" below) ← **next up: item 3**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-3 of 9 done — see "Item 3 progress" below) ← **next up: item 4**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 2 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 3 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -638,6 +638,120 @@ outcomes, a poaching event actually flipping a client's bond to a real rival Act
 and Curia-capacity limits, a contested election with a real score-driven outcome, Duumvir pairing, all
 three Aedile funding choices, term auto-renewal, Insolvency- and death-driven loss of office, and a
 save/load round trip with the deterministic state hash staying stable across every new partition.
+
+**Item 3 progress:** Religion lands as a new domain, `src/Gens.Simulation/Religion/` (§2-§6 of
+`gens-religion-design.md`). `HouseholdReligion` (§2, §10's own data-model sketch) is a new sparse,
+per-household `WorldState` partition pairing a chosen `PatronDeity` (all twelve of §2.1's "real, viable
+picks" — Jupiter through Bacchus, a closed, code-defined enum since §2.1 frames its own list as
+exhaustive, not representative) with a running `Favor` total — deliberately unclamped, matching
+`HouseholdReputation.Dignitas`'s own "no floor, only gravity" convention exactly, per this item's own
+brief that Favor is "explicitly analogous to Dignitas but a second distinct axis." Unlike Dignitas,
+Favor cannot exist independent of a chosen deity (§2's own "the Patron Deity... determines what the
+single Favor score actually does" makes the pairing structural), so `SetPatronDeityCommand` is the one
+founding entry point and `AdjustFavorCommand` — the Favor analog of `AdjustDignitasCommand`, exercised
+directly by this item's own tests standing in for the same kind of future callers item 1's own command
+named (a future Legal & Court sacrilege case, a future Scandal) — requires an entry to already exist.
+Divine Displeasure (§2.3) is a derived read (`HouseholdReligionResolver.IsDivinelyDispleased`) off a
+threshold constant rather than a second, storable boolean that could drift out of sync with Favor,
+matching `MagistracyResolver.IsActive`'s own "derive it, don't duplicate it" precedent.
+`ReconsecrateCommand` (§2.1) builds only the one real, checkable trigger the design doc names —
+`HouseholdHeadship.HeadCharacterId` (Phase 11 item 1) differing from the Patron Deity's own recorded
+`ConsecratedUnderHeadCharacterId` — and skips §2.1's second trigger ("a major Chronicle-worthy event
+plausibly attributed to divine intervention") outright, since nothing in `Gens.Simulation.Chronicle`
+classifies an entry that way and inventing that judgment call would be building a mechanic the design
+doc itself only gestures at; it is a real Funded Action (a fixed ceremony cost through the Ledger,
+mirroring `Policies.FundFestivalCommand`'s own spend shape) that resets Favor to zero rather than
+carrying it over, per §2.1's own "resets... toward a neutral middle."
+
+The Rites Budget (§3.1) is **not** re-authored: Phase 9 item 2 already shipped `Policies.RitesBudgetTier`,
+`ChangeRitesBudgetCommand`, `HouseholdPolicyResolver`, and — critically — `RitesBudgetCatalog`'s own
+`TreasuryDrawPerMonth`/`DivineFavorStabilityModifier` projections, with that catalog's own doc comment
+naming Religion directly as the pass that would "actually consume" them "without yet wiring them into a
+monthly tick." `FavorCycleSystem` is that wiring: every month, every household with a chosen Patron
+Deity pays its tier's Treasury draw into this domain's own Ledger sink and its Favor moves by that
+tier's stability modifier, closing the forward reference rather than inventing a second, parallel
+standing-policy mechanism. Omens (§4.1) are a new kept-forever `OmenEvent` partition
+(`RaiseOmenCommand`/`RespondToOmenCommand`) rather than a self-triggering periodic generator: no system
+in this codebase hooks a Religion-specific entry into Phase 9's content-authored weighted Event pool, so
+`RaiseOmenCommand` is the commissionable primitive a future pool entry would submit, matching
+`AdjustDignitasCommand`'s own "no such caller exists yet" precedent applied to a trigger instead of a
+consumer. Heeding always averts (§4.1); ignoring rolls a severity-scaled "did the omen's warning come
+true" chance through a newly registered named stream (`religion.omenIgnoredOutcome`, wired into
+`CampaignBootstrapper` alongside every other rule-8 stream) — `RespondToOmenCommand.CreatePipeline`
+captures the `RandomStreamSet` the same way `PromoteToNamedCommand.CreatePipeline` already does,
+establishing that a command, not only a monthly system, can roll dice deterministically. §8's Piety gate
+("Impious is immune to the ignore penalty; Zealous pays a real cost even when nothing follows") is read
+directly off `Character.Traits` against the actual content-authored trait ids `content/source/traits/
+piety.json` defines (`impious`/`devout`/`zealous`) — a real, non-parallel read of the shipped Piety
+spectrum, not a stand-in, since (unlike Fame) that content genuinely exists; no compiled `TraitCatalog`
+is reachable from a command or `IMonthlySystem`'s own `MonthlyTickContext` (it carries only `GameDate`
+and the random stream registry), so this is a direct id-membership check rather than a catalog lookup.
+
+The state Priesthood track (§6.2) is a new `PriesthoodRecord`/`PriesthoodOffice` pair mirroring
+`MagistracyRecord`/`MagistracyOffice` by direct instruction, covering only Augur, Flamen, and the
+Pontifex capstone — §6.2's own `sacerdosPublicus` baseline role is omitted from the enum entirely
+(matching `MagistracyOffice`'s own "omitted rather than included-but-unreachable" precedent for a
+Rome-track office that item 2 declined to build) since Companions & Court Positions has no code
+anywhere in this repository, not even a building type to gate against the way Local Magistracies' own
+Curia/Mint gaps at least had. `AppointPriesthoodCommand` gates on citizenship (Familia §2.5, matching
+`AppointDecurionCommand`'s identical check) plus §6.2's own Piety-tier (Devout or Zealous) and Learning
+threshold rather than Politics & Patronage's Dignitas floor; Flamen additionally requires the candidate's
+own household Patron Deity to match, and Pontifex requires already holding an active Augur or Flamen
+seat, mirroring Duumvir's own "must already hold a lower office" gate. `PriesthoodTrickleSystem` applies
+a monthly Favor/Dignitas trickle ranked Augur < Flamen < Pontifex per §6.2/§6.3's own relative framing,
+and vacates a seat on the holder's death (no term/re-election concept at all, unlike a Magistracy's
+annual cycle — historically a priesthood ran for life, per this record's own doc comment). Auspices
+(§4.2) is `CommissionAuspicesCommand`, gated on two of the three reliability tiers §10's own sketch names
+(household default vs. an active Augur officeholder) — the middle "hired Haruspex" tier is a named,
+reasoned cut: it needs both a paid per-reading hire mechanism (Companions & Court Positions, again
+unbuilt) and a priced `incense` Good that does not exist anywhere in `content/source/goods/` (only
+metals/staples/textiles are authored), so the fee is priced in Money instead, matching
+`AppointDecurionCommand`'s own "no building exists, so that half of the gate is not checked" precedent
+applied to a resource rather than a building. The reading's own §4.2 payoff — "a real skew... feeding
+the preceding decision's own resolution" — is not wired into Military & Combat, Travel, or settlement
+founding, none of which have a resolution system in this codebase yet to skew; this command's own payoff
+is scoped to Religion's Favor axis directly, leaving the downstream consumer as a future integration
+point, matching `AdjustDignitasCommand`'s own "no such caller exists yet" shape applied to a consumer
+instead of a caller.
+
+The Sacred Calendar (§5) gets its two observance tiers: `ObserveFeastDayCommand` (passive, a small
+automatic Favor tick) and `FundFestivalCelebrationCommand` (funded, a Favor/Dignitas payoff sized to the
+spend). The funded command is deliberately **not** a retrofit of `Policies.FundFestivalCommand` — that
+command already exists from Phase 9 item 2, already moves the money and posts the Ledger receipt, and
+its own doc comment already names Religion as the future pass that would "turn the spend into an actual
+Divine Favor/Dignitas payoff" — but reopening it would change already-tested behavior (its own
+`FundFestivalCommandTests` asserts an exact two-event result), the same "already-shipped, already-tested,
+out of scope to reopen" precedent item 1 set for `Agnomen.DignitasEffect` and the Funerary Grand-tier
+trade. Instead this item builds its own self-contained command, per the task's own explicit fallback for
+exactly this situation ("a direct Favor/Dignitas payoff command rather than inventing a new generic
+Funded Action system") — a future Policies & Edicts pass (§6.12, roadmap item 9) is the natural place to
+unify the two under one real Funded Action abstraction. Both feast-day commands take a plain, free-form
+feast-day string rather than a closed catalog, since §5's own table is "a representative, non-exhaustive
+sample... a natural later-pass task" (§11), matching `AdjustDignitasCommand`'s identical `Reason`
+convention for an open-ended vocabulary. §5's own paired Settlement Demographics Contentment boost and
+Games & Spectacle venue-resolution hook are both left unwired — the same "no write path/consumer system
+exists yet" reasoning `FundAedileWorksCommand`'s own Contentment half already established in item 2.
+
+**Explicitly not built, matching this item's own narrow scope:** the Vestals (§6.3) — a deliberate cut,
+since a Chastity-violation case sits at Legal & Court's own capital-case tier (§9 of that doc) and Legal
+& Court (Phase 12 item 4, the next item) has no case machinery anywhere in this codebase yet to resolve
+one against; foreign cults and religious syncretism (§7) — depends on the Religions of the Known World
+catalog content, a separate future document this item does not pre-empt; persecution mechanics (§7's own
+"heaviest ceiling") — depends on both the foreign-cult mechanic above and Legal & Court's own case
+machinery, neither built. The Genius/Juno household-spirit flavor (§3) is deliberately not a fourth
+tracked value, per that section's own "a case where naming the real institution matters more than giving
+it its own number." No `InkBarQuery` slot is reserved for Favor — `gens-core-design.md` §7.4's own ink
+bar field list ("gens name · date/season · treasury · dignitas") names four fields, Favor among them
+not, so this item does not invent UI surface the design doc never asked for, in contrast to item 1's own
+Dignitas slot, which *was* reserved and simply unwired. Covered in
+`tests/Gens.Simulation.Tests/Religion/ReligionTests.cs`, including Patron Deity founding and its
+one-shot guard, Favor adjustment and Divine Displeasure's threshold read, a headship-gated Reconsecration
+(rejected against the same head, accepted against a new one) with its ledger spend and Favor reset, the
+Rites Budget cycle's Treasury draw and stability modifier, Omen raising/heeding/ignoring (including the
+Impious immunity and a real severity-scaled random draw), Priesthood appointment's citizenship/Piety/
+Learning/Flamen-deity/Pontifex-capstone gates and its monthly trickle and death-driven vacancy, Auspices'
+two reliability tiers, both feast-day observance tiers, and a save/load round trip with the deterministic
+state hash staying stable across every new partition.
 
 Recommended internal order:
 
@@ -797,7 +911,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-2 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations) are now done too. **The next unimplemented work is Phase 12 item 3** — Religion, rites, favor, priesthood/institution actors, and culturally scoped rules.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-3 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track) are now done too. **The next unimplemented work is Phase 12 item 4** — Legal cases, evidence, standing, testimony, verdicts, and enforceable consequences.
 
 ## Vertical-slice acceptance test
 

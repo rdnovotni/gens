@@ -127,6 +127,10 @@ public static class CampaignBootstrapper
     /// the same rule-8 reason.</summary>
     public const string ClientPoachingRiskStreamName = Clientela.ClientPoachingSystem.PoachingRiskStreamName;
 
+    /// <summary>The named random stream (rule 8) <see cref="Religion.RespondToOmenCommand"/> reserves
+    /// for its "did an ignored Omen's warning come true" roll (Phase 12 item 3).</summary>
+    public const string OmenIgnoredOutcomeStreamName = Religion.RespondToOmenCommands.OmenIgnoredOutcomeStreamName;
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -157,6 +161,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(SuccessionDisputeScoringStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeSplinterStreamName, config.Seed);
         streams.AddDerived(ClientPoachingRiskStreamName, config.Seed);
+        streams.AddDerived(OmenIgnoredOutcomeStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
