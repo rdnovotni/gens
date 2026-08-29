@@ -3,6 +3,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
@@ -65,6 +66,8 @@ public sealed class WorldState
         RuntimeIdCounter<SuccessionDispute> successionDisputeIds,
         RuntimeIdCounter<ChronicleEntry> chronicleEntryIds,
         RuntimeIdCounter<FuneralRecord> funeralRecordIds,
+        RuntimeIdCounter<Agnomen> agnomenIds,
+        RuntimeIdCounter<InheritedCognomenDecision> inheritedCognomenDecisionIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -104,6 +107,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<FuneralRecord>, FuneralRecord> funeralRecords,
         OrderedRegistry<RuntimeId<Household>, MourningPeriod> mourningPeriods,
         OrderedRegistry<RuntimeId<Household>, MemoriaState> memoriaStates,
+        OrderedRegistry<RuntimeId<Agnomen>, Agnomen> agnomens,
+        OrderedRegistry<RuntimeId<InheritedCognomenDecision>, InheritedCognomenDecision> inheritedCognomenDecisions,
+        OrderedRegistry<RuntimeId<Household>, DynasticEpithet> dynasticEpithets,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -132,6 +138,8 @@ public sealed class WorldState
         SuccessionDisputeIds = successionDisputeIds;
         ChronicleEntryIds = chronicleEntryIds;
         FuneralRecordIds = funeralRecordIds;
+        AgnomenIds = agnomenIds;
+        InheritedCognomenDecisionIds = inheritedCognomenDecisionIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -171,6 +179,9 @@ public sealed class WorldState
         FuneralRecords = funeralRecords;
         MourningPeriods = mourningPeriods;
         MemoriaStates = memoriaStates;
+        Agnomens = agnomens;
+        InheritedCognomenDecisions = inheritedCognomenDecisions;
+        DynasticEpithets = dynasticEpithets;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -221,6 +232,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Funerary.FuneralRecord"/> (Phase 11 item 4).</summary>
     public RuntimeIdCounter<FuneralRecord> FuneralRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Epithets.Agnomen"/> (Phase 11 item 5).</summary>
+    public RuntimeIdCounter<Agnomen> AgnomenIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Epithets.InheritedCognomenDecision"/> (Phase 11 item 5).</summary>
+    public RuntimeIdCounter<InheritedCognomenDecision> InheritedCognomenDecisionIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -458,6 +475,23 @@ public sealed class WorldState
     /// cref="HouseholdPolicies"/>' identical convention.</summary>
     public OrderedRegistry<RuntimeId<Household>, MemoriaState> MemoriaStates { get; } = new();
 
+    /// <summary>Every <see cref="Epithets.Agnomen"/> ever granted (Phase 11 item 5), in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once granted, matching <see
+    /// cref="SuccessionDisputes"/>' identical "resolved or not, kept for the campaign's lifetime"
+    /// convention — this item never revokes one.</summary>
+    public OrderedRegistry<RuntimeId<Agnomen>, Agnomen> Agnomens { get; } = new();
+
+    /// <summary>Every <see cref="Epithets.InheritedCognomenDecision"/> ever recorded (Phase 11 item 5;
+    /// §5), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once recorded,
+    /// matching <see cref="Agnomens"/>' identical convention.</summary>
+    public OrderedRegistry<RuntimeId<InheritedCognomenDecision>, InheritedCognomenDecision> InheritedCognomenDecisions { get; } = new();
+
+    /// <summary>Each household's current <see cref="Epithets.DynasticEpithet"/> (Phase 11 item 5; §6),
+    /// keyed by household. Sparse: a household that hasn't crossed <see
+    /// cref="Epithets.DynasticEpithetCatalog.MinimumMajorOrLegendaryEntries"/> yet has no entry,
+    /// matching <see cref="HouseholdPolicies"/>' identical "no entry means the default" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, DynasticEpithet> DynasticEpithets { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -500,6 +534,8 @@ public sealed class WorldState
         ["successionDisputeIds"] = SuccessionDisputeIds.Peek,
         ["chronicleEntryIds"] = ChronicleEntryIds.Peek,
         ["funeralRecordIds"] = FuneralRecordIds.Peek,
+        ["agnomenIds"] = AgnomenIds.Peek,
+        ["inheritedCognomenDecisionIds"] = InheritedCognomenDecisionIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -539,6 +575,9 @@ public sealed class WorldState
         ["funeralRecords"] = FuneralRecords.Version,
         ["mourningPeriods"] = MourningPeriods.Version,
         ["memoriaStates"] = MemoriaStates.Version,
+        ["agnomens"] = Agnomens.Version,
+        ["inheritedCognomenDecisions"] = InheritedCognomenDecisions.Version,
+        ["dynasticEpithets"] = DynasticEpithets.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

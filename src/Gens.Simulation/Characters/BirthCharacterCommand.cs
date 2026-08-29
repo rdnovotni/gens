@@ -1,4 +1,5 @@
 using Gens.Simulation.Commands;
+using Gens.Simulation.Epithets;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
@@ -113,13 +114,22 @@ public static class BirthCharacterCommands
         // compares equal and reads as legitimate by the same "no marriage question" convention as a
         // parentless founder (see Character.Legitimacy's own doc comment).
         var legitimacy = mother.CurrentSpouseId == command.FatherId ? Legitimacy.Legitimate : Legitimacy.Illegitimate;
+        var resolvedHousehold = command.Household ?? mother.Household;
+
+        // §5's own "changes how every subsequent generation is actually named": a household that
+        // formally adopted an earned Agnomen as its standing cognomen (AdoptAgnomenAsCognomenCommand)
+        // overrides this newborn's freshly generated cognomen with that adopted name, rather than every
+        // birth rolling an unrelated one regardless of the family's own real decision.
+        var cognomen = resolvedHousehold is { } householdForCognomen
+            ? InheritedCognomenResolver.CurrentCognomen(state, householdForCognomen) ?? identity.Name.Cognomen
+            : identity.Name.Cognomen;
 
         var childId = state.CharacterIds.Issue();
         var child = Character.Create(
             id: childId,
             praenomen: identity.Name.Praenomen,
             nomen: identity.Name.Nomen,
-            cognomen: identity.Name.Cognomen,
+            cognomen: cognomen,
             sex: sex,
             birthDate: command.SubmittedDate,
             visualProfile: identity.Visual,
@@ -127,7 +137,7 @@ public static class BirthCharacterCommands
             socialClass: command.SocialClass,
             culture: mother.Culture,
             location: mother.Location,
-            household: command.Household ?? mother.Household,
+            household: resolvedHousehold,
             // An infant has "no stats beyond Health" (gens-familia-design.md §3's Infant row); Core
             // Attributes and Labor Skills start at zero as a placeholder until a real generation
             // system for them exists — not itself specified anywhere in the design corpus.

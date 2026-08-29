@@ -6,6 +6,7 @@ using System.Linq;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Epithets;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Queries;
@@ -126,7 +127,9 @@ public sealed class CampaignShell
     /// many Chronicle-worthy facts (a marriage, an adoption, a heir declaration) are player commands
     /// rather than monthly-system output, so <see cref="AdvanceMonth"/> alone would never chronicle
     /// them; the merged result includes any resulting <c>chronicle.*</c> events alongside the
-    /// command's own.</summary>
+    /// command's own. Also runs <see cref="EpithetGenerationSystem.Generate"/> over the combined batch
+    /// (Phase 11 item 5) — an Agnomen or Dynastic Epithet can key off either the command's own events or
+    /// the Chronicle entries they just produced, matching that system's own doc comment.</summary>
     public CommandResult Submit<TCommand>(CommandPipeline<WorldState, TCommand> pipeline, TCommand command)
         where TCommand : ICommand
     {
@@ -138,7 +141,9 @@ public sealed class CampaignShell
             return result;
 
         var chronicleEvents = ChronicleGenerationSystem.Generate(State, result.Events);
-        return chronicleEvents.Count == 0 ? result : result with { Events = result.Events.Concat(chronicleEvents).ToArray() };
+        var combined = chronicleEvents.Count == 0 ? result.Events : result.Events.Concat(chronicleEvents).ToArray();
+        var epithetEvents = EpithetGenerationSystem.Generate(State, combined);
+        return epithetEvents.Count == 0 ? result with { Events = combined } : result with { Events = combined.Concat(epithetEvents).ToArray() };
     }
 
     /// <summary>Advances the campaign one month, mirroring <c>AdvanceCommand</c>'s pairing of a
@@ -146,7 +151,9 @@ public sealed class CampaignShell
     /// including that same command's <see cref="ChronicleGenerationSystem.Generate"/> call (Phase 11
     /// item 3), so the Dynasty Chronicle populates during ordinary play, not only from the
     /// content-compiler CLI. The pause/advance UI (Phase 9 item 8, <c>GensUIController</c>) owns when
-    /// to call this; this method only owns the state transition itself.</summary>
+    /// to call this; this method only owns the state transition itself. Also runs <see
+    /// cref="EpithetGenerationSystem.Generate"/> over the same combined batch (Phase 11 item 5), matching
+    /// <see cref="Submit{TCommand}"/>'s identical pairing.</summary>
     public IReadOnlyList<IDomainEvent> AdvanceMonth(IEnumerable<IMonthlySystem<WorldState>> systems)
     {
         if (systems is null)
@@ -155,8 +162,10 @@ public sealed class CampaignShell
         var simulation = new WriteSetVerifyingSimulation(systems);
         var tickEvents = simulation.Tick(State, State.Date, RandomStreams);
         var chronicleEvents = ChronicleGenerationSystem.Generate(State, tickEvents);
+        var combined = tickEvents.Concat(chronicleEvents).ToArray();
+        var epithetEvents = EpithetGenerationSystem.Generate(State, combined);
         State.AdvanceMonth();
-        return tickEvents.Concat(chronicleEvents).ToArray();
+        return combined.Concat(epithetEvents).ToArray();
     }
 }
 
