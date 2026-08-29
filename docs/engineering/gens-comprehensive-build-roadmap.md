@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (item 1 of 9 done — see "Item 1 progress" below) ← **next up: item 2**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (item 2 of 9 done — see "Item 2 progress" below) ← **next up: item 3**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 1 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 2 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -578,6 +578,66 @@ lapse, the `InkBarQuery` wiring, a save/load round trip, and the deterministic s
 Items 2-9 (Clientela/offices, Religion, Legal, Crime & Punishment, Interest Groups/Collegia, Scandal,
 Fame/Celebrity, and full Edicts) remain — this item alone does not close Phase 12's own exit gate, which
 needs those systems' own legal/religious/factional consequences to actually exist.
+
+**Item 2 progress:** Clientela and the four local Magistracies land as two new domains,
+`src/Gens.Simulation/Clientela/` and `src/Gens.Simulation/Magistracies/`. Clientela (§4): `ClientelaEntry`
+is a sparse, per-Character roster-membership partition (`RecruitClientCommand`/`DismissClientCommand`),
+layered on top of Familia's existing `BondTag.Patron`/`BondTag.Client` tags via a direct relationship-web
+write mirroring `RecordInteractionCommand`'s own shape. `CallInClientFavorCommand` is exactly the
+integration item 1's own `FavorObligation` doc comment named as deliberately deferred: it opens and
+immediately resolves a favor through that item's own `FavorObligation`/`FavorGrantedEvent`/
+`FavorSettledEvent` types rather than inventing new bookkeeping, and adds §4.2's own reciprocity rule — a
+call-in inside `ClientelaCatalog.FavorCooldownMonths` of the last one costs the client's opinion of the
+patron (`OverdrawnOpinionPenalty`), a spaced-out one costs nothing. `HouseholdInfluence` (§4.4) is a
+zero-floored spendable resource, unlike Dignitas's deliberately-unclamped total; `InfluenceCycleSystem`
+generates it monthly from roster size/quality/held office and decays it monthly, and
+`HoldContestedElectionCommand` (below) is its one spend path — Scheme-spending (§9) is not wired, see
+below. `SalutatioSystem` (§4.3) writes its Dignitas half through `AdjustDignitasCommand` — the exact
+future caller that command's own item-1 doc comment reserved — and its Influence half directly, since no
+shared Influence-moving command exists yet for anything else to route through. `ClientPoachingSystem`
+(§4.5) targets a real `LivingWorldActor` rather than a placeholder stranger, since Rival Houses already
+shipped in Phase 10; it only poaches into an Actor whose head Character has already been lazily
+generated, deliberately not triggering that generation itself (it needs a NamePool/culture/settlement
+context this generic system has no principled way to supply on a rival's behalf). Faction (§3.1) is a
+new `CharacterFactionAlignment` sparse partition (`SetCharacterFactionCommand`) rather than a field added
+to `Character` itself, avoiding a retrofit of that record's already-large constructor and every existing
+call site; the household-level Faction drift §3.1 also describes is not built (no accumulated-choices
+ledger exists yet to drive it). Local Magistracies (§5): `MagistracyRecord` covers the four achievable
+offices (Decurion/Aedile/QuaestorLocal/Duumvir) only — the Rome-track values §11's own sketch lists
+alongside them (`quaestorRoman`, `praetor`, `consul`, etc.) are omitted from the enum entirely rather than
+included-but-unreachable, since §6/§7 are out of this item's scope. `AppointDecurionCommand` seats the
+base entry point directly (citizenship + a Dignitas threshold); `HoldContestedElectionCommand` resolves
+every office above it as a weighted comparison (Diplomacy + household Dignitas + spent Influence, plus a
+Faction-alignment thumb against the Curia majority) but takes an already-resolved challenger/incumbent
+Character rather than generating one inline, matching how `LivingWorldActorHeadGenerator`/
+`PromoteToNamedCommand` already generate for their own callers. §5.6's Curia body is deliberately not a
+second stored registry — `MagistracyResolver.ActiveCuriaSeats` derives it from active Decurion records
+directly, since that already is the seat roster. `PairDuumvirsCommand` links two independently-won
+Duumvir seats and writes `BondTag.CoMagistrate`; `FundAedileWorksCommand` gives the Aedile's "occasional
+real duty" three named choices with real, if placeholder-sized, Dignitas consequences (the paired
+Contentment half is not wired — out of this item's Politics & Patronage-only scope).
+`MagistracyTermSystem` applies every active office's monthly passive Dignitas trickle, auto-renews an
+unchallenged term at its annual anniversary, and strips a held office on Insolvency (reading
+`InsolvencyState.Stage` directly, since `InsolvencySystem` itself doesn't yet apply its own flagged
+`officeOrCensusLoss` consequence) with the extra §5.7 Dignitas penalty; it also vacates a seat on the
+holder's death, an addition not named by §5.7 itself. **Explicitly not built, matching this item's own
+narrow Politics & Patronage-only scope:** the Curia (Buildings §4.10) and Mint (§5.4) building gates —
+no such building types exist anywhere in `Gens.Simulation.Buildings` yet, so `AppointDecurionCommand`/
+`PairDuumvirsCommand` check only the Dignitas/office half of their gates and note the building check as
+future wiring; a Legal & Court conviction loss-of-office route (§5.7) — kept as an unreachable
+`MagistracyLossReason.LegalConviction` enum value, matching item 1's own `Agnomen.FameEffect` precedent
+for "the field exists, nothing can set it yet"; §9 Scheming's "undermine a rival candidate" hook onto an
+election's own score inputs — the Scheme engine now exists (Phase 10 packages 11-12,
+`Gens.Simulation.Interactions`), so this is a real, buildable gap for a future pass rather than a
+blocked one, just not built here; and rival-candidate/Curiales-promotion generation itself, left to the
+existing generators named above rather than duplicated inline. Covered in
+`tests/Gens.Simulation.Tests/Clientela/ClientelaTests.cs` and
+`tests/Gens.Simulation.Tests/Magistracies/MagistracyTests.cs`, including recruitment/dismissal and their
+bond-forming writes, the overdrawn-favor opinion cost, Influence generation/decay, the Salutatio's two
+outcomes, a poaching event actually flipping a client's bond to a real rival Actor, Decurion appointment
+and Curia-capacity limits, a contested election with a real score-driven outcome, Duumvir pairing, all
+three Aedile funding choices, term auto-renewal, Insolvency- and death-driven loss of office, and a
+save/load round trip with the deterministic state hash staying stable across every new partition.
 
 Recommended internal order:
 
@@ -737,7 +797,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 item 1 (Dignitas/reputation/favor-obligation primitive) is now done too. **The next unimplemented work is Phase 12 item 2** — patronage/clientela and office/appointment foundations.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-2 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations) are now done too. **The next unimplemented work is Phase 12 item 3** — Religion, rites, favor, priesthood/institution actors, and culturally scoped rules.
 
 ## Vertical-slice acceptance test
 
@@ -788,5 +848,5 @@ An issue is not ready for implementation until its dependencies, authoritative f
 
 ~~The milestone after that should be **Dynasty Continuity and Historical Memory**, encompassing Phase 11.~~ — ✅ **complete.** Heirs/succession/disputed inheritance, the player-control handoff and Regency, the Dynasty Chronicle, funerals/mourning/Memoria, and rules-and-provenance epithets are all in place, proven together by a three-succession (one contested) exit-gate soak.
 
-**The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation. Item 1 (the shared Dignitas/reputation/favor-obligation primitive) is complete; items 2–9 remain.
+**The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation. Items 1–2 (the shared Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations) are complete; items 3–9 remain.
 

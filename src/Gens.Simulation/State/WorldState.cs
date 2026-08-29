@@ -2,6 +2,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
+using Gens.Simulation.Clientela;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
@@ -11,6 +12,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.Reputation;
@@ -70,6 +72,7 @@ public sealed class WorldState
         RuntimeIdCounter<Agnomen> agnomenIds,
         RuntimeIdCounter<InheritedCognomenDecision> inheritedCognomenDecisionIds,
         RuntimeIdCounter<FavorObligation> favorObligationIds,
+        RuntimeIdCounter<MagistracyRecord> magistracyRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -114,6 +117,10 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, DynasticEpithet> dynasticEpithets,
         OrderedRegistry<RuntimeId<Household>, HouseholdReputation> householdReputations,
         OrderedRegistry<RuntimeId<FavorObligation>, FavorObligation> favorObligations,
+        OrderedRegistry<RuntimeId<Character>, ClientelaEntry> clientelaEntries,
+        OrderedRegistry<RuntimeId<Household>, HouseholdInfluence> householdInfluences,
+        OrderedRegistry<RuntimeId<Character>, CharacterFactionAlignment> characterFactionAlignments,
+        OrderedRegistry<RuntimeId<MagistracyRecord>, MagistracyRecord> magistracyRecords,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -145,6 +152,7 @@ public sealed class WorldState
         AgnomenIds = agnomenIds;
         InheritedCognomenDecisionIds = inheritedCognomenDecisionIds;
         FavorObligationIds = favorObligationIds;
+        MagistracyRecordIds = magistracyRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -189,6 +197,10 @@ public sealed class WorldState
         DynasticEpithets = dynasticEpithets;
         HouseholdReputations = householdReputations;
         FavorObligations = favorObligations;
+        ClientelaEntries = clientelaEntries;
+        HouseholdInfluences = householdInfluences;
+        CharacterFactionAlignments = characterFactionAlignments;
+        MagistracyRecords = magistracyRecords;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -248,6 +260,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Reputation.FavorObligation"/> (Phase 12 item 1).</summary>
     public RuntimeIdCounter<FavorObligation> FavorObligationIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Magistracies.MagistracyRecord"/> (Phase 12 item 2).</summary>
+    public RuntimeIdCounter<MagistracyRecord> MagistracyRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -514,6 +529,29 @@ public sealed class WorldState
     /// campaign's lifetime" convention.</summary>
     public OrderedRegistry<RuntimeId<FavorObligation>, FavorObligation> FavorObligations { get; } = new();
 
+    /// <summary>Every Character's Clientela roster membership (Phase 12 item 2; §4.1), keyed by client.
+    /// Sparse: a Character who is nobody's client has no entry, matching <see
+    /// cref="HouseholdReputations"/>'s identical "no entry means the default" convention. Immutable
+    /// record entries: <see cref="Clientela.CallInClientFavorCommand"/> and <see
+    /// cref="Clientela.ClientPoachingSystem"/> replace an entry (remove then re-add) rather than
+    /// mutating one in place, matching <see cref="HouseholdHeadships"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Character>, ClientelaEntry> ClientelaEntries { get; } = new();
+
+    /// <summary>Each household's running Influence total (Phase 12 item 2; §4.4), keyed by household.
+    /// Sparse: a household this item never touches has no entry, matching <see
+    /// cref="HouseholdReputations"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdInfluence> HouseholdInfluences { get; } = new();
+
+    /// <summary>Each Character's <see cref="Clientela.PoliticalFaction"/> (Phase 12 item 2; §3.1), keyed
+    /// by Character. Sparse: a Character not relevant to local politics has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Character>, CharacterFactionAlignment> CharacterFactionAlignments { get; } = new();
+
+    /// <summary>Every <see cref="Magistracies.MagistracyRecord"/> ever created, active or ended (Phase
+    /// 12 item 2; §5), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once
+    /// created rather than removed, matching <see cref="SuccessionDisputes"/>'s identical "resolved or
+    /// not, kept for the campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<MagistracyRecord>, MagistracyRecord> MagistracyRecords { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -559,6 +597,7 @@ public sealed class WorldState
         ["agnomenIds"] = AgnomenIds.Peek,
         ["inheritedCognomenDecisionIds"] = InheritedCognomenDecisionIds.Peek,
         ["favorObligationIds"] = FavorObligationIds.Peek,
+        ["magistracyRecordIds"] = MagistracyRecordIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -603,6 +642,10 @@ public sealed class WorldState
         ["dynasticEpithets"] = DynasticEpithets.Version,
         ["householdReputations"] = HouseholdReputations.Version,
         ["favorObligations"] = FavorObligations.Version,
+        ["clientelaEntries"] = ClientelaEntries.Version,
+        ["householdInfluences"] = HouseholdInfluences.Version,
+        ["characterFactionAlignments"] = CharacterFactionAlignments.Version,
+        ["magistracyRecords"] = MagistracyRecords.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

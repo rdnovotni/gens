@@ -7,6 +7,7 @@ using Gens.Simulation.Funerary;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Magistracies;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -181,6 +182,11 @@ internal static class RuntimeIdTagRegistry
         // needs no entry: it's keyed by RuntimeId<Household>, not RuntimeId<HouseholdReputation>,
         // matching DynasticEpithet's identical exemption above.
         [typeof(FavorObligation)] = "favor",
+        // Phase 12 item 2 — Gens.Simulation.Magistracies.MagistracyRecord, same "real record as its
+        // own tag" convention as FavorObligation above. ClientelaEntry/HouseholdInfluence/
+        // CharacterFactionAlignment need no entry: each is keyed by RuntimeId<Character> or
+        // RuntimeId<Household>, not by its own RuntimeId, matching DynasticEpithet's identical exemption.
+        [typeof(MagistracyRecord)] = "magistracy",
     };
 
     public static string Resolve(Type type) =>

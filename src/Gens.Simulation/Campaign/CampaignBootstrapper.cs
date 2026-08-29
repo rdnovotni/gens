@@ -122,6 +122,11 @@ public static class CampaignBootstrapper
     /// cref="SuccessionDisputeScoringStreamName"/> for the same rule-8 reason.</summary>
     public const string SuccessionDisputeSplinterStreamName = SuccessionDisputeResolutionSystem.SplinterStreamName;
 
+    /// <summary>The named random stream <see cref="Clientela.ClientPoachingSystem"/> reserves for its
+    /// monthly poaching-chance roll (Phase 12 item 2), kept distinct from every other stream here for
+    /// the same rule-8 reason.</summary>
+    public const string ClientPoachingRiskStreamName = Clientela.ClientPoachingSystem.PoachingRiskStreamName;
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -151,6 +156,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(SuccessionDisputeTriggerStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeScoringStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeSplinterStreamName, config.Seed);
+        streams.AddDerived(ClientPoachingRiskStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
