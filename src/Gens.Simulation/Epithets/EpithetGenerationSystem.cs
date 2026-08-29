@@ -103,7 +103,7 @@ public static class EpithetGenerationSystem
             sourceChronicleEntryIds, sourceSuccessionDisputeId, DignitasEffect: null, FameEffect: null, IsSuppressible: false);
         state.Agnomens.Add(agnomenId, agnomen);
 
-        produced.Add(new AgnomenGrantedEvent(state.EventIds.Issue(), date, agnomenId, characterId, name, causationId: null));
+        produced.Add(new AgnomenGrantedEvent(state.EventIds.Issue(), date, agnomenId, characterId, name, CausationId: null));
     }
 
     private static void RecomputeDynasticEpithet(WorldState state, List<IDomainEvent> produced, RuntimeId<Household> householdId, GameDate date)
@@ -135,6 +135,6 @@ public static class EpithetGenerationSystem
             state.DynasticEpithets.Remove(householdId);
         state.DynasticEpithets.Add(householdId, new DynasticEpithet(householdId, epithetText, qualifying));
 
-        produced.Add(new DynasticEpithetChangedEvent(state.EventIds.Issue(), date, householdId, epithetText, causationId: null));
+        produced.Add(new DynasticEpithetChangedEvent(state.EventIds.Issue(), date, householdId, epithetText, CausationId: null));
     }
 }
