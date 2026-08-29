@@ -58,7 +58,7 @@ At the audit point there was no authoritative `WorldState`, campaign bootstrap, 
 
 The authored content catalog contained only `status.placeholder`. The JSON Schema required only an `id` and permitted every other property. The benchmark measured 10,000 random draws rather than a monthly tick. The save code declared names and a version but did not serialize or migrate a campaign. The art-provider seam was intentionally disconnected from gameplay.
 
-**This has since changed substantially.** Phases 0–10 (see "Detailed roadmap" below, and the checklist immediately following this paragraph) have since been implemented and merged: `WorldState`, typed IDs, epoch-aware `GameDate`, phased ticks, command/event envelopes, RNG stream registry, canonical save serialization with migrations, typed content-definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation), a headless campaign bootstrap and console runner, `Character`/Familia lifecycle, region/settlement/plot/holding, stockpiles, buildings, villas, labor, and a production network with ledger-ready event emission, background population groups and employment, household ledgers/markets/debt/contracts, the action/standing-policy layer, the weighted event pool and monthly report projection, the Unity application shell and adapters, the persistent ink bar and four first-class screens, wax-seal/ordinary confirmations, pause/advance/save/load/replay diagnostics, placeholder portraits, the Phase 9 EditMode/PlayMode presentation-layer test suites (including the 24-month exit-gate soak test), and Phase 10's `LivingWorldActor` Background/Noteworthy tiers, rival-house lifecycle, Ancestral Grudges, the shared `ActionSelector`, steward/Council autonomy with real competence/loyalty rolls and Return Reports, the Scheme engine, `RivalDossier` refresh/staleness, and a combined 200-year rival-house/stewardship soak test. **The vertical-slice acceptance test's engineering scaffolding is now in place end to end, and the world can act without waiting on the player; Phase 11 onward (dynasty continuity, institutions, geography/travel, and beyond) remains unbuilt.** Treat the assessment table below as the state at the original audit point, not the current state — see "Detailed roadmap" for what has been completed since.
+**This has since changed substantially.** Phases 0–11 (see "Detailed roadmap" below, and the checklist immediately following this paragraph) have since been implemented and merged: `WorldState`, typed IDs, epoch-aware `GameDate`, phased ticks, command/event envelopes, RNG stream registry, canonical save serialization with migrations, typed content-definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation), a headless campaign bootstrap and console runner, `Character`/Familia lifecycle, region/settlement/plot/holding, stockpiles, buildings, villas, labor, and a production network with ledger-ready event emission, background population groups and employment, household ledgers/markets/debt/contracts, the action/standing-policy layer, the weighted event pool and monthly report projection, the Unity application shell and adapters, the persistent ink bar and four first-class screens, wax-seal/ordinary confirmations, pause/advance/save/load/replay diagnostics, placeholder portraits, the Phase 9 EditMode/PlayMode presentation-layer test suites (including the 24-month exit-gate soak test), Phase 10's `LivingWorldActor` Background/Noteworthy tiers, rival-house lifecycle, Ancestral Grudges, the shared `ActionSelector`, steward/Council autonomy with real competence/loyalty rolls and Return Reports, the Scheme engine, `RivalDossier` refresh/staleness, and a combined 200-year rival-house/stewardship soak test, and Phase 11's succession/heirs/disputed-inheritance handling, the player-control handoff and Regency, the Dynasty Chronicle, funerals/mourning/Memoria, rules-and-provenance epithets, and a three-succession (one contested) exit-gate soak. **The vertical-slice acceptance test's engineering scaffolding is now in place end to end, the world can act without waiting on the player, and a dynasty survives its own head's death; Phase 12 onward (institutions, geography/travel, and beyond) remains unbuilt.** Treat the assessment table below as the state at the original audit point, not the current state — see "Detailed roadmap" for what has been completed since.
 
 ### Phase completion checklist (as of this revision)
 
@@ -73,8 +73,8 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 8** — Implement the economy, ledger, and market
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
-- [ ] **Phase 11** — Guarantee dynasty continuity and historical memory ← **next up**
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life
+- [x] **Phase 11** — Guarantee dynasty continuity and historical memory
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life ← **next up**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -357,7 +357,7 @@ Construction order:
 
 **Primary design inputs:** `gens-steward-council-auto-management-design.md`, `gens-rival-houses-design.md`, interaction/scheme sections of `gens-characters-design.md`, and `gens-notable-households-design.md`.
 
-### Phase 11 — Guarantee dynasty continuity and historical memory — ⬜ NOT STARTED
+### Phase 11 — Guarantee dynasty continuity and historical memory — ✅ COMPLETE
 
 **Outcome:** death changes play rather than ending the simulation arbitrarily.
 
@@ -491,7 +491,31 @@ Agnomen this pass mints therefore carries `AgnomenGrantMethod.OrganicCrowdOrigin
 convene one. Covered in `tests/Gens.Simulation.Tests/Epithets/EpithetTests.cs`, including achievement and
 succession-victory awards, award idempotency, dynastic epithet threshold crossing, cognomen-adoption
 validation and its effect on a subsequent birth, a save/load round trip, and the deterministic state hash
-staying stable. Item 6 (succession fixtures) remains.
+staying stable.
+
+**Item 6 progress:** the per-scenario succession fixtures the construction order calls for (ordinary
+inheritance, contested inheritance, adoption, debt inheritance, absent heirs, and extinction) were
+already delivered alongside item 1 (`tests/Gens.Simulation.Tests/Succession/SuccessionTests.cs`) — what
+remained was proving the phase's own exit gate itself: the whole system stack wired together across a
+real multi-generation run rather than one system exercised in isolation per test.
+`tests/Gens.Simulation.Tests/ExitGate/SuccessionDynastyExitGateTests.cs` closes that gap, matching how
+`RivalHousesAndStewardshipSoakTests` closed out Phase 10: a single household survives three real
+successions (a contested Gen0→Gen1 dispute resolved by `SuccessionDisputeResolutionSystem`, then two
+ordinary Gen1→Gen2 and Gen2→Gen3 handoffs) with `SuccessionHandoffSystem`, `SuccessionDisputeResolutionSystem`,
+`RegencySystem`, `PlayerControlHandoffSystem`, `FuneralOpeningSystem`, `FuneralAutoResolutionSystem`, and
+`ManesObservanceSystem` all ticking together, plus `ChronicleGenerationSystem.Generate`/
+`EpithetGenerationSystem.Generate` run the same way `CampaignShell.AdvanceMonth` and the content-compiler
+CLI's `AdvanceCommand` already pair them. Across the run it asserts: the original loan still rides the
+same Household through every handoff untouched (§6's "asset and obligation transfer" free-by-construction
+claim); the Dynasty Chronicle records all three headship transitions plus the three funerals; all three
+generations' funerals are actually held and Memoria moves off zero; the contested winner is awarded the
+Felix agnomen; `PlayerControlHandoffSystem` follows control all the way to the third-generation head;
+relationship referential integrity holds after three generations of deaths; and both a mid-run and a
+final save/load round trip reproduce the exact same state hash. Head deaths are driven directly (the
+same `DeathRecord`-flipping technique the isolated fixtures already use) rather than left to
+`CharacterLifecycleSystem`'s own mortality roll, since a real roll cannot be scheduled to land on three
+chosen generations inside a bounded run — that system's own soak coverage already lives in Phase 5's
+`FamiliaHouseholdSoakTests`.
 
 Construction order:
 
@@ -668,7 +692,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, and Phase 10's delegation/autonomous-action/rival-houses work have also since been implemented (see the phase checklist above). **The next unimplemented work is Phase 11** — dynasty continuity and historical memory.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above). **The next unimplemented work is Phase 12** — institutions, reputation, law, religion, and public life.
 
 ## Vertical-slice acceptance test
 
@@ -717,5 +741,7 @@ An issue is not ready for implementation until its dependencies, authoritative f
 
 ~~The milestone after that should be **Delegation, Autonomous Action, and Rival Houses**, encompassing Phase 10.~~ — ✅ **complete.** `LivingWorldActor` tiers, rival-house lifecycle, Ancestral Grudges, the shared `ActionSelector`, steward/Council autonomy with real competence/loyalty rolls and Return Reports, the Scheme engine, and the 200-year combined soak are all in place.
 
-**The next milestone is Phase 11 — dynasty continuity and historical memory.** Death, succession, and the Dynasty Chronicle can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility) every prior milestone has used, including the actor/genealogy machinery Phase 10 just added. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation.
+~~The milestone after that should be **Dynasty Continuity and Historical Memory**, encompassing Phase 11.~~ — ✅ **complete.** Heirs/succession/disputed inheritance, the player-control handoff and Regency, the Dynasty Chronicle, funerals/mourning/Memoria, and rules-and-provenance epithets are all in place, proven together by a three-succession (one contested) exit-gate soak.
+
+**The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation.
 
