@@ -14,6 +14,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -64,6 +65,7 @@ public static class WorldStateMapper
                 FuneralRecordIds = state.FuneralRecordIds.Peek,
                 AgnomenIds = state.AgnomenIds.Peek,
                 InheritedCognomenDecisionIds = state.InheritedCognomenDecisionIds.Peek,
+                FavorObligationIds = state.FavorObligationIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -147,6 +149,10 @@ public static class WorldStateMapper
             InheritedCognomenDecisions = state.InheritedCognomenDecisions.InAscendingOrder().Select(entry => ToInheritedCognomenDecisionDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             DynasticEpithets = state.DynasticEpithets.InAscendingOrder().Select(entry => ToDynasticEpithetDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            HouseholdReputations = state.HouseholdReputations.InAscendingOrder().Select(entry => ToHouseholdReputationDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            FavorObligations = state.FavorObligations.InAscendingOrder().Select(entry => ToFavorObligationDto(entry.Value)).ToArray(),
         };
     }
 
@@ -426,6 +432,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Household>, DynasticEpithet>(epithet.HouseholdId, epithet);
             }));
 
+        var householdReputations = OrderedRegistry<RuntimeId<Household>, HouseholdReputation>.Restore(
+            dto.HouseholdReputations.Select(r =>
+            {
+                var reputation = FromHouseholdReputationDto(r);
+                return new KeyValuePair<RuntimeId<Household>, HouseholdReputation>(reputation.HouseholdId, reputation);
+            }));
+
+        var favorObligations = OrderedRegistry<RuntimeId<FavorObligation>, FavorObligation>.Restore(
+            dto.FavorObligations.Select(f =>
+            {
+                var favor = FromFavorObligationDto(f);
+                return new KeyValuePair<RuntimeId<FavorObligation>, FavorObligation>(favor.FavorId, favor);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -454,6 +474,7 @@ public static class WorldStateMapper
             funeralRecordIds: RuntimeIdCounter<FuneralRecord>.Restore(dto.Counters.FuneralRecordIds),
             agnomenIds: RuntimeIdCounter<Agnomen>.Restore(dto.Counters.AgnomenIds),
             inheritedCognomenDecisionIds: RuntimeIdCounter<InheritedCognomenDecision>.Restore(dto.Counters.InheritedCognomenDecisionIds),
+            favorObligationIds: RuntimeIdCounter<FavorObligation>.Restore(dto.Counters.FavorObligationIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -496,6 +517,8 @@ public static class WorldStateMapper
             agnomens: agnomens,
             inheritedCognomenDecisions: inheritedCognomenDecisions,
             dynasticEpithets: dynasticEpithets,
+            householdReputations: householdReputations,
+            favorObligations: favorObligations,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1789,4 +1812,34 @@ public static class WorldStateMapper
         RuntimeId<Household>.Parse(dto.HouseholdId),
         dto.EpithetText,
         dto.DerivedFromChronicleEntryIds.Select(RuntimeId<ChronicleEntry>.Parse).ToArray());
+
+    private static HouseholdReputationDto ToHouseholdReputationDto(HouseholdReputation reputation) => new()
+    {
+        HouseholdId = reputation.HouseholdId.ToTaggedString(),
+        Dignitas = reputation.Dignitas,
+    };
+
+    private static HouseholdReputation FromHouseholdReputationDto(HouseholdReputationDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.Dignitas);
+
+    private static FavorObligationDto ToFavorObligationDto(FavorObligation favor) => new()
+    {
+        FavorId = favor.FavorId.ToTaggedString(),
+        GrantorId = favor.GrantorId.ToTaggedString(),
+        BeneficiaryId = favor.BeneficiaryId.ToTaggedString(),
+        Kind = favor.Kind,
+        GrantedDateTotalMonths = favor.GrantedDate.TotalMonths,
+        Status = favor.Status.ToString(),
+        ResolvedDateTotalMonths = favor.ResolvedDate?.TotalMonths,
+    };
+
+    private static FavorObligation FromFavorObligationDto(FavorObligationDto dto) => new(
+        RuntimeId<FavorObligation>.Parse(dto.FavorId),
+        RuntimeId<Character>.Parse(dto.GrantorId),
+        RuntimeId<Character>.Parse(dto.BeneficiaryId),
+        dto.Kind,
+        new GameDate(dto.GrantedDateTotalMonths),
+        Enum.Parse<FavorStatus>(dto.Status),
+        dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null);
 }

@@ -292,6 +292,19 @@ public sealed record WorldSaveDocument
     /// additive-only reason as <see cref="InheritedCognomenDecisions"/> above.</summary>
     [JsonPropertyOrder(46)]
     public IReadOnlyList<DynasticEpithetDto> DynasticEpithets { get; init; } = Array.Empty<DynasticEpithetDto>();
+
+    /// <summary>Every household's <see cref="Gens.Simulation.Reputation.HouseholdReputation"/> Dignitas
+    /// total (Phase 12 item 1), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty: a pre-Phase-12-item-1 save has no Dignitas totals,
+    /// matching every prior additive field's identical ADR 0011 reasoning.</summary>
+    [JsonPropertyOrder(47)]
+    public IReadOnlyList<HouseholdReputationDto> HouseholdReputations { get; init; } = Array.Empty<HouseholdReputationDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Reputation.FavorObligation"/> ever granted (Phase 12
+    /// item 1), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="HouseholdReputations"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(48)]
+    public IReadOnlyList<FavorObligationDto> FavorObligations { get; init; } = Array.Empty<FavorObligationDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -418,6 +431,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(25)]
     public long InheritedCognomenDecisionIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-1 save has no Favor
+    /// Obligations. Additive-only per ADR 0011's policy, matching <see
+    /// cref="InheritedCognomenDecisionIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(26)]
+    public long FavorObligationIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2015,4 +2034,40 @@ public sealed record DynasticEpithetDto
 
     [JsonPropertyOrder(2)]
     public required IReadOnlyList<string> DerivedFromChronicleEntryIds { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Reputation.HouseholdReputation"/> (Phase 12 item 1), keyed
+/// by household.</summary>
+public sealed record HouseholdReputationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Dignitas { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Reputation.FavorObligation"/> (Phase 12 item 1).</summary>
+public sealed record FavorObligationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string FavorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string GrantorId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string BeneficiaryId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Kind { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int GrantedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public int? ResolvedDateTotalMonths { get; init; }
 }

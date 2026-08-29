@@ -9,6 +9,7 @@ using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Markets;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 
@@ -54,6 +55,7 @@ public static class StateHasher
         hash = MixLong(hash, state.FuneralRecordIds.Peek);
         hash = MixLong(hash, state.AgnomenIds.Peek);
         hash = MixLong(hash, state.InheritedCognomenDecisionIds.Peek);
+        hash = MixLong(hash, state.FavorObligationIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -445,6 +447,25 @@ public static class StateHasher
             hash = MixString(hash, entry.Value.EpithetText);
             foreach (var sourceId in entry.Value.DerivedFromChronicleEntryIds)
                 hash = MixLong(hash, sourceId.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.HouseholdReputations.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.Dignitas);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.FavorObligations.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.GrantorId.Value);
+            hash = MixLong(hash, entry.Value.BeneficiaryId.Value);
+            hash = MixString(hash, entry.Value.Kind);
+            hash = MixLong(hash, entry.Value.GrantedDate.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.Status);
+            hash = MixLong(hash, entry.Value.ResolvedDate?.TotalMonths ?? -1L);
         }
 
         return hash;

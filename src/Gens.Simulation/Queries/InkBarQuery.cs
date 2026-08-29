@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -21,9 +22,12 @@ public readonly record struct InkBarProjection(
 
 /// <summary>Projects the top bar for the caller-specified household, the same "caller-specified
 /// subject" shape <see cref="CharacterLifecycleQuery"/> establishes. <see
-/// cref="InkBarProjection.Dignitas"/> is fixed at 0: no reputation/standing system exists yet (Phase
-/// 12; <c>gens-core-design.md</c>'s Dignitas glossary entry) to compute a real value from, so the ink
-/// bar reserves the field's slot rather than inventing a number for it. <see
+/// cref="InkBarProjection.Dignitas"/> now reads <see cref="DignitasResolver.Current"/> (Phase 12 item
+/// 1) — this query's own doc comment previously reserved the slot at a fixed 0 while "no
+/// reputation/standing system exists yet"; that gap is closed, defaulting to 0 for a household nothing
+/// has touched yet (<see cref="Reputation.HouseholdReputation"/>'s own "no entry means zero"
+/// convention), though no in-game system yet actually calls <see cref="AdjustDignitasCommand"/> to move
+/// it. <see
 /// cref="InkBarProjection.GensName"/> reads the oldest living household member's Nomen (Roman gens
 /// members share a Nomen) as a stand-in for a real head-of-household designation, which Phase 11's
 /// succession work (<c>gens-succession-dynasty-design.md</c>) has not landed yet.</summary>
@@ -60,6 +64,6 @@ public sealed class InkBarQuery : IWorldQuery<InkBarProjection>
             Era: era,
             MonthOfYear: monthOfYear,
             Treasury: account?.Balance ?? Money.Zero,
-            Dignitas: 0);
+            Dignitas: DignitasResolver.Current(state, _householdId));
     }
 }
