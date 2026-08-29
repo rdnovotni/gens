@@ -28,9 +28,13 @@ public sealed record InheritedCognomenDecision(
 /// how every subsequent generation is actually named."</summary>
 public static class InheritedCognomenResolver
 {
-    /// <summary>The most recently effective adopted decision for <paramref name="householdId"/>, or
-    /// <c>null</c> if the household has never adopted one — later adoptions supersede earlier ones
-    /// rather than stacking, matching how a real family's own cognomen is one standing name at a time.</summary>
+    /// <summary>The most recently adopted decision for <paramref name="householdId"/>, or <c>null</c>
+    /// if the household has never adopted one — later adoptions supersede earlier ones rather than
+    /// stacking, matching how a real family's own cognomen is one standing name at a time. Takes the
+    /// last matching entry found while scanning in ascending <see
+    /// cref="Identity.RuntimeId{T}"/> order (ADR 0004) — issuance order, so it stays correct even when
+    /// two decisions share the same <see cref="InheritedCognomenDecision.EffectiveFromDate"/> (multiple
+    /// commands accepted within the same month), rather than comparing that date directly.</summary>
     public static string? CurrentCognomen(WorldState state, RuntimeId<Household> householdId)
     {
         InheritedCognomenDecision? latest = null;
@@ -39,8 +43,7 @@ public static class InheritedCognomenResolver
             var decision = entry.Value;
             if (decision.DecidingHouseholdId != householdId || !decision.AdoptedAsPermanentCognomen)
                 continue;
-            if (latest is null || decision.EffectiveFromDate.TotalMonths > latest.EffectiveFromDate.TotalMonths)
-                latest = decision;
+            latest = decision;
         }
 
         if (latest is null)

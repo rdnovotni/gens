@@ -3,6 +3,7 @@ using Gens.Simulation.Chronicle;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Queries;
 using Gens.Simulation.Random;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
@@ -311,6 +312,123 @@ public sealed class EpithetTests
             Assert.That(InheritedCognomenResolver.CurrentCognomen(restored, householdId), Is.EqualTo(AgnomenCatalog.AchievementAgnomenName));
 
             Assert.That(StateHasher.Hash(restored), Is.EqualTo(beforeHash));
+        });
+    }
+
+    [Test]
+    public void DynasticEpithetProvenanceKeepsGrowingEvenWhenTheTextDoesNotChange()
+    {
+        var state = new WorldState(new GameDate(0));
+        var householdId = state.HouseholdIds.Issue();
+
+        for (var i = 0; i < 4; i++)
+            SeedEntry(state, householdId, ChronicleCategory.PoliticsAndOffice, ChronicleTier.Major, null);
+        var fifthEntryId = SeedEntry(state, householdId, ChronicleCategory.PoliticsAndOffice, ChronicleTier.Legendary, null);
+        var firstRecorded = new ChronicleEntryRecordedEvent(state.EventIds.Issue(), new GameDate(0), fifthEntryId, householdId, ChronicleTier.Legendary, null);
+        var firstProduced = EpithetGenerationSystem.Generate(state, new IDomainEvent[] { firstRecorded });
+
+        state.DynasticEpithets.TryGet(householdId, out var afterFirst);
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstProduced.OfType<DynasticEpithetChangedEvent>().Count(), Is.EqualTo(1));
+            Assert.That(afterFirst!.DerivedFromChronicleEntryIds, Has.Count.EqualTo(5));
+        });
+
+        // A sixth qualifying entry in the same dominant category: the visible text stays the same, but
+        // the provenance list must still pick it up rather than freezing at the first five.
+        var sixthEntryId = SeedEntry(state, householdId, ChronicleCategory.PoliticsAndOffice, ChronicleTier.Major, null);
+        var secondRecorded = new ChronicleEntryRecordedEvent(state.EventIds.Issue(), new GameDate(1), sixthEntryId, householdId, ChronicleTier.Major, null);
+        var secondProduced = EpithetGenerationSystem.Generate(state, new IDomainEvent[] { secondRecorded });
+
+        state.DynasticEpithets.TryGet(householdId, out var afterSecond);
+        Assert.Multiple(() =>
+        {
+            Assert.That(secondProduced.OfType<DynasticEpithetChangedEvent>(), Is.Empty, "text did not change, so no second change event");
+            Assert.That(afterSecond!.EpithetText, Is.EqualTo(afterFirst.EpithetText));
+            Assert.That(afterSecond.DerivedFromChronicleEntryIds, Has.Count.EqualTo(6));
+        });
+    }
+
+    [Test]
+    public void ASameMonthLaterCognomenAdoptionSupersedesAnEarlierOne()
+    {
+        var state = new WorldState(new GameDate(0));
+        var headId = state.CharacterIds.Issue();
+        var householdId = Establish(state, headId, new GameDate(0));
+        state.Characters.Add(headId, CharacterTestFixtures.Minimal(headId, household: householdId));
+
+        var firstAgnomenId = state.AgnomenIds.Issue();
+        state.Agnomens.Add(firstAgnomenId, new Agnomen(
+            firstAgnomenId, headId, AgnomenType.VirtueOrAchievement, "Magnus",
+            AgnomenGrantMethod.OrganicCrowdOrigin, new GameDate(0), Array.Empty<RuntimeId<ChronicleEntry>>(), null, null, null, false));
+        var secondAgnomenId = state.AgnomenIds.Issue();
+        state.Agnomens.Add(secondAgnomenId, new Agnomen(
+            secondAgnomenId, headId, AgnomenType.VirtueOrAchievement, "Felix",
+            AgnomenGrantMethod.OrganicCrowdOrigin, new GameDate(0), Array.Empty<RuntimeId<ChronicleEntry>>(), null, null, null, false));
+
+        // Both commands are submitted within the same month — same EffectiveFromDate on both decisions.
+        var sameMonth = new GameDate(5);
+        var first = new AdoptAgnomenAsCognomenCommand(state.CommandIds.Issue(), "player", sameMonth, null, householdId, firstAgnomenId);
+        AdoptAgnomenAsCognomenCommands.Pipeline.Execute(state, first);
+        var second = new AdoptAgnomenAsCognomenCommand(state.CommandIds.Issue(), "player", sameMonth, null, householdId, secondAgnomenId);
+        var secondResult = AdoptAgnomenAsCognomenCommands.Pipeline.Execute(state, second);
+
+        Assert.That(secondResult.Accepted, Is.True);
+        Assert.That(InheritedCognomenResolver.CurrentCognomen(state, householdId), Is.EqualTo("Felix"));
+    }
+
+    [Test]
+    public void AdoptingACognomenCreatesAMajorChronicleEntry()
+    {
+        var (state, householdId, _, agnomenId) = HouseholdWithAgnomen();
+
+        var command = new AdoptAgnomenAsCognomenCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, agnomenId);
+        var result = AdoptAgnomenAsCognomenCommands.Pipeline.Execute(state, command);
+        var chronicleEvents = ChronicleGenerationSystem.Generate(state, result.Events);
+
+        Assert.That(chronicleEvents.OfType<ChronicleEntryRecordedEvent>().Count(), Is.EqualTo(1));
+        var entry = state.ChronicleEntries.InAscendingOrder().First().Value;
+        Assert.Multiple(() =>
+        {
+            Assert.That(entry.Category, Is.EqualTo(ChronicleCategory.MarriagesAndFamily));
+            Assert.That(entry.Tier, Is.EqualTo(ChronicleTier.Major));
+            Assert.That(entry.HouseholdId, Is.EqualTo(householdId));
+            Assert.That(entry.Prose, Does.Contain(AgnomenCatalog.AchievementAgnomenName));
+        });
+    }
+
+    [Test]
+    public void EpithetQueryProjectsAHouseholdsAgnomenaAndDynasticEpithet()
+    {
+        var (state, householdId, headId, agnomenId) = HouseholdWithAgnomen();
+        state.DynasticEpithets.Add(householdId, new DynasticEpithet(
+            householdId, DynasticEpithetCatalog.TemplateFor(ChronicleCategory.PoliticsAndOffice), Array.Empty<RuntimeId<ChronicleEntry>>()));
+
+        var projection = new EpithetQuery(householdId).Execute(state, "player");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(projection.HouseholdId, Is.EqualTo(householdId.ToTaggedString()));
+            Assert.That(projection.DynasticEpithetText, Is.EqualTo(DynasticEpithetCatalog.TemplateFor(ChronicleCategory.PoliticsAndOffice)));
+            Assert.That(projection.Agnomens, Has.Count.EqualTo(1));
+            Assert.That(projection.Agnomens[0].AgnomenId, Is.EqualTo(agnomenId.ToTaggedString()));
+            Assert.That(projection.Agnomens[0].CharacterId, Is.EqualTo(headId.ToTaggedString()));
+            Assert.That(projection.Agnomens[0].Name, Is.EqualTo(AgnomenCatalog.AchievementAgnomenName));
+        });
+    }
+
+    [Test]
+    public void EpithetQueryReturnsNoDynasticEpithetTextWhenNoneHasBeenEarned()
+    {
+        var state = new WorldState(new GameDate(0));
+        var householdId = state.HouseholdIds.Issue();
+
+        var projection = new EpithetQuery(householdId).Execute(state, "player");
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(projection.DynasticEpithetText, Is.Null);
+            Assert.That(projection.Agnomens, Is.Empty);
         });
     }
 }

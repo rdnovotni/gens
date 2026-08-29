@@ -2,6 +2,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Epithets;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
@@ -298,6 +299,25 @@ public static class ChronicleProjector
                 broken.Type,
                 broken.EventId.ToTaggedString(),
                 broken.HouseholdId),
+
+            // Phase 11 item 5: §5's own "a real, permanent, Dynasty Chronicle-worthy decision" — only
+            // this event is chronicled here, not AgnomenGrantedEvent/DynasticEpithetChangedEvent, since
+            // only this one is a command-result event that reaches ChronicleGenerationSystem.Generate's
+            // own input batch (via CampaignShell.Submit); the other two are minted by
+            // Epithets.EpithetGenerationSystem, which runs strictly after this projector on the exact
+            // same batch and so has no second pass to feed a Chronicle entry back through (see that
+            // system's own doc comment).
+            CognomenAdoptedEvent cognomenAdopted => new ChronicleEntryDraft(
+                cognomenAdopted.OccurredDate,
+                ChronicleCategory.MarriagesAndFamily,
+                ChronicleTier.Major,
+                state.Agnomens.TryGet(cognomenAdopted.AgnomenId, out var adoptedAgnomen)
+                    ? $"The household formally adopted \"{adoptedAgnomen!.Name}\" as a permanent family cognomen."
+                    : "The household formally adopted an earned name as a permanent family cognomen.",
+                Array.Empty<RuntimeId<Character>>(),
+                cognomenAdopted.Type,
+                cognomenAdopted.EventId.ToTaggedString(),
+                cognomenAdopted.HouseholdId),
 
             _ => null,
         };

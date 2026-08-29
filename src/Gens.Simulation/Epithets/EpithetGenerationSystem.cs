@@ -127,14 +127,18 @@ public static class EpithetGenerationSystem
             .First().Key;
         var epithetText = DynasticEpithetCatalog.TemplateFor(dominantCategory);
 
-        if (state.DynasticEpithets.TryGet(householdId, out var existing) &&
-            string.Equals(existing!.EpithetText, epithetText, StringComparison.Ordinal))
-            return;
+        // The visible text can stay the same (the dominant category hasn't changed) while the
+        // qualifying entry set keeps growing — DerivedFromChronicleEntryIds must track that growth even
+        // then, so the entry is always replaced; only the emitted event is conditional on the text
+        // itself actually changing.
+        var textChanged = !state.DynasticEpithets.TryGet(householdId, out var existing) ||
+            !string.Equals(existing!.EpithetText, epithetText, StringComparison.Ordinal);
 
         if (existing is not null)
             state.DynasticEpithets.Remove(householdId);
         state.DynasticEpithets.Add(householdId, new DynasticEpithet(householdId, epithetText, qualifying));
 
-        produced.Add(new DynasticEpithetChangedEvent(state.EventIds.Issue(), date, householdId, epithetText, CausationId: null));
+        if (textChanged)
+            produced.Add(new DynasticEpithetChangedEvent(state.EventIds.Issue(), date, householdId, epithetText, CausationId: null));
     }
 }
