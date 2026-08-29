@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Interactions;
@@ -168,6 +169,12 @@ internal static class RuntimeIdTagRegistry
         // Phase 11 item 4 — Gens.Simulation.Funerary.FuneralRecord, same "real record as its own tag"
         // convention as ChronicleEntry/SuccessionDispute above.
         [typeof(FuneralRecord)] = "funeral",
+        // Phase 11 item 5 — Gens.Simulation.Epithets.Agnomen, same "real record as its own tag"
+        // convention as FuneralRecord/ChronicleEntry/SuccessionDispute above.
+        [typeof(Agnomen)] = "agnomen",
+        // Phase 11 item 5 — Gens.Simulation.Epithets.InheritedCognomenDecision, same convention.
+        // DynasticEpithet needs no entry: it's keyed by RuntimeId<Household>, not RuntimeId<DynasticEpithet>.
+        [typeof(InheritedCognomenDecision)] = "inheritedcognomen",
     };
 
     public static string Resolve(Type type) =>
