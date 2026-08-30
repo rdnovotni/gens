@@ -8,6 +8,7 @@ using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
+using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
@@ -144,6 +145,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<RansomNegotiation>, RansomNegotiation> ransomNegotiations,
         OrderedRegistry<RuntimeId<Actor>, CollegiumDetails> collegia,
         OrderedRegistry<RuntimeId<ScandalRecord>, ScandalRecord> scandalRecords,
+        OrderedRegistry<RuntimeId<Character>, CharacterFame> characterFames,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -242,6 +244,7 @@ public sealed class WorldState
         RansomNegotiations = ransomNegotiations;
         Collegia = collegia;
         ScandalRecords = scandalRecords;
+        CharacterFames = characterFames;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -677,6 +680,14 @@ public sealed class WorldState
     /// lifetime" convention — see <see cref="Scandal.ScandalRecord"/>'s own doc comment for why.</summary>
     public OrderedRegistry<RuntimeId<ScandalRecord>, ScandalRecord> ScandalRecords { get; } = new();
 
+    /// <summary>Each Character's running <see cref="Fame.CharacterFame"/> score (Phase 12 item 8;
+    /// <c>gens-celebrities-influential-figures-design.md</c> §1), keyed by Character. Sparse: a
+    /// Character this item never touches has no entry, matching <see cref="HouseholdReputations"/>'s
+    /// identical "no entry means the default" convention — the one deliberate divergence being that
+    /// this partition is keyed by Character, not Household (see <see cref="Fame.CharacterFame"/>'s own
+    /// doc comment for why).</summary>
+    public OrderedRegistry<RuntimeId<Character>, CharacterFame> CharacterFames { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -789,6 +800,7 @@ public sealed class WorldState
         ["ransomNegotiations"] = RansomNegotiations.Version,
         ["collegia"] = Collegia.Version,
         ["scandalRecords"] = ScandalRecords.Version,
+        ["characterFames"] = CharacterFames.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

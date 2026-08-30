@@ -9,6 +9,7 @@ using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
+using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
@@ -192,6 +193,8 @@ public static class WorldStateMapper
             Collegia = state.Collegia.InAscendingOrder().Select(entry => ToCollegiumDetailsDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ScandalRecords = state.ScandalRecords.InAscendingOrder().Select(entry => ToScandalRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            CharacterFames = state.CharacterFames.InAscendingOrder().Select(entry => ToCharacterFameDto(entry.Value)).ToArray(),
         };
     }
 
@@ -583,6 +586,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<ScandalRecord>, ScandalRecord>(record.ScandalId, record);
             }));
 
+        var characterFames = OrderedRegistry<RuntimeId<Character>, CharacterFame>.Restore(
+            dto.CharacterFames.Select(f =>
+            {
+                var fame = FromCharacterFameDto(f);
+                return new KeyValuePair<RuntimeId<Character>, CharacterFame>(fame.CharacterId, fame);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -679,6 +689,7 @@ public static class WorldStateMapper
             ransomNegotiations: ransomNegotiations,
             collegia: collegia,
             scandalRecords: scandalRecords,
+            characterFames: characterFames,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2115,6 +2126,16 @@ public static class WorldStateMapper
         dto.NotaCensoriaIssued,
         new FactionDependentReception(dto.TraditionalistReading, dto.PopularistReading),
         dto.IsActive);
+
+    private static CharacterFameDto ToCharacterFameDto(CharacterFame fame) => new()
+    {
+        CharacterId = fame.CharacterId.ToTaggedString(),
+        Fame = fame.Fame,
+    };
+
+    private static CharacterFame FromCharacterFameDto(CharacterFameDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        dto.Fame);
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {
