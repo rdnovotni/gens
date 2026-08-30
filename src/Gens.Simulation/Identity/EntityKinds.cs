@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
+using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
@@ -198,6 +199,12 @@ internal static class RuntimeIdTagRegistry
         // Phase 12 item 4 — Gens.Simulation.Legal.LegalCase, same "real record as its own tag"
         // convention as OmenEvent/PriesthoodRecord/MagistracyRecord above.
         [typeof(LegalCase)] = "legalcase",
+        // Phase 12 item 5 — Gens.Simulation.Crime.PunishableOffense, DetentionRecord, SentenceRecord,
+        // and RansomNegotiation, same "real record as its own tag" convention as LegalCase above.
+        [typeof(PunishableOffense)] = "punishableoffense",
+        [typeof(DetentionRecord)] = "detention",
+        [typeof(SentenceRecord)] = "sentence",
+        [typeof(RansomNegotiation)] = "ransom",
     };
 
     public static string Resolve(Type type) =>
