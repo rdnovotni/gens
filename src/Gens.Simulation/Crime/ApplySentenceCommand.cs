@@ -4,6 +4,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -158,6 +159,25 @@ public static class ApplySentenceCommands
                     state.CommandIds.Issue(), command.ActorId, command.SubmittedDate, command.CommandId.ToTaggedString(),
                     sentencingCharacterId, command.CharacterId, -CrimeCatalog.UnjustSentenceOpinionPenalty,
                     BondTag.Rival, BondTag.None, RelationshipOrigin.Political)).Events);
+        }
+
+        // Phase 12 item 7's real, immediately reachable UnjustAction Scandal source
+        // (gens-scandal-design.md §4: "an Unjust imprisonment or execution"). Only wired when a real
+        // named actor Character exists to attribute the abuse of power to (see this method's own
+        // relationship-scar comment above for why a Legal-conviction-sourced sentence — always
+        // Justified, and with no single sentencing Character — has nothing real for this to land on).
+        // The Dignitas penalty above already lands (on the sentenced Character's own household, this
+        // command's own existing, already-tested behavior); this adds only the ScandalRecord itself and
+        // the Scandal-Marked Trait, attributed to the sentencing Character's own household instead.
+        if (!justified && resultsInDeath && command.SentencingCharacterId is { } scandalSentencingId &&
+            state.Characters.TryGet(scandalSentencingId, out var scandalSentencer) && scandalSentencer!.Household is { } scandalSentencerHouseholdId)
+        {
+            events.AddRange(RecordScandalCommands.Pipeline.Execute(
+                state, new RecordScandalCommand(
+                    state.CommandIds.Issue(), command.ActorId, command.SubmittedDate, command.CommandId.ToTaggedString(),
+                    scandalSentencerHouseholdId, ScandalSourceType.UnjustAction, ScandalSeverity.PublicDisgrace,
+                    ApplyOrdinaryDignitasPenalty: false, ApplyTraitGrant: true,
+                    TraitGrantCharacterId: scandalSentencingId)).Events);
         }
 
         events.Add(new SentenceAppliedEvent(

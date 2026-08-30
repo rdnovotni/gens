@@ -5,6 +5,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -176,6 +177,23 @@ public static class ImprisonCommands
                     state.CommandIds.Issue(), command.ActorId, command.SubmittedDate, command.CommandId.ToTaggedString(),
                     command.ActorCharacterId, command.TargetCharacterId, -CrimeCatalog.UnjustImprisonOpinionPenalty,
                     BondTag.Rival, BondTag.None, RelationshipOrigin.Political)).Events);
+
+            // Phase 12 item 7's real, immediately reachable UnjustAction Scandal source
+            // (gens-scandal-design.md §4: "an Unjust imprisonment or execution — power exercised
+            // without a real Punishable Offense behind it"). The Dignitas penalty and relationship-web
+            // scar above already cover §7's own "ordinary case" bundle in full, so both are switched
+            // off here — the only genuinely new consequence this adds is the ScandalRecord itself and,
+            // for a sufficiently public case, the Scandal-Marked Trait, which nothing in this command
+            // grants on its own.
+            if (state.Characters.TryGet(command.ActorCharacterId, out var scandalActor) && scandalActor!.Household is { } scandalActorHouseholdId)
+            {
+                events.AddRange(RecordScandalCommands.Pipeline.Execute(
+                    state, new RecordScandalCommand(
+                        state.CommandIds.Issue(), command.ActorId, command.SubmittedDate, command.CommandId.ToTaggedString(),
+                        scandalActorHouseholdId, ScandalSourceType.UnjustAction, ScandalSeverity.PublicDisgrace,
+                        ApplyOrdinaryDignitasPenalty: false, ApplyTraitGrant: true,
+                        TraitGrantCharacterId: command.ActorCharacterId)).Events);
+            }
         }
 
         events.Add(new CharacterImprisonedEvent(

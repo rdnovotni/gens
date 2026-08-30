@@ -101,6 +101,8 @@
   "traits.legal-scholar.description": "Knows the letter of the law well enough to argue it in front of a magistrate.",
   "traits.scandal-marked.name": "Scandal-Marked",
   "traits.scandal-marked.description": "A public airing left a lasting stain on this name, whatever the court actually ruled.",
+  "traits.rehabilitated.name": "Rehabilitated",
+  "traits.rehabilitated.description": "Years of sustained good conduct have earned this name a genuine second chance.",
   "policies.mos-maiorum.name": "Mos Maiorum",
   "policies.mos-maiorum.description": "The Old Blood — a traditionalist household doctrine.",
   "events.bountiful-harvest.name": "Bountiful Harvest",

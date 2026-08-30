@@ -7,6 +7,7 @@ using Gens.Simulation.Funerary;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Legal;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
@@ -369,6 +370,33 @@ public static class ChronicleProjector
                 ransomed.Type,
                 ransomed.EventId.ToTaggedString(),
                 HouseholdOf(state, ransomed.CaptiveCharacterId)),
+
+            // Phase 12 item 7 (§9 of gens-scandal-design.md): "a sufficiently severe Scandal... leaves a
+            // Faith & Scandal category Dynasty Chronicle entry permanently" — matching every other
+            // "only the severe/terminal rung is Chronicle-worthy" precedent above, only a Scandal severe
+            // enough to have actually landed the Scandal-Marked Trait is chronicled; a lesser,
+            // trait-less Scandal is routine, forgettable social friction.
+            ScandalRecordedEvent { ScandalMarkedTraitApplied: true } scandalRecorded => new ChronicleEntryDraft(
+                scandalRecorded.OccurredDate,
+                ChronicleCategory.FaithAndScandal,
+                scandalRecorded.Severity == ScandalSeverity.NotaCensoriaEligible ? ChronicleTier.Legendary : ChronicleTier.Major,
+                "The household was marked by a public scandal it could not live down quietly.",
+                Array.Empty<RuntimeId<Character>>(),
+                scandalRecorded.Type,
+                scandalRecorded.EventId.ToTaggedString(),
+                scandalRecorded.PrimaryHouseholdId),
+
+            // §8/§9: "genuine, earned redemption" — real Chronicle-worthy material in its own right,
+            // the counterpart entry to the Scandal-Marked moment above.
+            CharacterRehabilitatedEvent rehabilitated => new ChronicleEntryDraft(
+                rehabilitated.OccurredDate,
+                ChronicleCategory.FaithAndScandal,
+                ChronicleTier.Notable,
+                $"{Name(state, rehabilitated.CharacterId)} lived down the household's old disgrace through years of sustained good conduct.",
+                new[] { rehabilitated.CharacterId },
+                rehabilitated.Type,
+                rehabilitated.EventId.ToTaggedString(),
+                rehabilitated.HouseholdId),
 
             _ => null,
         };

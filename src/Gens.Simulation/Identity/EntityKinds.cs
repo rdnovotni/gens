@@ -12,6 +12,7 @@ using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 
@@ -205,6 +206,9 @@ internal static class RuntimeIdTagRegistry
         [typeof(DetentionRecord)] = "detention",
         [typeof(SentenceRecord)] = "sentence",
         [typeof(RansomNegotiation)] = "ransom",
+        // Phase 12 item 7 — Gens.Simulation.Scandal.ScandalRecord, same "real record as its own tag"
+        // convention as LegalCase/PunishableOffense above.
+        [typeof(ScandalRecord)] = "scandal",
     };
 
     public static string Resolve(Type type) =>
