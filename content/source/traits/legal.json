@@ -1,0 +1,29 @@
+[
+  {
+    "id": "litigious",
+    "status": "active",
+    "nameKey": "traits.litigious.name",
+    "descriptionKey": "traits.litigious.description",
+    "category": "lifestyle",
+    "axis": "vengefulness",
+    "axisNudge": 10
+  },
+  {
+    "id": "legal-scholar",
+    "status": "active",
+    "nameKey": "traits.legal-scholar.name",
+    "descriptionKey": "traits.legal-scholar.description",
+    "category": "lifestyle",
+    "axis": "rationality",
+    "axisNudge": 10
+  },
+  {
+    "id": "scandal-marked",
+    "status": "active",
+    "nameKey": "traits.scandal-marked.name",
+    "descriptionKey": "traits.scandal-marked.description",
+    "category": "reactive",
+    "axis": "honor",
+    "axisNudge": -15
+  }
+]

@@ -5,6 +5,7 @@ using Gens.Simulation.Economy;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
+using Gens.Simulation.Legal;
 using Gens.Simulation.State;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
@@ -298,6 +299,34 @@ public static class ChronicleProjector
                 broken.Type,
                 broken.EventId.ToTaggedString(),
                 broken.HouseholdId),
+
+            // Phase 12 item 4 (§9 of gens-legal-court-design.md): "every real verdict... a real entry,
+            // tiered by the case's own severity." Only the two scandal-shaped outcomes are actually
+            // Chronicle-worthy here, matching InsolvencyStageChangedEvent's own "only the terminal rung"
+            // precedent above — an ordinary Plaintiff/Defendant/SplitCompromise/Acquitted verdict is
+            // routine civil bookkeeping, not a household-defining moment. A conviction is a real public
+            // scandal (Political convictions doubly so, since §5.7's loss-of-office rides alongside it);
+            // a Patria Potestas case is Chronicled specifically because §6 frames it as "a real, usable
+            // political attack" regardless of its guaranteed Dismissal.
+            LegalCaseRuledEvent { Verdict: LegalCaseVerdict.Convicted } convicted => new ChronicleEntryDraft(
+                convicted.OccurredDate,
+                convicted.CaseType == LegalCaseType.Political ? ChronicleCategory.PoliticsAndOffice : ChronicleCategory.FaithAndScandal,
+                ChronicleTier.Major,
+                $"The household stood convicted before the court on a {convicted.CaseType.ToString().ToLowerInvariant()} charge.",
+                Array.Empty<RuntimeId<Character>>(),
+                convicted.Type,
+                convicted.EventId.ToTaggedString(),
+                convicted.DefendantId),
+
+            LegalCaseRuledEvent { IsPatriaPotestasCase: true } patriaPotestas => new ChronicleEntryDraft(
+                patriaPotestas.OccurredDate,
+                ChronicleCategory.FaithAndScandal,
+                ChronicleTier.Notable,
+                "A case brought over the household head's exercise of patria potestas was aired publicly, and dismissed.",
+                Array.Empty<RuntimeId<Character>>(),
+                patriaPotestas.Type,
+                patriaPotestas.EventId.ToTaggedString(),
+                patriaPotestas.DefendantId),
 
             _ => null,
         };

@@ -12,6 +12,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
@@ -76,6 +77,7 @@ public sealed class WorldState
         RuntimeIdCounter<MagistracyRecord> magistracyRecordIds,
         RuntimeIdCounter<OmenEvent> omenEventIds,
         RuntimeIdCounter<PriesthoodRecord> priesthoodRecordIds,
+        RuntimeIdCounter<LegalCase> legalCaseIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -127,6 +129,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HouseholdReligion> householdReligions,
         OrderedRegistry<RuntimeId<OmenEvent>, OmenEvent> omenEvents,
         OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> priesthoodRecords,
+        OrderedRegistry<RuntimeId<LegalCase>, LegalCase> legalCases,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -161,6 +164,7 @@ public sealed class WorldState
         MagistracyRecordIds = magistracyRecordIds;
         OmenEventIds = omenEventIds;
         PriesthoodRecordIds = priesthoodRecordIds;
+        LegalCaseIds = legalCaseIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -212,6 +216,7 @@ public sealed class WorldState
         HouseholdReligions = householdReligions;
         OmenEvents = omenEvents;
         PriesthoodRecords = priesthoodRecords;
+        LegalCases = legalCases;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -280,6 +285,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Religion.PriesthoodRecord"/> (Phase 12 item 3).</summary>
     public RuntimeIdCounter<PriesthoodRecord> PriesthoodRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Legal.LegalCase"/> (Phase 12 item 4).</summary>
+    public RuntimeIdCounter<LegalCase> LegalCaseIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -586,6 +594,12 @@ public sealed class WorldState
     /// matching <see cref="MagistracyRecords"/>'s identical convention.</summary>
     public OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> PriesthoodRecords { get; } = new();
 
+    /// <summary>Every <see cref="Legal.LegalCase"/> ever filed, ruled or not (Phase 12 item 4; §11's own
+    /// data model), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once filed,
+    /// matching <see cref="MagistracyRecords"/>'s identical "kept for the campaign's lifetime"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<LegalCase>, LegalCase> LegalCases { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -634,6 +648,7 @@ public sealed class WorldState
         ["magistracyRecordIds"] = MagistracyRecordIds.Peek,
         ["omenEventIds"] = OmenEventIds.Peek,
         ["priesthoodRecordIds"] = PriesthoodRecordIds.Peek,
+        ["legalCaseIds"] = LegalCaseIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -685,6 +700,7 @@ public sealed class WorldState
         ["householdReligions"] = HouseholdReligions.Version,
         ["omenEvents"] = OmenEvents.Version,
         ["priesthoodRecords"] = PriesthoodRecords.Version,
+        ["legalCases"] = LegalCases.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

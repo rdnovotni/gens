@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-3 of 9 done — see "Item 3 progress" below) ← **next up: item 4**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-4 of 9 done — see "Item 4 progress" below) ← **next up: item 5**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 3 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 4 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -753,6 +753,83 @@ Learning/Flamen-deity/Pontifex-capstone gates and its monthly trickle and death-
 two reliability tiers, both feast-day observance tiers, and a save/load round trip with the deterministic
 state hash staying stable across every new partition.
 
+**Item 4 progress:** Legal & Court lands as a new domain, `src/Gens.Simulation/Legal/`
+(`gens-legal-court-design.md`). `LegalCase` (§11's own data-model sketch) is a new kept-forever
+`WorldState` partition, following `MagistracyRecord`'s "kept for the campaign's lifetime" convention —
+every case type §2 names (`PropertyLand`, `Contract`, `Debt`, `SlaveOwnership`, `Succession`, `Criminal`,
+`Political`, `Family`, `Military`) is represented in the enum even though only `Criminal`/`Political`
+(the two capital-shaped types) and the generic civil shape have a real resolution path from this item
+itself — no Debt/Succession/Slave-Market/Military caller exists yet to file a real case of those types,
+matching `AdjustDignitasCommand`'s own "no such caller exists yet" precedent applied to an enum instead of
+a command. **Household-level parties throughout** is this item's one deliberate scope decision, named
+directly in `LegalCase`'s own doc comment: §11 leaves `plaintiffId`/`defendantId` untyped, and this item
+resolves every case at the same `Household` granularity `AdjustDignitasCommand` already moves rather than
+at individual `Character` granularity, since no Character-level standing/reputation primitive exists
+anywhere in this codebase to move instead. `FileLawsuitCommand` is §5.1's Filing stage: it assigns a
+presiding magistrate via `LegalCaseResolver.SelectPresidingMagistrate` (§3 — the first active Decurion at
+the settlement whose own household isn't a party; recusal leaves the case presider-less rather than
+inventing a generated-NPC-magistrate fallback when none is eligible, a named cut against §12's own
+"small-settlement recusal chain isn't specified" open question), debits §4's filing cost (scaled by
+depth) through the Ledger, and — for a Quick case — resolves inline in the same submission through
+`LegalCaseResolver.RollVerdict`, a single weighted check reading each party's case strength, Dignitas
+(§4's own "thumb on the scale"), and any Bribery weight already offered, with a real, non-binary outcome
+distribution (Dismissed / Plaintiff / Defendant / SplitCompromise, or Acquitted / Convicted for the two
+capital types) per §9. A Major case instead opens at `EvidenceGathering` and is carried forward by
+`LegalCaseAdvancementSystem`, a new monthly system that holds the stage for `MajorCaseEvidenceGatheringMonths`,
+moves it into `Hearing` for one real tick (§5.3's "a real, singular event, not a silent tick"), then rolls
+the same `RollVerdict`/`LegalCaseRuling.Apply` pair `FileLawsuitCommand`'s own Quick Resolution already
+uses — one shared resolution path for both depths, not two. `SubmitTestimonyCommand`/`GatherEvidenceCommand`
+are §8's Testimony &amp; Evidence stage, each adding case-strength to a side (a witness's Legal Scholar
+Trait or a gatherer's Intrigue attribute add real extra weight); `OfferBribeCommand` is §7's Bribery input
+— the first `OfferBribeCommand` anywhere in this codebase (only `LedgerTransactionCategory.Gifts`'s own
+doc comment previously named bribes as belonging to that category without a real mover), converting a
+bribe's Denarii amount directly into case-score weight since no per-Character Greed axis score is
+reachable from this domain, matching `ReligionCatalog`'s own "no compiled TraitCatalog reachable here"
+precedent for reading personality through content trait ids instead. `ScoutPresidingMagistrateCommand` is
+§3's own scouting flag — deliberately only the flag, since the presider's real Axes/Traits are already
+directly readable off the live `Character` record the moment they're assigned, matching `Agnomen`'s own
+"the flag is the documented hook" precedent.
+
+`LegalCaseRuling.Apply` is §9's shared "verdict lands, consequences ripple outward" logic, the one place
+both Quick and Major resolution apply a rolled verdict: a Dignitas shift for both parties through
+`AdjustDignitasCommand`, a relationship-web scar between the two household heads through
+`RecordInteractionCommand` (`BondTag.Nemesis`, a real opinion cost) on any clean win/loss or capital
+verdict, and — for a `Convicted` verdict on a `Political` case — office loss through the new
+`EndMagistracyForConvictionCommand` in `Gens.Simulation.Magistracies`, finally minting
+`MagistracyLossReason.LegalConviction`, an enum value Phase 12 item 2's own doc comment named as
+"genuinely unreachable in this codebase today" until this item existed to wire it — the exact kind of
+forward reference item 2 itself flagged as this item's job to close. A `Convicted` verdict also rolls a
+`LegalSentence`: only `Fine` (a real Ledger charge) and `Exile` (recorded, but with no `Exiled` Reactive
+Trait to attach — that trait belongs to a different, unbuilt document) are ever actually minted;
+`DebtBondage` and `Execution` are kept modeled-but-unreached, matching `MagistracyLossReason.LegalConviction`'s
+own precedent for a design-doc value a future pass deliberately wires. §6's Patria Potestas case is a real,
+if narrow, slice: `LegalCase.IsPatriaPotestasCase` forces `RollVerdict` straight to `Dismissed`
+unconditionally ("no court can formally override"), while `LegalCaseRuling` still applies a harsher
+Dignitas penalty than an ordinary dismissal and marks the defendant household's own recorded head with a
+new `scandal-marked` content trait (`content/source/traits/legal.json`, alongside `litigious` and
+`legal-scholar` — the three Traits §6.6/§10 name as needing "a concrete mechanical home," authored here
+since nothing else in this codebase had built them yet) — landing on the household's recorded head rather
+than the specific dependent Patria Potestas was exercised against, the same household-level-party
+limitation the flag already accepts. A `LegalCaseRuledEvent` is projected into the Dynasty Chronicle for
+exactly the two scandal-shaped outcomes (a `Convicted` verdict, or any Patria Potestas case), matching
+`InsolvencyStageChangedEvent`'s own "only the terminal rung is Chronicle-worthy" precedent — an ordinary
+civil win/loss/split is routine bookkeeping, not chronicled.
+
+**Explicitly not built, matching this item's own scope:** Espionage's blackmail-material leverage (§8,
+Phase 12 item 6+ or later) and every cross-system case source §10 lists — Economy &amp; Finance's Debt
+Legal-exposure step, Succession &amp; Dynasty's Declaration/Disownment challenges, Labor &amp; Slavery's
+ownership/manumission disputes, Military &amp; Combat's captive legal disposition, Rival Houses'
+extinction disposition, and Politics &amp; Patronage's Sumptuary enforcement — none of those domains
+submit `FileLawsuitCommand` themselves yet; this item builds the generic engine those future passes are
+meant to file into, exercised directly by its own tests standing in for those future callers, matching
+item 1's own "this item only builds the shared primitive itself" precedent. Covered in
+`tests/Gens.Simulation.Tests/Legal/LegalTests.cs`, including filing/presiding assignment and recusal, the
+Quick filing fee, Testimony/Evidence case-strength gains (with the Legal Scholar bonus), Bribery's
+capped weight and real Ledger spend, the Major case's Evidence-Gathering → Hearing → Ruled progression,
+a Patria Potestas case's forced Dismissal with its harsher penalty and one-shot Scandal-Marked trait, a
+Political conviction stripping office and collecting the fine, and a save/load round trip with the
+deterministic state hash staying stable.
+
 Recommended internal order:
 
 1. Dignitas, fame, personal reputation, actor standing, favors, obligations, and audience-specific visibility.
@@ -911,7 +988,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-3 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track) are now done too. **The next unimplemented work is Phase 12 item 4** — Legal cases, evidence, standing, testimony, verdicts, and enforceable consequences.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-4 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track; Legal & Court's case filing, presiding assignment, evidence/testimony/bribery, and verdict consequences) are now done too. **The next unimplemented work is Phase 12 item 5** — crime, detention, punishment, ransom, legitimacy, and authority boundaries.
 
 ## Vertical-slice acceptance test
 
@@ -962,5 +1039,5 @@ An issue is not ready for implementation until its dependencies, authoritative f
 
 ~~The milestone after that should be **Dynasty Continuity and Historical Memory**, encompassing Phase 11.~~ — ✅ **complete.** Heirs/succession/disputed inheritance, the player-control handoff and Regency, the Dynasty Chronicle, funerals/mourning/Memoria, and rules-and-provenance epithets are all in place, proven together by a three-succession (one contested) exit-gate soak.
 
-**The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation. Items 1–2 (the shared Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations) are complete; items 3–9 remain.
+**The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation. Items 1–4 (the shared Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion; Legal & Court) are complete; items 5–9 remain.
 

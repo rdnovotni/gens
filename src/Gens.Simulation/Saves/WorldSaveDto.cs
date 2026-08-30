@@ -347,6 +347,12 @@ public sealed record WorldSaveDocument
     /// and defaults to empty, matching <see cref="OmenEvents"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(55)]
     public IReadOnlyList<PriesthoodRecordDto> PriesthoodRecords { get; init; } = Array.Empty<PriesthoodRecordDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Legal.LegalCase"/> ever filed (Phase 12 item 4), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="PriesthoodRecords"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(56)]
+    public IReadOnlyList<LegalCaseDto> LegalCases { get; init; } = Array.Empty<LegalCaseDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -497,6 +503,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(29)]
     public long PriesthoodRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-4 save has no Legal Cases.
+    /// Additive-only per ADR 0011's policy, matching <see cref="PriesthoodRecordIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(30)]
+    public long LegalCaseIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2267,4 +2279,62 @@ public sealed record PriesthoodRecordDto
 
     [JsonPropertyOrder(6)]
     public int? EndDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Legal.LegalCase"/> (Phase 12 item 4).</summary>
+public sealed record LegalCaseDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CaseId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CaseType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string PlaintiffId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string DefendantId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string Depth { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string Stage { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int FiledDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? PresidingCharacterId { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool PresidingCharacterScouted { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int PlaintiffCaseStrength { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required int DefendantCaseStrength { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required int PlaintiffBriberyWeight { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required int DefendantBriberyWeight { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required bool IsPatriaPotestasCase { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public string? Verdict { get; init; }
+
+    [JsonPropertyOrder(16)]
+    public string? Sentence { get; init; }
+
+    [JsonPropertyOrder(17)]
+    public int? RuledDateTotalMonths { get; init; }
 }

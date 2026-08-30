@@ -131,6 +131,15 @@ public static class CampaignBootstrapper
     /// for its "did an ignored Omen's warning come true" roll (Phase 12 item 3).</summary>
     public const string OmenIgnoredOutcomeStreamName = Religion.RespondToOmenCommands.OmenIgnoredOutcomeStreamName;
 
+    /// <summary>The named random stream (rule 8) <see cref="Legal.FileLawsuitCommand"/> reserves for a
+    /// Quick case's own inline verdict roll (Phase 12 item 4).</summary>
+    public const string LegalQuickResolutionStreamName = Legal.FileLawsuitCommands.QuickResolutionStreamName;
+
+    /// <summary>The named random stream (rule 8) <see cref="Legal.LegalCaseAdvancementSystem"/> reserves
+    /// for a Major case's own Hearing verdict roll (Phase 12 item 4), kept distinct from <see
+    /// cref="LegalQuickResolutionStreamName"/> for the same rule-8 reason.</summary>
+    public const string LegalMajorCaseVerdictOutcomeStreamName = Legal.LegalCaseAdvancementSystem.VerdictOutcomeStreamName;
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -162,6 +171,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(SuccessionDisputeSplinterStreamName, config.Seed);
         streams.AddDerived(ClientPoachingRiskStreamName, config.Seed);
         streams.AddDerived(OmenIgnoredOutcomeStreamName, config.Seed);
+        streams.AddDerived(LegalQuickResolutionStreamName, config.Seed);
+        streams.AddDerived(LegalMajorCaseVerdictOutcomeStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
