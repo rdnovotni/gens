@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-8 of 9 done — see "Item 8 progress" below) ← **next up: item 9**
+- [x] **Phase 12** — Build institutions, reputation, law, religion, and public life
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 8 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — ✅ COMPLETE
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -1269,6 +1269,156 @@ including `AdjustFameCommand`'s clamping at both ends of the 0-100 range and its
 monthly erosion (including the zero floor), `FameDivergenceQuery`'s three real categories plus the untouched
 default, the endorsement bonus actually moving an election's winning score, and a save/load round trip with
 the deterministic state hash staying stable across the new partition.
+
+**Item 9 progress:** Household Doctrine and real Edicts land as two new domains,
+`src/Gens.Simulation/Doctrine/` and `src/Gens.Simulation/Edicts/` (`gens-policies-edicts-design.md` §3, §5),
+closing out Phase 12. Per this item's own direction to pick "a real, coherent, testable slice" rather than
+the design doc's full twelve-Policy/eight-Edict/seven-Doctrine roster, this item builds exactly three real
+Doctrines, three real Edicts, and zero new Standing Policies — a deliberate, investigated choice explained
+below, not an oversight. `HouseholdDoctrineType` (§3.2) names all seven Doctrines for schema completeness,
+matching `LegalCase.CaseType`'s and `ScandalRecord.SourceType`'s own "every real category represented, only
+some reachable" precedent; only `MosMaiorum`, `DomusPia`, and `DomusDura` are ever resolved above
+`DoctrineTier.None` by `DoctrineResolutionSystem`, because those three are the only Doctrines whose §3.2
+feed conditions already have real, already-shipped state to read — `ResPublicaPopularis` and
+`DomusBellatrix` both need Patronage Generosity (§2.8) and Recruitment Doctrine's own Intensity dial
+(§2.5), neither of which exists anywhere in this codebase (confirmed by direct search — the only
+pre-existing Policies partition before this item was `HouseholdPolicyState.RitesBudget`, Phase 9 item 2);
+`DomusMercatoria` needs Trade Openness (§2.7) and a regional Market Dynamics pricing read; `DomusProvincialis`
+needs Provincial Administration Posture (§2.10) and real foreign-cult engagement, the latter already
+deferred by Phase 12 item 3 pending Religions of the Known World content. This is this item's own answer to
+"extend Standing Policies only as needed": the three real Doctrines it builds are fully fed by facts three
+already-shipped items already track (Rites Budget and Faction from items 2/3, the household-wide Regimen
+default from Phase 6's own `HouseholdRegimenDefaults` at a null duty slot — which already *is* §2.2's
+"Household Regimen Posture" Standing Policy in practice, confirmed directly rather than assumed), so this
+item adds no new Standing Policy dial at all rather than inventing one just to complete a formula the
+chosen Doctrines don't actually need. `HouseholdDoctrineState` is a new sparse partition keyed by
+(household, Doctrine type) — the one deliberate structural divergence from every other Phase 12 partition's
+single-household key, needed because a household holds an independent Affinity/Tier pair per Doctrine, not
+one shared status. `DoctrineResolutionSystem` reads each real Doctrine's own signal monthly (a match point
+per condition met, a mismatch point per condition actively contradicted, matching §3.1's "matching choices
+raise Affinity; contradicting choices lower it; unfed Affinity decays slowly on its own" precisely) and
+moves Affinity through the Emerging/Defining thresholds (§3.1) — `DoctrineTier.Apex` is kept in the enum for
+data-model completeness with §9's own `tier` sketch but is never assigned: §3.3's own real precondition
+("Defining survives a succession event with continued matching policy") needs a succession-event hook this
+item does not build, a genuine, reasoned cut rather than a blocked one, since `Succession.SuccessionDispute`
+and `HouseholdHeadship` both already exist and a future pass has a real, named place to attach that check.
+Each real Doctrine's own Defining capstone is a real, separately testable command: `InvokeAncestralSanctionCommand`
+(Mos Maiorum's "overturn a Legal & Court ruling") reaches into `WorldState.LegalCases` directly — a new
+command touching that partition, not a reopening of `LegalCaseRuling`'s own already-shipped, already-tested
+Apply pipeline, matching `DiscoverFabricationCommand`'s identical "a new command touching that partition
+directly" precedent — and restores a real, partial share of the conviction's own Dignitas penalty through
+`AdjustDignitasCommand` rather than fully erasing the case; `PerformGreatRiteCommand` (Domus Pia's "Edict-scale
+ceremony") is a real, fixed-cost Ledger spend into its own named sink, gated on the household actually having
+chosen a Patron Deity, granting real Favor and Dignitas through `AdjustFavorCommand`/`AdjustDignitasCommand`;
+`ActivateIronHandCommand`/`DoctrineLaborModifierQuery` (Domus Dura's "single highest sustained labor-output
+multiplier... permanent Unrest/flight-risk baseline increase") is this item's one capstone that is a real,
+projected numeric effect rather than a further state mutation, matching `RitesBudgetCatalog`'s own "the
+projection exists before its consumer does" precedent: `Characters.LaborOutputSystem` and
+`Characters.LaborFlightSystem` are both already-shipped, already-tested systems this item does not reopen to
+actually fold the projection into their own live formulas. "Once per generation" (§3.1's own capstone framing)
+is honestly narrowed to "once per campaign" for all three capstones: `HouseholdDoctrineState.CapstoneUsedThisGeneration`
+never resets, since no succession-event hook exists yet to reset it against — the same gap Apex's own cut
+already names.
+
+Edicts (§5) land as `Edicts.EdictType`'s full eight-value roster for schema completeness, matching every
+other Phase 12 enum's identical precedent; only `ManumissionEdict`, `CitizenshipGrant`, and `Proscription`
+are ever issuable. `EdictRecord` is a new kept-forever partition (household-level issuer, matching
+`AdjustDignitasCommand`'s and `LegalCase`'s own convention) with one command per real type (rule 2's "one
+command path" applied per mutation kind, the same shape Legal & Court's own several distinct commands
+already established), sharing only the two steps every real Edict needs (`EdictIssuance.ChargeCosts`/
+`RecordReception`) rather than one generic do-everything command. Every real Edict costs real Influence
+(`Clientela.InfluenceResolver`) and Dignitas (`AdjustDignitasCommand`) to issue, per §5.1's own "every Edict
+costs real Influence and Dignitas to issue." Reception (§5.1's "a genuine backlash chain... capable of
+escalating into a Scheme, Legal & Court case, or Private Feud") is real, not invented from scratch, per this
+item's own required direction: every real Edict's backlash routes through Phase 12 item 7's own Scandal
+engine via a new, purely additive `ScandalSourceType.EdictBacklash` enum value — exactly the kind of moment
+that item's own §1 framing named directly ("not a new consequence system, but the shared engine... a handful
+of already-shipped Phase 12 moments have been quietly waiting for"), confirmed not to change any existing
+`RecordScandalCommand` behavior since that command's own Dignitas penalty already switches on `Severity`
+alone, never `SourceType`. `IssueManumissionEdictCommand` (§5.5) is an additive loop of already-shipped,
+already-tested `Characters.ManumitCommand` calls (Vindicta) across every living Enslaved member of the
+issuing household, matching Phase 12 item 8's own "additive extension to an already-tested command"
+precedent applied to a loop of calls rather than new parameters, plus a real Dignitas gain and a Favor gain
+when the household has a chosen Patron Deity. `GrantCitizenshipEdictCommand` (§5.6) is the first command
+anywhere in this codebase to write `Character.LegalStatus` to `RomanCitizen` directly, and optionally files a
+real `FileLawsuitCommand` (Political, Major) contesting the grant's own validity when a `ChallengerHouseholdId`
+actually resolves to a household with a recorded head — optional and defaulting to null, matching Phase 12
+item 8's own `EndorsingCelebrityForChallenger`/`ForIncumbent` "both defaulting to null" precedent, since this
+item cannot invent an antagonist household to force a challenge with. That challenge is filed at Major depth
+specifically because `FileLawsuitCommands.CreatePipeline` needs a `RandomStreamSet` only for a Quick case's
+own inline verdict roll (confirmed directly in that command's own `Mutate`) — a Major filing never touches
+it, so this command passes a fresh, unregistered stream rather than threading a real named one through a
+static pipeline with nowhere to receive it, and the filed case proceeds through `LegalCaseAdvancementSystem`'s
+own already-shipped progression like any other Major case. `IssueProscriptionCommand` (§5.7, "the single
+darkest Edict available") is gated on the issuing household holding an active Duumvir seat — the top of
+Local Magistracies' own four-office ladder (Phase 12 item 2), read as "Duumvir-or-above" since nothing is
+above it in `MagistracyOffice`; §5.7's own alternate civil-crisis Event gate is a named, reasoned cut, since
+no Events system entry anywhere in this codebase carries a civil-crisis classification a command could check
+(the identical finding Phase 12 item 3's own Omens work already made for a different Event-gated mechanic).
+Its effect is real across three already-shipped systems: asset seizure is a real `LedgerService.Post`
+transfer out of the target Actor's own `LedgerAccountKey.ForActor` account (Phase 12 item 6's own Arca
+convention, applied to seizure instead of funding) capped at `EdictCatalog.ProscriptionMaxSeizure`; a
+relationship-web scar lands between the issuing household's own recorded head and the target's own resolved
+head Character, matching every other Phase 12 household-vs-Actor consequence's "the player's own Household
+is never itself a `LivingWorldActor`, so household-to-Actor consequences land on recorded heads instead"
+precedent (Phase 12 item 1's own `HouseholdReputation` doc comment); and §5.7's own demonstration effect
+("every regional Rival House shifts toward Wary or Hostile") is a real, additive `AdjustHouseStandingCommand`
+call per other real, tracked `LivingWorldActorType.Gens` Actor — entirely Actor-to-Actor, and so reachable
+even though the issuing household itself has no Actor id to be a party to that command directly. A real,
+issued Proscription is also `Doctrine.DoctrineResolutionSystem`'s own heavily-weighted Domus Dura signal
+(§3.2's "at least one Proscription issued"), the one place this item's two new domains compose directly
+rather than sitting side by side.
+
+**Explicitly not built, matching this item's own narrow scope, after real investigation rather than
+assumption:** `TabulaeNovae` and `DebtBondageBan` both need a real write path onto Economy & Finance's own
+`DebtRecord`/debt-bondage machinery this item's household-vs-household Edict engine does not reach into — a
+real, narrow future integration point, not a blocked one; `GeneralAmnesty` needs a real "pardon a standing
+sentence" write path onto Phase 12 item 5's own already-shipped, already-tested `SentenceRecord`/
+`DetentionRecord` commands, and reopening either is out of this item's scope, matching Phase 12 item 1's own
+"already-shipped, already-tested, out of scope to reopen" precedent for `Agnomen.DignitasEffect`;
+`LandRedistribution` needs Land Ownership & Real Estate's own `PropertyRecord` type, confirmed by direct
+search not to exist anywhere in this codebase (Phase 12 item 6's own identical finding for the Collegia
+Schola); `GrainRequisition` needs a real Coloni harvest/Contentment write path this item does not reach into
+either, the same unreached-consumer shape Phase 12 item 3's own Sacred Calendar left for Settlement
+Demographics. Funded Actions (§4) are deliberately not re-authored or unified into one generic abstraction
+here: `Policies.FundFestivalCommand` and Phase 12 item 3's own `FundFestivalCelebrationCommand` both already
+exist, already tested, and that item's own doc comment already named "a future Policies & Edicts pass (§6.12,
+roadmap item 9)" as the natural place to unify them — reopening either is out of this item's scope for the
+identical "already-shipped, already-tested" reason named throughout this phase; this item's own two Funded
+spends (`PerformGreatRiteCommand`'s Great Rite, priced independently) follow that precedent rather than
+inventing the generic `FundedAction` abstraction §9's data model sketches. Policy Playbooks (§6) are not
+built: no real quality-of-life need exists yet to save/recall a snapshot of a Standing Policy roster this
+item leaves at its Phase 9 item 2 size (one real dial, Rites Budget) — a Playbook over one dial does not
+demonstrate the mechanic §6 actually describes. Hybrid Doctrine titles (§3.4) are not built: every named
+pair needs at least one Doctrine this item does not make reachable (Res Publica Popularis, Domus Mercatoria,
+Domus Bellatrix, Domus Provincialis), leaving only Mos Maiorum + Domus Pia ("Keepers of the Rite") and
+Domus Bellatrix + Domus Dura pairs real reachable inputs could ever form, and the latter needs Domus
+Bellatrix too — a single reachable pair is not enough to demonstrate a "several commonly co-occurring pairs"
+system honestly. The remaining nine of twelve Standing Policies (§2.1, §2.5-§2.12 beyond what already
+existed) are not built, per this item's own investigated finding that its three chosen real Doctrines need
+none of them — a future pass building Res Publica Popularis, Domus Bellatrix, Domus Mercatoria, or Domus
+Provincialis for real is what would actually need them, not this one.
+
+**On Phase 12's own exit gate** ("the same underlying action can produce different legal, reputational,
+religious, and factional consequences according to actor, status, audience, evidence, and place—without
+bespoke shortcuts for each screen"): this item's own three real Edicts are the clearest end-to-end
+demonstration built in this phase — the same Edict-issuance shape produces a Ledger-real Dignitas/Influence
+cost, a Faction-and-severity-scoped Scandal reception (item 7's own audience-differentiated reading),
+optionally a real Legal & Court case (item 4), a real relationship-web scar and Rival House standing shift
+(items 1 and Phase 10), and a real Doctrine-Affinity feed (this item), all from one command, without any of
+those five consequence systems needing a bespoke code path built just for Edicts. The gate is met by this
+phase's cumulative work across all nine items, not by this item alone; this item's own honest limitation is
+breadth, not depth — only three of twelve Standing Policies, three of seven Doctrines, and three of eight
+Edicts are real, each for a specifically investigated, cited reason above, not a blanket "out of scope."
+Covered in `tests/Gens.Simulation.Tests/Doctrine/DoctrineTests.cs` and
+`tests/Gens.Simulation.Tests/Edicts/EdictTests.cs`, including all three Doctrines' Affinity rising with
+their own real matching signals and reaching Emerging/Defining, unfed decay, a contradicting-signal reversal,
+each capstone's own Defining-tier/single-use gates and real effects (Ancestral Sanction's verdict overturn
+and partial Dignitas restore, the Great Rite's Ledger spend and Favor/Dignitas grant, Iron Hand's projected
+labor modifiers), all three Edicts' validation and happy paths (Manumission freeing every real enslaved
+member, Citizenship Grant's status change and its optional real Legal challenge, Proscription's asset
+seizure/relationship scar/demonstration effect and its own Domus Dura Doctrine feed), and a save/load round
+trip with the deterministic state hash staying stable across every new partition.
 
 Recommended internal order:
 

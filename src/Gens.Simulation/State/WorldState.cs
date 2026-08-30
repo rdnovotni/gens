@@ -5,7 +5,9 @@ using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
 using Gens.Simulation.Crime;
+using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Edicts;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
@@ -87,6 +89,7 @@ public sealed class WorldState
         RuntimeIdCounter<SentenceRecord> sentenceRecordIds,
         RuntimeIdCounter<RansomNegotiation> ransomNegotiationIds,
         RuntimeIdCounter<ScandalRecord> scandalRecordIds,
+        RuntimeIdCounter<EdictRecord> edictRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -146,6 +149,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Actor>, CollegiumDetails> collegia,
         OrderedRegistry<RuntimeId<ScandalRecord>, ScandalRecord> scandalRecords,
         OrderedRegistry<RuntimeId<Character>, CharacterFame> characterFames,
+        OrderedRegistry<HouseholdDoctrineKey, HouseholdDoctrineState> householdDoctrines,
+        OrderedRegistry<RuntimeId<EdictRecord>, EdictRecord> edictRecords,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -186,6 +191,7 @@ public sealed class WorldState
         SentenceRecordIds = sentenceRecordIds;
         RansomNegotiationIds = ransomNegotiationIds;
         ScandalRecordIds = scandalRecordIds;
+        EdictRecordIds = edictRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -245,6 +251,8 @@ public sealed class WorldState
         Collegia = collegia;
         ScandalRecords = scandalRecords;
         CharacterFames = characterFames;
+        HouseholdDoctrines = householdDoctrines;
+        EdictRecords = edictRecords;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -331,6 +339,7 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Scandal.ScandalRecord"/> (Phase 12 item 7).</summary>
     public RuntimeIdCounter<ScandalRecord> ScandalRecordIds { get; } = new();
+    public RuntimeIdCounter<EdictRecord> EdictRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -688,6 +697,17 @@ public sealed class WorldState
     /// doc comment for why).</summary>
     public OrderedRegistry<RuntimeId<Character>, CharacterFame> CharacterFames { get; } = new();
 
+    /// <summary>Every household's standing against every <see cref="HouseholdDoctrineType"/> it has an
+    /// entry for (Phase 12 item 9), keyed by (household, Doctrine type). Sparse: a (household, Doctrine)
+    /// pair <see cref="Doctrine.DoctrineResolutionSystem"/> has never touched has no entry, matching
+    /// <see cref="HouseholdReputations"/>'s identical "no entry means the default" convention.</summary>
+    public OrderedRegistry<HouseholdDoctrineKey, HouseholdDoctrineState> HouseholdDoctrines { get; } = new();
+
+    /// <summary>Every Edict ever issued (Phase 12 item 9), in ascending <see cref="RuntimeId{T}"/> order
+    /// (ADR 0004). Kept forever once issued, matching <see cref="ScandalRecords"/>'s and <see
+    /// cref="LegalCases"/>'s identical "kept for the campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<EdictRecord>, EdictRecord> EdictRecords { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -801,6 +821,8 @@ public sealed class WorldState
         ["collegia"] = Collegia.Version,
         ["scandalRecords"] = ScandalRecords.Version,
         ["characterFames"] = CharacterFames.Version,
+        ["householdDoctrines"] = HouseholdDoctrines.Version,
+        ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

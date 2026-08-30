@@ -2,7 +2,9 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Crime;
+using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Edicts;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
@@ -397,6 +399,51 @@ public static class ChronicleProjector
                 rehabilitated.Type,
                 rehabilitated.EventId.ToTaggedString(),
                 rehabilitated.HouseholdId),
+
+            // §3.1/§7: "regional recognition as a real exemplar... a genuine Chronicle-worthy Dignitas
+            // event" — only the Defining threshold itself is chronicled, matching <see
+            // cref="ScandalRecordedEvent"/>'s own "only the severe/notable rung is Chronicle-worthy"
+            // precedent (an Emerging tier is real, visible flavor, but not yet exemplar-grade).
+            DoctrineTierChangedEvent { NewTier: DoctrineTier.Defining } tierChanged => new ChronicleEntryDraft(
+                tierChanged.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                ChronicleTier.Major,
+                $"The household became a real, recognized exemplar of {tierChanged.DoctrineType}.",
+                Array.Empty<RuntimeId<Character>>(),
+                tierChanged.Type,
+                tierChanged.EventId.ToTaggedString(),
+                tierChanged.HouseholdId),
+
+            // §8: "every Edict Declaration... is guaranteed Chronicle material."
+            ManumissionEdictIssuedEvent manumissionEdict => new ChronicleEntryDraft(
+                manumissionEdict.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                ChronicleTier.Major,
+                $"The household proclaimed a Manumission Edict, freeing {manumissionEdict.CharactersFreed} enslaved workers in one stroke.",
+                Array.Empty<RuntimeId<Character>>(),
+                manumissionEdict.Type,
+                manumissionEdict.EventId.ToTaggedString(),
+                manumissionEdict.IssuingHouseholdId),
+
+            CitizenshipEdictGrantedEvent citizenshipEdict => new ChronicleEntryDraft(
+                citizenshipEdict.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                ChronicleTier.Notable,
+                $"{Name(state, citizenshipEdict.TargetCharacterId)} was granted Roman citizenship by Edict.",
+                new[] { citizenshipEdict.TargetCharacterId },
+                citizenshipEdict.Type,
+                citizenshipEdict.EventId.ToTaggedString(),
+                citizenshipEdict.IssuingHouseholdId),
+
+            ProscriptionIssuedEvent proscription => new ChronicleEntryDraft(
+                proscription.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                ChronicleTier.Legendary,
+                "The household proclaimed a Proscription, declaring a rival house outlaw and seizing its assets in one stroke.",
+                Array.Empty<RuntimeId<Character>>(),
+                proscription.Type,
+                proscription.EventId.ToTaggedString(),
+                proscription.IssuingHouseholdId),
 
             _ => null,
         };
