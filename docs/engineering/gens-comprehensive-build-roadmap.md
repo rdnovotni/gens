@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-5 of 9 done — see "Item 5 progress" below) ← **next up: item 6**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-6 of 9 done — see "Item 6 progress" below) ← **next up: item 7**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 5 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 6 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -951,6 +951,124 @@ with its failed-attempt Loyalty penalty, mercy release's Dignitas/opinion gain, 
 the Unjust-sentence relationship scar, Ransom's Paid/Refused resolutions plus its real Rival Houses
 Standing bridge when both sides are tracked Actors, and a save/load round trip with the deterministic
 state hash staying stable across every new partition.
+
+**Item 6 progress:** Collegia & Guilds lands as a new domain, `src/Gens.Simulation/Collegia/`
+(`gens-collegia-guilds-design.md`). A Collegium is not a new entity kind with its own ID counter: §6's own
+`LivingWorldActorType.Collegium` value — reserved since Phase 10 item 3's own doc comment ("the rest exist
+here so the framework itself does not need to change shape") explicitly named this as its future use —
+is the real, structured organization itself, giving a Collegium a Name, a Dignitas figure, and a head
+Character (§3's Magister, `LivingWorldActor.HeadCharacterId`) for free rather than duplicating any of
+that. `CollegiumDetails` is a new sparse partition layered on top, keyed by that same Actor id, holding
+only what a `LivingWorldActor` has no field for: `CollegiumType` (Opificum/Funeraticia/CultSpecific/
+Compitalicia, §2), `CollegiumLegalStatus` (Licitum/Illicit, §7), an optional linked `PopGroupType`
+(Opifices or Negotiatores only, §2's own trade-guild source), an optional linked `PatronDeity` (§2's
+"organized around a specific deity" half — the foreign-cult half is a named, reasoned cut, since no
+Religions of the Known World content exists in this codebase to link against), a patron household, a
+Quinquennalis, and a member-household roster. `FoundCollegiumCommand` creates the underlying
+`LivingWorldActor` directly (always `Background` tier, `Established` trend, no head yet) plus its
+`CollegiumDetails` entry, and validates each type's own linked-field requirement. `BackgroundHouseDriftSystem`
+gained a `LivingWorldActorType.Gens`-only filter, a genuine, necessary fix this item makes on its own
+initiative: without it, a founded Collegium would get swept into Rival Houses' own fortune-drift and
+(via a drifted-to-Declining trend) background extinction rolls neither of which were ever meant to apply
+to it — every other system that walks `WorldState.Actors` (`RivalAmbitionSystem`, the extinction system's
+own Noteworthy path) already only ever touches Noteworthy actors a Collegium never becomes, so this was
+the one real gap.
+
+`JoinCollegiumCommand`/`LeaveCollegiumCommand` (§2) add/remove a household from the roster directly — a
+short, hand-curated list of real, already-tracked households (the player's own, or a rival Actor whose
+head is already resolved) rather than a derived read off Settlement Demographics' own pop-group
+aggregates, since `PopGroup` is keyed by (settlement, group type) and has no individual-household
+membership to enumerate, matching `ClientPoachingSystem`'s own "only ever targets an Actor whose head is
+already resolved" precedent for the identical gap. `ElectMagisterCommand`/`AppointQuinquennalisCommand`
+(§3, §9) seat officers with deliberately no citizenship or Legal Status gate at all — §9's entire point is
+that collegium leadership is "a real, genuine, respected achievement" precisely for a Freedman or
+Peregrine the Curia and cursus honorum categorically exclude, a sharp, intentional contrast with
+`AppointDecurionCommand`'s identical-shaped citizenship check. `SponsorCollegiumCommand` (§4) is the
+patron relationship's real payoff: a flat Dignitas grant (`AdjustDignitasCommand`) and Influence grant
+(`InfluenceResolver.Apply`, matching `SalutatioSystem`'s own "no shared Influence-moving command exists
+yet" precedent), plus — once the collegium actually has a resolved Magister — a real Patron/Client
+`BondTag` pair formed directly between the patron's own household head and that Magister, reusing
+Clientela's existing bond vocabulary rather than inventing a parallel one. §4's own headline "an entire
+bloc of grateful clients acquired in one relationship" is a deliberate, named cut beyond that one bond:
+bulk-converting every member household into individual Clientela entries would need resolving each one's
+own lazily-generated head on the patron's behalf, the same "no principled way to supply that" gap
+`ClientPoachingSystem`'s own doc comment already names for a rival Actor's head.
+
+The Arca (§3's shared treasury) is not a stored field at all: it is a real `LedgerAccount` at
+`LedgerAccountKey.ForActor` keyed by the collegium's own Actor id, reusing the ledger's existing per-Actor
+account kind directly. `FundCollegiumArcaCommand` posts a real `LedgerService.Post` transfer from a
+funding household's own account into it — covering both §3's membership dues and §4's patron funding cost
+as the same one real movement, and, unlike `FundFestivalCommand`'s one-way sink, a balance that genuinely
+accumulates for a future command to spend back out of. §6's darker political edge —
+`RecordCollegiumOrganizedDisruptionCommand` — is built as the one real `CollegiumPoliticalAction` this
+item wires: gated on the instigating household actually sponsoring the collegium, it reads
+Crime & Punishment's own `PunishableOffenseResolver.HasActiveOffense` against the target household's
+recorded head for the same Justified/Unjust split `ImprisonCommand` already established, a small opinion
+cost on the Justified path and a real Dignitas penalty, a Nemesis relationship-web scar, and — §7's own
+"caught using this darker tool once too often" — an immediate flip to Illicit on the Unjust path (a single
+use is treated as sufficient, rather than inventing an unsized repeated-offense counter the design doc
+never specifies). §6's other, legitimate action — an election endorsement — is a deliberate, reasoned cut:
+`HoldContestedElectionCommand` (Phase 12 item 2) resolves synchronously in one command call with no
+persisted "election currently open" state for an endorsement to attach to ahead of resolution, so there is
+nothing yet for one to feed into. `DissolveCollegiumCommand` (§7) is real, terminal dissolution authority:
+gated on the collegium actually being Illicit and the initiating Character holding an active Magistracy at
+the collegium's own settlement (mirroring `ImprisonCommand`'s identical "a sitting magistrate acting
+outside a formal Hearing" authority basis; §7's own second basis, a provincial governor, is omitted
+entirely — Reputation Duality and the provincial-governor concept it would need do not exist anywhere in
+this codebase, matching `ImprisonAuthorityBasis`'s own "omitted rather than included-but-unreachable"
+precedent). A dissolved collegium's own `LivingWorldActor` and `CollegiumDetails` entries are both removed
+outright — matching `LivingWorldActorExtinctionSystem`'s identical "removed outright, not frozen"
+precedent for a genuinely terminal transition — and a sponsoring patron takes §7's own real Dignitas risk
+for having been publicly associated with it.
+
+**Explicitly not built, matching this item's own scope:** the Schola (§3's meeting hall, a Land Ownership
+& Real Estate Property Record) — no `PropertyRecord` type, or any other code from that document, exists
+anywhere in this codebase yet, so `CollegiumDetails.ScholaPropertyId` stays permanently `null`, the
+documented hook a future Land Ownership & Real Estate pass wires, matching `AppointDecurionCommand`'s own
+"no building exists, so that half of the gate is not checked" precedent; §5's trade-guild collective
+bargaining effect on Market Dynamics — no real per-collegium wage/price-stability read path exists in
+Economy & Finance's own Market Clearing to attach to; §8's Funerary Guarantee — its own real trigger ("a
+Notable Household's own member dying while in good standing") depends on Notable Households, a distinct
+entity kind this codebase has never built (confirmed by direct search — no `NotableHousehold` type exists
+anywhere), so there is nothing yet for the guarantee to resolve against; and any Quinquennalis census-cycle
+automation, per §12's own open question about how a real, much-longer census interval maps onto this
+game's monthly tick — appointment stays direct-only, with no term or automatic re-appointment.
+
+**Interest Groups** lands as a narrower, read-mostly slice, `src/Gens.Simulation/InterestGroups/`
+(`gens-interest-groups-design.md`). Per §4's own "membership is derived, never separately tracked," this
+domain adds no new `WorldState` partition at all — only `InterestGroupResolver`, a read-side query over
+data other, already-shipped domains already own. Of §2's five named coalition types, only
+`CreditorsVsDebtors` is checkable against real per-household data, and only its Debtor half: a household
+is a real member the moment it holds any `DebtRecord` that is neither `Forgiven` nor resolved. The
+"Creditors" half is a genuine, investigated gap rather than an assumption: `DebtRecord.LenderIsPlayer`
+"always reads false in this implementation" per that record's own doc comment, so every debt's
+counterparty is the settlement Treasury, never another household — there is no real opposing household-
+level Creditor bloc to organize at all. The other four types (`LandownersVsLandless`, needing Policies &
+Edicts' Land Redistribution Edict; `PublicaniEquestrian`, needing a Publicanus Contract; `Veterans`,
+needing a household-scoped veteran flag distinct from Settlement Demographics' own settlement-aggregate
+pop group; `ProvincialInterest`, needing Reputation Duality) are named in the enum for schema completeness,
+matching `LegalCase.CaseType`'s own "every real category represented, only some reachable" precedent, but
+`IsMember` throws a named, explicit exception for each rather than a silently-confident `false` — none of
+Policies & Edicts, a Publicanus Contract, a household-scoped veteran flag, or Reputation Duality exist
+anywhere in this codebase (each verified directly, not assumed). §5's Collective Lobbying is the one real
+action this item builds: §5's own stated target — moving a live Edict's own Reception — has nothing to
+move, since Policies & Edicts is entirely unbuilt (Phase 12 item 9, not yet started), so
+`CollectiveLobbyingCommand` instead pools real `HouseholdInfluence` from every contributing household and
+credits the total to one beneficiary household, who can then spend it through the one real Influence-
+spending consumer this codebase has, `HoldContestedElectionCommand`. §5's second action (a Curia Faction
+Bloc) and §3's Provincial Patronage are both deliberate cuts: the "Found/Join a Curia Faction Bloc"
+Interaction this item would extend exists only as a named catalog row in the Characters design document,
+with no bloc-voting resolution engine anywhere in this codebase to give it real effect, and Provincial
+Patronage depends on Reputation Duality, which — like every Starting Regions mechanic — is design-doc-only
+today. Covered in `tests/Gens.Simulation.Tests/Collegia/CollegiaTests.cs` and
+`tests/Gens.Simulation.Tests/InterestGroups/InterestGroupsTests.cs`, including founding a Collegium (with
+its type-specific linked-field validation), roster join/leave, Magister/Quinquennalis appointment, the
+sponsorship Dignitas/Influence grant and its Patron/Client bond formation once a Magister resolves, real
+Ledger-backed Arca funding, the organized-disruption Justified/Unjust split (including the Illicit legal-
+status flip), a formal dissolution's authority gate and its patron Dignitas penalty, a real Creditors-vs-
+Debtors membership read, every unreachable Interest Group type throwing rather than silently returning
+false, Collective Lobbying's real Influence pooling and its insufficient-Influence rejection, and a
+save/load round trip with the deterministic state hash staying stable across the new Collegia partition.
 
 Recommended internal order:
 

@@ -4,6 +4,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Clientela;
+using Gens.Simulation.Collegia;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Interactions;
@@ -506,6 +507,21 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.TermEndDate?.TotalMonths ?? -1L);
             hash = MixLong(hash, entry.Value.LossReason is { } reason ? (long)reason : -1L);
             hash = MixLong(hash, entry.Value.CoHolderId?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Collegia.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)entry.Value.CollegiumType);
+            hash = MixLong(hash, (long)entry.Value.LegalStatus);
+            hash = MixLong(hash, entry.Value.LinkedPopGroupType is { } popGroupType ? (long)popGroupType : -1L);
+            hash = MixLong(hash, entry.Value.LinkedPatronDeity is { } patronDeity ? (long)patronDeity : -1L);
+            hash = MixString(hash, entry.Value.ScholaPropertyId ?? string.Empty);
+            hash = MixLong(hash, entry.Value.PatronHouseholdId?.Value ?? -1L);
+            hash = MixLong(hash, entry.Value.QuinquennalisCharacterId?.Value ?? -1L);
+            foreach (var memberId in entry.Value.MemberHouseholdIds)
+                hash = MixLong(hash, memberId.Value);
         }
 
         return hash;

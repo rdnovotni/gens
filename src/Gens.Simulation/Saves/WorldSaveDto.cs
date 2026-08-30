@@ -377,6 +377,12 @@ public sealed record WorldSaveDocument
     /// defaults to empty, matching <see cref="SentenceRecords"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(60)]
     public IReadOnlyList<RansomNegotiationDto> RansomNegotiations { get; init; } = Array.Empty<RansomNegotiationDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Collegia.CollegiumDetails"/> ever founded (Phase 12
+    /// item 6), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, matching <see cref="RansomNegotiations"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(61)]
+    public IReadOnlyList<CollegiumDetailsDto> Collegia { get; init; } = Array.Empty<CollegiumDetailsDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -2497,4 +2503,35 @@ public sealed record RansomNegotiationDto
 
     [JsonPropertyOrder(8)]
     public int? ResolvedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Collegia.CollegiumDetails"/> (Phase 12 item 6).</summary>
+public sealed record CollegiumDetailsDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActorId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CollegiumType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string LegalStatus { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? LinkedPopGroupType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? LinkedPatronDeity { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? ScholaPropertyId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? PatronHouseholdId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? QuinquennalisCharacterId { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public IReadOnlyList<string> MemberHouseholdIds { get; init; } = Array.Empty<string>();
 }

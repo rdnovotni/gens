@@ -3,6 +3,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
+using Gens.Simulation.Collegia;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
@@ -139,6 +140,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord> detentionRecords,
         OrderedRegistry<RuntimeId<SentenceRecord>, SentenceRecord> sentenceRecords,
         OrderedRegistry<RuntimeId<RansomNegotiation>, RansomNegotiation> ransomNegotiations,
+        OrderedRegistry<RuntimeId<Actor>, CollegiumDetails> collegia,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -234,6 +236,7 @@ public sealed class WorldState
         DetentionRecords = detentionRecords;
         SentenceRecords = sentenceRecords;
         RansomNegotiations = ransomNegotiations;
+        Collegia = collegia;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -650,6 +653,16 @@ public sealed class WorldState
     /// matching <see cref="PunishableOffenses"/>'s identical convention.</summary>
     public OrderedRegistry<RuntimeId<RansomNegotiation>, RansomNegotiation> RansomNegotiations { get; } = new();
 
+    /// <summary>Every <see cref="Collegia.CollegiumDetails"/> layered on top of a <see
+    /// cref="LivingWorldActor"/> of <see cref="LivingWorldActorType.Collegium"/> (Phase 12 item 6),
+    /// keyed by that same Actor — no separate ID counter, per that record's own doc comment. Sparse: an
+    /// Actor of any other <see cref="LivingWorldActorType"/> has no entry here at all. Kept forever once
+    /// founded and removed only alongside its own <see cref="Actors"/> entry on a real, terminal <see
+    /// cref="Collegia.DissolveCollegiumCommand"/>, matching <see
+    /// cref="Actors.LivingWorldActorExtinctionSystem"/>'s identical "removed outright, not frozen"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, CollegiumDetails> Collegia { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -759,6 +772,7 @@ public sealed class WorldState
         ["detentionRecords"] = DetentionRecords.Version,
         ["sentenceRecords"] = SentenceRecords.Version,
         ["ransomNegotiations"] = RansomNegotiations.Version,
+        ["collegia"] = Collegia.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
