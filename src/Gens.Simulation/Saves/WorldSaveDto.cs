@@ -383,6 +383,12 @@ public sealed record WorldSaveDocument
     /// and defaults to empty, matching <see cref="RansomNegotiations"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(61)]
     public IReadOnlyList<CollegiumDetailsDto> Collegia { get; init; } = Array.Empty<CollegiumDetailsDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Scandal.ScandalRecord"/> ever recorded (Phase 12
+    /// item 7), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, matching <see cref="Collegia"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(62)]
+    public IReadOnlyList<ScandalRecordDto> ScandalRecords { get; init; } = Array.Empty<ScandalRecordDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -563,6 +569,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(34)]
     public long RansomNegotiationIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-7 save has no Scandal
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="RansomNegotiationIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(35)]
+    public long ScandalRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2534,4 +2546,50 @@ public sealed record CollegiumDetailsDto
 
     [JsonPropertyOrder(8)]
     public IReadOnlyList<string> MemberHouseholdIds { get; init; } = Array.Empty<string>();
+}
+
+/// <summary>One <see cref="Gens.Simulation.Scandal.ScandalRecord"/> (Phase 12 item 7). <see
+/// cref="Scandal.FactionDependentReception"/> is flattened into its two int fields directly, matching
+/// <see cref="RansomNegotiationDto"/>'s own "flatten a small value shape into the DTO" convention rather
+/// than a nested DTO type for a two-field record.</summary>
+public sealed record ScandalRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ScandalId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string PrimaryHouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string SourceType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Severity { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Scope { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int RecordedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool OriginatedViaLibellusFamosus { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public int? CurrentFameEffect { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool ScandalMarkedTraitApplied { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool NotaCensoriaIssued { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int TraditionalistReading { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required int PopularistReading { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required bool IsActive { get; init; }
 }

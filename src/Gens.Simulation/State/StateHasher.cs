@@ -13,6 +13,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 
@@ -522,6 +523,24 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.QuinquennalisCharacterId?.Value ?? -1L);
             foreach (var memberId in entry.Value.MemberHouseholdIds)
                 hash = MixLong(hash, memberId.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ScandalRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.PrimaryHouseholdId.Value);
+            hash = MixLong(hash, (long)entry.Value.SourceType);
+            hash = MixLong(hash, (long)entry.Value.Severity);
+            hash = MixLong(hash, (long)entry.Value.Scope);
+            hash = MixLong(hash, entry.Value.RecordedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.OriginatedViaLibellusFamosus ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.CurrentFameEffect ?? long.MinValue);
+            hash = MixLong(hash, entry.Value.ScandalMarkedTraitApplied ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.NotaCensoriaIssued ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.FactionReception.TraditionalistReading);
+            hash = MixLong(hash, entry.Value.FactionReception.PopularistReading);
+            hash = MixLong(hash, entry.Value.IsActive ? 1L : 0L);
         }
 
         return hash;

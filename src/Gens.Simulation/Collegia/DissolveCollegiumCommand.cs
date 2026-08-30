@@ -4,6 +4,7 @@ using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -103,6 +104,18 @@ public static class DissolveCollegiumCommands
                     state.CommandIds.Issue(), command.ActorId, command.SubmittedDate, command.CommandId.ToTaggedString(),
                     patronHouseholdId, -CollegiumCatalog.IllicitPatronDignitasPenalty,
                     $"sponsored collegium {command.CollegiumId.ToTaggedString()} dissolved as Illicit")).Events);
+
+            // Phase 12 item 7's real, immediately reachable IllicitCollegiumExposure Scandal source
+            // (gens-scandal-design.md §4: "an Illicit Collegium's exposure — a patron's own public
+            // association with a dissolved, disgraced collegium"), §7 exactly — this dissolution, not
+            // the earlier Unjust-disruption flip to Illicit, is the actual "exposure" moment the design
+            // doc names. The Dignitas penalty above already covers §7's own "ordinary case" bundle in
+            // full; this adds only the ScandalRecord itself and the Scandal-Marked Trait.
+            events.AddRange(RecordScandalCommands.Pipeline.Execute(
+                state, new RecordScandalCommand(
+                    state.CommandIds.Issue(), command.ActorId, command.SubmittedDate, command.CommandId.ToTaggedString(),
+                    patronHouseholdId, ScandalSourceType.IllicitCollegiumExposure, ScandalSeverity.PublicDisgrace,
+                    ApplyOrdinaryDignitasPenalty: false, ApplyTraitGrant: true)).Events);
         }
 
         state.Collegia.Remove(command.CollegiumId);

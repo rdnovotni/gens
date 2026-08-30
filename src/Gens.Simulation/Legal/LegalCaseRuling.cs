@@ -5,6 +5,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -116,7 +117,10 @@ internal static class LegalCaseRuling
         }
 
         if (legalCase.IsPatriaPotestasCase)
+        {
             events.AddRange(ApplyScandalMark(state, legalCase, date));
+            events.AddRange(RecordWeaponizedLegalCaseScandal(state, legalCase, date, causationId));
+        }
 
         if (verdict == LegalCaseVerdict.Convicted)
             events.AddRange(RecordConvictionAsPunishableOffense(state, legalCase, date, causationId));
@@ -176,6 +180,27 @@ internal static class LegalCaseRuling
                 state.CommandIds.Issue(), "system", date, causationId, headship.HeadCharacterId,
                 PunishableOffenseSource.LegalConviction, severity, false, legalCase.CaseId)).Events.ToArray();
     }
+
+    /// <summary>Phase 12 item 7's real, immediately reachable <see
+    /// cref="ScandalSourceType.WeaponizedLegalCase"/> source (<c>gens-scandal-design.md</c> §4: "a
+    /// politically-weaponized Legal &amp; Court case... a case brought with no real chance of winning,
+    /// purely to generate exactly this kind of public airing" — precisely what a Patria Potestas case
+    /// already is, per §6). An additive call alongside <see cref="ApplyScandalMark"/>, not a reopening
+    /// of it (that already-shipped, already-tested method's own behavior is untouched): this domain's
+    /// own harsher <see cref="LegalCatalog.PatriaPotestasCaseDignitasPenalty"/> is already applied above,
+    /// so <see cref="RecordScandalCommand.ApplyOrdinaryDignitasPenalty"/> is deliberately off here — the
+    /// only genuinely new consequence this adds is the <see cref="Scandal.ScandalRecord"/> itself. <see
+    /// cref="RecordScandalCommand.ApplyTraitGrant"/> stays on: <see
+    /// cref="Scandal.RecordScandalCommands.ApplyScandalMarkedTrait"/> is idempotent (a Contains-check
+    /// before it ever appends), so re-running it after <see cref="ApplyScandalMark"/> already granted the
+    /// Trait grants nothing a second time — it only lets this new record honestly stamp <see
+    /// cref="Scandal.ScandalRecord.ScandalMarkedTraitApplied"/> true.</summary>
+    private static IDomainEvent[] RecordWeaponizedLegalCaseScandal(WorldState state, LegalCase legalCase, GameDate date, string? causationId) =>
+        RecordScandalCommands.Pipeline.Execute(
+            state, new RecordScandalCommand(
+                state.CommandIds.Issue(), "system", date, causationId, legalCase.DefendantId,
+                ScandalSourceType.WeaponizedLegalCase, ScandalSeverity.PublicDisgrace,
+                ApplyOrdinaryDignitasPenalty: false)).Events.ToArray();
 
     private static IDomainEvent[] ApplyScandalMark(WorldState state, LegalCase legalCase, GameDate date)
     {

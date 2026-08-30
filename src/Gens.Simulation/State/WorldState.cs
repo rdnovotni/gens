@@ -20,6 +20,7 @@ using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
@@ -84,6 +85,7 @@ public sealed class WorldState
         RuntimeIdCounter<DetentionRecord> detentionRecordIds,
         RuntimeIdCounter<SentenceRecord> sentenceRecordIds,
         RuntimeIdCounter<RansomNegotiation> ransomNegotiationIds,
+        RuntimeIdCounter<ScandalRecord> scandalRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -141,6 +143,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<SentenceRecord>, SentenceRecord> sentenceRecords,
         OrderedRegistry<RuntimeId<RansomNegotiation>, RansomNegotiation> ransomNegotiations,
         OrderedRegistry<RuntimeId<Actor>, CollegiumDetails> collegia,
+        OrderedRegistry<RuntimeId<ScandalRecord>, ScandalRecord> scandalRecords,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -180,6 +183,7 @@ public sealed class WorldState
         DetentionRecordIds = detentionRecordIds;
         SentenceRecordIds = sentenceRecordIds;
         RansomNegotiationIds = ransomNegotiationIds;
+        ScandalRecordIds = scandalRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -237,6 +241,7 @@ public sealed class WorldState
         SentenceRecords = sentenceRecords;
         RansomNegotiations = ransomNegotiations;
         Collegia = collegia;
+        ScandalRecords = scandalRecords;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -320,6 +325,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Crime.RansomNegotiation"/> (Phase 12 item 5).</summary>
     public RuntimeIdCounter<RansomNegotiation> RansomNegotiationIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Scandal.ScandalRecord"/> (Phase 12 item 7).</summary>
+    public RuntimeIdCounter<ScandalRecord> ScandalRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -663,6 +671,12 @@ public sealed class WorldState
     /// convention.</summary>
     public OrderedRegistry<RuntimeId<Actor>, CollegiumDetails> Collegia { get; } = new();
 
+    /// <summary>Every <see cref="Scandal.ScandalRecord"/> ever recorded (Phase 12 item 7), in ascending
+    /// <see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once recorded, matching <see
+    /// cref="PunishableOffenses"/>'s and <see cref="LegalCases"/>'s identical "kept for the campaign's
+    /// lifetime" convention — see <see cref="Scandal.ScandalRecord"/>'s own doc comment for why.</summary>
+    public OrderedRegistry<RuntimeId<ScandalRecord>, ScandalRecord> ScandalRecords { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -716,6 +730,7 @@ public sealed class WorldState
         ["detentionRecordIds"] = DetentionRecordIds.Peek,
         ["sentenceRecordIds"] = SentenceRecordIds.Peek,
         ["ransomNegotiationIds"] = RansomNegotiationIds.Peek,
+        ["scandalRecordIds"] = ScandalRecordIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -773,6 +788,7 @@ public sealed class WorldState
         ["sentenceRecords"] = SentenceRecords.Version,
         ["ransomNegotiations"] = RansomNegotiations.Version,
         ["collegia"] = Collegia.Version,
+        ["scandalRecords"] = ScandalRecords.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

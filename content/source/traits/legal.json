@@ -25,5 +25,14 @@
     "category": "reactive",
     "axis": "honor",
     "axisNudge": -15
+  },
+  {
+    "id": "rehabilitated",
+    "status": "active",
+    "nameKey": "traits.rehabilitated.name",
+    "descriptionKey": "traits.rehabilitated.description",
+    "category": "reactive",
+    "axis": "honor",
+    "axisNudge": 15
   }
 ]

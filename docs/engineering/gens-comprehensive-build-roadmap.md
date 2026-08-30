@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-6 of 9 done — see "Item 6 progress" below) ← **next up: item 7**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-7 of 9 done — see "Item 7 progress" below) ← **next up: item 8**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 6 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 7 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -1069,6 +1069,140 @@ status flip), a formal dissolution's authority gate and its patron Dignitas pena
 Debtors membership read, every unreachable Interest Group type throwing rather than silently returning
 false, Collective Lobbying's real Influence pooling and its insufficient-Influence rejection, and a
 save/load round trip with the deterministic state hash staying stable across the new Collegia partition.
+
+**Item 7 progress:** Scandal lands as a new domain, `src/Gens.Simulation/Scandal/`
+(`gens-scandal-design.md`), which the document's own §1 already frames correctly: "not a new consequence
+system, but the shared engine" a handful of already-shipped Phase 12 moments have been quietly waiting
+for. `ScandalRecord` (§3, §11's own data-model sketch) is a new kept-forever `WorldState` partition,
+following `LegalCase`'s and `PunishableOffense`'s identical "kept for the campaign's lifetime" convention
+— `ScandalRehabilitationSystem`'s own "a real, sustained stretch without further incident" gate (§8) needs
+a household's full Scandal history, not just its current one. `RecordScandalCommand` is the one command
+path (rule 2) every real or future source routes through, mirroring `AdjustDignitasCommand`'s and
+`RecordPunishableOffenseCommand`'s own "the one command path every future mover routes through"
+precedent: it always creates a real `ScandalRecord`, and three bool flags (`ApplyOrdinaryDignitasPenalty`,
+`ApplyTraitGrant`, plus an optional `ScarredAgainstCharacterId`) let an already-shipped, already-tested
+call site opt out of whichever part of §7's own "ordinary case" bundle — a Dignitas penalty, a
+relationship-web scar, the Scandal-Marked Trait — it has already applied through its own existing
+mechanism, so this command never double-applies a consequence another tested command already produced.
+`ScandalSourceType`, `ScandalSeverity`, and `ScandalScope` all represent every value §4/§6/§11 name, matching
+`LegalCase.CaseType`'s own "every real category represented, only some reachable" precedent; `ScandalScope`
+in particular is fixed at `SettlementWide` for every real trigger this item wires, since Provincial/RomeWide
+both need §6's own Prominence concept, confirmed by direct search to exist only as doc-comment TODOs
+(`EventWeightInputs.cs`, `MourningPeriod.cs`, `MonthlyReportProjector.cs`) rather than a real field anywhere
+in this codebase — the same finding Phase 12 item 1 already made for Fame, reconfirmed here.
+
+Household-level throughout, matching `AdjustDignitasCommand`'s own convention, since no Character-level
+reputation primitive exists to move instead. The Scandal-Marked Trait grant reuses `LegalCaseRuling`'s own
+existing trait-grant plumbing exactly (a Contains-check before appending to `Character.Traits`, remove-then-
+readd the `Characters` entry) rather than inventing a second mechanism, and is deliberately idempotent for
+exactly that reason — a caller that already granted the Trait through some other path can still route
+through this command's own `ApplyTraitGrant: true` and have the resulting `ScandalRecord` honestly stamp
+`ScandalMarkedTraitApplied` true without ever double-granting. Faction-dependent reception (§7/§10) reads
+`Clientela.CharacterFactionAlignment` directly off the scandalized household's own recorded head, the way
+Phase 12 item 2 established that partition (§3.1): a head who carries a real, recorded Faction has that
+audience read their own member's disgrace more harshly (`ScandalCatalog.FactionAlignedReadingPenalty`) than
+the other one does — a real, if simple, "we expected better of our own" hypocrisy reading — while a head
+with no recorded Faction (nearly everyone, per §3.1's own "the political cast" framing) reads identically
+to both audiences. `CurrentFameEffect` stays permanently `null`, matching `Agnomen.FameEffect`'s identical
+"the field exists, nothing can set it yet" precedent (Fame itself does not exist anywhere in this codebase,
+reconfirmed directly rather than assumed); `NotaCensoriaIssued` stays permanently `false`, since §7's own
+"sitting Senator" precondition can never be checked — Phase 12 item 2's own doc comment already omitted
+`consul`/`praetor`/every Rome-track office from `MagistracyOffice` entirely. `ScandalSeverity.NotaCensoriaEligible`
+is still a real, reachable severity tier despite that — severity and the formal Nota Censoria consequence
+are two separate facts, and this item reaches the first without ever reaching the second (see below).
+
+The design doc's own §11 data-model sketch also names a `damageControlActionsTaken` list and a
+`dynastyChronicleEntryId` back-reference; `ScandalRecord` deliberately omits both rather than including
+them unpopulated. Damage Control (§8) is a genuine, reasoned cut in its entirety: Suppression needs a real
+spread-to-Scope mechanism to cap (Notable Households' ambient-spread "crowd" and Correspondence &amp;
+Letters' distant-spread channel, §5, neither built); Spin needs a scored competition against felt severity
+that does not exist; Scapegoating's own moral/mechanical weighting is explicitly left open by §12 itself.
+A Chronicle back-reference does not fit this codebase's own real architecture at all — confirmed by direct
+search, not assumed: `ChronicleGenerationSystem` mints a fresh `RuntimeId` for a `ChronicleEntry` strictly
+after the tick that produced the source event, and no other domain record anywhere in this codebase (not
+`LegalCase`, not `SentenceRecord`) is ever written back to with the resulting entry ID, so modeling one
+here would invent plumbing no other Phase 12 item actually builds.
+
+Four real, reachable sources are wired, each an additive call into an already-shipped, already-tested
+command rather than a reopening of one — every existing test in `LegalTests.cs`/`CrimeTests.cs`/
+`CollegiaTests.cs` that asserts an exact Dignitas or relationship-count value for these call sites still
+passes unchanged, confirmed by running those suites against this item's own changes. `LegalCaseRuling`'s
+Patria Potestas ruling (§4's "a politically-weaponized Legal &amp; Court case," §6) gets a new, additive
+`RecordScandalCommand` call alongside its own existing, untouched `ApplyScandalMark` — `ApplyOrdinaryDignitasPenalty`
+off, since the harsher `PatriaPotestasCaseDignitasPenalty` already applied above is the only Dignitas
+movement this ruling ever produces. `ImprisonCommand`'s Unjust branch and `ApplySentenceCommand`'s Unjust,
+execution-resulting branch both cover §4's "an Unjust imprisonment or execution" — each already applies its
+own Dignitas penalty and relationship scar (Crime &amp; Punishment's own already-tested behavior), so both
+flags are off there too; the genuinely new consequence each adds is the `ScandalRecord` itself and, for the
+first time, a real Scandal-Marked Trait grant on the actor who exercised unjust power (`ImprisonCommand`) or
+the named sentencing Character (`ApplySentenceCommand` — skipped entirely when no `SentencingCharacterId` is
+supplied, matching that command's own identical "only has somewhere real to land when a specific Character
+is named" precedent for its relationship scar). `DissolveCollegiumCommand` covers §4's "an Illicit
+Collegium's exposure" (§7) — deliberately *not* wired at `RecordCollegiumOrganizedDisruptionCommand`'s own
+earlier Unjust-flip-to-Illicit moment, since §4's own source language is specifically "a patron's own public
+association with a *dissolved*, disgraced collegium," and dissolution, not the flip itself, is the real
+exposure event §7 describes.
+
+`DiscoverFabricationCommand` is this item's one genuinely new command outside the shared primitive itself,
+and its own real payoff: Phase 12 item 5's `PunishableOffense.FabricationDiscovered` field has sat
+permanently `false` since that item shipped, its own doc comment naming it "a real, present hook...
+specifically so that future Scheme type has somewhere to land" while noting "no caller in this codebase
+ever sets [it] true." This item is not that future Scheme type (Crime &amp; Punishment §9's own Fabricating-
+Justification-as-a-Scheme-type loop stays unbuilt, per that item's own explicit cut) — but §4's "a
+discovered Fabrication... retroactively the single worst-case scandal source this project has built" only
+needs *something* real to flip that flag, not specifically a Scheme. `DiscoverFabricationCommand` is that
+real, narrow, separate primitive: a new command touching `WorldState.PunishableOffenses` directly (not a
+reopening of `RecordPunishableOffenseCommand`'s own pipeline), gated on the offense actually being
+`IsFabricated` and not yet discovered, which flips `FabricationDiscovered` true and additively records a
+`ScandalRecord` at `ScandalSeverity.NotaCensoriaEligible` — this item's one real path to that severity tier,
+even though (as above) the formal Nota Censoria consequence itself still never fires.
+
+`ScandalDecaySystem` (§9, "an ordinary Scandal's own felt severity fades over time if not actively
+refreshed by a further incident, eventually settling into background Dynasty Chronicle memory rather than
+an active, ongoing penalty") matches `FavorExpirationSystem`'s identical age-gated shape directly: at
+`ScandalCatalog.SeverityFadeAfterMonths` a still-active record's severity steps down one rung, and at the
+further `DeactivateAfterMonths` gate it is set `IsActive` false outright. `ScandalRehabilitationSystem`
+(§8) is Rehabilitation's own concrete trigger, matching `FavorExpirationSystem`'s and
+`MagistracyTermSystem`'s identical age-gated-check shape: every month, every living Character who still
+carries Scandal-Marked but not yet Rehabilitated is checked against their own household's most recent
+`ScandalRecord` (a further incident of *any* severity resets the clock), and past
+`ScandalCatalog.RehabilitationAfterMonths` is granted the new **Rehabilitated** Reactive Trait — authored
+directly into `content/source/traits/legal.json` alongside `scandal-marked` (the same "nothing else in this
+codebase had built it yet" reasoning Phase 12 item 4 already used to author that trait and its two
+siblings), additively rather than as a replacement, so the earned redemption sits beside the enduring mark
+rather than erasing the history that produced it. `ChronicleProjector` gains two new cases, matching
+`InsolvencyStageChangedEvent`'s own "only the severe/terminal rung is Chronicle-worthy" precedent: a
+`ScandalRecordedEvent` only when it actually carried the Scandal-Marked Trait (Legendary for a
+Nota-Censoria-severity case, Major otherwise), and a `CharacterRehabilitatedEvent` unconditionally, both
+into the existing `FaithAndScandal` category rather than a new one this item invents.
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than assumption:**
+the remaining five §4 sources — an affair's discovery (Romance, Sexuality &amp; Lineage §11, Phase 17,
+unbuilt), a Scandalous theatrical performance and a Fame Collapse via disgrace (Games &amp; Spectacle,
+Celebrities &amp; Influential Figures, Phase 17 — Fame itself confirmed not to exist anywhere in this
+codebase), aggressive Publicanus tax-farming corruption (Land Ownership &amp; Real Estate, Phase 15,
+unbuilt), and a deliberately weaponized rumor (Characters' own "Spread a Damaging Rumor" Interaction,
+confirmed by direct search to exist only as a named row in `gens-characters-design.md` §9.4's own table,
+with nothing in `Gens.Simulation.Interactions` implementing it) — are each named in `ScandalSourceType` for
+schema completeness but never rolled by any caller in this codebase, matching `LegalCase.CaseType`'s own
+"every real category represented, only some reachable" precedent. The Rumor Mill (§5) in its entirety —
+ambient spread (Notable Households, unbuilt), distant spread (Correspondence &amp; Letters, unbuilt), and
+deliberate acceleration via a Libellus Famosus or the still-unbuilt Rumor Interaction — has nothing real to
+spread through yet, so `ScandalScope` never moves past its own fixed `SettlementWide` default and
+`OriginatedViaLibellusFamosus` stays a real, settable-but-never-set flag on `RecordScandalCommand`, matching
+`PunishableOffense.IsFabricated`'s identical "the flag is real, nothing yet has a reason to set it true"
+precedent. Damage Control (§8) — Suppression, Spin, and Scapegoating alike — is not built, for the reasons
+given above. Nota Censoria's own formal consequence (§2, §7) never fires, since no Rome-track magistracy or
+Senator concept exists anywhere in this codebase for its "sitting Senator" precondition to ever check
+against. Covered in `tests/Gens.Simulation.Tests/Scandal/ScandalTests.cs`, including `RecordScandalCommand`'s
+own ordinary-case bundle (Dignitas, relationship scar, idempotent Trait grant) and Faction-dependent
+reception reading real `CharacterFactionAlignment` values, all four real wired sources (an Unjust Imprison,
+an Unjust execution with a named sentencer, a Patria Potestas ruling, and an Illicit Collegium's
+dissolution) each verified not to double an already-tested call site's own existing Dignitas movement,
+`DiscoverFabricationCommand`'s flag-flip and its Nota-Censoria-severity Scandal, the lifecycle decay/fade
+and Rehabilitation's trigger (including a further incident resetting its own clock) and Trait grant,
+Chronicle projection for a severe case and for Rehabilitation, and a save/load round trip with the
+deterministic state hash staying stable across every new partition.
 
 Recommended internal order:
 

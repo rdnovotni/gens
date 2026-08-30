@@ -21,6 +21,7 @@ using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -80,6 +81,7 @@ public static class WorldStateMapper
                 DetentionRecordIds = state.DetentionRecordIds.Peek,
                 SentenceRecordIds = state.SentenceRecordIds.Peek,
                 RansomNegotiationIds = state.RansomNegotiationIds.Peek,
+                ScandalRecordIds = state.ScandalRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -188,6 +190,8 @@ public static class WorldStateMapper
             RansomNegotiations = state.RansomNegotiations.InAscendingOrder().Select(entry => ToRansomNegotiationDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             Collegia = state.Collegia.InAscendingOrder().Select(entry => ToCollegiumDetailsDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ScandalRecords = state.ScandalRecords.InAscendingOrder().Select(entry => ToScandalRecordDto(entry.Value)).ToArray(),
         };
     }
 
@@ -572,6 +576,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Actor>, CollegiumDetails>(details.ActorId, details);
             }));
 
+        var scandalRecords = OrderedRegistry<RuntimeId<ScandalRecord>, ScandalRecord>.Restore(
+            dto.ScandalRecords.Select(s =>
+            {
+                var record = FromScandalRecordDto(s);
+                return new KeyValuePair<RuntimeId<ScandalRecord>, ScandalRecord>(record.ScandalId, record);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -609,6 +620,7 @@ public static class WorldStateMapper
             detentionRecordIds: RuntimeIdCounter<DetentionRecord>.Restore(dto.Counters.DetentionRecordIds),
             sentenceRecordIds: RuntimeIdCounter<SentenceRecord>.Restore(dto.Counters.SentenceRecordIds),
             ransomNegotiationIds: RuntimeIdCounter<RansomNegotiation>.Restore(dto.Counters.RansomNegotiationIds),
+            scandalRecordIds: RuntimeIdCounter<ScandalRecord>.Restore(dto.Counters.ScandalRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -666,6 +678,7 @@ public static class WorldStateMapper
             sentenceRecords: sentenceRecords,
             ransomNegotiations: ransomNegotiations,
             collegia: collegia,
+            scandalRecords: scandalRecords,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2071,6 +2084,37 @@ public static class WorldStateMapper
         dto.PatronHouseholdId is { } patronHouseholdId ? RuntimeId<Household>.Parse(patronHouseholdId) : null,
         dto.QuinquennalisCharacterId is { } quinquennalisId ? RuntimeId<Character>.Parse(quinquennalisId) : null,
         dto.MemberHouseholdIds.Select(RuntimeId<Household>.Parse).ToArray());
+
+    private static ScandalRecordDto ToScandalRecordDto(ScandalRecord record) => new()
+    {
+        ScandalId = record.ScandalId.ToTaggedString(),
+        PrimaryHouseholdId = record.PrimaryHouseholdId.ToTaggedString(),
+        SourceType = record.SourceType.ToString(),
+        Severity = record.Severity.ToString(),
+        Scope = record.Scope.ToString(),
+        RecordedDateTotalMonths = record.RecordedDate.TotalMonths,
+        OriginatedViaLibellusFamosus = record.OriginatedViaLibellusFamosus,
+        CurrentFameEffect = record.CurrentFameEffect,
+        ScandalMarkedTraitApplied = record.ScandalMarkedTraitApplied,
+        NotaCensoriaIssued = record.NotaCensoriaIssued,
+        TraditionalistReading = record.FactionReception.TraditionalistReading,
+        PopularistReading = record.FactionReception.PopularistReading,
+        IsActive = record.IsActive,
+    };
+
+    private static ScandalRecord FromScandalRecordDto(ScandalRecordDto dto) => new(
+        RuntimeId<ScandalRecord>.Parse(dto.ScandalId),
+        RuntimeId<Household>.Parse(dto.PrimaryHouseholdId),
+        Enum.Parse<ScandalSourceType>(dto.SourceType),
+        Enum.Parse<ScandalSeverity>(dto.Severity),
+        Enum.Parse<ScandalScope>(dto.Scope),
+        new GameDate(dto.RecordedDateTotalMonths),
+        dto.OriginatedViaLibellusFamosus,
+        dto.CurrentFameEffect,
+        dto.ScandalMarkedTraitApplied,
+        dto.NotaCensoriaIssued,
+        new FactionDependentReception(dto.TraditionalistReading, dto.PopularistReading),
+        dto.IsActive);
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {
