@@ -33,9 +33,13 @@ public sealed class BackgroundHouseDriftSystem : IMonthlySystem<WorldState>
             throw new ArgumentNullException(nameof(state));
 
         // Materialize first: the loop body replaces entries in state.Actors mid-iteration, matching
-        // RelationshipDecaySystem's identical "snapshot before mutating" guard.
+        // RelationshipDecaySystem's identical "snapshot before mutating" guard. Restricted to Gens
+        // actors: Phase 12 item 6 starts creating LivingWorldActorType.Collegium entries, which this
+        // Rival-Houses-specific fortune drift (and the StandingTrend swings that feed the extinction
+        // system's own background-tier roll) was never written to model — a Collegium's own legal
+        // standing (Collegia.CollegiumLegalStatus) is a distinct, deliberately separate axis.
         var backgroundActors = state.Actors.InAscendingOrder()
-            .Where(entry => entry.Value.Tier == LivingWorldActorTier.Background)
+            .Where(entry => entry.Value.Tier == LivingWorldActorTier.Background && entry.Value.ActorType == LivingWorldActorType.Gens)
             .ToArray();
 
         if (backgroundActors.Length == 0)

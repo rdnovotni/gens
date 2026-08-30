@@ -4,6 +4,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
+using Gens.Simulation.Collegia;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
@@ -185,6 +186,8 @@ public static class WorldStateMapper
             DetentionRecords = state.DetentionRecords.InAscendingOrder().Select(entry => ToDetentionRecordDto(entry.Value)).ToArray(),
             SentenceRecords = state.SentenceRecords.InAscendingOrder().Select(entry => ToSentenceRecordDto(entry.Value)).ToArray(),
             RansomNegotiations = state.RansomNegotiations.InAscendingOrder().Select(entry => ToRansomNegotiationDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Collegia = state.Collegia.InAscendingOrder().Select(entry => ToCollegiumDetailsDto(entry.Value)).ToArray(),
         };
     }
 
@@ -562,6 +565,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<RansomNegotiation>, RansomNegotiation>(negotiation.NegotiationId, negotiation);
             }));
 
+        var collegia = OrderedRegistry<RuntimeId<Actor>, CollegiumDetails>.Restore(
+            dto.Collegia.Select(c =>
+            {
+                var details = FromCollegiumDetailsDto(c);
+                return new KeyValuePair<RuntimeId<Actor>, CollegiumDetails>(details.ActorId, details);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -655,6 +665,7 @@ public static class WorldStateMapper
             detentionRecords: detentionRecords,
             sentenceRecords: sentenceRecords,
             ransomNegotiations: ransomNegotiations,
+            collegia: collegia,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2036,6 +2047,30 @@ public static class WorldStateMapper
         dto.TermEndDateTotalMonths is { } end ? new GameDate(end) : null,
         dto.LossReason is { } loss ? Enum.Parse<MagistracyLossReason>(loss) : null,
         dto.CoHolderId is { } coHolder ? RuntimeId<Character>.Parse(coHolder) : null);
+
+    private static CollegiumDetailsDto ToCollegiumDetailsDto(CollegiumDetails details) => new()
+    {
+        ActorId = details.ActorId.ToTaggedString(),
+        CollegiumType = details.CollegiumType.ToString(),
+        LegalStatus = details.LegalStatus.ToString(),
+        LinkedPopGroupType = details.LinkedPopGroupType?.ToString(),
+        LinkedPatronDeity = details.LinkedPatronDeity?.ToString(),
+        ScholaPropertyId = details.ScholaPropertyId,
+        PatronHouseholdId = details.PatronHouseholdId?.ToTaggedString(),
+        QuinquennalisCharacterId = details.QuinquennalisCharacterId?.ToTaggedString(),
+        MemberHouseholdIds = details.MemberHouseholdIds.Select(id => id.ToTaggedString()).ToArray(),
+    };
+
+    private static CollegiumDetails FromCollegiumDetailsDto(CollegiumDetailsDto dto) => new(
+        RuntimeId<Actor>.Parse(dto.ActorId),
+        Enum.Parse<CollegiumType>(dto.CollegiumType),
+        Enum.Parse<CollegiumLegalStatus>(dto.LegalStatus),
+        dto.LinkedPopGroupType is { } popGroupType ? Enum.Parse<PopGroupType>(popGroupType) : null,
+        dto.LinkedPatronDeity is { } patronDeity ? Enum.Parse<PatronDeity>(patronDeity) : null,
+        dto.ScholaPropertyId,
+        dto.PatronHouseholdId is { } patronHouseholdId ? RuntimeId<Household>.Parse(patronHouseholdId) : null,
+        dto.QuinquennalisCharacterId is { } quinquennalisId ? RuntimeId<Character>.Parse(quinquennalisId) : null,
+        dto.MemberHouseholdIds.Select(RuntimeId<Household>.Parse).ToArray());
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {
