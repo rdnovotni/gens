@@ -7,6 +7,7 @@ using Gens.Simulation.Funerary;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -194,6 +195,9 @@ internal static class RuntimeIdTagRegistry
         // RuntimeId, matching DynasticEpithet's identical exemption.
         [typeof(OmenEvent)] = "omen",
         [typeof(PriesthoodRecord)] = "priesthood",
+        // Phase 12 item 4 — Gens.Simulation.Legal.LegalCase, same "real record as its own tag"
+        // convention as OmenEvent/PriesthoodRecord/MagistracyRecord above.
+        [typeof(LegalCase)] = "legalcase",
     };
 
     public static string Resolve(Type type) =>
