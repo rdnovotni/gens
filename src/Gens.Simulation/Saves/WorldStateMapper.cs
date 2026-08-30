@@ -13,6 +13,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
@@ -72,6 +73,7 @@ public static class WorldStateMapper
                 MagistracyRecordIds = state.MagistracyRecordIds.Peek,
                 OmenEventIds = state.OmenEventIds.Peek,
                 PriesthoodRecordIds = state.PriesthoodRecordIds.Peek,
+                LegalCaseIds = state.LegalCaseIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -171,6 +173,8 @@ public static class WorldStateMapper
             HouseholdReligions = state.HouseholdReligions.InAscendingOrder().Select(entry => ToHouseholdReligionDto(entry.Value)).ToArray(),
             OmenEvents = state.OmenEvents.InAscendingOrder().Select(entry => ToOmenEventDto(entry.Value)).ToArray(),
             PriesthoodRecords = state.PriesthoodRecords.InAscendingOrder().Select(entry => ToPriesthoodRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            LegalCases = state.LegalCases.InAscendingOrder().Select(entry => ToLegalCaseDto(entry.Value)).ToArray(),
         };
     }
 
@@ -513,6 +517,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<PriesthoodRecord>, PriesthoodRecord>(record.RecordId, record);
             }));
 
+        var legalCases = OrderedRegistry<RuntimeId<LegalCase>, LegalCase>.Restore(
+            dto.LegalCases.Select(c =>
+            {
+                var legalCase = FromLegalCaseDto(c);
+                return new KeyValuePair<RuntimeId<LegalCase>, LegalCase>(legalCase.CaseId, legalCase);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -545,6 +556,7 @@ public static class WorldStateMapper
             magistracyRecordIds: RuntimeIdCounter<MagistracyRecord>.Restore(dto.Counters.MagistracyRecordIds),
             omenEventIds: RuntimeIdCounter<OmenEvent>.Restore(dto.Counters.OmenEventIds),
             priesthoodRecordIds: RuntimeIdCounter<PriesthoodRecord>.Restore(dto.Counters.PriesthoodRecordIds),
+            legalCaseIds: RuntimeIdCounter<LegalCase>.Restore(dto.Counters.LegalCaseIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -596,6 +608,7 @@ public static class WorldStateMapper
             householdReligions: householdReligions,
             omenEvents: omenEvents,
             priesthoodRecords: priesthoodRecords,
+            legalCases: legalCases,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2031,4 +2044,46 @@ public static class WorldStateMapper
         new GameDate(dto.AppointedDateTotalMonths),
         dto.FlamenDeity is { } deity ? Enum.Parse<PatronDeity>(deity) : null,
         dto.EndDateTotalMonths is { } end ? new GameDate(end) : null);
+
+    private static LegalCaseDto ToLegalCaseDto(LegalCase legalCase) => new()
+    {
+        CaseId = legalCase.CaseId.ToTaggedString(),
+        CaseType = legalCase.CaseType.ToString(),
+        PlaintiffId = legalCase.PlaintiffId.ToTaggedString(),
+        DefendantId = legalCase.DefendantId.ToTaggedString(),
+        SettlementId = legalCase.SettlementId.ToTaggedString(),
+        Depth = legalCase.Depth.ToString(),
+        Stage = legalCase.Stage.ToString(),
+        FiledDateTotalMonths = legalCase.FiledDate.TotalMonths,
+        PresidingCharacterId = legalCase.PresidingCharacterId?.ToTaggedString(),
+        PresidingCharacterScouted = legalCase.PresidingCharacterScouted,
+        PlaintiffCaseStrength = legalCase.PlaintiffCaseStrength,
+        DefendantCaseStrength = legalCase.DefendantCaseStrength,
+        PlaintiffBriberyWeight = legalCase.PlaintiffBriberyWeight,
+        DefendantBriberyWeight = legalCase.DefendantBriberyWeight,
+        IsPatriaPotestasCase = legalCase.IsPatriaPotestasCase,
+        Verdict = legalCase.Verdict?.ToString(),
+        Sentence = legalCase.Sentence?.ToString(),
+        RuledDateTotalMonths = legalCase.RuledDate?.TotalMonths,
+    };
+
+    private static LegalCase FromLegalCaseDto(LegalCaseDto dto) => new(
+        RuntimeId<LegalCase>.Parse(dto.CaseId),
+        Enum.Parse<LegalCaseType>(dto.CaseType),
+        RuntimeId<Household>.Parse(dto.PlaintiffId),
+        RuntimeId<Household>.Parse(dto.DefendantId),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        Enum.Parse<LegalCaseDepth>(dto.Depth),
+        Enum.Parse<LegalCaseStage>(dto.Stage),
+        new GameDate(dto.FiledDateTotalMonths),
+        dto.PresidingCharacterId is { } presider ? RuntimeId<Character>.Parse(presider) : null,
+        dto.PresidingCharacterScouted,
+        dto.PlaintiffCaseStrength,
+        dto.DefendantCaseStrength,
+        dto.PlaintiffBriberyWeight,
+        dto.DefendantBriberyWeight,
+        dto.IsPatriaPotestasCase,
+        dto.Verdict is { } verdict ? Enum.Parse<LegalCaseVerdict>(verdict) : null,
+        dto.Sentence is { } sentence ? Enum.Parse<LegalSentence>(sentence) : null,
+        dto.RuledDateTotalMonths is { } ruled ? new GameDate(ruled) : null);
 }
