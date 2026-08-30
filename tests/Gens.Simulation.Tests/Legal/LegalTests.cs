@@ -100,6 +100,52 @@ public sealed class LegalTests
     }
 
     [Test]
+    public void FileLawsuitCommandRejectsAFilerOutsideThePlaintiffHousehold()
+    {
+        var (state, settlementId, plaintiffId, defendantId, _, defendantHeadId) = TwoHouseholds();
+        Fund(state, plaintiffId, Money.FromDenarii(100));
+
+        var result = QuickPipeline().Execute(
+            state, new FileLawsuitCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null,
+                LegalCaseType.PropertyLand, LegalCaseDepth.Quick, plaintiffId, defendantId, settlementId, defendantHeadId));
+
+        Assert.That(result.Error, Is.EqualTo(FileLawsuitCommands.FilingCharacterNotInPlaintiffHousehold));
+    }
+
+    [Test]
+    public void FileLawsuitCommandRejectsAPlaintiffWhoCannotAffordTheFilingFee()
+    {
+        var (state, settlementId, plaintiffId, defendantId, plaintiffHeadId, _) = TwoHouseholds();
+        Fund(state, plaintiffId, Money.FromDenarii(1));
+
+        var result = QuickPipeline().Execute(
+            state, new FileLawsuitCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null,
+                LegalCaseType.PropertyLand, LegalCaseDepth.Quick, plaintiffId, defendantId, settlementId, plaintiffHeadId));
+
+        Assert.That(result.Error, Is.EqualTo(FileLawsuitCommands.InsufficientTreasury));
+    }
+
+    [Test]
+    public void OfferBribeCommandRejectsABribeTheHouseholdCannotAfford()
+    {
+        var (state, settlementId, plaintiffId, defendantId, plaintiffHeadId, _) = TwoHouseholds();
+        Fund(state, plaintiffId, Money.FromDenarii(100));
+        SeatDecurion(state, settlementId, state.HouseholdIds.Issue(), new GameDate(0));
+        var filed = QuickPipeline().Execute(
+            state, new FileLawsuitCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null,
+                LegalCaseType.Contract, LegalCaseDepth.Major, plaintiffId, defendantId, settlementId, plaintiffHeadId));
+        var caseId = filed.Events.OfType<LawsuitFiledEvent>().Single().CaseId;
+
+        var result = OfferBribeCommands.Pipeline.Execute(
+            state, new OfferBribeCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, caseId, plaintiffId, Money.FromDenarii(1_000)));
+
+        Assert.That(result.Error, Is.EqualTo(OfferBribeCommands.InsufficientTreasury));
+    }
+
+    [Test]
     public void FileLawsuitCommandAssignsAnUnconflictedDecurionAsPresider()
     {
         var (state, settlementId, plaintiffId, defendantId, plaintiffHeadId, _) = TwoHouseholds();

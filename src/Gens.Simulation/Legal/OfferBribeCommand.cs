@@ -61,6 +61,7 @@ public static class OfferBribeCommands
     public static readonly ValidationErrorCode NoPresiderAssigned = new("legal.offerBribe.noPresiderAssigned");
     public static readonly ValidationErrorCode NotAParty = new("legal.offerBribe.notAParty");
     public static readonly ValidationErrorCode NonPositiveAmount = new("legal.offerBribe.nonPositiveAmount");
+    public static readonly ValidationErrorCode InsufficientTreasury = new("legal.offerBribe.insufficientTreasury");
 
     private static readonly LedgerAccountKey BriberySink = new(LedgerAccountKind.System, "legal:bribery");
 
@@ -83,6 +84,12 @@ public static class OfferBribeCommands
             return NotAParty;
         if (command.Amount <= Money.Zero)
             return NonPositiveAmount;
+
+        var balance = state.LedgerAccounts.TryGet(LedgerAccountKey.ForHousehold(command.BribingHouseholdId), out var account)
+            ? account!.Balance
+            : Money.Zero;
+        if (balance < command.Amount)
+            return InsufficientTreasury;
 
         return null;
     }

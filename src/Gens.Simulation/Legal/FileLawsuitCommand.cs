@@ -74,6 +74,8 @@ public static class FileLawsuitCommands
     public static readonly ValidationErrorCode UnknownSettlement = new("legal.fileLawsuit.unknownSettlement");
     public static readonly ValidationErrorCode UnknownFilingCharacter = new("legal.fileLawsuit.unknownFilingCharacter");
     public static readonly ValidationErrorCode FilingCharacterDeceased = new("legal.fileLawsuit.filingCharacterDeceased");
+    public static readonly ValidationErrorCode FilingCharacterNotInPlaintiffHousehold = new("legal.fileLawsuit.filingCharacterNotInPlaintiffHousehold");
+    public static readonly ValidationErrorCode InsufficientTreasury = new("legal.fileLawsuit.insufficientTreasury");
 
     private static readonly LedgerAccountKey FilingFeeSink = new(LedgerAccountKind.System, "legal:filingFees");
 
@@ -88,6 +90,9 @@ public static class FileLawsuitCommands
             issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
     }
 
+    private static Money FilingCost(FileLawsuitCommand command) =>
+        command.Depth == LegalCaseDepth.Quick ? LegalCatalog.QuickFilingCost : LegalCatalog.MajorFilingCost;
+
     private static ValidationErrorCode? Validate(WorldState state, FileLawsuitCommand command)
     {
         if (command.PlaintiffId == command.DefendantId)
@@ -98,6 +103,14 @@ public static class FileLawsuitCommands
             return UnknownFilingCharacter;
         if (!filer!.IsAlive)
             return FilingCharacterDeceased;
+        if (filer.Household != command.PlaintiffId)
+            return FilingCharacterNotInPlaintiffHousehold;
+
+        var balance = state.LedgerAccounts.TryGet(LedgerAccountKey.ForHousehold(command.PlaintiffId), out var account)
+            ? account!.Balance
+            : Money.Zero;
+        if (balance < FilingCost(command))
+            return InsufficientTreasury;
 
         return null;
     }
@@ -109,7 +122,7 @@ public static class FileLawsuitCommands
         var presidingId = LegalCaseResolver.SelectPresidingMagistrate(
             state, command.SettlementId, command.PlaintiffId, command.DefendantId);
 
-        var filingCost = command.Depth == LegalCaseDepth.Quick ? LegalCatalog.QuickFilingCost : LegalCatalog.MajorFilingCost;
+        var filingCost = FilingCost(command);
         var posted = LedgerService.Post(
             state, command.SubmittedDate, LedgerTransactionCategory.Gifts,
             new[]

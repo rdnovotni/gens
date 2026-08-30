@@ -46,10 +46,17 @@ public sealed class LegalCaseAdvancementSystem : IMonthlySystem<WorldState>
     public string Id => "legal.caseAdvancement";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "legalCases", "characters", "householdReputations", "magistracyRecords" };
+
+    /// <summary>Broader than this system's own registries because <see cref="LegalCaseRuling.Apply"/>
+    /// routes every consequence through a shared command pipeline (<see cref="AdjustDignitasCommand"/>,
+    /// <see cref="RecordInteractionCommand"/>, <see cref="EndMagistracyForConvictionCommand"/>, a
+    /// <see cref="LedgerService.Post"/> fine) — each of those mints its own command id, sequence number,
+    /// and (for the fine) ledger transaction id, so the write-set declared here must cover the counters
+    /// those pipelines touch too, not just the partitions this system's own code writes directly.</summary>
     public IReadOnlyCollection<string> Writes { get; } = new[]
     {
         "legalCases", "eventIds", "householdReputations", "relationships", "magistracyRecords",
-        "characters", "ledgerAccounts", "ledgerTransactions",
+        "characters", "ledgerAccounts", "ledgerTransactions", "commandIds", "commandSequence", "ledgerTransactionIds",
     };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
