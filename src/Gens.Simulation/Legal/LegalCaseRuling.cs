@@ -53,7 +53,7 @@ internal static class LegalCaseRuling
 {
     private static readonly LedgerAccountKey FineSink = new(LedgerAccountKind.System, "legal:fines");
 
-    public static IReadOnlyList<IDomainEvent> Apply(
+    public static IDomainEvent[] Apply(
         WorldState state, LegalCase legalCase, LegalCaseVerdict verdict, LegalSentence? sentence,
         GameDate date, string? causationId)
     {
@@ -121,10 +121,10 @@ internal static class LegalCaseRuling
             state.EventIds.Issue(), date, legalCase.CaseId, legalCase.CaseType, legalCase.PlaintiffId, legalCase.DefendantId,
             verdict, sentence, legalCase.IsPatriaPotestasCase, causationId));
 
-        return events;
+        return events.ToArray();
     }
 
-    private static IReadOnlyList<IDomainEvent> ApplyRelationshipScar(WorldState state, LegalCase legalCase, GameDate date, string? causationId)
+    private static IDomainEvent[] ApplyRelationshipScar(WorldState state, LegalCase legalCase, GameDate date, string? causationId)
     {
         if (!state.HouseholdHeadships.TryGet(legalCase.PlaintiffId, out var plaintiffHeadship) ||
             !state.HouseholdHeadships.TryGet(legalCase.DefendantId, out var defendantHeadship))
@@ -146,10 +146,10 @@ internal static class LegalCaseRuling
             state, new RecordInteractionCommand(
                 state.CommandIds.Issue(), "system", date, causationId, defendantHeadId, plaintiffHeadId,
                 LegalCatalog.RelationshipScarOpinionDelta, BondTag.Nemesis, BondTag.None, RelationshipOrigin.Political)).Events);
-        return events;
+        return events.ToArray();
     }
 
-    private static IReadOnlyList<IDomainEvent> ApplyScandalMark(WorldState state, LegalCase legalCase, GameDate date)
+    private static IDomainEvent[] ApplyScandalMark(WorldState state, LegalCase legalCase, GameDate date)
     {
         if (!state.HouseholdHeadships.TryGet(legalCase.DefendantId, out var headship))
             return Array.Empty<IDomainEvent>();
