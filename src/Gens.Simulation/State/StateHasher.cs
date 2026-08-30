@@ -543,6 +543,13 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.IsActive ? 1L : 0L);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.CharacterFames.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.Fame);
+        }
+
         return hash;
     }
 

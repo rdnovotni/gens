@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-7 of 9 done — see "Item 7 progress" below) ← **next up: item 8**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-8 of 9 done — see "Item 8 progress" below) ← **next up: item 9**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 7 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 8 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -1203,6 +1203,72 @@ dissolution) each verified not to double an already-tested call site's own exist
 and Rehabilitation's trigger (including a further incident resetting its own clock) and Trait grant,
 Chronicle projection for a severe case and for Rehabilitation, and a save/load round trip with the
 deterministic state hash staying stable across every new partition.
+
+**Item 8 progress:** Fame lands as a new domain, `src/Gens.Simulation/Fame/`
+(`gens-celebrities-influential-figures-design.md`, extending `gens-games-spectacle-design.md` §2). This
+item is the same "build the shared engine now, before the design doc's own claimed owner has shipped"
+move Phase 12 item 1 already made for Dignitas — every earlier item's own doc comment (`Agnomen.FameEffect`,
+`ScandalRecord.CurrentFameEffect`, item 1's own `HouseholdReputation` note) says some version of "Fame is
+a universal 0-100 Character field owned by Games &amp; Spectacle (Phase 17)... neither built"; Games &amp;
+Spectacle has still not shipped, but this roadmap's own Phase 12 construction order places "Fame/celebrity
+and public endorsement" here, at item 8, ahead of Phase 17 — so this item builds the primitive itself
+rather than waiting on a document that was never actually going to land first. `CharacterFame` is a new,
+sparse `WorldState` partition, following `HouseholdReputation`'s own conventions with one deliberate
+divergence: it is keyed by Character, not Household, matching §1's own explicit "lives on Character schema
+itself" — the one Phase 12 reputation-style primitive that is genuinely Character-level rather than
+household-level, since Dignitas itself was built household-level in item 1 specifically because no
+Character-level primitive existed yet to move instead. Clamped to §1's own explicit 0-100 range, unlike
+Dignitas's deliberately unclamped total. `AdjustFameCommand` is the one command path (rule 2) every real
+or future source — Oratory, Literary Work, Wanderer Renown, Military Valor, Romance/Scandal, Athletics,
+Religious Charisma, Arena/Circus/Theatre (`FameSourceType`, §3's own full vocabulary) — is meant to route
+through, matching `AdjustDignitasCommand`'s identical "the primitive ships, the callers don't exist yet"
+precedent: direct search confirms every one of those eight sources needs a system this codebase has not
+built (Legal &amp; Court's own advocacy machinery is the closest existing candidate for Oratory, but
+nothing in this codebase currently generates Fame from a case outcome), so this item is exercised directly
+by its own tests standing in for those future callers, same as item 1 was for Dignitas.
+
+`FameDecaySystem` matches `InfluenceCycleSystem`'s identical "no per-source last-touched timestamp exists,
+so a flat monthly decay applies to every stored balance uniformly" shape (Games &amp; Spectacle §2's own
+"decays slowly if genuinely inactive," reused directly since this item is now that field's real, load-bearing
+owner in practice). `FameDivergenceQuery` (§2's own "Fame/Dignitas Divergence... not a new number to track,
+simply the descriptive gap between two fields this project already has") is a pure, non-mutating read
+computed from `FameResolver.Current` and the Character's own household `DignitasResolver.Current`, never
+stored, matching §11's own "descriptive-only for now" framing directly. Its one real, named judgment call:
+§2's "famous and disreputable at once" divergence is properly about Infamia (Crime &amp; Punishment §13,
+Romance, Sexuality &amp; Lineage §13), and no Infamia status exists anywhere in this codebase (both Phase
+17, unbuilt, confirmed by direct search) — so this query reads a Character's own household Dignitas against
+a single threshold instead, a real, reasoned proxy this item's own doc comment names directly rather than
+silently conflating the two, not a stand-in Infamia flag or an invented three-way band. §5's endorsement
+mechanic ("a crowd that loves a famous charioteer is a crowd more receptive to whichever candidate that
+charioteer is seen publicly favoring") is wired as a real, additive extension to item 2's own
+`HoldContestedElectionCommand`: two new optional parameters, `EndorsingCelebrityForChallenger`/
+`EndorsingCelebrityForIncumbent`, both defaulting to `null`, add a flat score bonus when the named
+endorsing Character's own Fame clears `FameCatalog.EndorsementFameThreshold` — the direct individual-scale
+complement to that command's own existing Faction-alignment bonus. Every already-shipped Phase 12 item 2
+test still submits an election the old way and is untouched: this is the same "additive, non-behavior-
+changing extension to an already-tested command" precedent item 7 already established for
+`LegalCaseRuling`/`ImprisonCommand`/`ApplySentenceCommand`/`DissolveCollegiumCommand`, applied here to a
+command's own parameter list rather than its internal call sites.
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than assumption:**
+none of §3's eight Fame sources is ever actually rolled by a real caller — each needs a system this codebase
+has not built (see `FameSourceType`'s own doc comment for exactly which one each source needs: Wandering
+Populations and Education &amp; Culture's Literary Patronage, both Phase 13/unbuilt; Military &amp; Combat,
+Phase 16; Romance, Sexuality &amp; Lineage and Games &amp; Spectacle itself, both Phase 17; Starting Regions:
+Greek East's athletic-games content and a religious-charisma concept, neither built) — matching
+`ScandalSourceType`'s own identical "every real category represented, only some reachable" precedent. §6's
+Risk and Reward of Association (Collegia patronage, Wanderer hosting, overt social association) and §7's
+sudden Fame Collapse are both real, reasoned cuts: `ScandalSourceType.FameCollapse` already sits in item 7's
+own enum waiting for exactly this item to make Fame real, but wiring a real Fame-collapse trigger into
+`RecordScandalCommand` means reopening an already-shipped, already-tested Phase 12 item 7 command outside a
+mere additive-parameter extension, which is out of this item's own scope the same way item 1 declined to
+retrofit Agnomen and the Funerary Grand-tier trade. §8's Household-Grown Celebrities needs a household's own
+Ludus-trained gladiator (Games &amp; Spectacle), literary/oratorical gift (Education &amp; Culture), or
+battlefield valor (Military &amp; Combat) — none built. Covered in `tests/Gens.Simulation.Tests/Fame/FameTests.cs`,
+including `AdjustFameCommand`'s clamping at both ends of the 0-100 range and its validation, `FameDecaySystem`'s
+monthly erosion (including the zero floor), `FameDivergenceQuery`'s three real categories plus the untouched
+default, the endorsement bonus actually moving an election's winning score, and a save/load round trip with
+the deterministic state hash staying stable across the new partition.
 
 Recommended internal order:
 

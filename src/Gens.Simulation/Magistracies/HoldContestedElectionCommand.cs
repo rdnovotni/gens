@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Fame;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Reputation;
@@ -23,10 +24,18 @@ namespace Gens.Simulation.Magistracies;
 /// cref="MagistracyCatalog.FactionAlignmentBonus"/>'s doc comment for the identical kind of judgment
 /// call) + the candidate's household Dignitas + Influence actually spent this election, plus §5.5's
 /// "soft thumb on the scale": a flat bonus when the candidate's <see cref="PoliticalFaction"/> matches
-/// the settlement's Curia majority Faction. The higher score wins outright — no coin-flip tiebreak is
-/// specified or needed, since Influence spent (an integer the caller freely chooses) makes an exact tie
-/// vanishingly unlikely, and a genuine tie deterministically favors the incumbent (or, for an open seat,
-/// the challenger) as the simplest stable default.
+/// the settlement's Curia majority Faction, and (Phase 12 item 8) a second, independent flat bonus when
+/// <paramref name="EndorsingCelebrityForChallenger"/>/<paramref name="EndorsingCelebrityForIncumbent"/>
+/// names a Character whose own <see cref="Fame.CharacterFame"/> clears <see
+/// cref="Fame.FameCatalog.EndorsementFameThreshold"/> — <c>gens-celebrities-influential-figures-design.md</c>
+/// §5's own "a crowd that loves a famous charioteer is a crowd more receptive to whichever candidate
+/// that charioteer is seen publicly favoring," the direct individual-scale complement to the
+/// Faction-alignment bonus already above it. Both endorsement parameters default to <c>null</c> — an
+/// election submitted the way every already-shipped Phase 12 item 2 test still submits one behaves
+/// identically to before this item, exercising nothing new. The higher score wins outright — no
+/// coin-flip tiebreak is specified or needed, since Influence spent (an integer the caller freely
+/// chooses) makes an exact tie vanishingly unlikely, and a genuine tie deterministically favors the
+/// incumbent (or, for an open seat, the challenger) as the simplest stable default.
 ///
 /// <b>Scope note:</b> rival-candidate generation (§3's "a contested election... surfaces its opposing
 /// figure as a Character") is deliberately not built into this command — <paramref
@@ -49,7 +58,9 @@ public sealed record HoldContestedElectionCommand(
     RuntimeId<Character>? IncumbentCharacterId,
     RuntimeId<Character> ChallengerCharacterId,
     int InfluenceSpentByChallenger,
-    int InfluenceSpentByIncumbent) : ICommand;
+    int InfluenceSpentByIncumbent,
+    RuntimeId<Character>? EndorsingCelebrityForChallenger = null,
+    RuntimeId<Character>? EndorsingCelebrityForIncumbent = null) : ICommand;
 
 /// <summary>Emitted whenever a <see cref="HoldContestedElectionCommand"/> is accepted. Public, matching
 /// <see cref="MagistracyAssumedEvent"/> — an election's outcome is exactly the kind of Curia-legible
@@ -138,8 +149,10 @@ public static class HoldContestedElectionCommands
                 InfluenceResolver.Apply(state, incumbentHousehold, -command.InfluenceSpentByIncumbent);
         }
 
-        var challengerScore = Score(state, command.SettlementId, challenger, command.InfluenceSpentByChallenger);
-        var incumbentScore = incumbent is null ? -1 : Score(state, command.SettlementId, incumbent, command.InfluenceSpentByIncumbent);
+        var challengerScore = Score(state, command.SettlementId, challenger, command.InfluenceSpentByChallenger, command.EndorsingCelebrityForChallenger);
+        var incumbentScore = incumbent is null
+            ? -1
+            : Score(state, command.SettlementId, incumbent, command.InfluenceSpentByIncumbent, command.EndorsingCelebrityForIncumbent);
 
         var challengerWins = incumbent is null || challengerScore > incumbentScore;
         var winner = challengerWins ? command.ChallengerCharacterId : command.IncumbentCharacterId!.Value;
@@ -184,7 +197,9 @@ public static class HoldContestedElectionCommands
     private static int InfluenceOf(WorldState state, Character? character) =>
         character?.Household is { } householdId ? InfluenceResolver.Current(state, householdId) : 0;
 
-    private static int Score(WorldState state, RuntimeId<Settlement> settlementId, Character candidate, int influenceSpent)
+    private static int Score(
+        WorldState state, RuntimeId<Settlement> settlementId, Character candidate, int influenceSpent,
+        RuntimeId<Character>? endorsingCelebrity)
     {
         var attributeScore = candidate.GetEffectiveAttributes().Diplomacy;
         var dignitas = candidate.Household is { } householdId ? DignitasResolver.Current(state, householdId) : 0;
@@ -193,6 +208,9 @@ public static class HoldContestedElectionCommands
         var candidateFaction = CharacterFactionResolver.Current(state, candidate.Id);
         if (candidateFaction is not null && candidateFaction == CuriaMajorityFaction(state, settlementId))
             score += MagistracyCatalog.FactionAlignmentBonus;
+
+        if (endorsingCelebrity is { } endorserId && FameResolver.Current(state, endorserId) >= FameCatalog.EndorsementFameThreshold)
+            score += FameCatalog.EndorsementScoreBonus;
 
         return score;
     }

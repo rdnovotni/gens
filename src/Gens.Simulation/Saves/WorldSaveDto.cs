@@ -389,6 +389,12 @@ public sealed record WorldSaveDocument
     /// and defaults to empty, matching <see cref="Collegia"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(62)]
     public IReadOnlyList<ScandalRecordDto> ScandalRecords { get; init; } = Array.Empty<ScandalRecordDto>();
+
+    /// <summary>Every Character's running <see cref="Gens.Simulation.Fame.CharacterFame"/> score (Phase
+    /// 12 item 8), already keyed by Character. Not <c>required</c>, and defaults to empty, matching
+    /// <see cref="ScandalRecords"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(63)]
+    public IReadOnlyList<CharacterFameDto> CharacterFames { get; init; } = Array.Empty<CharacterFameDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -2592,4 +2598,15 @@ public sealed record ScandalRecordDto
 
     [JsonPropertyOrder(12)]
     public required bool IsActive { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Fame.CharacterFame"/> (Phase 12 item 8), keyed by
+/// Character.</summary>
+public sealed record CharacterFameDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Fame { get; init; }
 }
