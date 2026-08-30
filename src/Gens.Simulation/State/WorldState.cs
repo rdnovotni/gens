@@ -3,6 +3,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
+using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
@@ -78,6 +79,10 @@ public sealed class WorldState
         RuntimeIdCounter<OmenEvent> omenEventIds,
         RuntimeIdCounter<PriesthoodRecord> priesthoodRecordIds,
         RuntimeIdCounter<LegalCase> legalCaseIds,
+        RuntimeIdCounter<PunishableOffense> punishableOffenseIds,
+        RuntimeIdCounter<DetentionRecord> detentionRecordIds,
+        RuntimeIdCounter<SentenceRecord> sentenceRecordIds,
+        RuntimeIdCounter<RansomNegotiation> ransomNegotiationIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -130,6 +135,10 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<OmenEvent>, OmenEvent> omenEvents,
         OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> priesthoodRecords,
         OrderedRegistry<RuntimeId<LegalCase>, LegalCase> legalCases,
+        OrderedRegistry<RuntimeId<PunishableOffense>, PunishableOffense> punishableOffenses,
+        OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord> detentionRecords,
+        OrderedRegistry<RuntimeId<SentenceRecord>, SentenceRecord> sentenceRecords,
+        OrderedRegistry<RuntimeId<RansomNegotiation>, RansomNegotiation> ransomNegotiations,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -165,6 +174,10 @@ public sealed class WorldState
         OmenEventIds = omenEventIds;
         PriesthoodRecordIds = priesthoodRecordIds;
         LegalCaseIds = legalCaseIds;
+        PunishableOffenseIds = punishableOffenseIds;
+        DetentionRecordIds = detentionRecordIds;
+        SentenceRecordIds = sentenceRecordIds;
+        RansomNegotiationIds = ransomNegotiationIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -217,6 +230,10 @@ public sealed class WorldState
         OmenEvents = omenEvents;
         PriesthoodRecords = priesthoodRecords;
         LegalCases = legalCases;
+        PunishableOffenses = punishableOffenses;
+        DetentionRecords = detentionRecords;
+        SentenceRecords = sentenceRecords;
+        RansomNegotiations = ransomNegotiations;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -288,6 +305,18 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Legal.LegalCase"/> (Phase 12 item 4).</summary>
     public RuntimeIdCounter<LegalCase> LegalCaseIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Crime.PunishableOffense"/> (Phase 12 item 5).</summary>
+    public RuntimeIdCounter<PunishableOffense> PunishableOffenseIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Crime.DetentionRecord"/> (Phase 12 item 5).</summary>
+    public RuntimeIdCounter<DetentionRecord> DetentionRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Crime.SentenceRecord"/> (Phase 12 item 5).</summary>
+    public RuntimeIdCounter<SentenceRecord> SentenceRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Crime.RansomNegotiation"/> (Phase 12 item 5).</summary>
+    public RuntimeIdCounter<RansomNegotiation> RansomNegotiationIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -600,6 +629,27 @@ public sealed class WorldState
     /// convention.</summary>
     public OrderedRegistry<RuntimeId<LegalCase>, LegalCase> LegalCases { get; } = new();
 
+    /// <summary>Every <see cref="Crime.PunishableOffense"/> ever recorded (Phase 12 item 5; §3), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once recorded, matching <see
+    /// cref="LegalCases"/>'s identical "kept for the campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<PunishableOffense>, PunishableOffense> PunishableOffenses { get; } = new();
+
+    /// <summary>Every <see cref="Crime.DetentionRecord"/> ever opened, active or ended (Phase 12 item
+    /// 5; §5), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once opened,
+    /// matching <see cref="Magistracies.MagistracyRecord"/>'s identical "ended records are never
+    /// removed, only replaced" convention.</summary>
+    public OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord> DetentionRecords { get; } = new();
+
+    /// <summary>Every <see cref="Crime.SentenceRecord"/> ever applied (Phase 12 item 5; §7-§8), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once applied, matching <see
+    /// cref="PunishableOffenses"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<SentenceRecord>, SentenceRecord> SentenceRecords { get; } = new();
+
+    /// <summary>Every <see cref="Crime.RansomNegotiation"/> ever opened, resolved or not (Phase 12 item
+    /// 5; §10), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once opened,
+    /// matching <see cref="PunishableOffenses"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<RansomNegotiation>, RansomNegotiation> RansomNegotiations { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -649,6 +699,10 @@ public sealed class WorldState
         ["omenEventIds"] = OmenEventIds.Peek,
         ["priesthoodRecordIds"] = PriesthoodRecordIds.Peek,
         ["legalCaseIds"] = LegalCaseIds.Peek,
+        ["punishableOffenseIds"] = PunishableOffenseIds.Peek,
+        ["detentionRecordIds"] = DetentionRecordIds.Peek,
+        ["sentenceRecordIds"] = SentenceRecordIds.Peek,
+        ["ransomNegotiationIds"] = RansomNegotiationIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -701,6 +755,10 @@ public sealed class WorldState
         ["omenEvents"] = OmenEvents.Version,
         ["priesthoodRecords"] = PriesthoodRecords.Version,
         ["legalCases"] = LegalCases.Version,
+        ["punishableOffenses"] = PunishableOffenses.Version,
+        ["detentionRecords"] = DetentionRecords.Version,
+        ["sentenceRecords"] = SentenceRecords.Version,
+        ["ransomNegotiations"] = RansomNegotiations.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
