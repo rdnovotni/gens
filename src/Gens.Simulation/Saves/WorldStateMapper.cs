@@ -4,6 +4,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
+using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
@@ -74,6 +75,10 @@ public static class WorldStateMapper
                 OmenEventIds = state.OmenEventIds.Peek,
                 PriesthoodRecordIds = state.PriesthoodRecordIds.Peek,
                 LegalCaseIds = state.LegalCaseIds.Peek,
+                PunishableOffenseIds = state.PunishableOffenseIds.Peek,
+                DetentionRecordIds = state.DetentionRecordIds.Peek,
+                SentenceRecordIds = state.SentenceRecordIds.Peek,
+                RansomNegotiationIds = state.RansomNegotiationIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -175,6 +180,11 @@ public static class WorldStateMapper
             PriesthoodRecords = state.PriesthoodRecords.InAscendingOrder().Select(entry => ToPriesthoodRecordDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             LegalCases = state.LegalCases.InAscendingOrder().Select(entry => ToLegalCaseDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PunishableOffenses = state.PunishableOffenses.InAscendingOrder().Select(entry => ToPunishableOffenseDto(entry.Value)).ToArray(),
+            DetentionRecords = state.DetentionRecords.InAscendingOrder().Select(entry => ToDetentionRecordDto(entry.Value)).ToArray(),
+            SentenceRecords = state.SentenceRecords.InAscendingOrder().Select(entry => ToSentenceRecordDto(entry.Value)).ToArray(),
+            RansomNegotiations = state.RansomNegotiations.InAscendingOrder().Select(entry => ToRansomNegotiationDto(entry.Value)).ToArray(),
         };
     }
 
@@ -524,6 +534,34 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<LegalCase>, LegalCase>(legalCase.CaseId, legalCase);
             }));
 
+        var punishableOffenses = OrderedRegistry<RuntimeId<PunishableOffense>, PunishableOffense>.Restore(
+            dto.PunishableOffenses.Select(o =>
+            {
+                var offense = FromPunishableOffenseDto(o);
+                return new KeyValuePair<RuntimeId<PunishableOffense>, PunishableOffense>(offense.OffenseId, offense);
+            }));
+
+        var detentionRecords = OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord>.Restore(
+            dto.DetentionRecords.Select(d =>
+            {
+                var record = FromDetentionRecordDto(d);
+                return new KeyValuePair<RuntimeId<DetentionRecord>, DetentionRecord>(record.DetentionId, record);
+            }));
+
+        var sentenceRecords = OrderedRegistry<RuntimeId<SentenceRecord>, SentenceRecord>.Restore(
+            dto.SentenceRecords.Select(s =>
+            {
+                var record = FromSentenceRecordDto(s);
+                return new KeyValuePair<RuntimeId<SentenceRecord>, SentenceRecord>(record.SentenceId, record);
+            }));
+
+        var ransomNegotiations = OrderedRegistry<RuntimeId<RansomNegotiation>, RansomNegotiation>.Restore(
+            dto.RansomNegotiations.Select(r =>
+            {
+                var negotiation = FromRansomNegotiationDto(r);
+                return new KeyValuePair<RuntimeId<RansomNegotiation>, RansomNegotiation>(negotiation.NegotiationId, negotiation);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -557,6 +595,10 @@ public static class WorldStateMapper
             omenEventIds: RuntimeIdCounter<OmenEvent>.Restore(dto.Counters.OmenEventIds),
             priesthoodRecordIds: RuntimeIdCounter<PriesthoodRecord>.Restore(dto.Counters.PriesthoodRecordIds),
             legalCaseIds: RuntimeIdCounter<LegalCase>.Restore(dto.Counters.LegalCaseIds),
+            punishableOffenseIds: RuntimeIdCounter<PunishableOffense>.Restore(dto.Counters.PunishableOffenseIds),
+            detentionRecordIds: RuntimeIdCounter<DetentionRecord>.Restore(dto.Counters.DetentionRecordIds),
+            sentenceRecordIds: RuntimeIdCounter<SentenceRecord>.Restore(dto.Counters.SentenceRecordIds),
+            ransomNegotiationIds: RuntimeIdCounter<RansomNegotiation>.Restore(dto.Counters.RansomNegotiationIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -609,6 +651,10 @@ public static class WorldStateMapper
             omenEvents: omenEvents,
             priesthoodRecords: priesthoodRecords,
             legalCases: legalCases,
+            punishableOffenses: punishableOffenses,
+            detentionRecords: detentionRecords,
+            sentenceRecords: sentenceRecords,
+            ransomNegotiations: ransomNegotiations,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2086,4 +2132,92 @@ public static class WorldStateMapper
         dto.Verdict is { } verdict ? Enum.Parse<LegalCaseVerdict>(verdict) : null,
         dto.Sentence is { } sentence ? Enum.Parse<LegalSentence>(sentence) : null,
         dto.RuledDateTotalMonths is { } ruled ? new GameDate(ruled) : null);
+
+    private static PunishableOffenseDto ToPunishableOffenseDto(PunishableOffense offense) => new()
+    {
+        OffenseId = offense.OffenseId.ToTaggedString(),
+        CharacterId = offense.CharacterId.ToTaggedString(),
+        Source = offense.Source.ToString(),
+        Severity = offense.Severity.ToString(),
+        RecordedDateTotalMonths = offense.RecordedDate.TotalMonths,
+        IsFabricated = offense.IsFabricated,
+        FabricationDiscovered = offense.FabricationDiscovered,
+        SourceLegalCaseId = offense.SourceLegalCaseId?.ToTaggedString(),
+    };
+
+    private static PunishableOffense FromPunishableOffenseDto(PunishableOffenseDto dto) => new(
+        RuntimeId<PunishableOffense>.Parse(dto.OffenseId),
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        Enum.Parse<PunishableOffenseSource>(dto.Source),
+        Enum.Parse<OffenseSeverity>(dto.Severity),
+        new GameDate(dto.RecordedDateTotalMonths),
+        dto.IsFabricated,
+        dto.FabricationDiscovered,
+        dto.SourceLegalCaseId is { } caseId ? RuntimeId<LegalCase>.Parse(caseId) : null);
+
+    private static DetentionRecordDto ToDetentionRecordDto(DetentionRecord record) => new()
+    {
+        DetentionId = record.DetentionId.ToTaggedString(),
+        CharacterId = record.CharacterId.ToTaggedString(),
+        LocationType = record.LocationType.ToString(),
+        StartDateTotalMonths = record.StartDate.TotalMonths,
+        Justified = record.Justified,
+        LinkedLegalCaseId = record.LinkedLegalCaseId?.ToTaggedString(),
+        EndDateTotalMonths = record.EndDate?.TotalMonths,
+        Escaped = record.Escaped,
+    };
+
+    private static DetentionRecord FromDetentionRecordDto(DetentionRecordDto dto) => new(
+        RuntimeId<DetentionRecord>.Parse(dto.DetentionId),
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        Enum.Parse<DetentionLocationType>(dto.LocationType),
+        new GameDate(dto.StartDateTotalMonths),
+        dto.Justified,
+        dto.LinkedLegalCaseId is { } caseId ? RuntimeId<LegalCase>.Parse(caseId) : null,
+        dto.EndDateTotalMonths is { } end ? new GameDate(end) : null,
+        dto.Escaped);
+
+    private static SentenceRecordDto ToSentenceRecordDto(SentenceRecord record) => new()
+    {
+        SentenceId = record.SentenceId.ToTaggedString(),
+        CharacterId = record.CharacterId.ToTaggedString(),
+        Tier = record.Tier.ToString(),
+        Type = record.Type.ToString(),
+        WasJustified = record.WasJustified,
+        AppliedDateTotalMonths = record.AppliedDate.TotalMonths,
+        SourceLegalCaseId = record.SourceLegalCaseId?.ToTaggedString(),
+    };
+
+    private static SentenceRecord FromSentenceRecordDto(SentenceRecordDto dto) => new(
+        RuntimeId<SentenceRecord>.Parse(dto.SentenceId),
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        Enum.Parse<SentenceTier>(dto.Tier),
+        Enum.Parse<SentenceType>(dto.Type),
+        dto.WasJustified,
+        new GameDate(dto.AppliedDateTotalMonths),
+        dto.SourceLegalCaseId is { } caseId ? RuntimeId<LegalCase>.Parse(caseId) : null);
+
+    private static RansomNegotiationDto ToRansomNegotiationDto(RansomNegotiation negotiation) => new()
+    {
+        NegotiationId = negotiation.NegotiationId.ToTaggedString(),
+        CaptiveCharacterId = negotiation.CaptiveCharacterId.ToTaggedString(),
+        CapturingHouseholdId = negotiation.CapturingHouseholdId.ToTaggedString(),
+        TargetHouseholdId = negotiation.TargetHouseholdId.ToTaggedString(),
+        AmountOfferedRawValue = negotiation.AmountOffered.RawValue,
+        OpenedDateTotalMonths = negotiation.OpenedDate.TotalMonths,
+        AmountCounteredRawValue = negotiation.AmountCountered?.RawValue,
+        Resolution = negotiation.Resolution?.ToString(),
+        ResolvedDateTotalMonths = negotiation.ResolvedDate?.TotalMonths,
+    };
+
+    private static RansomNegotiation FromRansomNegotiationDto(RansomNegotiationDto dto) => new(
+        RuntimeId<RansomNegotiation>.Parse(dto.NegotiationId),
+        RuntimeId<Character>.Parse(dto.CaptiveCharacterId),
+        RuntimeId<Household>.Parse(dto.CapturingHouseholdId),
+        RuntimeId<Household>.Parse(dto.TargetHouseholdId),
+        Money.FromMinorUnits(dto.AmountOfferedRawValue),
+        new GameDate(dto.OpenedDateTotalMonths),
+        dto.AmountCounteredRawValue is { } countered ? Money.FromMinorUnits(countered) : null,
+        dto.Resolution is { } resolution ? Enum.Parse<RansomResolution>(resolution) : null,
+        dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null);
 }

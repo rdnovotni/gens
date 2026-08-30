@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Crime;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
@@ -117,6 +118,9 @@ internal static class LegalCaseRuling
         if (legalCase.IsPatriaPotestasCase)
             events.AddRange(ApplyScandalMark(state, legalCase, date));
 
+        if (verdict == LegalCaseVerdict.Convicted)
+            events.AddRange(RecordConvictionAsPunishableOffense(state, legalCase, date, causationId));
+
         events.Add(new LegalCaseRuledEvent(
             state.EventIds.Issue(), date, legalCase.CaseId, legalCase.CaseType, legalCase.PlaintiffId, legalCase.DefendantId,
             verdict, sentence, legalCase.IsPatriaPotestasCase, causationId));
@@ -147,6 +151,30 @@ internal static class LegalCaseRuling
                 state.CommandIds.Issue(), "system", date, causationId, defendantHeadId, plaintiffHeadId,
                 LegalCatalog.RelationshipScarOpinionDelta, BondTag.Nemesis, BondTag.None, RelationshipOrigin.Political)).Events);
         return events.ToArray();
+    }
+
+    /// <summary>Phase 12 item 5's real, immediately reachable <see cref="PunishableOffenseSource.LegalConviction"/>
+    /// source (<c>gens-crime-punishment-imprisonment-design.md</c> §3): a <see
+    /// cref="LegalCaseVerdict.Convicted"/> verdict mints a real <see cref="PunishableOffense"/> against
+    /// the defendant household's own recorded head (<see cref="Succession.HouseholdHeadship"/>) — the
+    /// same "lands on the household's recorded head" simplification <see cref="ApplyScandalMark"/>
+    /// already accepts for the identical household-level-party reason. Severity follows this case's own
+    /// capital/non-capital shape directly.</summary>
+    private static IDomainEvent[] RecordConvictionAsPunishableOffense(WorldState state, LegalCase legalCase, GameDate date, string? causationId)
+    {
+        if (!state.HouseholdHeadships.TryGet(legalCase.DefendantId, out var headship))
+            return Array.Empty<IDomainEvent>();
+        if (!state.Characters.TryGet(headship!.HeadCharacterId, out var head) || !head!.IsAlive)
+            return Array.Empty<IDomainEvent>();
+
+        var severity = legalCase.CaseType is LegalCaseType.Criminal or LegalCaseType.Political
+            ? OffenseSeverity.Capital
+            : OffenseSeverity.Serious;
+
+        return RecordPunishableOffenseCommands.Pipeline.Execute(
+            state, new RecordPunishableOffenseCommand(
+                state.CommandIds.Issue(), "system", date, causationId, headship.HeadCharacterId,
+                PunishableOffenseSource.LegalConviction, severity, false, legalCase.CaseId)).Events.ToArray();
     }
 
     private static IDomainEvent[] ApplyScandalMark(WorldState state, LegalCase legalCase, GameDate date)

@@ -1,6 +1,7 @@
 using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Identity;
@@ -327,6 +328,47 @@ public static class ChronicleProjector
                 patriaPotestas.Type,
                 patriaPotestas.EventId.ToTaggedString(),
                 patriaPotestas.DefendantId),
+
+            // Phase 12 item 5 (§8 of gens-crime-punishment-imprisonment-design.md): "every execution...
+            // is real material, tiered by this document's own Justified/Unjust distinction" — matching
+            // InsolvencyStageChangedEvent's own "only the terminal rung is Chronicle-worthy" precedent
+            // above, an ordinary Fine/Relegatio/Deportatio sentence is routine bookkeeping; only a
+            // sentence that actually ends the Character's life is Chronicle-worthy, and an Unjust one
+            // carries the document's own "a lasting mark... regardless" weight as Legendary rather than
+            // Major.
+            SentenceAppliedEvent { ResultedInDeath: true } sentenced => new ChronicleEntryDraft(
+                sentenced.OccurredDate,
+                ChronicleCategory.BirthsAndDeaths,
+                sentenced.WasJustified ? ChronicleTier.Major : ChronicleTier.Legendary,
+                sentenced.SentenceType == SentenceType.HonorableExit
+                    ? $"{Name(state, sentenced.CharacterId)} took an honorable exit rather than face the executioner."
+                    : $"{Name(state, sentenced.CharacterId)} was put to death by {sentenced.SentenceType.ToString().ToLowerInvariant()}.",
+                new[] { sentenced.CharacterId },
+                sentenced.Type,
+                sentenced.EventId.ToTaggedString(),
+                HouseholdOf(state, sentenced.CharacterId)),
+
+            // §10: "every ransom resolution is real material." Only a genuine resolution (paid,
+            // bargained down, or refused) is Chronicle-worthy — an open, unresolved negotiation is not.
+            RansomNegotiationResolvedEvent { Resolution: RansomResolution.Refused } refused => new ChronicleEntryDraft(
+                refused.OccurredDate,
+                ChronicleCategory.Other,
+                ChronicleTier.Notable,
+                $"A ransom demand for {Name(state, refused.CaptiveCharacterId)} was refused.",
+                new[] { refused.CaptiveCharacterId },
+                refused.Type,
+                refused.EventId.ToTaggedString(),
+                HouseholdOf(state, refused.CaptiveCharacterId)),
+
+            RansomNegotiationResolvedEvent ransomed => new ChronicleEntryDraft(
+                ransomed.OccurredDate,
+                ChronicleCategory.Other,
+                ChronicleTier.Notable,
+                $"{Name(state, ransomed.CaptiveCharacterId)} was ransomed and returned home.",
+                new[] { ransomed.CaptiveCharacterId },
+                ransomed.Type,
+                ransomed.EventId.ToTaggedString(),
+                HouseholdOf(state, ransomed.CaptiveCharacterId)),
 
             _ => null,
         };

@@ -140,6 +140,11 @@ public static class CampaignBootstrapper
     /// cref="LegalQuickResolutionStreamName"/> for the same rule-8 reason.</summary>
     public const string LegalMajorCaseVerdictOutcomeStreamName = Legal.LegalCaseAdvancementSystem.VerdictOutcomeStreamName;
 
+    /// <summary>The named random stream (rule 8) <see cref="Crime.AttemptDetentionEscapeCommand"/>
+    /// reserves for its own escape-opportunity roll (Phase 12 item 5), kept distinct from every other
+    /// stream here for the same rule-8 reason.</summary>
+    public const string CrimeDetentionEscapeAttemptStreamName = Crime.AttemptDetentionEscapeCommands.EscapeAttemptStreamName;
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -173,6 +178,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(OmenIgnoredOutcomeStreamName, config.Seed);
         streams.AddDerived(LegalQuickResolutionStreamName, config.Seed);
         streams.AddDerived(LegalMajorCaseVerdictOutcomeStreamName, config.Seed);
+        streams.AddDerived(CrimeDetentionEscapeAttemptStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

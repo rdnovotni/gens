@@ -74,7 +74,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 9** — Build the player loop: actions, policies, events, report, and first Unity slice
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
-- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-4 of 9 done — see "Item 4 progress" below) ← **next up: item 5**
+- [ ] **Phase 12** — Build institutions, reputation, law, religion, and public life (items 1-5 of 9 done — see "Item 5 progress" below) ← **next up: item 6**
 - [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
@@ -530,7 +530,7 @@ Construction order:
 
 **Primary design inputs:** `gens-succession-dynasty-design.md`, `gens-dynasty-chronicle-design.md`, `gens-ancestor-veneration-funerary-customs-design.md`, `gens-epithets-nicknames-titles-design.md`.
 
-### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 4 of 9)
+### Phase 12 — Build institutions, reputation, law, religion, and public life — 🔶 IN PROGRESS (item 5 of 9)
 
 **Outcome:** household choices operate inside a social and political order.
 
@@ -829,6 +829,128 @@ capped weight and real Ledger spend, the Major case's Evidence-Gathering → Hea
 a Patria Potestas case's forced Dismissal with its harsher penalty and one-shot Scandal-Marked trait, a
 Political conviction stripping office and collecting the fine, and a save/load round trip with the
 deterministic state hash staying stable.
+
+**Item 5 progress:** Crime, Detention &amp; Punishment lands as a new domain, `src/Gens.Simulation/Crime/`
+(`gens-crime-punishment-imprisonment-design.md`). `PunishableOffense` (§3) is a new kept-forever
+`WorldState` partition, Character-scoped rather than household-scoped — the one deliberate contrast with
+`LegalCase`'s own household-level party model, since §4's Imprison action targets a specific Character (a
+dependent, a Client), not their whole household. `RecordPunishableOffenseCommand` is the one command path
+every real or future source routes through, mirroring `AdjustDignitasCommand`'s own "the one command path
+every future mover routes through" precedent: `LegalCaseRuling.Apply` (Phase 12 item 4) now calls it
+directly on every `Convicted` verdict — a real, immediately reachable source this item wires on sight,
+minting the offense against the defendant household's own recorded head (the same "lands on the
+household's recorded head" simplification that item's own Patria Potestas Scandal-Marked trait already
+accepts) — while `Fabricated` is a generic, source-agnostic flag any future caller can set directly
+through the same command, since no Scheme type exists yet to originate one (`Interactions.SchemeType`
+still has exactly one real value, `Coercive`, from Phase 10 item 6). `DiscoveredScheme`/`DiscoveredAffair`/
+`MilitaryCapture`/`PiracyCapture` are kept in the enum for schema completeness but never rolled by any
+caller, matching `LegalCase.CaseType`'s own "every real category represented, only some reachable"
+precedent — Romance &amp; Sexuality &amp; Lineage's affair-discovery mechanic and Military &amp; Combat/
+Piracy &amp; Banditry (both Phase 16) don't exist anywhere in this codebase yet.
+
+`ImprisonCommand` (§4) is broadly available rather than gated behind a court process, real for three
+authority bases: `PatriaPotestas` and `ClientelaAuthority` (Familia's household headship and Phase 12 item
+2's Clientela roster, both already shipped), plus `MagisterialJurisdiction`, a third real, reachable basis
+this item adds on its own initiative since Phase 12 item 2's Local Magistracies already ships a real
+`MagistracyRecord` a holder can be checked against — a Military &amp; Combat/Piracy &amp; Banditry captive
+basis is omitted from the enum entirely, matching `LegalCase.CaseType`'s own "omitted rather than
+included-but-unreachable" precedent for an unbuilt caller. It always resolves into a new active
+`DetentionRecord`, Justified or Unjust read directly off `PunishableOffenseResolver.HasActiveOffense`
+(§3/§4): Justified applies only a small relationship-web cost through `RecordInteractionCommand`; Unjust
+routes a real Dignitas penalty through `AdjustDignitasCommand` and a sharper relationship-web scar,
+"everyone is watching how you use power" built from this project's own existing Dignitas and
+relationship-web machinery rather than a new imported stat, exactly as §4 calls for.
+
+`DetentionRecord` (§5) is a new tracked status distinct from Enslaved, `locationType` tracked as data
+(`PublicCarcer`/`PrivateErgastulum`) even though neither the public Carcer nor the private Ergastulum
+exists anywhere in `Gens.Simulation.Buildings` yet — verified directly, matching
+`AppointDecurionCommand`'s own "no building exists, so that half of the gate is not checked" precedent.
+Escape risk (`DetentionResolver.ComputeRiskScore`) reuses `FlightRiskCalculator`'s own Labor &amp; Slavery
+formula directly whenever it is actually reusable — a Detained enslaved Character still carries a real
+`Regimen` to read Freedoms/Discipline from — but falls back to a real, simple, Loyalty-only placeholder
+for a free Detained Character (a household dependent, a Client), since Freedoms/Discipline belong to the
+labor-management system specifically; this is a narrower reuse than §5's own framing, since it borrows the
+shared risk-to-probability curve unconditionally but only the full Regimen-driven score formula when a
+Regimen actually exists. `AttemptDetentionEscapeCommand` is a single, directly-submitted roll (mirroring
+how `RespondToOmenCommand` and `PromoteToNamedCommand` already roll dice inline inside a command) rather
+than a recurring monthly opportunity check with its own dispatched-pursuit countdown — Detention's own
+duration is "genuinely open-ended" per §5, not a fixed labor Duty a system needs to re-check every month —
+and a failed attempt still costs the detainee Loyalty, mirroring `LaborFlightSystem`'s own
+`RecaptureLoyaltyPenalty` for "caught trying," though this item does not build a further
+dispatched-pursuit/harm-or-loss resolution the way that system's own enslaved-specific engine does.
+`ReleaseFromDetentionCommand` is §10's "simple mercy" — always available, a real positive Dignitas and
+relationship-web event precisely because it was never required.
+
+`SentenceRecord`/`ApplySentenceCommand` (§7-§8) give Legal &amp; Court's own thin four-item sentence list
+"the real historical depth and breadth it never had room for," per this document's own §1: every real
+honestiores (`Fine`/`Relegatio`/`Deportatio`/`Ignominia`/`HonorableExit`) and humiliores
+(`Flogging`/`DamnatioAdMetalla`/`ServusPoenae`/`DamnatioAdBestias`/`Crucifixion`) catalog value is
+represented, matching `LegalSentence`'s own "schema completeness first" precedent, with the tier read
+directly off `Character.SocialClass` rather than a second, parallel classification. Per direction to pick
+real, reachable resolution paths rather than modeling the whole catalog with nothing behind it, this item
+actually carries out `Fine` (a real Ledger charge, priced independently of `LegalCatalog.FineSentenceAmount`
+since this command can apply one without a `LegalCase` ever existing), the exile-equivalent pair
+`Relegatio`/`Deportatio` (Deportatio adding a real, flat property-confiscation Ledger charge distinct from
+Relegatio's own milder "citizenship and most property retained"), `HonorableExit` (a real, dignified death
+via `DeathCause.Unspecified`, distinct from an ordinary execution and preserving family Dignitas per §7's
+own framing), and `Crucifixion` (this item's one real, humiliores-tier Execution path via
+`DeathCause.Violence`, "played straight" per §7's own restraint) — every other value (`Ignominia`,
+`Flogging`, `DamnatioAdMetalla`, `ServusPoenae`, `DamnatioAdBestias`) is rejected with a dedicated
+`SentenceNotYetWired` validation error rather than silently no-opping, matching
+`MagistracyLossReason.LegalConviction`'s own "the field exists, nothing can set it yet" precedent;
+`DamnatioAdBestias` specifically is named directly by §7/§11 as belonging to Games &amp; Spectacle (Phase
+17, unbuilt), not redefined here. Every sentence still applies §4's own Justified/Unjust Dignitas swing,
+and an Unjust sentence scars the relationship with a named sentencing Character when one is actually
+supplied — a Legal-conviction-sourced sentence has no single actor Character to scar against (that
+verdict's own scar already lands household-to-household via `LegalCaseRuling`), and is, in practice,
+always Justified in the first place since the conviction itself minted the offense.
+
+`RansomNegotiation`/`OpenRansomNegotiationCommand`/`ResolveRansomNegotiationCommand` (§10) size an opening
+demand off the captive household's own Dignitas (a real, if partial, stand-in for "sufficient standing" —
+net worth is left out, since no per-household wealth figure independent of Economy &amp; Finance's own
+broader Net Worth assessment machinery is cheaply reachable here) and resolve Paid/BargainedDown (a real
+Ledger transfer between the two households, Detention released, Dignitas and relationship-web gains on
+both sides) or Refused (a real relationship-web penalty, the captive stays Detained). §10/§11's own Rival
+Houses Standing integration is real, not a named cut: `AdjustHouseStandingCommand` (Phase 10 item 5) is
+the actual, reusable primitive, and this command submits it directly whenever *both* households resolve
+back to a tracked `LivingWorldActor` through their own recorded head — the honest, narrower condition this
+integration actually meets in practice, since a player's own Household never itself heads a
+`LivingWorldActor` (`HouseholdReputation`'s own precedent). §11's own `mercyReleaseNoRansom` resolution
+value is deliberately not a fourth `RansomResolution` member: §10 frames mercy as "always available too,"
+not as something that has to flow through an open negotiation first, and `ReleaseFromDetentionCommand`
+already is that exact real primitive, usable with or without an open negotiation — duplicating the same
+release path a second time here would only fragment one real mechanic into two. `ChronicleProjector` gains
+two new cases matching `InsolvencyStageChangedEvent`'s own "only the terminal rung is Chronicle-worthy"
+precedent: a sentence that actually ends a Character's life (Legendary tier when Unjust, per §8's own
+"lasting mark... regardless" framing), and a resolved (not merely opened) ransom negotiation.
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than assumption:**
+§6 Interrogation &amp; Torture — the free-Detained-character half genuinely needs an interrogation
+resolution engine (a real/false information split with its own reliability curve, §13's own open
+question) this item does not build, and the enslaved-witness-testimony half needs Legal &amp; Court's own
+Testimony &amp; Evidence stage (item 4) to actually call into a Torture resolution instead of its ordinary
+`SubmitTestimonyCommand` path, which that already-shipped, already-tested item does not do and reopening
+it is out of this item's scope; §9 Fabricating Justification as a new Scheme type — the Scheme engine
+itself is real and reachable (`Interactions.SchemeType`'s own doc comment already earmarks room for
+exactly this), so unlike Torture this is a genuine, buildable-later gap rather than a blocked one, but
+wiring §9's own full Initiation → Discovery → retroactive-Unjust-penalty loop is a separate item of work
+this pass does not open; the generic `IsFabricated`/`FabricationDiscovered` hook is real and present on
+`PunishableOffense` today specifically so that future Scheme type has somewhere to land without a later
+migration. The *Senatus Consultum Silanianum* household-wide legal-jeopardy crisis (§7) is not modeled —
+it needs a real investigation-to-resolution pipeline this item does not specify, matching §13's own open
+question about it directly. Small-household Ergastulum access, the "honorable exit as a real explicit
+player choice vs. a plausible AI outcome" question, and every numeric size (Dignitas/relationship-web
+deltas, escape-risk thresholds, Ransom pricing) are all left exactly as unsized as §13 states. Covered in
+`tests/Gens.Simulation.Tests/Crime/CrimeTests.cs`, including a real Legal &amp; Court conviction minting a
+Punishable Offense automatically, a fabricated offense recorded directly, Imprison's Justified/Unjust split
+across all three real authority bases (Patria Potestas, Clientela, Magisterial Jurisdiction) with rejection
+of an unauthorized actor and of an already-Detained target, Detention's escape-risk formula in both its
+Regimen-reused and Loyalty-only-fallback shapes, a real escape attempt resolving both ways across seeds
+with its failed-attempt Loyalty penalty, mercy release's Dignitas/opinion gain, every real sentence path
+(Fine, Deportatio's confiscation, HonorableExit, Crucifixion) plus the rejection of a not-yet-wired one and
+the Unjust-sentence relationship scar, Ransom's Paid/Refused resolutions plus its real Rival Houses
+Standing bridge when both sides are tracked Actors, and a save/load round trip with the deterministic
+state hash staying stable across every new partition.
 
 Recommended internal order:
 

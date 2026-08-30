@@ -353,6 +353,30 @@ public sealed record WorldSaveDocument
     /// empty, matching <see cref="PriesthoodRecords"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(56)]
     public IReadOnlyList<LegalCaseDto> LegalCases { get; init; } = Array.Empty<LegalCaseDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Crime.PunishableOffense"/> ever recorded (Phase 12
+    /// item 5), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, matching <see cref="LegalCases"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(57)]
+    public IReadOnlyList<PunishableOffenseDto> PunishableOffenses { get; init; } = Array.Empty<PunishableOffenseDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Crime.DetentionRecord"/> ever opened (Phase 12 item
+    /// 5), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="PunishableOffenses"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(58)]
+    public IReadOnlyList<DetentionRecordDto> DetentionRecords { get; init; } = Array.Empty<DetentionRecordDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Crime.SentenceRecord"/> ever applied (Phase 12 item
+    /// 5), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="DetentionRecords"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(59)]
+    public IReadOnlyList<SentenceRecordDto> SentenceRecords { get; init; } = Array.Empty<SentenceRecordDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Crime.RansomNegotiation"/> ever opened (Phase 12 item
+    /// 5), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="SentenceRecords"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(60)]
+    public IReadOnlyList<RansomNegotiationDto> RansomNegotiations { get; init; } = Array.Empty<RansomNegotiationDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -509,6 +533,30 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(30)]
     public long LegalCaseIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-5 save has no Punishable
+    /// Offenses. Additive-only per ADR 0011's policy, matching <see cref="LegalCaseIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(31)]
+    public long PunishableOffenseIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-5 save has no Detention
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="PunishableOffenseIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(32)]
+    public long DetentionRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-5 save has no Sentence
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="DetentionRecordIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(33)]
+    public long SentenceRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-5 save has no Ransom
+    /// Negotiations. Additive-only per ADR 0011's policy, matching <see cref="SentenceRecordIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(34)]
+    public long RansomNegotiationIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2337,4 +2385,116 @@ public sealed record LegalCaseDto
 
     [JsonPropertyOrder(17)]
     public int? RuledDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Crime.PunishableOffense"/> (Phase 12 item 5).</summary>
+public sealed record PunishableOffenseDto
+{
+    [JsonPropertyOrder(0)]
+    public required string OffenseId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Source { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Severity { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int RecordedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool IsFabricated { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool FabricationDiscovered { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? SourceLegalCaseId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Crime.DetentionRecord"/> (Phase 12 item 5).</summary>
+public sealed record DetentionRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string DetentionId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string LocationType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int StartDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool Justified { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? LinkedLegalCaseId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public int? EndDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool Escaped { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Crime.SentenceRecord"/> (Phase 12 item 5).</summary>
+public sealed record SentenceRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SentenceId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Tier { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Type { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool WasJustified { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int AppliedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? SourceLegalCaseId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Crime.RansomNegotiation"/> (Phase 12 item 5).</summary>
+public sealed record RansomNegotiationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string NegotiationId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CaptiveCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string CapturingHouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string TargetHouseholdId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required long AmountOfferedRawValue { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int OpenedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public long? AmountCounteredRawValue { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? Resolution { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public int? ResolvedDateTotalMonths { get; init; }
 }
