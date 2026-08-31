@@ -65,6 +65,7 @@ public static class StateHasher
         hash = MixLong(hash, state.InheritedCognomenDecisionIds.Peek);
         hash = MixLong(hash, state.FavorObligationIds.Peek);
         hash = MixLong(hash, state.MagistracyRecordIds.Peek);
+        hash = MixLong(hash, state.DistantHoldingIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -623,6 +624,19 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.ResponseAction.HasValue ? (long)entry.Value.ResponseAction.Value : -1L);
             hash = MixLong(hash, (long)entry.Value.Status);
             hash = MixLong(hash, (long)entry.Value.Outcome);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.DistantHoldings.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.HouseholdId.Value);
+            hash = MixString(hash, entry.Value.HomeRegionId.Value);
+            hash = MixString(hash, entry.Value.HoldingRegionId.Value);
+            hash = MixLong(hash, entry.Value.HoldingId.Value);
+            hash = MixLong(hash, (long)entry.Value.DistanceTier);
+            hash = MixLong(hash, entry.Value.ProcuratorCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, entry.Value.MismanagementRiskActive ? 1L : 0L);
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
