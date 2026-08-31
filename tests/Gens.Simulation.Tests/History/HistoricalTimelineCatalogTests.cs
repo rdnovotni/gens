@@ -100,11 +100,29 @@ public sealed class HistoricalTimelineCatalogTests
     // ---- Real authored content -----------------------------------------------------------------
 
     [Test]
-    public void TheRealHistoricalFigureRosterHasAllFortyThreeNamedFigures()
+    public void TheRealHistoricalFigureRosterHasTheCuratedNamedFigures()
     {
         var figures = KnownWorldHistoricalFigures.BuildCatalog();
 
-        Assert.That(figures.All().Count(), Is.EqualTo(43));
+        Assert.That(figures.All().Count(), Is.EqualTo(110));
+    }
+
+    [Test]
+    public void TheRealHistoricalFigureRosterRepresentsNonPoliticalLives()
+    {
+        var roles = KnownWorldHistoricalFigures.BuildCatalog().All().Select(figure => figure.Role).ToHashSet();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.ExplorerOrWanderer));
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.PhilosopherOrScholar));
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.PhysicianOrNaturalist));
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.Jurist));
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.ArchitectOrEngineer));
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.Patron));
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.ReligiousFigure));
+            Assert.That(roles, Does.Contain(HistoricalFigureRole.WriterOrHistorian));
+        });
     }
 
     [Test]
