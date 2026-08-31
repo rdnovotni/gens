@@ -103,13 +103,17 @@ public sealed class NamedHistoricalFigureQueriesTests
     }
 
     [Test]
-    public void SurvivedPastRealDateWhenADivergenceAffectedAnEntryNamingTheFigure()
+    public void SurvivedPastRealDateWhenTheDivergedEntryIsDatedAtTheFiguresOwnRealDeathYear()
     {
         var catalog = SampleHistoricalTimelineDefinitions.BuildCatalog();
         var entry = catalog.Get(SampleHistoricalTimelineDefinitions.SampleDivergenceEligibleEntry);
-        var figureId = entry.InvolvedFigureIds[0];
-        var figureDefinition = SampleHistoricalTimelineDefinitions.BuildFigureCatalog().Get(figureId);
-        var state = new WorldState(figureDefinition.RealDeathOrEndYear!.Value);
+        // A standalone figure whose own real death year is dated exactly at this entry — survival can
+        // only ever be inferred from diverging the entry actually scheduled on a figure's own death
+        // date, never merely an entry that happens to name them at some other point in their life.
+        var figureDefinition = new NamedHistoricalFigureDefinition(
+            new DefinitionId<NamedHistoricalFigureDefinition>("test-figure-dying-at-entry-date"),
+            "Test Figure", HistoricalFigureRole.Other, realAccessionOrStartYear: null, realDeathOrEndYear: entry.Date);
+        var state = new WorldState(entry.Date);
         var householdId = state.HouseholdIds.Issue();
         var divergenceId = state.DivergenceRecordIds.Issue();
         state.DivergenceRecords.Add(divergenceId, new DivergenceRecord(
@@ -117,5 +121,26 @@ public sealed class NamedHistoricalFigureQueriesTests
             new[] { entry.Id }, NewAlternateHistoryBranchActive: true));
 
         Assert.That(NamedHistoricalFigureQueries.CurrentStatusOf(state, catalog, figureDefinition), Is.EqualTo(HistoricalFigureStatus.SurvivedPastRealDate));
+    }
+
+    [Test]
+    public void DeceasedOnScheduleWhenTheDivergedEntryOnlyNamesTheFigureBeforeTheirOwnLaterRealDeathYear()
+    {
+        var catalog = SampleHistoricalTimelineDefinitions.BuildCatalog();
+        var entry = catalog.Get(SampleHistoricalTimelineDefinitions.SampleDivergenceEligibleEntry);
+        var figureId = entry.InvolvedFigureIds[0];
+        var figureDefinition = SampleHistoricalTimelineDefinitions.BuildFigureCatalog().Get(figureId);
+        // SampleFigureOne's own real death year (50 BC) is later than the entry it's named on (60 BC) —
+        // diverging that earlier, unrelated entry must never itself imply the figure survived past its
+        // own, separate, later real death date (the bug Codex flagged: e.g. diverging the AD 101 Dacian
+        // Wars entry naming Trajan must not mark him as surviving past his real AD 117 death).
+        var state = new WorldState(figureDefinition.RealDeathOrEndYear!.Value);
+        var householdId = state.HouseholdIds.Issue();
+        var divergenceId = state.DivergenceRecordIds.Issue();
+        state.DivergenceRecords.Add(divergenceId, new DivergenceRecord(
+            divergenceId, entry.Date, householdId, "Test trigger",
+            new[] { entry.Id }, NewAlternateHistoryBranchActive: true));
+
+        Assert.That(NamedHistoricalFigureQueries.CurrentStatusOf(state, catalog, figureDefinition), Is.EqualTo(HistoricalFigureStatus.DeceasedOnSchedule));
     }
 }

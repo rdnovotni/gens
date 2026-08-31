@@ -77,7 +77,14 @@ public static class RecordDivergenceCommands
                 return UnknownTimelineEntry;
             if (!entry.DivergenceEligible)
                 return NotDivergenceEligible;
+            // Strict "<" alone would still accept an entry dated exactly this month once it has
+            // already fired (HistoricalTimelineScheduler fires same-month entries before this command
+            // could reasonably be submitted against them) — the FiredHistoricalTimelineEntryIds check
+            // below closes that gap so a real, already-emitted historical fact can never retroactively
+            // become "diverged."
             if (entry.Date.TotalMonths < state.Date.TotalMonths)
+                return EntryAlreadyPast;
+            if (state.FiredHistoricalTimelineEntryIds.TryGet(entryId.Value, out _))
                 return EntryAlreadyPast;
             if (alreadyDivergedIds.Contains(entryId))
                 return EntryAlreadyDiverged;

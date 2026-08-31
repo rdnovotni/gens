@@ -46,6 +46,7 @@ public sealed class HistoricalTimelineScheduler : IMonthlySystem<WorldState>
 {
     private readonly HistoricalTimelineCatalog _catalog;
     private readonly GameDate _campaignStartingDate;
+    private readonly EventCatalog? _eventCatalog;
     private readonly CommandPipeline<WorldState, FireEventCommand>? _firePipeline;
 
     /// <param name="catalog">Every registered <see cref="HistoricalTimelineEntryDefinition"/>.</param>
@@ -53,15 +54,34 @@ public sealed class HistoricalTimelineScheduler : IMonthlySystem<WorldState>
     /// <param name="eventCatalog">When supplied, an entry with a non-null <see
     /// cref="HistoricalTimelineEntryDefinition.LinkedEventDefinitionRef"/> fires through the existing
     /// Events pipeline (<see cref="FireEventCommands"/>) instead of emitting its own digest event — the
-    /// same reuse <see cref="EventPoolSystem"/> itself makes. <c>null</c> when no caller has one to
+    /// same reuse <see cref="EventPoolSystem"/> itself makes, resolving subjects off the linked
+    /// definition's own declared <see cref="EventDefinition.Scope"/> (<see cref="ResolveSubjects"/>)
+    /// exactly like <see cref="EventPoolSystem"/>'s own per-scope candidate resolution — never the fixed
+    /// Imperial sentinel regardless of scope, which would fire e.g. a Personal-scope linked definition as
+    /// a private instance against a subject that doesn't exist. <c>null</c> when no caller has one to
     /// supply yet (every authored real entry currently leaves this link null anyway; see <see
     /// cref="KnownWorldHistoricalTimeline"/>'s own doc comment).</param>
     public HistoricalTimelineScheduler(HistoricalTimelineCatalog catalog, GameDate campaignStartingDate, EventCatalog? eventCatalog = null)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _campaignStartingDate = campaignStartingDate;
+        _eventCatalog = eventCatalog;
         _firePipeline = eventCatalog is null ? null : FireEventCommands.BuildPipeline(eventCatalog);
     }
+
+    /// <summary>Every real subject ID a linked <see cref="EventDefinition"/> of <paramref name="scope"/>
+    /// should fire against this tick — the same per-scope candidate sets <see
+    /// cref="EventSubjects"/>/<see cref="EventPoolSystem"/> already use for the ordinary weighted-pool
+    /// and Scripted paths, so a Historical Timeline entry linking a non-Imperial definition fires exactly
+    /// as that definition's own scope intends rather than always against the Imperial sentinel.</summary>
+    private static IEnumerable<string> ResolveSubjects(WorldState state, EventScope scope) => scope switch
+    {
+        EventScope.Personal => EventSubjects.Characters(state).Select(id => id.ToTaggedString()),
+        EventScope.Household => EventSubjects.Households(state).Select(id => id.ToTaggedString()),
+        EventScope.Settlement => EventSubjects.Settlements(state).Select(id => id.ToTaggedString()),
+        EventScope.Imperial => new[] { EventSubjects.ImperialSubjectId },
+        _ => Array.Empty<string>(),
+    };
 
     public string Id => "history.timelineScheduler";
     public TickPhase Phase => TickPhase.Events;
@@ -90,19 +110,33 @@ public sealed class HistoricalTimelineScheduler : IMonthlySystem<WorldState>
             if (divergenceState != HistoricalDivergenceState.OnTrack)
                 continue;
 
-            state.FiredHistoricalTimelineEntryIds.Add(entry.Id.Value, context.Date);
-
-            if (entry.LinkedEventDefinitionRef is { } linkedId && _firePipeline is not null)
+            if (entry.LinkedEventDefinitionRef is { } linkedId && _firePipeline is not null && _eventCatalog is not null &&
+                _eventCatalog.TryGet(linkedId, out var linkedDefinition))
             {
-                var command = new FireEventCommand(
-                    state.CommandIds.Issue(), "system", context.Date, CausationId: null,
-                    linkedId, new[] { EventSubjects.ImperialSubjectId }, EventSubjects.ImperialSubjectId);
-                var result = _firePipeline.Execute(state, command);
-                if (result.Accepted)
-                    events.AddRange(result.Events);
+                var anyAccepted = false;
+                foreach (var subjectId in ResolveSubjects(state, linkedDefinition.Scope))
+                {
+                    var command = new FireEventCommand(
+                        state.CommandIds.Issue(), "system", context.Date, CausationId: null,
+                        linkedId, new[] { subjectId }, subjectId);
+                    var result = _firePipeline.Execute(state, command);
+                    // A rejected fire (e.g. an already-active instance of the same definition/subject)
+                    // must not permanently suppress this entry: only mark it fired once at least one
+                    // subject's firing actually succeeds, so a later tick can retry rather than silently
+                    // losing it.
+                    if (result.Accepted)
+                    {
+                        events.AddRange(result.Events);
+                        anyAccepted = true;
+                    }
+                }
+
+                if (anyAccepted)
+                    state.FiredHistoricalTimelineEntryIds.Add(entry.Id.Value, context.Date);
                 continue;
             }
 
+            state.FiredHistoricalTimelineEntryIds.Add(entry.Id.Value, context.Date);
             events.Add(new HistoricalTimelineEntryOccurredEvent(state.EventIds.Issue(), context.Date, entry.Id, entry.RealWorldName, CausationId: null));
         }
 

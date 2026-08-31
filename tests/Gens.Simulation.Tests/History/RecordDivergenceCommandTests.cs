@@ -70,6 +70,24 @@ public sealed class RecordDivergenceCommandTests
     }
 
     [Test]
+    public void AnEntryAlreadyFiredThisMonthIsRejected()
+    {
+        // Strict "<" alone would still accept this: the entry's own real date equals state.Date exactly
+        // (HistoricalTimelineScheduler fires same-month entries), so only the FiredHistoricalTimelineEntryIds
+        // check actually catches an already-emitted historical fact from retroactively becoming "diverged."
+        var entry = SampleHistoricalTimelineDefinitions.BuildCatalog()
+            .Get(SampleHistoricalTimelineDefinitions.SampleDivergenceEligibleEntry);
+        var (state, catalog, householdId) = Fixture(entry.Date);
+        state.FiredHistoricalTimelineEntryIds.Add(entry.Id.Value, entry.Date);
+        var pipeline = RecordDivergenceCommands.BuildPipeline(catalog);
+
+        var result = pipeline.Execute(
+            state, Command(state, householdId, SampleHistoricalTimelineDefinitions.SampleDivergenceEligibleEntry));
+
+        Assert.That(result.Error, Is.EqualTo(RecordDivergenceCommands.EntryAlreadyPast));
+    }
+
+    [Test]
     public void AnAlreadyDivergedEntryIsRejected()
     {
         var (state, catalog, householdId) = Fixture(HistoricalTimelineRange.Start);

@@ -3,6 +3,7 @@ using Gens.Simulation.History;
 using Gens.Simulation.Random;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
+using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 
@@ -87,6 +88,12 @@ public sealed class HistoricalTimelineSchedulerTests
         var catalog = SampleHistoricalTimelineDefinitions.BuildCatalog(eventCatalog);
         var entry = catalog.Get(SampleHistoricalTimelineDefinitions.SampleDivergenceEligibleEntry);
         var state = new WorldState(entry.Date);
+        // SampleEventDefinitions.DomesticMurmur (the sample entry's own linked definition) is
+        // Personal-scope, so the scheduler resolves its subjects off every named Character (mirroring
+        // EventPoolSystem's own per-scope candidate resolution) — a real Character must exist for it to
+        // have anyone to fire against.
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
         var scheduler = new HistoricalTimelineScheduler(catalog, HistoricalTimelineRange.Start, eventCatalog);
 
         var events = scheduler.Tick(state, Context(entry.Date));
@@ -96,6 +103,36 @@ public sealed class HistoricalTimelineSchedulerTests
             Assert.That(events, Has.Count.EqualTo(1));
             Assert.That(events[0], Is.InstanceOf<EventFiredEvent>());
             Assert.That(state.EventInstances.Count, Is.EqualTo(1));
+        });
+    }
+
+    [Test]
+    public void DoesNotMarkFiredWhenTheLinkedFireIsRejectedSoALaterTickCanRetry()
+    {
+        var eventCatalog = SampleEventDefinitions.BuildCatalog();
+        var catalog = SampleHistoricalTimelineDefinitions.BuildCatalog(eventCatalog);
+        var entry = catalog.Get(SampleHistoricalTimelineDefinitions.SampleDivergenceEligibleEntry);
+        var state = new WorldState(entry.Date);
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
+        var subjectId = characterId.ToTaggedString();
+
+        // Pre-seed an already-active instance of the same linked definition/subject so
+        // FireEventCommand's own AlreadyActive rule rejects the scheduler's own attempt this tick.
+        var instanceId = state.EventInstanceIds.Issue();
+        state.EventInstances.Add(instanceId, new EventInstance(
+            instanceId, SampleEventDefinitions.DomesticMurmur, EventScope.Personal, new[] { subjectId },
+            subjectId, CurrentStageIndex: 0, FiredDate: entry.Date,
+            ExpiresDate: new GameDate(entry.Date.TotalMonths + 2), Status: EventInstanceStatus.Pending));
+
+        var scheduler = new HistoricalTimelineScheduler(catalog, HistoricalTimelineRange.Start, eventCatalog);
+        var events = scheduler.Tick(state, Context(entry.Date));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(events, Is.Empty, "a rejected fire must not emit an event");
+            Assert.That(state.FiredHistoricalTimelineEntryIds.TryGet(entry.Id.Value, out _), Is.False,
+                "a rejected fire must not permanently mark this entry as fired");
         });
     }
 
