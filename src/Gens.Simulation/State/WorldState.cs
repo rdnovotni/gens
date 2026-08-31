@@ -98,6 +98,7 @@ public sealed class WorldState
         RuntimeIdCounter<Letter> letterIds,
         RuntimeIdCounter<LanguageProficiency> languageProficiencyIds,
         RuntimeIdCounter<DivergenceRecord> divergenceRecordIds,
+        RuntimeIdCounter<DistantHolding> distantHoldingIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -165,6 +166,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Character>, LiteracyRecord> literacyRecords,
         OrderedRegistry<RuntimeId<Household>, InterpresAppointment> interpresAppointments,
         OrderedRegistry<RuntimeId<DivergenceRecord>, DivergenceRecord> divergenceRecords,
+        OrderedRegistry<RuntimeId<DistantHolding>, DistantHolding> distantHoldings,
         OrderedRegistry<string, GameDate> firedHistoricalTimelineEntryIds,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
@@ -211,6 +213,7 @@ public sealed class WorldState
         LetterIds = letterIds;
         LanguageProficiencyIds = languageProficiencyIds;
         DivergenceRecordIds = divergenceRecordIds;
+        DistantHoldingIds = distantHoldingIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -278,6 +281,7 @@ public sealed class WorldState
         LiteracyRecords = literacyRecords;
         InterpresAppointments = interpresAppointments;
         DivergenceRecords = divergenceRecords;
+        DistantHoldings = distantHoldings;
         FiredHistoricalTimelineEntryIds = firedHistoricalTimelineEntryIds;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
@@ -378,6 +382,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="History.DivergenceRecord"/> (Phase 13 item 5).</summary>
     public RuntimeIdCounter<DivergenceRecord> DivergenceRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Land.DistantHolding"/> (Phase 13 item 7).</summary>
+    public RuntimeIdCounter<DistantHolding> DistantHoldingIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -778,6 +785,11 @@ public sealed class WorldState
     /// is an automatic maximum-tier Dynasty Chronicle entry, not scratch state to discard.</summary>
     public OrderedRegistry<RuntimeId<DivergenceRecord>, DivergenceRecord> DivergenceRecords { get; } = new();
 
+    /// <summary>Every <see cref="Land.DistantHolding"/> a household currently holds (Phase 13 item 7),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — kept for the campaign's lifetime,
+    /// matching <see cref="TravelTrips"/>'s and <see cref="Letters"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<DistantHolding>, DistantHolding> DistantHoldings { get; } = new();
+
     /// <summary>Which <see cref="History.HistoricalTimelineEntryDefinition"/>s (by <see
     /// cref="DefinitionId{T}.Value"/>) <see cref="History.HistoricalTimelineScheduler"/> has already
     /// fired this campaign, mapped to the date each fired — real state, not derivable, so a save/load
@@ -845,6 +857,7 @@ public sealed class WorldState
         ["letterIds"] = LetterIds.Peek,
         ["languageProficiencyIds"] = LanguageProficiencyIds.Peek,
         ["divergenceRecordIds"] = DivergenceRecordIds.Peek,
+        ["distantHoldingIds"] = DistantHoldingIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -911,6 +924,7 @@ public sealed class WorldState
         ["literacyRecords"] = LiteracyRecords.Version,
         ["interpresAppointments"] = InterpresAppointments.Version,
         ["divergenceRecords"] = DivergenceRecords.Version,
+        ["distantHoldings"] = DistantHoldings.Version,
         ["firedHistoricalTimelineEntryIds"] = FiredHistoricalTimelineEntryIds.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,

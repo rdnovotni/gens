@@ -236,6 +236,9 @@ internal static class RuntimeIdTagRegistry
         // this file. FiredHistoricalTimelineEntryIds needs no entry either: it's keyed by a plain string
         // (the content entry's own DefinitionId value), not by its own RuntimeId.
         [typeof(DivergenceRecord)] = "divergence",
+        // Phase 13 item 7 — Gens.Simulation.Land.DistantHolding, same "real record as its own tag"
+        // convention as DivergenceRecord above.
+        [typeof(DistantHolding)] = "distantholding",
     };
 
     public static string Resolve(Type type) =>

@@ -95,6 +95,7 @@ public static class WorldStateMapper
                 LetterIds = state.LetterIds.Peek,
                 LanguageProficiencyIds = state.LanguageProficiencyIds.Peek,
                 DivergenceRecordIds = state.DivergenceRecordIds.Peek,
+                DistantHoldingIds = state.DistantHoldingIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -226,6 +227,8 @@ public static class WorldStateMapper
             // Already ascending string-key order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             FiredHistoricalTimelineEntryIds = state.FiredHistoricalTimelineEntryIds.InAscendingOrder()
                 .Select(entry => ToFiredHistoricalTimelineEntryDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            DistantHoldings = state.DistantHoldings.InAscendingOrder().Select(entry => ToDistantHoldingDto(entry.Value)).ToArray(),
         };
     }
 
@@ -680,6 +683,13 @@ public static class WorldStateMapper
             dto.FiredHistoricalTimelineEntryIds.Select(f =>
                 new KeyValuePair<string, GameDate>(f.EntryId, new GameDate(f.OccurredDateTotalMonths))));
 
+        var distantHoldings = OrderedRegistry<RuntimeId<DistantHolding>, DistantHolding>.Restore(
+            dto.DistantHoldings.Select(h =>
+            {
+                var holding = FromDistantHoldingDto(h);
+                return new KeyValuePair<RuntimeId<DistantHolding>, DistantHolding>(holding.Id, holding);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -723,6 +733,7 @@ public static class WorldStateMapper
             letterIds: RuntimeIdCounter<Letter>.Restore(dto.Counters.LetterIds),
             languageProficiencyIds: RuntimeIdCounter<LanguageProficiency>.Restore(dto.Counters.LanguageProficiencyIds),
             divergenceRecordIds: RuntimeIdCounter<DivergenceRecord>.Restore(dto.Counters.DivergenceRecordIds),
+            distantHoldingIds: RuntimeIdCounter<DistantHolding>.Restore(dto.Counters.DistantHoldingIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -790,6 +801,7 @@ public static class WorldStateMapper
             literacyRecords: literacyRecords,
             interpresAppointments: interpresAppointments,
             divergenceRecords: divergenceRecords,
+            distantHoldings: distantHoldings,
             firedHistoricalTimelineEntryIds: firedHistoricalTimelineEntryIds,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
@@ -2648,4 +2660,26 @@ public static class WorldStateMapper
         dto.AmountCounteredRawValue is { } countered ? Money.FromMinorUnits(countered) : null,
         dto.Resolution is { } resolution ? Enum.Parse<RansomResolution>(resolution) : null,
         dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null);
+
+    private static DistantHoldingDto ToDistantHoldingDto(DistantHolding holding) => new()
+    {
+        DistantHoldingId = holding.Id.ToTaggedString(),
+        HouseholdId = holding.HouseholdId.ToTaggedString(),
+        HomeRegionId = holding.HomeRegionId.Value,
+        HoldingRegionId = holding.HoldingRegionId.Value,
+        HoldingId = holding.HoldingId.ToTaggedString(),
+        DistanceTier = holding.DistanceTier.ToString(),
+        ProcuratorCharacterId = holding.ProcuratorCharacterId?.ToTaggedString(),
+        MismanagementRiskActive = holding.MismanagementRiskActive,
+    };
+
+    private static DistantHolding FromDistantHoldingDto(DistantHoldingDto dto) => DistantHolding.Restore(
+        RuntimeId<DistantHolding>.Parse(dto.DistantHoldingId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        new DefinitionId<RegionProfileDefinition>(dto.HomeRegionId),
+        new DefinitionId<RegionProfileDefinition>(dto.HoldingRegionId),
+        RuntimeId<Holding>.Parse(dto.HoldingId),
+        Enum.Parse<DistanceTier>(dto.DistanceTier),
+        dto.ProcuratorCharacterId is null ? null : RuntimeId<Character>.Parse(dto.ProcuratorCharacterId),
+        dto.MismanagementRiskActive);
 }

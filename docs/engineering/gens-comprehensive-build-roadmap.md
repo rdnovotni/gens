@@ -75,7 +75,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 10** — Add delegation, autonomous action, and rival houses
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
 - [x] **Phase 12** — Build institutions, reputation, law, religion, and public life
-- [ ] **Phase 13** — Add geography, travel, correspondence, culture, and history
+- [x] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
 - [ ] **Phase 16** — Add espionage, banditry, military force, and diplomacy
@@ -1436,7 +1436,7 @@ Recommended internal order:
 
 **Primary design inputs:** `gens-politics-patronage-design.md`, `gens-religion-design.md`, `gens-legal-court-design.md`, `gens-crime-punishment-imprisonment-design.md`, `gens-interest-groups-design.md`, `gens-collegia-guilds-design.md`, `gens-notable-households-design.md`, `gens-scandal-design.md`, `gens-celebrities-influential-figures-design.md`, `gens-policies-edicts-design.md`.
 
-### Phase 13 — Add geography, travel, correspondence, culture, and history — ⬜ NOT STARTED
+### Phase 13 — Add geography, travel, correspondence, culture, and history — ✅ COMPLETE
 
 **Outcome:** distance, language, local rules, and historical time change what is possible.
 
@@ -1448,7 +1448,7 @@ Construction order:
 4. [x] Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
 5. [x] Implement the historical timeline scheduler with immutable history, divergence-eligible events, counterfactual flags, and date-aware content validation.
 6. [x] Implement one complete region profile and only then expand region content in waves.
-7. Add distant holdings and procurator requirements after travel and delegation are stable.
+7. [x] Add distant holdings and procurator requirements after travel and delegation are stable.
 
 **Exit gate:** a household can act locally, travel, communicate at distance, encounter language/cultural gates, and receive date-appropriate historical events without loading broad region-specific code.
 
@@ -1816,6 +1816,38 @@ tests in `tests/Gens.Simulation.Tests/Regions/KnownWorldRegionsTests.cs`, provin
 cleanly, the Capital role resolves uniquely to Rome, Reputation Duality reads `None` at every date, the
 Home Anchor resolves to Tusculum, the full Gazetteer roster is present, and the culture distribution
 table's Roman entry outweighs every other row while carrying exactly one outlier-residual entry.
+
+**Item 7 progress:** Distant Holdings land in `src/Gens.Simulation/Land/` (`DistantHolding.cs`,
+`DistantHoldingCommands.cs`, `DistantHoldingMismanagementRiskSystem.cs`), closing §7.2/§12's own
+`DistantHolding{}` sketch against a real `WorldState` partition, fully wired through `WorldSaveDto`/
+`WorldStateMapper`/`StateHasher`/`EntityKinds` exactly like `TravelTrip`/`Letter` before it — a holding's
+own Procurator staffing and mismanagement-risk state is genuine campaign state, not content. No new
+Distance Tier mechanism is built: `AcquireDistantHoldingCommand` reuses `DistanceTierCatalog` (Travel,
+item 2) exactly as item 2 itself left it — the general lookup mechanism, still with no real region-pair
+contents authored, per §13's own still-open "Distance Tier lookup table contents" question. §5.3's
+"evaluated exactly like any other Senior Position" is taken literally: `AppointProcuratorCommand` doesn't
+invent a parallel appointment path, it drives the existing `StewardshipContext.SecondSettlementProcurator`
+`StewardshipAssignment` (reserved but unused since Phase 10 item 2) through `StewardshipCommands.
+AppointPipeline` directly, then folds that assignment's outcome back onto the `DistantHolding` record —
+so a Procurator appointment competes for a household's one-active-assignment slot exactly the way
+`Succession.RegencySystem`'s own supersede logic already assumed it would. §7.2's actual mismanagement
+rule — "a Far holding without a competent, high-loyalty Procurator... a real, ongoing risk" — is built as
+a deterministic flag, not a random incident roll: `DistantHoldingMismanagementRiskSystem` runs monthly,
+reusing `StewardIncidentCatalog.LoyaltyRiskThreshold` (Phase 10 item 2's own Loyalty-risk figure) rather
+than inventing a second one, and reverts a holding to unstaffed whenever its cached Procurator's backing
+assignment lapses (death, or a graver Regency superseding it) instead of keeping a stale pointer. What
+actually happens while the risk flag is active — skimming, drift, an eventual disloyal-Procurator
+incident — stays deliberately unbuilt: §11's own open questions ("Disloyal Procurator/Senior Position
+consequences," "Procurator autonomy boundary") are unresolved in the design corpus, so this item only
+surfaces the risk state honestly rather than fabricating an incident mechanic ahead of its own sizing,
+mirroring how Correspondence (item 3) left forgery detection and Regency (Phase 11 item 2) left "no
+eligible candidate" as named, not hidden, gaps. Land acquisition cost premiums and Travel time/risk
+scaling by Distance Tier (§7.2's other two cost vectors) are out of this item's scope for the same reason
+every prior item leaves numeric sizing to Start Modes/a future balancing pass (§13's own "all numeric
+sizing" open question) — this item builds the administrative-overhead vector §7.2 actually specifies a
+concrete rule for, not the other two's still-unsized multipliers. Covered by 13 new tests in
+`tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, including a save/load round trip with a stable
+deterministic state hash.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 

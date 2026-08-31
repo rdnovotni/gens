@@ -452,6 +452,12 @@ public sealed record WorldSaveDocument
     /// empty, matching <see cref="DivergenceRecords"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(72)]
     public IReadOnlyList<FiredHistoricalTimelineEntryDto> FiredHistoricalTimelineEntryIds { get; init; } = Array.Empty<FiredHistoricalTimelineEntryDto>();
+
+    /// <summary>Every household's <see cref="Gens.Simulation.Land.DistantHolding"/> (Phase 13 item 7),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="FiredHistoricalTimelineEntryIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(73)]
+    public IReadOnlyList<DistantHoldingDto> DistantHoldings { get; init; } = Array.Empty<DistantHoldingDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -668,6 +674,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(40)]
     public long DivergenceRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-13-item-7 save has no Distant
+    /// Holdings. Additive-only per ADR 0011's policy, matching <see cref="DivergenceRecordIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(41)]
+    public long DistantHoldingIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2975,4 +2987,32 @@ public sealed record FiredHistoricalTimelineEntryDto
 
     [JsonPropertyOrder(1)]
     public required int OccurredDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Land.DistantHolding"/> (Phase 13 item 7).</summary>
+public sealed record DistantHoldingDto
+{
+    [JsonPropertyOrder(0)]
+    public required string DistantHoldingId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string HomeRegionId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string HoldingRegionId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string HoldingId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string DistanceTier { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? ProcuratorCharacterId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool MismanagementRiskActive { get; init; }
 }
