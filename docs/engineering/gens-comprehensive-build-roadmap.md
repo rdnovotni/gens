@@ -1444,7 +1444,7 @@ Construction order:
 
 1. [x] Implement the region profile schema and date-aware rule overrides.
 2. [x] Implement location, route, distance tier, travel party, reservations, duration, risk exposure, arrival, and concurrent character locations.
-3. Implement letters/messages, courier selection, transit, delivery, response, interception, forgery, and information provenance.
+3. [x] Implement letters/messages, courier selection, transit, delivery, response, interception, forgery, and information provenance.
 4. Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
 5. Implement the historical timeline scheduler with immutable history, divergence-eligible events, counterfactual flags, and date-aware content validation.
 6. Implement one complete region profile and only then expand region content in waves.
@@ -1518,6 +1518,61 @@ not a queue — matching §5's "resolve fully concurrently" directly. The Retinu
 with no constructor yet, since Military & Combat (Phase 16) doesn't exist. Covered by tests in
 `tests/Gens.Simulation.Tests/Travel/TravelTests.cs`, including a save/load round trip with a stable
 deterministic state hash.
+
+**Item 3 progress:** Correspondence & Letters lands in a new `src/Gens.Simulation/Correspondence/`
+namespace, closing `gens-correspondence-letters-design.md` §11's own `Letter{}` sketch against real
+`WorldState` partitions (`Letters`, `LetterIds`), fully wired through `WorldSaveDto`/`WorldStateMapper`/
+`StateHasher`/`EntityKinds` exactly like `TravelTrip` — a letter's own transit progress is genuine
+campaign state, not content. §3's "reuses Travel's own distance model" is taken literally: `LetterRoute`
+calls the same `DistanceTierCatalog` Travel item 2 built and reproduces `TravelRoute`'s own 1/3/6-month
+Tabellarius baseline exactly, rather than inventing a parallel distance system. §8's Courier Choice
+(Tabellarius/Hired Carrier/Pigeon) carries no mechanical detail in the design corpus beyond its own
+heading — unchanged from the superseded first-pass doc — so `CourierCatalog` invents and openly
+discloses a speed/coin-cost/interception-risk tradeoff table per courier, mirroring `TravelRoute`'s own
+"invented numbers, openly labeled" precedent for its Travel Time baseline; the coin cost is informational
+only, not yet posted to the Ledger, matching how item 2 left the Retinue mechanic itself out of scope.
+§7's Oral Tradition Problem is built as the general, reusable mechanism the task called for — a
+`CorrespondenceReachability` three-value scale (`FullyLiterate`/`OralTraditionPartial`/
+`OralTraditionBlocked`) plus a `CorrespondenceReachabilityCatalog` keyed by the existing
+`DefinitionId<Culture>` phantom type, defaulting unlisted cultures to `FullyLiterate` (the honest
+default per §7's own "not a blanket 'foreigners can't read' assumption" close, unlike
+`DistanceTierCatalog`'s unrelated least-committal-middle-tier default) — exactly like item 2 built
+`DistanceTierCatalog`'s general lookup without authoring real region-pair content, this item authors no
+real culture list at all; which of Cultures' own thirty-six entries are Gallic/British/Germanic or
+Thin-Record, and any Interpreter-equivalent mitigation, stays explicitly Phase 13 item 4's job (§12's
+own open question). A `LetterActions.IsSubstantive` classification (this item's own invented reading,
+since §7 never enumerates which of the nine `LetterAction` values count as "substantive") decides
+whether a foreign culture's reachability level does anything at all — a `Blocked` route rejects the
+command outright, a `Partial` route bumps the route's `RouteRiskLevel` up one step (this item's own
+disclosed proxy for §7's unsized "meaningfully reduced effectiveness"), and every routine action
+(News & Gossip, Condolence or Congratulation, Maintain a Distant Relationship, Early Courtship) always
+gets through regardless. Every one of §5's nine correspondence actions (the six carried over plus News &
+Gossip, Written Instructions to a Distant Appointee, and Condolence or Congratulation) is a complete,
+correctly-shaped `LetterAction` value; three of them name a target system this codebase has not built
+yet (Direct an Already-Placed Spy — Espionage; Early Courtship — Romance & Seduction; Written
+Instructions to a Distant Appointee — Companions & Court Positions' Procurator), so `SendLetterCommand`
+and `OriginateInboundLetterCommand` both transit those letters exactly like any other and leave the
+actual game-logic payload as that future system's own job, not a fabricated integration. `SendLetterCommand`
+begins an outbound letter (always `RequiresResponse = false`, since a response is something the
+player's own correspondent might send back, not something this engine tracks against outgoing mail);
+`OriginateInboundLetterCommand` is the symmetric entry point for §6's Inbox — "other Living World Actors
+... can send a letter to the player" — that whatever future NPC-decision system (or a debug/test tool)
+calls to start an inbound letter in transit, since deciding *when* an NPC should write is explicitly out
+of scope (§12's own open "Inbox volume and pacing" question); `RespondToLetterCommand` is the real
+command a response is, per this item's own task brief, rather than a flag flip, and `LetterQueries.
+PendingInbox` is the read model surfacing which delivered, unanswered, actually-arrived letters still
+need one — §6's "including no response at all" is a legitimate standing choice this engine never forces
+out of. `CorrespondenceTransitSystem` advances every in-transit letter one month at a time exactly like
+`TravelProgressSystem` advances trips, resolving two real, disclosed-invented risk mechanics from §9
+once transit would otherwise finish: **interception/forgery** (one random draw against the route's own
+risk tier plus the courier's own modifier, with a second draw deciding lost-outright versus forged-and-
+passed-on) and **redirection** (checked at most once per letter, reusing Travel's own
+`Character.CurrentTravelLocation` concurrent-location tracking from item 2 directly — a recipient away
+from home adds one further invented month of delay before delivery actually resolves). Forgery detection
+mechanics stay explicitly unresolved, matching §12's own open question — this item only records that a
+forgery happened, not whether anyone in-fiction ever notices. Covered by 34 new tests in
+`tests/Gens.Simulation.Tests/Correspondence/{CorrespondenceTests,CorrespondenceTestFixtures}.cs`,
+including a save/load round trip with a stable deterministic state hash.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 

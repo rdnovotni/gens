@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
+using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
@@ -218,6 +219,9 @@ internal static class RuntimeIdTagRegistry
         // Phase 13 item 2 — Gens.Simulation.Travel.TravelTrip, same "real record as its own tag"
         // convention as EdictRecord above.
         [typeof(TravelTrip)] = "traveltrip",
+        // Phase 13 item 3 — Gens.Simulation.Correspondence.Letter, same "real record as its own tag"
+        // convention as TravelTrip above.
+        [typeof(Letter)] = "letter",
     };
 
     public static string Resolve(Type type) =>

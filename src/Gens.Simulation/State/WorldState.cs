@@ -4,6 +4,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
+using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
@@ -92,6 +93,7 @@ public sealed class WorldState
         RuntimeIdCounter<ScandalRecord> scandalRecordIds,
         RuntimeIdCounter<EdictRecord> edictRecordIds,
         RuntimeIdCounter<TravelTrip> travelTripIds,
+        RuntimeIdCounter<Letter> letterIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -154,6 +156,7 @@ public sealed class WorldState
         OrderedRegistry<HouseholdDoctrineKey, HouseholdDoctrineState> householdDoctrines,
         OrderedRegistry<RuntimeId<EdictRecord>, EdictRecord> edictRecords,
         OrderedRegistry<RuntimeId<TravelTrip>, TravelTrip> travelTrips,
+        OrderedRegistry<RuntimeId<Letter>, Letter> letters,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -196,6 +199,7 @@ public sealed class WorldState
         ScandalRecordIds = scandalRecordIds;
         EdictRecordIds = edictRecordIds;
         TravelTripIds = travelTripIds;
+        LetterIds = letterIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -258,6 +262,7 @@ public sealed class WorldState
         HouseholdDoctrines = householdDoctrines;
         EdictRecords = edictRecords;
         TravelTrips = travelTrips;
+        Letters = letters;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -348,6 +353,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Travel.TravelTrip"/> (Phase 13 item 2).</summary>
     public RuntimeIdCounter<TravelTrip> TravelTripIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Correspondence.Letter"/> (Phase 13 item 3).</summary>
+    public RuntimeIdCounter<Letter> LetterIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -722,6 +730,12 @@ public sealed class WorldState
     /// trip is a real part of a Character's own travel history, not scratch state to discard.</summary>
     public OrderedRegistry<RuntimeId<TravelTrip>, TravelTrip> TravelTrips { get; } = new();
 
+    /// <summary>Every <see cref="Correspondence.Letter"/> ever sent or originated (Phase 13 item 3), in
+    /// ascending <see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once begun, matching <see
+    /// cref="TravelTrips"/>'s identical "kept for the campaign's lifetime" convention — a resolved
+    /// letter is a real part of a household's own correspondence history, not scratch state to discard.</summary>
+    public OrderedRegistry<RuntimeId<Letter>, Letter> Letters { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -777,6 +791,7 @@ public sealed class WorldState
         ["ransomNegotiationIds"] = RansomNegotiationIds.Peek,
         ["scandalRecordIds"] = ScandalRecordIds.Peek,
         ["travelTripIds"] = TravelTripIds.Peek,
+        ["letterIds"] = LetterIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -838,6 +853,7 @@ public sealed class WorldState
         ["characterFames"] = CharacterFames.Version,
         ["householdDoctrines"] = HouseholdDoctrines.Version,
         ["travelTrips"] = TravelTrips.Version,
+        ["letters"] = Letters.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,

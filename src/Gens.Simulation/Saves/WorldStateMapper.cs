@@ -5,6 +5,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
+using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
@@ -89,6 +90,7 @@ public static class WorldStateMapper
                 ScandalRecordIds = state.ScandalRecordIds.Peek,
                 EdictRecordIds = state.EdictRecordIds.Peek,
                 TravelTripIds = state.TravelTripIds.Peek,
+                LetterIds = state.LetterIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -207,6 +209,8 @@ public static class WorldStateMapper
             EdictRecords = state.EdictRecords.InAscendingOrder().Select(entry => ToEdictRecordDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             TravelTrips = state.TravelTrips.InAscendingOrder().Select(entry => ToTravelTripDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Letters = state.Letters.InAscendingOrder().Select(entry => ToLetterDto(entry.Value)).ToArray(),
         };
     }
 
@@ -622,6 +626,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<TravelTrip>, TravelTrip>(trip.Id, trip);
             }));
 
+        var letters = OrderedRegistry<RuntimeId<Letter>, Letter>.Restore(
+            dto.Letters.Select(l =>
+            {
+                var letter = FromLetterDto(l);
+                return new KeyValuePair<RuntimeId<Letter>, Letter>(letter.Id, letter);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -662,6 +673,7 @@ public static class WorldStateMapper
             scandalRecordIds: RuntimeIdCounter<ScandalRecord>.Restore(dto.Counters.ScandalRecordIds),
             edictRecordIds: RuntimeIdCounter<EdictRecord>.Restore(dto.Counters.EdictRecordIds),
             travelTripIds: RuntimeIdCounter<TravelTrip>.Restore(dto.Counters.TravelTripIds),
+            letterIds: RuntimeIdCounter<Letter>.Restore(dto.Counters.LetterIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -724,6 +736,7 @@ public static class WorldStateMapper
             householdDoctrines: householdDoctrines,
             edictRecords: edictRecords,
             travelTrips: travelTrips,
+            letters: letters,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2281,6 +2294,58 @@ public static class WorldStateMapper
         new GameDate(dto.DepartedDateTotalMonths),
         Enum.Parse<TravelTripStatus>(dto.Status),
         dto.EncounterCompleted);
+
+    private static LetterDto ToLetterDto(Letter letter) => new()
+    {
+        LetterId = letter.Id.ToTaggedString(),
+        Direction = letter.Direction.ToString(),
+        Action = letter.Action.ToString(),
+        SenderCharacterOrActorId = letter.SenderCharacterOrActorId,
+        RecipientCharacterOrActorId = letter.RecipientCharacterOrActorId,
+        DraftedByCharacterId = letter.DraftedByCharacterId?.ToTaggedString(),
+        SentDateTotalMonths = letter.SentDate.TotalMonths,
+        TransitTimeMonths = letter.TransitTimeMonths,
+        MonthsElapsed = letter.MonthsElapsed,
+        RedirectionDelayMonths = letter.RedirectionDelayMonths,
+        ArrivalDateTotalMonths = letter.ArrivalDate?.TotalMonths,
+        CourierType = letter.CourierType.ToString(),
+        CourierCharacterId = letter.CourierCharacterId?.ToTaggedString(),
+        InterceptionRisk = letter.InterceptionRisk.ToString(),
+        Intercepted = letter.Intercepted,
+        Forged = letter.Forged,
+        Redirected = letter.Redirected,
+        OralTraditionPenaltyApplied = letter.OralTraditionPenaltyApplied,
+        RequiresResponse = letter.RequiresResponse,
+        Responded = letter.Responded,
+        ResponseAction = letter.ResponseAction?.ToString(),
+        Status = letter.Status.ToString(),
+        Outcome = letter.Outcome.ToString(),
+    };
+
+    private static Letter FromLetterDto(LetterDto dto) => Letter.Restore(
+        RuntimeId<Letter>.Parse(dto.LetterId),
+        Enum.Parse<LetterDirection>(dto.Direction),
+        Enum.Parse<LetterAction>(dto.Action),
+        dto.SenderCharacterOrActorId,
+        dto.RecipientCharacterOrActorId,
+        dto.DraftedByCharacterId is null ? null : RuntimeId<Character>.Parse(dto.DraftedByCharacterId),
+        new GameDate(dto.SentDateTotalMonths),
+        dto.TransitTimeMonths,
+        dto.MonthsElapsed,
+        dto.RedirectionDelayMonths,
+        dto.ArrivalDateTotalMonths is null ? null : new GameDate(dto.ArrivalDateTotalMonths.Value),
+        Enum.Parse<CourierType>(dto.CourierType),
+        dto.CourierCharacterId is null ? null : RuntimeId<Character>.Parse(dto.CourierCharacterId),
+        Enum.Parse<RouteRiskLevel>(dto.InterceptionRisk),
+        dto.Intercepted,
+        dto.Forged,
+        dto.Redirected,
+        dto.OralTraditionPenaltyApplied,
+        dto.RequiresResponse,
+        dto.Responded,
+        dto.ResponseAction is null ? null : Enum.Parse<LetterAction>(dto.ResponseAction),
+        Enum.Parse<LetterStatus>(dto.Status),
+        Enum.Parse<LetterOutcome>(dto.Outcome));
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {
