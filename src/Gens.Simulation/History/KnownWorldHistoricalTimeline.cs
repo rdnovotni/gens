@@ -39,6 +39,12 @@ namespace Gens.Simulation.History;
 /// figure list rather than a fabricated reference.</item>
 /// </list>
 /// </summary>
+// CA1861 (prefer static readonly fields over inline array literals) is a hot-path performance rule —
+// every array literal below is a content-authoring argument built once per process, at catalog-
+// construction time, not a hot path re-allocating per tick; matching
+// tests/Gens.Simulation.Tests.csproj's identical "hot-path rule, not applicable here" reasoning for its
+// own repeatedly-invoked-with-inline-arrays call sites.
+#pragma warning disable CA1861
 public static class KnownWorldHistoricalTimeline
 {
     public static HistoricalTimelineCatalog BuildCatalog(NamedHistoricalFigureCatalog? figures = null) => new(
@@ -311,3 +317,4 @@ public static class KnownWorldHistoricalTimeline
             linkedEventDefinitionRef: null,
             divergenceEligible: type is HistoricalEventType.ImperialSuccession or HistoricalEventType.WarOrRevolt or HistoricalEventType.PoliticalTrial);
 }
+#pragma warning restore CA1861

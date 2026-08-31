@@ -12,6 +12,10 @@ namespace Gens.Simulation.History;
 /// authored history — <see cref="KnownWorldHistoricalTimeline"/>/<see
 /// cref="KnownWorldHistoricalFigures"/> carry the real, authored 133 BC – AD 235 catalog.
 /// </summary>
+// CA1861 (prefer static readonly fields over inline array literals) is a hot-path performance rule —
+// every array literal below is a fixture-construction argument built once per process, not a hot path;
+// matching tests/Gens.Simulation.Tests.csproj's identical "hot-path rule, not applicable here" reasoning.
+#pragma warning disable CA1861
 public static class SampleHistoricalTimelineDefinitions
 {
     public static readonly DefinitionId<NamedHistoricalFigureDefinition> SampleFigureOne = new("sample-historical-figure-one");
@@ -69,3 +73,4 @@ public static class SampleHistoricalTimelineDefinitions
         BuildFigureCatalog(),
         eventCatalog);
 }
+#pragma warning restore CA1861
