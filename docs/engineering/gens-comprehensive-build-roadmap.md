@@ -1442,7 +1442,7 @@ Recommended internal order:
 
 Construction order:
 
-1. Implement the region profile schema and date-aware rule overrides.
+1. [x] Implement the region profile schema and date-aware rule overrides.
 2. Implement location, route, distance tier, travel party, reservations, duration, risk exposure, arrival, and concurrent character locations.
 3. Implement letters/messages, courier selection, transit, delivery, response, interception, forgery, and information provenance.
 4. Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
@@ -1455,6 +1455,37 @@ Construction order:
 **Primary design inputs:** `gens-starting-regions-design.md`, `gens-travel-design.md`, `gens-correspondence-letters-design.md`, `gens-language-literacy-design.md`, `gens-cultures-of-the-known-world-design.md`, `gens-religions-of-the-known-world-design.md`, `gens-events-historical-timeline-content.md`.
 
 Region data waves should consume the shared schema, not introduce new mechanics ad hoc. The current region corpus is: `gens-starting-regions-italian-heartland-design.md`, `gens-starting-regions-gallic-frontier-design.md`, `gens-starting-regions-iberian-colony-design.md`, `gens-starting-regions-north-african-colony-design.md`, `gens-starting-regions-greek-east-design.md`, `gens-starting-regions-britannia-design.md`, `gens-starting-regions-egypt-design.md`, `gens-starting-regions-syria-levant-design.md`, `gens-starting-regions-anatolia-design.md`, `gens-starting-regions-balkans-design.md`, `gens-starting-regions-sicily-design.md`, `gens-starting-regions-alpine-provinces-design.md`, `gens-starting-regions-armenia-design.md`, `gens-starting-regions-mesopotamia-design.md`, `gens-starting-regions-nubia-design.md`, `gens-starting-regions-arabia-felix-design.md`, and `gens-starting-regions-bosporan-kingdom-design.md`.
+
+**Item 1 progress:** the Region Profile content-definition family lands in a new
+`src/Gens.Simulation/Regions/` namespace, following `Gens.Simulation.Events`'s identical
+sealed-record-plus-catalog shape (`RegionProfileDefinition`/`RegionProfileCatalog`, mirroring
+`EventDefinition`/`EventCatalog`). Every `gens-starting-regions-design.md` §4 subsection is
+represented — §4.1-§4.6 as qualitative string refs/tags per §4's own "numbers are deferred
+everywhere" convention (the numeric packages stay Start Modes' territory), §4.7's culture
+distribution as a weighted `CultureDistributionEntry` list requiring exactly one outlier-residual
+row, §4.9's gazetteer as `GazetteerLocationDefinition` entries each carrying its own `RegionId`
+back-reference plus Role/Prominence Tier/grounding note/optional rival-seat tag, and §4.10/§6's
+Reputation Duality as the five-value `ReputationDualityMode` enum (`None`/`Full`/`Tapering`/
+`PermanentStructural`/`Localized`). The date-aware rule override mechanism §6's tapering case calls
+for (Iberian Colony, North African Colony modulating by start year around the Cantabrian Wars'
+29-19 BC close) is a general, reusable `DatedRule<TValue>`/`DatedOverride<TValue>` pair — a base
+value plus non-overlapping, `GameDate`-bounded override windows resolving to "effective value as of
+date X" — not a one-off if/else; it is generic over any §4 field's type, and this pass wires it to
+`RegionProfileDefinition.ReputationDuality` as its one concrete consumer. Validation matches
+existing content-family conventions (constructor-time `ArgumentException`s, catalog-time duplicate-ID
+rejection): every gazetteer entry's `RegionId` must match its owning region, the Home Anchor must be
+a real gazetteer entry of that region, culture weights must be positive with exactly one
+outlier-residual row, override windows must not overlap, and (a catalog-wide check) at most one
+gazetteer entry across every registered region may carry the Rome-only `Capital` role (§8.3). One
+fixture region (`SampleRegionProfileDefinitions`, deliberately `sample-*`-named per
+`SampleEventDefinitions`'s own precedent) exercises every field including a Full-before/Tapering-at-
+and-after dated override on Reputation Duality; item 6's actual authored region content is explicitly
+out of this item's scope. Covered by 28 new tests across
+`tests/Gens.Simulation.Tests/Regions/{DatedRuleTests,RegionProfileDefinitionTests,RegionProfileCatalogTests,SampleRegionProfileDefinitionsTests}.cs`.
+The pre-existing `src/Gens.Simulation/Land/Region.cs` (a `RuntimeId`-keyed settlement-ownership
+boundary, Phase 6) is untouched — it answers "which region does this settlement belong to," a
+different question from this content-definition schema's "what is a region's authored shape,"
+and nothing here changes its callers.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 
