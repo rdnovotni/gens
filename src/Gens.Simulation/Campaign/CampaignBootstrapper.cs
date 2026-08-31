@@ -145,6 +145,10 @@ public static class CampaignBootstrapper
     /// stream here for the same rule-8 reason.</summary>
     public const string CrimeDetentionEscapeAttemptStreamName = Crime.AttemptDetentionEscapeCommands.EscapeAttemptStreamName;
 
+    /// <summary>Phase 13 item 3 — <see cref="Correspondence.CorrespondenceTransitSystem"/>'s
+    /// interception/forgery risk resolution.</summary>
+    public const string CorrespondenceRiskStreamName = Correspondence.CorrespondenceTransitSystem.RiskStreamName;
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -179,6 +183,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(LegalQuickResolutionStreamName, config.Seed);
         streams.AddDerived(LegalMajorCaseVerdictOutcomeStreamName, config.Seed);
         streams.AddDerived(CrimeDetentionEscapeAttemptStreamName, config.Seed);
+        streams.AddDerived(CorrespondenceRiskStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

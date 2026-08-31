@@ -414,6 +414,13 @@ public sealed record WorldSaveDocument
     /// defaults to empty, matching <see cref="EdictRecords"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(66)]
     public IReadOnlyList<TravelTripDto> TravelTrips { get; init; } = Array.Empty<TravelTripDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Correspondence.Letter"/> ever sent or originated
+    /// (Phase 13 item 3), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="TravelTrips"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(67)]
+    public IReadOnlyList<LetterDto> Letters { get; init; } = Array.Empty<LetterDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -612,6 +619,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(37)]
     public long TravelTripIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-13-item-3 save has no Letters.
+    /// Additive-only per ADR 0011's policy, matching <see cref="TravelTripIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(38)]
+    public long LetterIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2766,4 +2779,77 @@ public sealed record TravelTripDto
 
     [JsonPropertyOrder(10)]
     public required bool EncounterCompleted { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Correspondence.Letter"/> (Phase 13 item 3).</summary>
+public sealed record LetterDto
+{
+    [JsonPropertyOrder(0)]
+    public required string LetterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Direction { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Action { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string SenderCharacterOrActorId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string RecipientCharacterOrActorId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? DraftedByCharacterId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int SentDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int TransitTimeMonths { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int MonthsElapsed { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required int RedirectionDelayMonths { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public int? ArrivalDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required string CourierType { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public string? CourierCharacterId { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required string InterceptionRisk { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required bool Intercepted { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public required bool Forged { get; init; }
+
+    [JsonPropertyOrder(16)]
+    public required bool Redirected { get; init; }
+
+    [JsonPropertyOrder(17)]
+    public required bool OralTraditionPenaltyApplied { get; init; }
+
+    [JsonPropertyOrder(18)]
+    public required bool RequiresResponse { get; init; }
+
+    [JsonPropertyOrder(19)]
+    public required bool Responded { get; init; }
+
+    [JsonPropertyOrder(20)]
+    public string? ResponseAction { get; init; }
+
+    [JsonPropertyOrder(21)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(22)]
+    public required string Outcome { get; init; }
 }

@@ -5,6 +5,7 @@ using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
+using Gens.Simulation.Correspondence;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Interactions;
@@ -592,6 +593,34 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.DepartedDate.TotalMonths);
             hash = MixLong(hash, (long)entry.Value.Status);
             hash = MixLong(hash, entry.Value.EncounterCompleted ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Letters.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)entry.Value.Direction);
+            hash = MixLong(hash, (long)entry.Value.Action);
+            hash = MixString(hash, entry.Value.SenderCharacterOrActorId);
+            hash = MixString(hash, entry.Value.RecipientCharacterOrActorId);
+            hash = MixLong(hash, entry.Value.DraftedByCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, entry.Value.SentDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.TransitTimeMonths);
+            hash = MixLong(hash, entry.Value.MonthsElapsed);
+            hash = MixLong(hash, entry.Value.RedirectionDelayMonths);
+            hash = MixLong(hash, entry.Value.ArrivalDate?.TotalMonths ?? -1L);
+            hash = MixLong(hash, (long)entry.Value.CourierType);
+            hash = MixLong(hash, entry.Value.CourierCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, (long)entry.Value.InterceptionRisk);
+            hash = MixLong(hash, entry.Value.Intercepted ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.Forged ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.Redirected ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.OralTraditionPenaltyApplied ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.RequiresResponse ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.Responded ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.ResponseAction.HasValue ? (long)entry.Value.ResponseAction.Value : -1L);
+            hash = MixLong(hash, (long)entry.Value.Status);
+            hash = MixLong(hash, (long)entry.Value.Outcome);
         }
 
         return hash;
