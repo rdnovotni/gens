@@ -408,6 +408,12 @@ public sealed record WorldSaveDocument
     /// to empty, matching <see cref="HouseholdDoctrines"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(65)]
     public IReadOnlyList<EdictRecordDto> EdictRecords { get; init; } = Array.Empty<EdictRecordDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Travel.TravelTrip"/> ever begun (Phase 13 item 2),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="EdictRecords"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(66)]
+    public IReadOnlyList<TravelTripDto> TravelTrips { get; init; } = Array.Empty<TravelTripDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -600,6 +606,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(36)]
     public long EdictRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-13-item-2 save has no Travel Trips.
+    /// Additive-only per ADR 0011's policy, matching <see cref="EdictRecordIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(37)]
+    public long TravelTripIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -768,6 +780,13 @@ public sealed record CharacterDto
 
     [JsonPropertyOrder(29)]
     public ManumissionPlanDto? ManumissionPlan { get; init; }
+
+    /// <summary>Phase 13 item 2 (<c>gens-travel-design.md</c> §5, §10). Not <c>required</c>, and
+    /// defaults to <c>null</c> ("at home"), for the same additive-only reason as every other
+    /// post-items-1-2 field above: a pre-Phase-13-item-2 save's Characters were never tracked anywhere
+    /// but home.</summary>
+    [JsonPropertyOrder(30)]
+    public TravelLocationDto? CurrentTravelLocation { get; init; }
 }
 
 /// <summary>One <see cref="Characters.RegimenSettings"/> (<c>gens-labor-slavery-design.md</c> §5).</summary>
@@ -2682,4 +2701,69 @@ public sealed record EdictRecordDto
 
     [JsonPropertyOrder(8)]
     public required bool DemonstrationEffectTriggered { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Travel.TravelLocation"/> (Phase 13 item 2), flattened —
+/// matching <see cref="RansomNegotiationDto"/>'s own "flatten a small value shape into the DTO"
+/// convention rather than a further-nested DTO type.</summary>
+public sealed record TravelLocationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Kind { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? RegionId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? SettlementId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? ActorId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Travel.TravelParty"/> (Phase 13 item 2).</summary>
+public sealed record TravelPartyDto
+{
+    [JsonPropertyOrder(0)]
+    public required string TravelerId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public IReadOnlyList<string> RetinueIds { get; init; } = Array.Empty<string>();
+}
+
+/// <summary>One <see cref="Gens.Simulation.Travel.TravelTrip"/> (Phase 13 item 2).</summary>
+public sealed record TravelTripDto
+{
+    [JsonPropertyOrder(0)]
+    public required string TripId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required TravelPartyDto Party { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required TravelLocationDto Origin { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required TravelLocationDto Destination { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string DistanceTier { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string RiskExposure { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int TravelTimeMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int MonthsElapsed { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int DepartedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required bool EncounterCompleted { get; init; }
 }

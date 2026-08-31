@@ -16,6 +16,7 @@ using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
+using Gens.Simulation.Travel;
 
 namespace Gens.Simulation.Identity;
 
@@ -214,6 +215,9 @@ internal static class RuntimeIdTagRegistry
         // convention as ScandalRecord above. HouseholdDoctrineState needs no entry: it's keyed by
         // HouseholdDoctrineKey, not by its own RuntimeId, matching DynasticEpithet's identical exemption.
         [typeof(EdictRecord)] = "edict",
+        // Phase 13 item 2 — Gens.Simulation.Travel.TravelTrip, same "real record as its own tag"
+        // convention as EdictRecord above.
+        [typeof(TravelTrip)] = "traveltrip",
     };
 
     public static string Resolve(Type type) =>

@@ -1,6 +1,7 @@
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Time;
+using Gens.Simulation.Travel;
 
 namespace Gens.Simulation.Characters;
 
@@ -94,6 +95,15 @@ public sealed record Character
     public PursuitRecord? Pursuit { get; init; }
     public ManumissionPlan? ManumissionPlan { get; init; }
 
+    /// <summary>Phase 13 item 2 (<c>gens-travel-design.md</c> §5, §10) — where this Character actually
+    /// is right now, tracked independently of <see cref="Household"/> membership the way CK3 tracks a
+    /// court member's genuine whereabouts. Null means "at <see cref="Location"/>" (§10: "defaults to a
+    /// 'home' Location") — the common case, and every Character's starting value; non-null only while
+    /// a <see cref="TravelTrip"/> has them actually <see cref="TravelTripStatus.Arrived"/>, <see
+    /// cref="TravelTripStatus.Returning"/>, or <see cref="TravelTripStatus.Recalled"/> somewhere else
+    /// (<see cref="TravelProgressSystem"/> is the only system that ever sets or clears this).</summary>
+    public TravelLocation? CurrentTravelLocation { get; init; }
+
     /// <summary>Hand-written for the same reason as <see cref="CharacterVisualProfile.Equals(CharacterVisualProfile?)"/>
     /// and <see cref="PortraitRecipe.Equals(PortraitRecipe?)"/>: the record-synthesized <c>Equals</c>
     /// would compare <see cref="MaritalHistory"/> and <see cref="PermanentInjuries"/> by list reference
@@ -130,7 +140,8 @@ public sealed record Character
         Regimen == other.Regimen &&
         Flight == other.Flight &&
         Pursuit == other.Pursuit &&
-        ManumissionPlan == other.ManumissionPlan;
+        ManumissionPlan == other.ManumissionPlan &&
+        CurrentTravelLocation == other.CurrentTravelLocation;
 
     public override int GetHashCode()
     {
@@ -168,6 +179,7 @@ public sealed record Character
         hash.Add(Flight);
         hash.Add(Pursuit);
         hash.Add(ManumissionPlan);
+        hash.Add(CurrentTravelLocation);
         return hash.ToHashCode();
     }
 
@@ -205,7 +217,8 @@ public sealed record Character
         RegimenSettings? regimen = null,
         FledRecord? flight = null,
         PursuitRecord? pursuit = null,
-        ManumissionPlan? manumissionPlan = null)
+        ManumissionPlan? manumissionPlan = null,
+        TravelLocation? currentTravelLocation = null)
     {
         if (string.IsNullOrWhiteSpace(praenomen))
             throw new ArgumentException("A Character requires a non-empty praenomen.", nameof(praenomen));
@@ -255,6 +268,7 @@ public sealed record Character
             Flight = flight,
             Pursuit = pursuit,
             ManumissionPlan = manumissionPlan,
+            CurrentTravelLocation = currentTravelLocation,
         };
     }
 

@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Time;
+using Gens.Simulation.Travel;
 
 namespace Gens.Simulation.Tests.Characters;
 
@@ -49,7 +50,8 @@ public static class CharacterTestFixtures
         FledRecord? flight = null,
         PursuitRecord? pursuit = null,
         ManumissionPlan? manumissionPlan = null,
-        CoreAttributes? attributes = null) =>
+        CoreAttributes? attributes = null,
+        TravelLocation? currentTravelLocation = null) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
@@ -80,5 +82,6 @@ public static class CharacterTestFixtures
             regimen: regimen,
             flight: flight,
             pursuit: pursuit,
-            manumissionPlan: manumissionPlan);
+            manumissionPlan: manumissionPlan,
+            currentTravelLocation: currentTravelLocation);
 }
