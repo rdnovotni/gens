@@ -58,7 +58,8 @@ public static class DiplomacyLanguageGateEvaluator
 
         if (InterpresQueries.TryGet(state, householdId, out var appointment) &&
             appointment.LanguagesCovered.Contains(requiredLanguage) &&
-            state.Characters.TryGet(appointment.CharacterId, out var appointee) && appointee.IsAlive)
+            state.Characters.TryGet(appointment.CharacterId, out var appointee) &&
+            appointee.IsAlive && appointee.Household == householdId)
         {
             return new DiplomacyLanguageGateResult(LanguageGateClearedBy.InterpresPresent, appointment.CharacterId);
         }

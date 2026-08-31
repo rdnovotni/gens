@@ -115,6 +115,20 @@ public sealed class CulturesTests
         });
     }
 
+    [Test]
+    public void EgyptianShiftsToProvincialAtTheReal30BCEAnnexation()
+    {
+        var catalog = KnownWorldCultures.BuildCatalog();
+        var egyptian = catalog.Get(KnownWorldCultures.Egyptian);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(egyptian.CategoryAsOf(new GameDate(0)), Is.EqualTo(CultureCategory.Frontier));
+            Assert.That(egyptian.CategoryAsOf(KnownWorldCultures.EgyptianShift), Is.EqualTo(CultureCategory.Provincial));
+            Assert.That(KnownWorldCultures.EgyptianShift.ToDisplayYearLabel(), Is.EqualTo("30 BCE"));
+        });
+    }
+
     [TestCase("hibernian")]
     [TestCase("caledonian")]
     [TestCase("nubian-kushite")]

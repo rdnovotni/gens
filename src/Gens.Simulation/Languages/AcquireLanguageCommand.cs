@@ -47,6 +47,8 @@ public static class AcquireLanguageCommands
     public static readonly ValidationErrorCode UnknownLanguage = new("languages.acquire.unknownLanguage");
     public static readonly ValidationErrorCode NativeOriginRequiresNativeLanguage =
         new("languages.acquire.nativeOriginRequiresNativeLanguage");
+    public static readonly ValidationErrorCode CannotDowngradeProficiency =
+        new("languages.acquire.cannotDowngradeProficiency");
 
     public static CommandPipeline<WorldState, AcquireLanguageCommand> BuildPipeline(
         LanguageCatalog languages, CultureLanguageMap cultureLanguages)
@@ -78,6 +80,16 @@ public static class AcquireLanguageCommands
             cultureLanguages.Resolve(character.Culture) != command.LanguageId)
         {
             return NativeOriginRequiresNativeLanguage;
+        }
+
+        // §8's "acquired Proficiency is permanent once reached" (§11's open question, taken as this
+        // item's own honest default): a later, lower-tier milestone can never silently overwrite an
+        // already-reached higher tier — a real language gate or Interpres qualification must never be
+        // able to regress out from under a Character who already earned it.
+        if (LanguageProficiencyQueries.TryGet(state, command.CharacterId, command.LanguageId, out var existing) &&
+            command.FluencyTier < existing.FluencyTier)
+        {
+            return CannotDowngradeProficiency;
         }
 
         return null;

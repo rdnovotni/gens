@@ -165,6 +165,28 @@ public sealed class LanguagesTests
     }
 
     [Test]
+    public void AcquireLanguageRejectsADowngradeBelowAnAlreadyReachedTier()
+    {
+        var (state, characterId) = OneRomanCharacter();
+        var pipeline = AcquireLanguageCommands.BuildPipeline(KnownWorldLanguages.BuildCatalog(), CultureLanguageMap.BuildKnownWorldMap());
+
+        pipeline.Execute(state, new AcquireLanguageCommand(
+            state.CommandIds.Issue(), "player", StartDate, null, characterId,
+            KnownWorldLanguages.GreekKoine, FluencyTier.FluentNative, LanguageAcquisitionMethod.FormalEducation));
+        var result = pipeline.Execute(state, new AcquireLanguageCommand(
+            state.CommandIds.Issue(), "player", StartDate, null, characterId,
+            KnownWorldLanguages.GreekKoine, FluencyTier.Basic, LanguageAcquisitionMethod.SustainedExposure));
+
+        var entries = LanguageProficiencyQueries.ForCharacter(state, characterId);
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Accepted, Is.False);
+            Assert.That(result.Error, Is.EqualTo(AcquireLanguageCommands.CannotDowngradeProficiency));
+            Assert.That(entries[0].FluencyTier, Is.EqualTo(FluencyTier.FluentNative));
+        });
+    }
+
+    [Test]
     public void AcquireLanguageRejectsNativeOriginForANonNativeLanguage()
     {
         var (state, characterId) = OneRomanCharacter();
@@ -312,6 +334,32 @@ public sealed class LanguagesTests
             Assert.That(result.Cleared, Is.True);
             Assert.That(result.GateClearedBy, Is.EqualTo(LanguageGateClearedBy.InterpresPresent));
             Assert.That(result.InterpresCharacterId, Is.EqualTo(interpreterId));
+        });
+    }
+
+    [Test]
+    public void GateDoesNotClearThroughAStaleInterpresAppointmentAfterTheAppointeeChangesHousehold()
+    {
+        var (state, householdId, negotiatorId) = OneHouseholdWithACharacter();
+        var interpreterId = state.CharacterIds.Issue();
+        state.Characters.Add(interpreterId, CharacterTestFixtures.Minimal(interpreterId, nomen: "Interpres", household: householdId));
+        GrantConversational(state, interpreterId, KnownWorldLanguages.Germanic);
+        AppointInterpresCommands.Pipeline.Execute(state, new AppointInterpresCommand(
+            state.CommandIds.Issue(), "player", StartDate, null, householdId, interpreterId, new[] { KnownWorldLanguages.Germanic }));
+
+        // The appointee moves to a different household (e.g. AdoptChildCommand) without the old
+        // household's InterpresAppointment ever being revoked — the stale appointment must not still
+        // clear the gate for the household they left.
+        var otherHouseholdId = state.HouseholdIds.Issue();
+        state.Characters.Remove(interpreterId);
+        state.Characters.Add(interpreterId, CharacterTestFixtures.Minimal(interpreterId, nomen: "Interpres", household: otherHouseholdId));
+
+        var result = DiplomacyLanguageGateEvaluator.Evaluate(state, negotiatorId, KnownWorldLanguages.Germanic, householdId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Cleared, Is.False);
+            Assert.That(result.GateClearedBy, Is.EqualTo(LanguageGateClearedBy.None));
         });
     }
 

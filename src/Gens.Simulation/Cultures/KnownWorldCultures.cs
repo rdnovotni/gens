@@ -75,7 +75,7 @@ public static class KnownWorldCultures
     public static readonly GameDate BritishShift = AtYear(43);
     public static readonly GameDate DacianShift = AtYear(106);
     public static readonly GameDate NabataeanShift = AtYear(106);
-    public static readonly GameDate EgyptianShift = AtYear(-30);
+    public static readonly GameDate EgyptianShift = AtYear(-29);
     public static readonly GameDate PannonianShift = AtYear(9);
 
     public static CultureCatalog BuildCatalog() => new(new[]
