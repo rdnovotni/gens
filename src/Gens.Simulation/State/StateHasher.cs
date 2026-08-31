@@ -10,6 +10,7 @@ using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
+using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
@@ -621,6 +622,33 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.ResponseAction.HasValue ? (long)entry.Value.ResponseAction.Value : -1L);
             hash = MixLong(hash, (long)entry.Value.Status);
             hash = MixLong(hash, (long)entry.Value.Outcome);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.LanguageProficiencies.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.CharacterId.Value);
+            hash = MixString(hash, entry.Value.LanguageId.Value);
+            hash = MixLong(hash, (long)entry.Value.FluencyTier);
+            hash = MixLong(hash, (long)entry.Value.AcquisitionMethod);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.LiteracyRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.IsLiterate ? 1L : 0L);
+            hash = MixLong(hash, (long)entry.Value.DerivedFrom);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.InterpresAppointments.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.CharacterId.Value);
+            foreach (var languageId in entry.Value.LanguagesCovered)
+                hash = MixString(hash, languageId.Value);
         }
 
         return hash;

@@ -9,6 +9,7 @@ using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
+using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
@@ -222,6 +223,11 @@ internal static class RuntimeIdTagRegistry
         // Phase 13 item 3 — Gens.Simulation.Correspondence.Letter, same "real record as its own tag"
         // convention as TravelTrip above.
         [typeof(Letter)] = "letter",
+        // Phase 13 item 4 — Gens.Simulation.Languages.LanguageProficiency, same "real record as its own
+        // tag" convention as Letter above. LiteracyRecord and InterpresAppointment need no entry: each
+        // is keyed by RuntimeId<Character>/RuntimeId<Household>, not by its own RuntimeId, matching
+        // DynasticEpithet's identical exemption.
+        [typeof(LanguageProficiency)] = "langprof",
     };
 
     public static string Resolve(Type type) =>

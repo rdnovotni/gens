@@ -1445,7 +1445,7 @@ Construction order:
 1. [x] Implement the region profile schema and date-aware rule overrides.
 2. [x] Implement location, route, distance tier, travel party, reservations, duration, risk exposure, arrival, and concurrent character locations.
 3. [x] Implement letters/messages, courier selection, transit, delivery, response, interception, forgery, and information provenance.
-4. Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
+4. [x] Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
 5. Implement the historical timeline scheduler with immutable history, divergence-eligible events, counterfactual flags, and date-aware content validation.
 6. Implement one complete region profile and only then expand region content in waves.
 7. Add distant holdings and procurator requirements after travel and delegation are stable.
@@ -1573,6 +1573,78 @@ mechanics stay explicitly unresolved, matching §12's own open question — this
 forgery happened, not whether anyone in-fiction ever notices. Covered by 34 new tests in
 `tests/Gens.Simulation.Tests/Correspondence/{CorrespondenceTests,CorrespondenceTestFixtures}.cs`,
 including a save/load round trip with a stable deterministic state hash.
+
+**Item 4 progress:** Culture and Language land in two new namespaces, `src/Gens.Simulation/Cultures/`
+and `src/Gens.Simulation/Languages/`, finally backing the `Gens.Simulation.Identity.Culture` phantom
+type and `CultureDistributionEntry.CultureRef` that items before this one only ever referenced as loose
+strings. `CultureDefinition`/`CultureCatalog` cover Cultures of the Known World's real §17 data model
+(category, `permanentlyUnconquered`, `isRaidingFrontier`, `isAuxiliaryServiceCulture`,
+`encounterRarityTier`, `noveltyDignitasBonus`), with `KnownWorldCultures` authoring every real culture
+§17's own enum literally lists — 37 values, not the doc's own "thirty-six" intro count, because §12's
+own quick-reference table calls Roman "— (the default)" rather than one of the thirty-six added
+entries; `KnownWorldCultures`'s own doc comment discloses that reconciliation rather than silently
+matching the prose number. `CultureCategory`'s mid-range shifts (British AD 43, Dacian and Nabataean
+both AD 106, Egyptian 30 BC, Pannonian ~AD 9) reuse item 1's own `DatedRule`/`DatedOverride` mechanism
+exactly as the roadmap background suggested, closing the same "one general mechanism, many consumers"
+loop `RegionProfileDefinition.ReputationDuality` opened. §11's Legendary Places and §3.2/§5.1/§6.1's
+flavor-only minor sub-groups are deliberately not tracked values, per §17's own data model.
+`Languages/` builds `LanguageDefinition`/`LanguageFamily`/`LanguageCatalog` and `FluencyTier`
+(None/Basic/Conversational/FluentNative) from §2's real linguistic geography, with `KnownWorldLanguages`
+authoring every language §2 actually catalogues — deliberately excluding §2.11's two ritual-only extinct
+languages (Etruscan, Sicel/Sicani stay Religion's flavor content) and the thin Italic/Anatolian remnants
+§2 itself never gives more than a footnote. One disclosed gap-fill: §2 has no dedicated "Germanic"
+language entry despite §6's own hard-gate example naming a Germanic negotiation, so this item adds one,
+named honestly in `KnownWorldLanguages`'s own doc comment rather than silently patched, in the same
+spirit as this design pass's own stated Oscan/Noric corrections. `CultureLanguageMap` reads §5's native-
+acquisition mapping directly off §2's prose for every culture it actually names a language for, and
+returns `null` — not a fabricated answer — for the three cultures (Blemmyes, Garamantian, Taprobane) §2
+never names one for. `LanguageCatalog.SharesNonIsolateFamily` builds §5's family-relationship discount
+as a pure yes/no capability check without sizing the actual discount magnitude, which stays unsized per
+§11's own open question. `LanguageProficiency` (own `RuntimeId`, since one Character legitimately holds
+several at once per §8's "no artificial ceiling") and `LiteracyRecord` (keyed by `RuntimeId<Character>`
+alone, mirroring `ClientelaEntry`'s "the owning entity is already a unique key" shape) are real
+`WorldState` partitions, fully wired through `WorldSaveDto`/`WorldStateMapper`/`StateHasher`/
+`EntityKinds` exactly like `TravelTrip` and `Letter` before them — a Character's own tracked language
+and literacy facts are genuine campaign state, unlike the pure-content Culture/Language catalogs above.
+`AcquireLanguageCommand` and `SetLiteracyCommand` record acquisition-method/derivation facts (§5's
+`nativeOrigin`/`formalEducation`/`sustainedExposure`/`wandererInstruction`, §3's
+`legalStatusAndWealth`/`learningAttribute`) without simulating the systems that would drive them —
+Education & Culture's own Learning math, Distant Holding/Travel exposure accrual, and a Wanderer's own
+teaching mechanic (Phase 14 item 4) stay unbuilt, per this item's own scope discipline, mirroring how
+item 2 modeled `TravelParty` retinue IDs without building Companions itself.
+`InterpresAppointment` (§7, keyed by `RuntimeId<Household>`, also real `WorldState`) is the small,
+clearly-scoped slice of the Interpres Companion role buildable without Companions & Court Positions
+(Phase 16 item 1, not yet built) — a household's standing designation of an already-proficient Character,
+with no salary, slot-conflict, or recruitment flow invented on top. `DiplomacyLanguageGateEvaluator`
+builds §6/§10's `DiplomacyLanguageGate` hard-gate check as a real, callable, fully tested mechanism
+(negotiator fluency, then a formal Interpres, then §7's own "any Conversational-or-better Character can
+serve informally") with no Diplomacy negotiation flow yet to call it from — Diplomacy with Non-Roman
+Peoples is Phase 16, named as the future caller the same way item 3 named Espionage/Romance/Procurator
+as future `LetterAction` callers it fully modeled anyway. `InteractionLanguageBarrier.Severity` builds
+§6's soft-penalty half as a standalone, tested severity lookup rather than wiring it into
+`RecordInteractionCommand`: every existing Interaction (`Befriend`, `InitiateScheme`) already takes its
+opinion delta as a plain caller-supplied constant with no per-invocation attenuation mechanism to hook
+into, and §6 itself never sizes the actual penalty magnitude, so deciding which future Interaction
+applies this, and by how much, stays a real decision for whichever future pass builds that catalog out.
+`CultureNamingPoolCatalog` (§13) turns "real patterns, not exhaustive lists" into real, drawable
+`NamePool` content for the existing `CharacterNameGenerator` — the seven cultures §13 itself names a
+convention for (Gallic/British/Hibernian's `-rix` suffix, Germanic compounds, Egyptian theophoric forms,
+Judaean patronymic/theophoric Hebrew forms, Parthian/Armenian Persian-derived elements, Etruscan's own
+non-Indo-European structure), deliberately not the full thirty-seven-culture roster, matching §13's own
+title. Finally, `Correspondence/KnownWorldCorrespondenceReachability.cs` closes item 3's own
+explicitly-left-open seam: real (culture, reachability) entries built against this item's own real
+Culture/Language catalogs — `OralTraditionPartial` for §7's three named cultures (Gallic, British,
+Germanic) plus its own "by extension" reading (Hibernian, Caledonian, and Batavian's shared
+druidic-adjacent tradition; Thracian, Dacian, Illyrian/Pannonian, and Cappadocian/Anatolian's
+thinly-attested language families), and a single `OralTraditionBlocked` entry for Nubian/Kushite on
+Meroitic's own real, still-undeciphered script — every other culture stays at the catalog's own honest
+`FullyLiterate` default. Covered by 53 new tests across
+`tests/Gens.Simulation.Tests/{Cultures/CulturesTests,Languages/LanguagesTests,Correspondence/KnownWorldCorrespondenceReachabilityTests}.cs`,
+including a save/load round trip with a stable deterministic state hash for every new `WorldState`
+partition. Deliberately out of scope, named for later phases: Companions & Court Positions' own full
+Interpres title/slot mechanics and Diplomacy with Non-Roman Peoples' own negotiation flow (both Phase
+16), Education & Culture's Learning-investment acquisition math and Wandering Populations' teacher
+mechanic (Phase 14), and any actual Interaction-catalog wiring for the language-barrier soft penalty.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 

@@ -421,6 +421,24 @@ public sealed record WorldSaveDocument
     /// reasoning.</summary>
     [JsonPropertyOrder(67)]
     public IReadOnlyList<LetterDto> Letters { get; init; } = Array.Empty<LetterDto>();
+
+    /// <summary>Every named Character's <see cref="Gens.Simulation.Languages.LanguageProficiency"/>
+    /// (Phase 13 item 4), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="Letters"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(68)]
+    public IReadOnlyList<LanguageProficiencyDto> LanguageProficiencies { get; init; } = Array.Empty<LanguageProficiencyDto>();
+
+    /// <summary>Every named Character's tracked <see cref="Gens.Simulation.Languages.LiteracyRecord"/>
+    /// (Phase 13 item 4), keyed by the Character it describes. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="LanguageProficiencies"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(69)]
+    public IReadOnlyList<LiteracyRecordDto> LiteracyRecords { get; init; } = Array.Empty<LiteracyRecordDto>();
+
+    /// <summary>Every household's standing <see cref="Gens.Simulation.Languages.InterpresAppointment"/>
+    /// (Phase 13 item 4), keyed by the appointing household. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="LiteracyRecords"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(70)]
+    public IReadOnlyList<InterpresAppointmentDto> InterpresAppointments { get; init; } = Array.Empty<InterpresAppointmentDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -625,6 +643,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(38)]
     public long LetterIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-13-item-4 save has no Language
+    /// Proficiencies. Additive-only per ADR 0011's policy, matching <see cref="LetterIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(39)]
+    public long LanguageProficiencyIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2852,4 +2876,51 @@ public sealed record LetterDto
 
     [JsonPropertyOrder(22)]
     public required string Outcome { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Languages.LanguageProficiency"/> (Phase 13 item 4).</summary>
+public sealed record LanguageProficiencyDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string LanguageId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string FluencyTier { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string AcquisitionMethod { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Languages.LiteracyRecord"/> (Phase 13 item 4), keyed by
+/// Character.</summary>
+public sealed record LiteracyRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required bool IsLiterate { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string DerivedFrom { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Languages.InterpresAppointment"/> (Phase 13 item 4), keyed
+/// by household.</summary>
+public sealed record InterpresAppointmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required IReadOnlyList<string> LanguagesCovered { get; init; }
 }

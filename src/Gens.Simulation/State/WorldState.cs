@@ -17,6 +17,7 @@ using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
+using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
@@ -94,6 +95,7 @@ public sealed class WorldState
         RuntimeIdCounter<EdictRecord> edictRecordIds,
         RuntimeIdCounter<TravelTrip> travelTripIds,
         RuntimeIdCounter<Letter> letterIds,
+        RuntimeIdCounter<LanguageProficiency> languageProficiencyIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -157,6 +159,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<EdictRecord>, EdictRecord> edictRecords,
         OrderedRegistry<RuntimeId<TravelTrip>, TravelTrip> travelTrips,
         OrderedRegistry<RuntimeId<Letter>, Letter> letters,
+        OrderedRegistry<RuntimeId<LanguageProficiency>, LanguageProficiency> languageProficiencies,
+        OrderedRegistry<RuntimeId<Character>, LiteracyRecord> literacyRecords,
+        OrderedRegistry<RuntimeId<Household>, InterpresAppointment> interpresAppointments,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -200,6 +205,7 @@ public sealed class WorldState
         EdictRecordIds = edictRecordIds;
         TravelTripIds = travelTripIds;
         LetterIds = letterIds;
+        LanguageProficiencyIds = languageProficiencyIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -263,6 +269,9 @@ public sealed class WorldState
         EdictRecords = edictRecords;
         TravelTrips = travelTrips;
         Letters = letters;
+        LanguageProficiencies = languageProficiencies;
+        LiteracyRecords = literacyRecords;
+        InterpresAppointments = interpresAppointments;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -356,6 +365,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Correspondence.Letter"/> (Phase 13 item 3).</summary>
     public RuntimeIdCounter<Letter> LetterIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Languages.LanguageProficiency"/> (Phase 13 item 4).</summary>
+    public RuntimeIdCounter<LanguageProficiency> LanguageProficiencyIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -736,6 +748,20 @@ public sealed class WorldState
     /// letter is a real part of a household's own correspondence history, not scratch state to discard.</summary>
     public OrderedRegistry<RuntimeId<Letter>, Letter> Letters { get; } = new();
 
+    /// <summary>Every named Character's <see cref="Languages.LanguageProficiency"/> (Phase 13 item 4),
+    /// in ascending <see cref="RuntimeId{T}"/> order (ADR 0004). A Character legitimately owns several
+    /// entries at once (§8's own "no artificial ceiling").</summary>
+    public OrderedRegistry<RuntimeId<LanguageProficiency>, LanguageProficiency> LanguageProficiencies { get; } = new();
+
+    /// <summary>Every named Character's tracked <see cref="Languages.LiteracyRecord"/> (Phase 13 item
+    /// 4), keyed by the Character it describes — one per Character, matching <see
+    /// cref="ClientelaEntries"/>'s identical "the owning entity is already a unique key" shape.</summary>
+    public OrderedRegistry<RuntimeId<Character>, LiteracyRecord> LiteracyRecords { get; } = new();
+
+    /// <summary>Every household's standing <see cref="Languages.InterpresAppointment"/> (Phase 13 item
+    /// 4), keyed by the appointing household — at most one active appointment per household.</summary>
+    public OrderedRegistry<RuntimeId<Household>, InterpresAppointment> InterpresAppointments { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -792,6 +818,7 @@ public sealed class WorldState
         ["scandalRecordIds"] = ScandalRecordIds.Peek,
         ["travelTripIds"] = TravelTripIds.Peek,
         ["letterIds"] = LetterIds.Peek,
+        ["languageProficiencyIds"] = LanguageProficiencyIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -854,6 +881,9 @@ public sealed class WorldState
         ["householdDoctrines"] = HouseholdDoctrines.Version,
         ["travelTrips"] = TravelTrips.Version,
         ["letters"] = Letters.Version,
+        ["languageProficiencies"] = LanguageProficiencies.Version,
+        ["literacyRecords"] = LiteracyRecords.Version,
+        ["interpresAppointments"] = InterpresAppointments.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,

@@ -18,6 +18,7 @@ using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
+using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
@@ -91,6 +92,7 @@ public static class WorldStateMapper
                 EdictRecordIds = state.EdictRecordIds.Peek,
                 TravelTripIds = state.TravelTripIds.Peek,
                 LetterIds = state.LetterIds.Peek,
+                LanguageProficiencyIds = state.LanguageProficiencyIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -211,6 +213,12 @@ public static class WorldStateMapper
             TravelTrips = state.TravelTrips.InAscendingOrder().Select(entry => ToTravelTripDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             Letters = state.Letters.InAscendingOrder().Select(entry => ToLetterDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            LanguageProficiencies = state.LanguageProficiencies.InAscendingOrder().Select(entry => ToLanguageProficiencyDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            LiteracyRecords = state.LiteracyRecords.InAscendingOrder().Select(entry => ToLiteracyRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            InterpresAppointments = state.InterpresAppointments.InAscendingOrder().Select(entry => ToInterpresAppointmentDto(entry.Value)).ToArray(),
         };
     }
 
@@ -633,6 +641,27 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Letter>, Letter>(letter.Id, letter);
             }));
 
+        var languageProficiencies = OrderedRegistry<RuntimeId<LanguageProficiency>, LanguageProficiency>.Restore(
+            dto.LanguageProficiencies.Select(p =>
+            {
+                var proficiency = FromLanguageProficiencyDto(p);
+                return new KeyValuePair<RuntimeId<LanguageProficiency>, LanguageProficiency>(proficiency.Id, proficiency);
+            }));
+
+        var literacyRecords = OrderedRegistry<RuntimeId<Character>, LiteracyRecord>.Restore(
+            dto.LiteracyRecords.Select(r =>
+            {
+                var record = FromLiteracyRecordDto(r);
+                return new KeyValuePair<RuntimeId<Character>, LiteracyRecord>(record.CharacterId, record);
+            }));
+
+        var interpresAppointments = OrderedRegistry<RuntimeId<Household>, InterpresAppointment>.Restore(
+            dto.InterpresAppointments.Select(a =>
+            {
+                var appointment = FromInterpresAppointmentDto(a);
+                return new KeyValuePair<RuntimeId<Household>, InterpresAppointment>(appointment.HouseholdId, appointment);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -674,6 +703,7 @@ public static class WorldStateMapper
             edictRecordIds: RuntimeIdCounter<EdictRecord>.Restore(dto.Counters.EdictRecordIds),
             travelTripIds: RuntimeIdCounter<TravelTrip>.Restore(dto.Counters.TravelTripIds),
             letterIds: RuntimeIdCounter<Letter>.Restore(dto.Counters.LetterIds),
+            languageProficiencyIds: RuntimeIdCounter<LanguageProficiency>.Restore(dto.Counters.LanguageProficiencyIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -737,6 +767,9 @@ public static class WorldStateMapper
             edictRecords: edictRecords,
             travelTrips: travelTrips,
             letters: letters,
+            languageProficiencies: languageProficiencies,
+            literacyRecords: literacyRecords,
+            interpresAppointments: interpresAppointments,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2346,6 +2379,46 @@ public static class WorldStateMapper
         dto.ResponseAction is null ? null : Enum.Parse<LetterAction>(dto.ResponseAction),
         Enum.Parse<LetterStatus>(dto.Status),
         Enum.Parse<LetterOutcome>(dto.Outcome));
+
+    private static LanguageProficiencyDto ToLanguageProficiencyDto(LanguageProficiency proficiency) => new()
+    {
+        Id = proficiency.Id.ToTaggedString(),
+        CharacterId = proficiency.CharacterId.ToTaggedString(),
+        LanguageId = proficiency.LanguageId.Value,
+        FluencyTier = proficiency.FluencyTier.ToString(),
+        AcquisitionMethod = proficiency.AcquisitionMethod.ToString(),
+    };
+
+    private static LanguageProficiency FromLanguageProficiencyDto(LanguageProficiencyDto dto) => new(
+        RuntimeId<LanguageProficiency>.Parse(dto.Id),
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        new DefinitionId<LanguageDefinition>(dto.LanguageId),
+        Enum.Parse<FluencyTier>(dto.FluencyTier),
+        Enum.Parse<LanguageAcquisitionMethod>(dto.AcquisitionMethod));
+
+    private static LiteracyRecordDto ToLiteracyRecordDto(LiteracyRecord record) => new()
+    {
+        CharacterId = record.CharacterId.ToTaggedString(),
+        IsLiterate = record.IsLiterate,
+        DerivedFrom = record.DerivedFrom.ToString(),
+    };
+
+    private static LiteracyRecord FromLiteracyRecordDto(LiteracyRecordDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        dto.IsLiterate,
+        Enum.Parse<LiteracyDerivation>(dto.DerivedFrom));
+
+    private static InterpresAppointmentDto ToInterpresAppointmentDto(InterpresAppointment appointment) => new()
+    {
+        HouseholdId = appointment.HouseholdId.ToTaggedString(),
+        CharacterId = appointment.CharacterId.ToTaggedString(),
+        LanguagesCovered = appointment.LanguagesCovered.Select(l => l.Value).ToArray(),
+    };
+
+    private static InterpresAppointment FromInterpresAppointmentDto(InterpresAppointmentDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        dto.LanguagesCovered.Select(l => new DefinitionId<LanguageDefinition>(l)).ToArray());
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {
