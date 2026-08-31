@@ -8,6 +8,7 @@ using Gens.Simulation.Collegia;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.History;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Languages;
@@ -649,6 +650,25 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.CharacterId.Value);
             foreach (var languageId in entry.Value.LanguagesCovered)
                 hash = MixString(hash, languageId.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.DivergenceRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.OccurredDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.TriggeringHouseholdId.Value);
+            hash = MixString(hash, entry.Value.TriggeringAction);
+            foreach (var entryId in entry.Value.AffectedTimelineEntryIds)
+                hash = MixString(hash, entryId.Value);
+            hash = MixLong(hash, entry.Value.NewAlternateHistoryBranchActive ? 1L : 0L);
+        }
+
+        // Already ascending string-key order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.FiredHistoricalTimelineEntryIds.InAscendingOrder())
+        {
+            hash = MixString(hash, entry.Key);
+            hash = MixLong(hash, entry.Value.TotalMonths);
         }
 
         return hash;

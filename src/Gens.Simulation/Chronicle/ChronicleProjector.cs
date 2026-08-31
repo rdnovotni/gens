@@ -6,6 +6,7 @@ using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
 using Gens.Simulation.Funerary;
+using Gens.Simulation.History;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Legal;
@@ -444,6 +445,22 @@ public static class ChronicleProjector
                 proscription.Type,
                 proscription.EventId.ToTaggedString(),
                 proscription.IssuingHouseholdId),
+
+            // Phase 13 item 5 (§6.7 of gens-events-design.md): "every Divergence, without exception, is
+            // an automatic maximum-tier Dynasty Chronicle entry — the kind of thing that single-
+            // handedly defines what a later reader of that dynasty's Chronicle understands the whole
+            // playthrough to have been about." Unlike every other case above, this one is never
+            // filtered by severity — recording a Divergence at all is already the rare, deliberate
+            // event §6.7 reserves for a household's single defining moment.
+            DivergenceRecordedEvent diverged => new ChronicleEntryDraft(
+                diverged.OccurredDate,
+                ChronicleCategory.Other,
+                ChronicleTier.Legendary,
+                $"The household's own actions branched history itself: {diverged.TriggeringAction}",
+                Array.Empty<RuntimeId<Character>>(),
+                diverged.Type,
+                diverged.EventId.ToTaggedString(),
+                diverged.TriggeringHouseholdId),
 
             _ => null,
         };

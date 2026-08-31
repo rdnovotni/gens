@@ -439,6 +439,19 @@ public sealed record WorldSaveDocument
     /// empty, matching <see cref="LiteracyRecords"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(70)]
     public IReadOnlyList<InterpresAppointmentDto> InterpresAppointments { get; init; } = Array.Empty<InterpresAppointmentDto>();
+
+    /// <summary>Every recorded <see cref="Gens.Simulation.History.DivergenceRecord"/> (Phase 13 item 5),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="InterpresAppointments"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(71)]
+    public IReadOnlyList<DivergenceRecordDto> DivergenceRecords { get; init; } = Array.Empty<DivergenceRecordDto>();
+
+    /// <summary>Which <see cref="Gens.Simulation.History.HistoricalTimelineEntryDefinition"/>s <see
+    /// cref="Gens.Simulation.History.HistoricalTimelineScheduler"/> has already fired this campaign
+    /// (Phase 13 item 5), already in ascending string-key order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="DivergenceRecords"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(72)]
+    public IReadOnlyList<FiredHistoricalTimelineEntryDto> FiredHistoricalTimelineEntryIds { get; init; } = Array.Empty<FiredHistoricalTimelineEntryDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -649,6 +662,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(39)]
     public long LanguageProficiencyIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-13-item-5 save has no Divergence
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="LanguageProficiencyIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(40)]
+    public long DivergenceRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2923,4 +2942,37 @@ public sealed record InterpresAppointmentDto
 
     [JsonPropertyOrder(2)]
     public required IReadOnlyList<string> LanguagesCovered { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.History.DivergenceRecord"/> (Phase 13 item 5).</summary>
+public sealed record DivergenceRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string DivergenceId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int OccurredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string TriggeringHouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string TriggeringAction { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required IReadOnlyList<string> AffectedTimelineEntryIds { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool NewAlternateHistoryBranchActive { get; init; }
+}
+
+/// <summary>One already-fired <see cref="Gens.Simulation.History.HistoricalTimelineEntryDefinition"/>
+/// (Phase 13 item 5), keyed by its own content <c>entryId</c> string.</summary>
+public sealed record FiredHistoricalTimelineEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string EntryId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int OccurredDateTotalMonths { get; init; }
 }

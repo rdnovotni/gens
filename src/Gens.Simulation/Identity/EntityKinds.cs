@@ -7,6 +7,7 @@ using Gens.Simulation.Edicts;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
+using Gens.Simulation.History;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Languages;
@@ -228,6 +229,13 @@ internal static class RuntimeIdTagRegistry
         // is keyed by RuntimeId<Character>/RuntimeId<Household>, not by its own RuntimeId, matching
         // DynasticEpithet's identical exemption.
         [typeof(LanguageProficiency)] = "langprof",
+        // Phase 13 item 5 — Gens.Simulation.History.DivergenceRecord, same "real record as its own tag"
+        // convention as LanguageProficiency above. HistoricalTimelineEntryDefinition and
+        // NamedHistoricalFigureDefinition need no entry: both are content-authored (DefinitionId<T>,
+        // never runtime-instantiated), matching Culture/Good/Trait's identical exemption at the top of
+        // this file. FiredHistoricalTimelineEntryIds needs no entry either: it's keyed by a plain string
+        // (the content entry's own DefinitionId value), not by its own RuntimeId.
+        [typeof(DivergenceRecord)] = "divergence",
     };
 
     public static string Resolve(Type type) =>
