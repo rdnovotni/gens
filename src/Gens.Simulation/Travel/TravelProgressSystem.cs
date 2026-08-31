@@ -72,46 +72,12 @@ public sealed class TravelProgressSystem : IMonthlySystem<WorldState>
             switch (trip.Status)
             {
                 case TravelTripStatus.Traveling:
-                {
-                    var elapsed = trip.MonthsElapsed + 1;
-                    if (elapsed >= trip.TravelTimeMonths)
-                    {
-                        tripUpdates.Add((entry.Key, trip with { MonthsElapsed = 0, Status = TravelTripStatus.Arrived }));
-                        foreach (var memberId in trip.Party.AllMembers)
-                            locationUpdates.Add((memberId, trip.Destination));
-                        events.Add(new TravelArrivedEvent(
-                            state.EventIds.Issue(), context.Date, entry.Key, trip.Party.TravelerId,
-                            trip.Destination.Kind, CausationId: null));
-                    }
-                    else
-                    {
-                        tripUpdates.Add((entry.Key, trip with { MonthsElapsed = elapsed }));
-                    }
-
+                    AdvanceOutboundLeg(state, context, entry.Key, trip, tripUpdates, locationUpdates, events);
                     break;
-                }
-
                 case TravelTripStatus.Returning:
                 case TravelTripStatus.Recalled:
-                {
-                    var elapsed = trip.MonthsElapsed + 1;
-                    if (elapsed >= trip.TravelTimeMonths)
-                    {
-                        tripUpdates.Add((entry.Key, trip with { MonthsElapsed = 0, Status = TravelTripStatus.Completed }));
-                        foreach (var memberId in trip.Party.AllMembers)
-                            locationUpdates.Add((memberId, null));
-                        events.Add(new TravelCompletedEvent(
-                            state.EventIds.Issue(), context.Date, entry.Key, trip.Party.TravelerId,
-                            trip.EncounterCompleted, CausationId: null));
-                    }
-                    else
-                    {
-                        tripUpdates.Add((entry.Key, trip with { MonthsElapsed = elapsed }));
-                    }
-
+                    AdvanceReturnLeg(state, context, entry.Key, trip, tripUpdates, locationUpdates, events);
                     break;
-                }
-
                 case TravelTripStatus.Arrived:
                 case TravelTripStatus.Completed:
                 default:
@@ -134,5 +100,47 @@ public sealed class TravelProgressSystem : IMonthlySystem<WorldState>
         }
 
         return events;
+    }
+
+    private static void AdvanceOutboundLeg(
+        WorldState state, MonthlyTickContext context, RuntimeId<TravelTrip> tripId, TravelTrip trip,
+        List<(RuntimeId<TravelTrip> Id, TravelTrip Trip)> tripUpdates,
+        List<(RuntimeId<Character> MemberId, TravelLocation? Location)> locationUpdates,
+        List<IDomainEvent> events)
+    {
+        var elapsed = trip.MonthsElapsed + 1;
+        if (elapsed < trip.TravelTimeMonths)
+        {
+            tripUpdates.Add((tripId, trip with { MonthsElapsed = elapsed }));
+            return;
+        }
+
+        tripUpdates.Add((tripId, trip with { MonthsElapsed = 0, Status = TravelTripStatus.Arrived }));
+        foreach (var memberId in trip.Party.AllMembers)
+            locationUpdates.Add((memberId, trip.Destination));
+        events.Add(new TravelArrivedEvent(
+            state.EventIds.Issue(), context.Date, tripId, trip.Party.TravelerId,
+            trip.Destination.Kind, CausationId: null));
+    }
+
+    private static void AdvanceReturnLeg(
+        WorldState state, MonthlyTickContext context, RuntimeId<TravelTrip> tripId, TravelTrip trip,
+        List<(RuntimeId<TravelTrip> Id, TravelTrip Trip)> tripUpdates,
+        List<(RuntimeId<Character> MemberId, TravelLocation? Location)> locationUpdates,
+        List<IDomainEvent> events)
+    {
+        var elapsed = trip.MonthsElapsed + 1;
+        if (elapsed < trip.TravelTimeMonths)
+        {
+            tripUpdates.Add((tripId, trip with { MonthsElapsed = elapsed }));
+            return;
+        }
+
+        tripUpdates.Add((tripId, trip with { MonthsElapsed = 0, Status = TravelTripStatus.Completed }));
+        foreach (var memberId in trip.Party.AllMembers)
+            locationUpdates.Add((memberId, null));
+        events.Add(new TravelCompletedEvent(
+            state.EventIds.Issue(), context.Date, tripId, trip.Party.TravelerId,
+            trip.EncounterCompleted, CausationId: null));
     }
 }
