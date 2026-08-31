@@ -191,7 +191,9 @@ public sealed class DistantHoldingTests
 
         state.Characters.TryGet(characterId, out var character);
         state.Characters.Remove(characterId);
-        state.Characters.Add(characterId, character! with { Condition = character.Condition with { Loyalty = 10 } });
+        var lowLoyaltyCondition = new Condition(
+            character!.Condition.Health, character.Condition.Fatigue, loyalty: 10, character.Condition.Ambition, character.Condition.Fertility);
+        state.Characters.Add(characterId, character with { Condition = lowLoyaltyCondition });
 
         new DistantHoldingMismanagementRiskSystem().Tick(state, new MonthlyTickContext(state.Date, new RandomStreamSet()));
 
