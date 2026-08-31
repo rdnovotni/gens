@@ -15,6 +15,7 @@ using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.History;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
@@ -93,6 +94,7 @@ public static class WorldStateMapper
                 TravelTripIds = state.TravelTripIds.Peek,
                 LetterIds = state.LetterIds.Peek,
                 LanguageProficiencyIds = state.LanguageProficiencyIds.Peek,
+                DivergenceRecordIds = state.DivergenceRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -219,6 +221,11 @@ public static class WorldStateMapper
             LiteracyRecords = state.LiteracyRecords.InAscendingOrder().Select(entry => ToLiteracyRecordDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             InterpresAppointments = state.InterpresAppointments.InAscendingOrder().Select(entry => ToInterpresAppointmentDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            DivergenceRecords = state.DivergenceRecords.InAscendingOrder().Select(entry => ToDivergenceRecordDto(entry.Value)).ToArray(),
+            // Already ascending string-key order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            FiredHistoricalTimelineEntryIds = state.FiredHistoricalTimelineEntryIds.InAscendingOrder()
+                .Select(entry => ToFiredHistoricalTimelineEntryDto(entry.Key, entry.Value)).ToArray(),
         };
     }
 
@@ -662,6 +669,17 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Household>, InterpresAppointment>(appointment.HouseholdId, appointment);
             }));
 
+        var divergenceRecords = OrderedRegistry<RuntimeId<DivergenceRecord>, DivergenceRecord>.Restore(
+            dto.DivergenceRecords.Select(d =>
+            {
+                var record = FromDivergenceRecordDto(d);
+                return new KeyValuePair<RuntimeId<DivergenceRecord>, DivergenceRecord>(record.Id, record);
+            }));
+
+        var firedHistoricalTimelineEntryIds = OrderedRegistry<string, GameDate>.Restore(
+            dto.FiredHistoricalTimelineEntryIds.Select(f =>
+                new KeyValuePair<string, GameDate>(f.EntryId, new GameDate(f.OccurredDateTotalMonths))));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -704,6 +722,7 @@ public static class WorldStateMapper
             travelTripIds: RuntimeIdCounter<TravelTrip>.Restore(dto.Counters.TravelTripIds),
             letterIds: RuntimeIdCounter<Letter>.Restore(dto.Counters.LetterIds),
             languageProficiencyIds: RuntimeIdCounter<LanguageProficiency>.Restore(dto.Counters.LanguageProficiencyIds),
+            divergenceRecordIds: RuntimeIdCounter<DivergenceRecord>.Restore(dto.Counters.DivergenceRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -770,6 +789,8 @@ public static class WorldStateMapper
             languageProficiencies: languageProficiencies,
             literacyRecords: literacyRecords,
             interpresAppointments: interpresAppointments,
+            divergenceRecords: divergenceRecords,
+            firedHistoricalTimelineEntryIds: firedHistoricalTimelineEntryIds,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2419,6 +2440,30 @@ public static class WorldStateMapper
         RuntimeId<Household>.Parse(dto.HouseholdId),
         RuntimeId<Character>.Parse(dto.CharacterId),
         dto.LanguagesCovered.Select(l => new DefinitionId<LanguageDefinition>(l)).ToArray());
+
+    private static DivergenceRecordDto ToDivergenceRecordDto(DivergenceRecord record) => new()
+    {
+        DivergenceId = record.Id.ToTaggedString(),
+        OccurredDateTotalMonths = record.OccurredDate.TotalMonths,
+        TriggeringHouseholdId = record.TriggeringHouseholdId.ToTaggedString(),
+        TriggeringAction = record.TriggeringAction,
+        AffectedTimelineEntryIds = record.AffectedTimelineEntryIds.Select(id => id.Value).ToArray(),
+        NewAlternateHistoryBranchActive = record.NewAlternateHistoryBranchActive,
+    };
+
+    private static DivergenceRecord FromDivergenceRecordDto(DivergenceRecordDto dto) => new(
+        RuntimeId<DivergenceRecord>.Parse(dto.DivergenceId),
+        new GameDate(dto.OccurredDateTotalMonths),
+        RuntimeId<Household>.Parse(dto.TriggeringHouseholdId),
+        dto.TriggeringAction,
+        dto.AffectedTimelineEntryIds.Select(id => new DefinitionId<HistoricalTimelineEntryDefinition>(id)).ToArray(),
+        dto.NewAlternateHistoryBranchActive);
+
+    private static FiredHistoricalTimelineEntryDto ToFiredHistoricalTimelineEntryDto(string entryId, GameDate occurredDate) => new()
+    {
+        EntryId = entryId,
+        OccurredDateTotalMonths = occurredDate.TotalMonths,
+    };
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {

@@ -1,0 +1,320 @@
+using Gens.Simulation.Identity;
+
+namespace Gens.Simulation.History;
+
+/// <summary>
+/// The real, authored Historical Timeline (Phase 13 item 5; <c>gens-events-historical-timeline-
+/// content.md</c> §2-§5, the full 133 BC – AD 235 range this item covers), mirroring <see
+/// cref="KnownWorldHistoricalFigures"/>'s own "real content, not a fixture" precedent. <see
+/// cref="Gens.Simulation.Events.EventDefinition"/> links are deliberately left null throughout:
+/// authoring roughly ninety full, multi-stage interactive event definitions is real future content
+/// work, out of this item's own scope — every entry below fires as the lightweight digest event <see
+/// cref="HistoricalTimelineScheduler"/> emits when unlinked. <c>gens-events-historical-timeline-late-
+/// antiquity-content.md</c>'s own AD 235 – AD 565 extension is likewise out of scope per the roadmap's
+/// own Phase 13 "Primary design inputs" line, which names only this pass's own source doc — a future
+/// item's job, not this one's.
+///
+/// Several deliberate, disclosed authoring calls, applied consistently:
+/// <list type="bullet">
+/// <item><b>146 BC's Carthage entry is not registered at all.</b> The source doc's own §2 heading frames
+/// it explicitly as "thirteen years before this game's own range opens" — already-settled historical
+/// backdrop, not a real, dated, in-range Timeline entry this catalog could register without violating
+/// <see cref="HistoricalTimelineRange"/>.</item>
+/// <item><b>A row spanning years uses the row's own start year as <see
+/// cref="HistoricalTimelineEntryDefinition.Date"/></b>, per this item's own construction-order
+/// instruction, with the row's real span disclosed in <see
+/// cref="HistoricalTimelineEntryDefinition.RealWorldName"/> — except the Numantine War (143-133 BC),
+/// whose literal start year falls before this catalog's own 133 BC range floor: that one entry uses its
+/// real ending year (133 BC, itself the range's own opening year) instead, the one deliberate exception
+/// to the "use the start year" rule and disclosed here rather than silently applied.</item>
+/// <item><b>A row naming more than one <c>eventType</c></b> (AD 64's Great Fire/persecution/Domus Aurea;
+/// AD 79's succession/eruption) <b>splits into two entries sharing a date and name prefix</b>, each
+/// carrying its own single best-fit type, rather than folding multiple types into one entry.</item>
+/// <item><b>Every entry defaults to January</b> of its real year (see <see cref="HistoricalYear"/>'s own
+/// doc comment) — the source doc carries no month-level granularity for any entry.</item>
+/// <item><b><see cref="HistoricalTimelineEntryDefinition.InvolvedFigureIds"/> only names a figure the
+/// source doc's own §6 roster actually covers</b> for that event — several event-table rows name a
+/// historical actor (Cicero, Cato, Spartacus, Brutus/Cassius/Antony/Octavian at Philippi) §6's own
+/// roster never registers as a <see cref="NamedHistoricalFigureDefinition"/>; those rows carry an empty
+/// figure list rather than a fabricated reference.</item>
+/// </list>
+/// </summary>
+// CA1861 (prefer static readonly fields over inline array literals) is a hot-path performance rule —
+// every array literal below is a content-authoring argument built once per process, at catalog-
+// construction time, not a hot path re-allocating per tick; matching
+// tests/Gens.Simulation.Tests.csproj's identical "hot-path rule, not applicable here" reasoning for its
+// own repeatedly-invoked-with-inline-arrays call sites.
+#pragma warning disable CA1861
+public static class KnownWorldHistoricalTimeline
+{
+    public static HistoricalTimelineCatalog BuildCatalog(NamedHistoricalFigureCatalog? figures = null) => new(
+        AllEntries(),
+        figures ?? KnownWorldHistoricalFigures.BuildCatalog());
+
+    public static IReadOnlyList<HistoricalTimelineEntryDefinition> AllEntries() => new[]
+    {
+        // --- Late Republic (133 BC - 27 BC) ---
+        Entry("numantine-war", 133, true, HistoricalEventType.WarOrRevolt,
+            "The Numantine War in Iberia (143-133 BC), ending with the fall of Numantia", new[] { "Iberian" }),
+        Entry("gracchus-tribunate-land-reform", 133, true, HistoricalEventType.PoliticalTrial,
+            "Tiberius Gracchus's tribunate and land reform; his death that same year", new[] { "Roman" },
+            KnownWorldHistoricalFigures.TiberiusGracchus),
+        Entry("gaius-gracchus-reform-death", 121, true, HistoricalEventType.PoliticalTrial,
+            "Gaius Gracchus's own reform program ends in his death", new[] { "Roman" },
+            KnownWorldHistoricalFigures.GaiusGracchus),
+        Entry("cimbrian-war", 113, true, HistoricalEventType.WarOrRevolt,
+            "The Cimbrian War (113-101 BC), a large-scale Germanic/Celtic migration and war against Rome", new[] { "Germanic" },
+            KnownWorldHistoricalFigures.Marius),
+        Entry("marian-military-reforms", 107, true, HistoricalEventType.Other,
+            "Marius's military reforms — the real professionalization of the Roman army", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Marius),
+        Entry("jugurthine-war", 111, true, HistoricalEventType.WarOrRevolt,
+            "The Jugurthine War in Numidia (111-105 BC)", new[] { "Numidian/Mauri" }),
+        Entry("social-war", 91, true, HistoricalEventType.WarOrRevolt,
+            "The Social War (91-88 BC) — Rome's Italian allies revolt for citizenship, ending in their real enfranchisement",
+            new[] { "Roman", "Italic peoples" }),
+        Entry("mithridatic-wars", 89, true, HistoricalEventType.WarOrRevolt,
+            "The Mithridatic Wars (89-63 BC) — three major conflicts against Mithridates VI of Pontus", new[] { "Hellenic", "Cappadocian/Anatolian" },
+            KnownWorldHistoricalFigures.MithridatesVI),
+        Entry("sulla-civil-war-proscriptions", 88, true, HistoricalEventType.PoliticalTrial,
+            "Sulla's civil war (88-82 BC) and, in 82 BC, his real formal Proscriptions", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Sulla),
+        Entry("third-servile-war-spartacus", 73, true, HistoricalEventType.WarOrRevolt,
+            "The Third Servile War (73-71 BC) — Spartacus's revolt", new[] { "Thracian" }),
+        Entry("pompey-cilician-pirates-campaign", 67, true, HistoricalEventType.WarOrRevolt,
+            "Pompey's campaign against the Cilician pirates", new[] { "Cilician" },
+            KnownWorldHistoricalFigures.Pompey),
+        Entry("pompey-annexation-syria", 64, true, HistoricalEventType.ImperialSuccession,
+            "Pompey's annexation of Syria", new[] { "Syrian/Levantine" },
+            KnownWorldHistoricalFigures.Pompey),
+        Entry("cicero-consulship-catiline-conspiracy", 63, true, HistoricalEventType.PoliticalTrial,
+            "Cicero's consulship and the Catiline conspiracy", new[] { "Roman" }),
+        Entry("first-triumvirate", 60, true, HistoricalEventType.Other,
+            "The First Triumvirate — Caesar, Pompey, and Crassus", new[] { "Roman" },
+            KnownWorldHistoricalFigures.JuliusCaesar, KnownWorldHistoricalFigures.Pompey, KnownWorldHistoricalFigures.Crassus),
+        Entry("cato-annexation-cyprus", 58, true, HistoricalEventType.ImperialSuccession,
+            "Cato's annexation of Cyprus", new[] { "Cypriot" }),
+        Entry("caesars-gallic-wars", 58, true, HistoricalEventType.WarOrRevolt,
+            "Caesar's Gallic Wars (58-50 BC)", new[] { "Gallic" },
+            KnownWorldHistoricalFigures.JuliusCaesar),
+        Entry("vercingetorix-revolt-alesia", 52, true, HistoricalEventType.WarOrRevolt,
+            "Vercingetorix's revolt against Caesar, culminating at the siege of Alesia", new[] { "Gallic" },
+            KnownWorldHistoricalFigures.Vercingetorix, KnownWorldHistoricalFigures.JuliusCaesar),
+        Entry("battle-of-carrhae", 53, true, HistoricalEventType.WarOrRevolt,
+            "The Battle of Carrhae — Crassus's catastrophic defeat to Parthia", new[] { "Parthian" },
+            KnownWorldHistoricalFigures.Crassus),
+        Entry("caesar-crosses-rubicon", 49, true, HistoricalEventType.WarOrRevolt,
+            "Caesar crosses the Rubicon; civil war begins", new[] { "Roman" },
+            KnownWorldHistoricalFigures.JuliusCaesar, KnownWorldHistoricalFigures.Pompey),
+        Entry("caesars-assassination", 44, true, HistoricalEventType.PoliticalTrial,
+            "Caesar's assassination", new[] { "Roman" },
+            KnownWorldHistoricalFigures.JuliusCaesar),
+        Entry("battle-of-philippi", 42, true, HistoricalEventType.WarOrRevolt,
+            "The Battle of Philippi", new[] { "Roman" }),
+        Entry("battle-of-actium", 31, true, HistoricalEventType.WarOrRevolt,
+            "The Battle of Actium", new[] { "Roman", "Egyptian" },
+            KnownWorldHistoricalFigures.Cleopatra),
+        Entry("egypt-annexation-cleopatra-death", 30, true, HistoricalEventType.ImperialSuccession,
+            "Egypt's annexation; Cleopatra's death", new[] { "Egyptian" },
+            KnownWorldHistoricalFigures.Cleopatra),
+        Entry("cantabrian-wars", 29, true, HistoricalEventType.WarOrRevolt,
+            "The Cantabrian Wars (29-19 BC) — the real final conquest of Iberia", new[] { "Iberian" }),
+        Entry("galatia-annexed", 25, true, HistoricalEventType.ImperialSuccession,
+            "Galatia annexed as a Roman province", new[] { "Galatian" }),
+        Entry("garamantes-punitive-expedition", 19, true, HistoricalEventType.WarOrRevolt,
+            "A Roman punitive expedition against the Garamantes", new[] { "Garamantian" }),
+        Entry("augustus-principate-begins", 27, true, HistoricalEventType.ImperialSuccession,
+            "Octavian receives the title Augustus; the Principate formally begins", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Augustus),
+        Entry("ludi-saeculares-17bc", 17, true, HistoricalEventType.ReligiousObservance,
+            "Augustus stages the Secular Games (Ludi Saeculares)", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Augustus),
+
+        // --- Early Principate (27 BC - AD 96) ---
+        Entry("batos-revolt", 6, false, HistoricalEventType.WarOrRevolt,
+            "Bato's Revolt — a major Illyrian/Pannonian uprising", new[] { "Illyrian/Pannonian" }),
+        Entry("battle-of-teutoburg-forest", 9, false, HistoricalEventType.WarOrRevolt,
+            "The Battle of the Teutoburg Forest", new[] { "Germanic" },
+            KnownWorldHistoricalFigures.Arminius),
+        Entry("augustus-dies-tiberius-accedes", 14, false, HistoricalEventType.ImperialSuccession,
+            "Augustus dies; Tiberius becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Augustus, KnownWorldHistoricalFigures.Tiberius),
+        Entry("cappadocia-annexed", 17, false, HistoricalEventType.ImperialSuccession,
+            "Cappadocia annexed as a Roman province under Tiberius", new[] { "Cappadocian/Anatolian" },
+            KnownWorldHistoricalFigures.Tiberius),
+        Entry("jesus-of-nazareth-ministry-execution", 30, false, HistoricalEventType.ReligiousObservance,
+            "The traditional dating of Jesus of Nazareth's ministry and execution under Roman authority (c. AD 30-33)",
+            new[] { "Judaean", "Early Christianity" }, KnownWorldHistoricalFigures.JesusOfNazareth),
+        Entry("caligula-accedes", 37, false, HistoricalEventType.ImperialSuccession,
+            "Caligula becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Caligula, KnownWorldHistoricalFigures.Tiberius),
+        Entry("caligula-assassinated-claudius-accedes", 41, false, HistoricalEventType.ImperialSuccession,
+            "Caligula assassinated; Claudius becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Caligula, KnownWorldHistoricalFigures.Claudius),
+        Entry("claudius-invasion-of-britain", 43, false, HistoricalEventType.WarOrRevolt,
+            "Claudius's invasion of Britain", new[] { "British" },
+            KnownWorldHistoricalFigures.Claudius),
+        Entry("mauretania-annexed", 44, false, HistoricalEventType.ImperialSuccession,
+            "Mauretania formally annexed as a Roman province under Claudius", new[] { "Numidian/Mauri" },
+            KnownWorldHistoricalFigures.Claudius),
+        Entry("thrace-annexed", 46, false, HistoricalEventType.ImperialSuccession,
+            "Thrace annexed as a Roman province", new[] { "Thracian" },
+            KnownWorldHistoricalFigures.Claudius),
+        Entry("nero-accedes", 54, false, HistoricalEventType.ImperialSuccession,
+            "Nero becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Nero, KnownWorldHistoricalFigures.Claudius),
+        Entry("boudican-revolt", 60, false, HistoricalEventType.WarOrRevolt,
+            "The Boudican revolt (AD 60-61)", new[] { "British" },
+            KnownWorldHistoricalFigures.Boudicca),
+        Entry("treaty-of-rhandeia", 63, false, HistoricalEventType.Other,
+            "The Treaty of Rhandeia — an early real settlement of the Armenian succession question between Rome and Parthia",
+            new[] { "Armenian" }, KnownWorldHistoricalFigures.Nero),
+        Entry("great-fire-of-rome", 64, false, HistoricalEventType.NaturalDisaster,
+            "The Great Fire of Rome, and Nero's own construction of the Domus Aurea (Golden House) on the newly-cleared land afterward",
+            new[] { "Roman" }, KnownWorldHistoricalFigures.Nero),
+        Entry("neros-persecution-of-christians", 64, false, HistoricalEventType.ReligiousObservance,
+            "Nero's real persecution of Christians in the Great Fire's aftermath", new[] { "Roman", "Early Christianity" },
+            KnownWorldHistoricalFigures.Nero),
+        Entry("first-jewish-roman-war", 66, false, HistoricalEventType.WarOrRevolt,
+            "The First Jewish-Roman War (AD 66-73), including the real destruction of the Temple in Jerusalem (AD 70)",
+            new[] { "Judaean" }, KnownWorldHistoricalFigures.Josephus),
+        Entry("year-of-four-emperors", 68, false, HistoricalEventType.ImperialSuccession,
+            "The Year of the Four Emperors (AD 68-69)", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Galba, KnownWorldHistoricalFigures.Otho, KnownWorldHistoricalFigures.Vitellius, KnownWorldHistoricalFigures.Vespasian),
+        Entry("batavian-revolt", 69, false, HistoricalEventType.WarOrRevolt,
+            "The Batavian Revolt (AD 69-70)", new[] { "Batavian" }),
+        Entry("agricolas-caledonian-campaigns", 77, false, HistoricalEventType.WarOrRevolt,
+            "Agricola's Caledonian campaigns (AD 77-84)", new[] { "Caledonian" }),
+        Entry("vespasian-dies-titus-accedes", 79, false, HistoricalEventType.ImperialSuccession,
+            "Vespasian dies; Titus becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Vespasian, KnownWorldHistoricalFigures.Titus),
+        Entry("vesuvius-eruption", 79, false, HistoricalEventType.NaturalDisaster,
+            "Vesuvius erupts — Pliny the Elder dies during the eruption while attempting a rescue and a closer scientific look",
+            new[] { "Roman", "Italian heartland" }, KnownWorldHistoricalFigures.PlinyTheElder),
+        Entry("colosseum-opens", 80, false, HistoricalEventType.Other,
+            "The Flavian Amphitheater (the Colosseum) opens with a real, attested full 100 days of inaugural games",
+            new[] { "Roman" }, KnownWorldHistoricalFigures.Titus),
+        Entry("titus-dies-domitian-accedes", 81, false, HistoricalEventType.ImperialSuccession,
+            "Titus dies; Domitian becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Titus, KnownWorldHistoricalFigures.Domitian),
+
+        // --- High Principate (AD 96 - AD 192) ---
+        Entry("domitian-assassinated-nerva-accedes", 96, false, HistoricalEventType.ImperialSuccession,
+            "Domitian assassinated; Nerva becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Domitian, KnownWorldHistoricalFigures.Nerva),
+        Entry("nerva-dies-trajan-accedes", 98, false, HistoricalEventType.ImperialSuccession,
+            "Nerva dies; Trajan becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Nerva, KnownWorldHistoricalFigures.Trajan),
+        Entry("dacian-wars", 101, false, HistoricalEventType.WarOrRevolt,
+            "The Dacian Wars (AD 101-106)", new[] { "Dacian" },
+            KnownWorldHistoricalFigures.Trajan, KnownWorldHistoricalFigures.Decebalus),
+        Entry("nabataea-annexed", 106, false, HistoricalEventType.ImperialSuccession,
+            "The annexation of Nabataea", new[] { "Nabataean" },
+            KnownWorldHistoricalFigures.Trajan),
+        Entry("trajans-parthian-war", 113, false, HistoricalEventType.WarOrRevolt,
+            "Trajan's own Parthian War (AD 113-117) — briefly creating real, short-lived provinces in Armenia, Mesopotamia, and Assyria",
+            new[] { "Parthian", "Armenian" }, KnownWorldHistoricalFigures.Trajan),
+        Entry("antioch-earthquake", 115, false, HistoricalEventType.NaturalDisaster,
+            "The real, massive Antioch earthquake, striking while Trajan himself was present in the city", new[] { "Syrian/Levantine" },
+            KnownWorldHistoricalFigures.Trajan),
+        Entry("trajan-dies-hadrian-accedes", 117, false, HistoricalEventType.ImperialSuccession,
+            "Trajan dies; Hadrian becomes Emperor, at the Empire's greatest territorial extent", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Trajan, KnownWorldHistoricalFigures.Hadrian),
+        Entry("hadrians-wall-constructed", 122, false, HistoricalEventType.Other,
+            "Hadrian's Wall constructed", new[] { "Caledonian" },
+            KnownWorldHistoricalFigures.Hadrian),
+        Entry("bar-kokhba-revolt", 132, false, HistoricalEventType.WarOrRevolt,
+            "The Bar Kokhba revolt (AD 132-136)", new[] { "Judaean" },
+            KnownWorldHistoricalFigures.Hadrian),
+        Entry("antonine-wall-constructed", 142, false, HistoricalEventType.Other,
+            "The Antonine Wall constructed", new[] { "Caledonian" },
+            KnownWorldHistoricalFigures.AntoninusPius),
+        Entry("antonine-wall-abandoned", 162, false, HistoricalEventType.Other,
+            "The Antonine Wall abandoned — Rome withdraws to Hadrian's Wall after barely two decades", new[] { "Caledonian" },
+            KnownWorldHistoricalFigures.MarcusAurelius),
+        Entry("hadrian-dies-antoninus-pius-accedes", 138, false, HistoricalEventType.ImperialSuccession,
+            "Hadrian dies; Antoninus Pius becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Hadrian, KnownWorldHistoricalFigures.AntoninusPius),
+        Entry("antoninus-pius-dies-co-emperors-accede", 161, false, HistoricalEventType.ImperialSuccession,
+            "Antoninus Pius dies; Marcus Aurelius and Lucius Verus become co-Emperors", new[] { "Roman" },
+            KnownWorldHistoricalFigures.AntoninusPius, KnownWorldHistoricalFigures.MarcusAurelius, KnownWorldHistoricalFigures.LuciusVerus),
+        Entry("parthian-war-of-lucius-verus", 161, false, HistoricalEventType.WarOrRevolt,
+            "The Parthian War of Lucius Verus (AD 161-166)", new[] { "Parthian", "Armenian" },
+            KnownWorldHistoricalFigures.LuciusVerus),
+        Entry("antonine-plague", 165, false, HistoricalEventType.Other,
+            "The Antonine Plague (AD 165-180)", new[] { "Empire-wide" },
+            KnownWorldHistoricalFigures.MarcusAurelius),
+        Entry("andun-mission-to-china", 166, false, HistoricalEventType.Other,
+            "The real \"Andun\" mission recorded arriving in China per the Hou Hanshu", new[] { "Chinese" },
+            KnownWorldHistoricalFigures.MarcusAurelius),
+        Entry("avidius-cassius-revolt", 175, false, HistoricalEventType.PoliticalTrial,
+            "The real, brief revolt of Avidius Cassius, who declared himself Emperor while Marcus Aurelius still lived",
+            new[] { "Roman" }, KnownWorldHistoricalFigures.AvidiusCassius, KnownWorldHistoricalFigures.MarcusAurelius),
+        Entry("marcomannic-wars", 178, false, HistoricalEventType.WarOrRevolt,
+            "The Marcomannic Wars (AD 178-180) — sustained Germanic frontier warfare under Marcus Aurelius",
+            new[] { "Germanic" }, KnownWorldHistoricalFigures.MarcusAurelius),
+        Entry("marcus-aurelius-dies-commodus-accedes", 180, false, HistoricalEventType.ImperialSuccession,
+            "Marcus Aurelius dies; Commodus becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.MarcusAurelius, KnownWorldHistoricalFigures.Commodus),
+        Entry("commodus-assassinated", 192, false, HistoricalEventType.ImperialSuccession,
+            "Commodus assassinated, ending the Nerva-Antonine dynasty", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Commodus),
+
+        // --- Severan Era (AD 193 - AD 235) ---
+        Entry("year-of-five-emperors", 193, false, HistoricalEventType.ImperialSuccession,
+            "The Year of the Five Emperors, ending with Septimius Severus's accession", new[] { "Roman" },
+            KnownWorldHistoricalFigures.SeptimiusSeverus),
+        Entry("battle-of-lugdunum", 197, false, HistoricalEventType.WarOrRevolt,
+            "The Battle of Lugdunum — Severus defeats his rival claimant Clodius Albinus", new[] { "Roman" },
+            KnownWorldHistoricalFigures.SeptimiusSeverus, KnownWorldHistoricalFigures.ClodiusAlbinus),
+        Entry("severus-caledonian-campaign", 208, false, HistoricalEventType.WarOrRevolt,
+            "Severus's own personal campaign into Caledonia (AD 208-211)", new[] { "Caledonian" },
+            KnownWorldHistoricalFigures.SeptimiusSeverus),
+        Entry("severus-dies-caracalla-geta-accede", 211, false, HistoricalEventType.ImperialSuccession,
+            "Severus dies at Eboracum (York); Caracalla and Geta become joint Emperors", new[] { "Roman" },
+            KnownWorldHistoricalFigures.SeptimiusSeverus, KnownWorldHistoricalFigures.Caracalla, KnownWorldHistoricalFigures.Geta),
+        Entry("caracalla-murders-geta", 212, false, HistoricalEventType.PoliticalTrial,
+            "Caracalla murders his own brother and co-Emperor Geta shortly after their joint succession", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Caracalla, KnownWorldHistoricalFigures.Geta),
+        Entry("constitutio-antoniniana", 212, false, HistoricalEventType.Other,
+            "The Constitutio Antoniniana — Caracalla's real edict extending Roman citizenship to nearly every free inhabitant",
+            new[] { "Empire-wide" }, KnownWorldHistoricalFigures.Caracalla),
+        Entry("baths-of-caracalla-constructed", 212, false, HistoricalEventType.Other,
+            "Construction of the Baths of Caracalla (c. AD 212-216)", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Caracalla),
+        Entry("caracalla-assassinated-macrinus-accedes", 217, false, HistoricalEventType.ImperialSuccession,
+            "Caracalla assassinated; Macrinus becomes Emperor — the first never to have held senatorial rank", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Caracalla, KnownWorldHistoricalFigures.Macrinus),
+        Entry("macrinus-overthrown-elagabalus-accedes", 218, false, HistoricalEventType.ImperialSuccession,
+            "Macrinus overthrown; Elagabalus, a teenage hereditary priest of the Syrian sun-god Elagabal, becomes Emperor",
+            new[] { "Roman", "Syrian-Levantine" }, KnownWorldHistoricalFigures.Macrinus, KnownWorldHistoricalFigures.Elagabalus),
+        Entry("elagabalus-sun-god-cult-elevation", 218, false, HistoricalEventType.ReligiousObservance,
+            "Elagabalus's own real, genuinely controversial attempt to elevate his own Syrian sun-god cult above Jupiter (AD 218-222)",
+            new[] { "Syrian-Levantine" }, KnownWorldHistoricalFigures.Elagabalus),
+        Entry("elagabalus-assassinated-severus-alexander-accedes", 222, false, HistoricalEventType.ImperialSuccession,
+            "Elagabalus assassinated; Severus Alexander becomes Emperor", new[] { "Roman" },
+            KnownWorldHistoricalFigures.Elagabalus, KnownWorldHistoricalFigures.SeverusAlexander),
+        Entry("sassanid-overthrow-of-parthia", 224, false, HistoricalEventType.WarOrRevolt,
+            "The real overthrow of the Parthian Arsacid dynasty by the rising Sassanid Persian dynasty (AD 224-226)",
+            new[] { "Parthian" }),
+        Entry("manis-first-teachings", 228, false, HistoricalEventType.ReligiousObservance,
+            "Mani's own first traditional teachings", new[] { "Manichaeism (emerging)" }),
+        Entry("severus-alexander-assassinated", 235, false, HistoricalEventType.ImperialSuccession,
+            "Severus Alexander assassinated, ending the Severan dynasty and this game's own supported historical range",
+            new[] { "Roman" }, KnownWorldHistoricalFigures.SeverusAlexander),
+    };
+
+    private static HistoricalTimelineEntryDefinition Entry(
+        string id, int displayYear, bool isBce, HistoricalEventType type, string realWorldName,
+        string[] regionRelevance, params DefinitionId<NamedHistoricalFigureDefinition>[] figures) =>
+        new(
+            new DefinitionId<HistoricalTimelineEntryDefinition>(id),
+            HistoricalYear.ToGameDate(displayYear, isBce),
+            type,
+            realWorldName,
+            regionRelevance,
+            figures,
+            linkedEventDefinitionRef: null,
+            divergenceEligible: type is HistoricalEventType.ImperialSuccession or HistoricalEventType.WarOrRevolt or HistoricalEventType.PoliticalTrial);
+}
+#pragma warning restore CA1861

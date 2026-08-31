@@ -1446,7 +1446,7 @@ Construction order:
 2. [x] Implement location, route, distance tier, travel party, reservations, duration, risk exposure, arrival, and concurrent character locations.
 3. [x] Implement letters/messages, courier selection, transit, delivery, response, interception, forgery, and information provenance.
 4. [x] Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
-5. Implement the historical timeline scheduler with immutable history, divergence-eligible events, counterfactual flags, and date-aware content validation.
+5. [x] Implement the historical timeline scheduler with immutable history, divergence-eligible events, counterfactual flags, and date-aware content validation.
 6. Implement one complete region profile and only then expand region content in waves.
 7. Add distant holdings and procurator requirements after travel and delegation are stable.
 
@@ -1645,6 +1645,122 @@ partition. Deliberately out of scope, named for later phases: Companions & Court
 Interpres title/slot mechanics and Diplomacy with Non-Roman Peoples' own negotiation flow (both Phase
 16), Education & Culture's Learning-investment acquisition math and Wandering Populations' teacher
 mechanic (Phase 14), and any actual Interaction-catalog wiring for the language-barrier soft penalty.
+
+**Item 5 progress:** the Historical Timeline lands in a new `src/Gens.Simulation/History/` namespace,
+closing `gens-events-design.md` §10's own `HistoricalTimelineEntry{}`/`NamedHistoricalFigure{}`/
+`DivergenceRecord{}` sketch against this codebase's real idioms rather than the doc's loose pseudocode —
+`Date : GameDate` replaces §10's separate `realYear`/`realMonth` pair outright, since `GameDate` is this
+codebase's one canonical time representation (`Time/GameDate.cs`) and a parallel year/month pair would
+just be a second, driftable copy of the same fact. Converting the source docs' own "133 BC"/"AD 79"
+display-year style into `GameDate` at roughly ninety authored call sites is exactly the kind of place an
+off-by-one silently corrupts everything, so `HistoricalYear.ToGameDate(displayYear, isBce, monthOfYear =
+1)` is a small, directly tested helper (`HistoricalYearTests.cs`, 9 tests covering the 44 BC/AD 79
+round trips against `GameDate.ToDisplayYearLabel()`, the no-year-zero BCE/CE boundary, and both
+out-of-range guards) rather than hand-computed inline; every authored entry defaults to January of its
+real year, since none of the source content carries month-level granularity. `HistoricalTimelineRange`
+fixes the supported 133 BC – AD 235 span as `GameDate` constants — `Start` inclusive, `End` exclusive
+(January AD 236) so all of AD 235 stays in range — used both by `HistoricalTimelineEntryDefinition`'s own
+constructor-time range validation and by the runtime Divergence-state computation below.
+
+The content layer (`HistoricalTimelineEntryDefinition`/`HistoricalTimelineCatalog` and
+`NamedHistoricalFigureDefinition`/`NamedHistoricalFigureCatalog`) mirrors `RegionProfileDefinition`/
+`RegionProfileCatalog` and `EventDefinition`/`EventCatalog`'s identical "sealed record, constructor
+validates, content is data" shape exactly. `HistoricalTimelineCatalog`'s constructor is this item's own
+date-aware, cross-referencing content validation: every `InvolvedFigureIds` entry must resolve against a
+supplied `NamedHistoricalFigureCatalog`, and — when a caller also supplies the real `EventCatalog` — every
+non-null `LinkedEventDefinitionRef` must resolve against it too, matching `RegionProfileCatalog`'s own
+Home Anchor/capital-uniqueness cross-reference convention; the `EventCatalog` parameter is optional
+because most campaigns haven't necessarily loaded a full Events catalog by the time the Timeline itself
+is built. `LinkedEventDefinitionRef` stays null across every one of the roughly ninety real authored
+entries — authoring a full, multi-stage interactive `EventDefinition` for each one is real future content
+work, explicitly out of this item's own scope; an unlinked entry still fires as a lightweight digest
+event, matching §6.4/§7's own "always at minimum an Auto-Resolved digest line." `DivergenceEligible` is a
+mechanical, disclosed rule applied to every authored entry rather than a per-entry editorial judgment
+call: `true` for `ImperialSuccession`/`WarOrRevolt`/`PoliticalTrial` (§6.7's own examples — a claimant's
+win, a war's resolution, a figure's scheduled death — are all exactly these three shapes), `false`
+otherwise, since a real eruption or festival date isn't the kind of thing a household's political action
+branches. `Chronological()` sorts by `Date` (then ID as a stable tiebreak) precisely because `All()` alone
+doesn't guarantee order — a content author's own declaration order is never assumed sorted.
+
+`KnownWorldHistoricalFigures`/`KnownWorldHistoricalTimeline` author every real figure and entry
+`gens-events-historical-timeline-content.md` §2-§6 actually lists, following item 4's own
+`KnownWorldCultures`/`KnownWorldLanguages` "real content, not a fixture" precedent — all 43 named figures
+(the ten Republic-era names, all 24 Emperors in succession order, the eight other notable figures, and
+Jesus of Nazareth per Religions' own careful-treatment note) and, across §2-§5's four era tables, all 84
+of the source doc's own dated rows except 146 BC's Carthage entry — 85 authored `HistoricalTimelineEntryDefinition`s
+once the two multi-`eventType` rows (AD 64, AD 79) each split into two, per this pass's own several
+disclosed authoring calls applied consistently rather than ad hoc: 146 BC's Carthage row is not registered
+at all, since the source doc's own §2 heading frames it explicitly as predating this game's own range, not
+a real dated entry within it; a row spanning years uses its own start year as `Date` per this item's own
+construction-order instruction, except the Numantine War (143-133 BC) alone, whose literal start year
+falls before the campaign range's own 133 BC floor — that one entry uses its real ending year (133 BC,
+itself the range's own opening year) instead, the sole deliberate exception, disclosed in
+`KnownWorldHistoricalTimeline`'s own doc comment rather than silently applied; a row naming more than one
+`eventType` (AD 64's Great Fire/persecution/Domus Aurea, AD 79's succession/eruption) splits into two
+entries sharing a date and name prefix, each carrying its own single best-fit type, rather than folding
+multiple types into one entry or picking only one; and `InvolvedFigureIds` only names a figure §6's own
+roster actually registers — several event-table rows name a historical actor (Cicero, Cato, Spartacus,
+the Philippi triumvirs) §6 itself never promotes to a `NamedHistoricalFigureDefinition`, and those rows
+carry an empty figure list rather than a fabricated reference. A handful of well-documented Republic-era
+death years (Marius, Sulla, Pompey, Crassus, Vercingetorix, Lucius Verus) that §6's own tables never state
+outright are filled in as standard, uncontroversial Roman history rather than left null, disclosed the
+same way item 4 disclosed its own Germanic-language and Oscan/Noric gap-fills. `gens-events-historical-
+timeline-late-antiquity-content.md`'s own AD 235 – AD 565 extension is explicitly out of this item's
+scope, per the roadmap's own Phase 13 "Primary design inputs" line naming only the 133 BC – AD 235 doc —
+mirroring how item 1 named the actual region-content waves out of its own scope and item 6 as the future
+item that expands it. `SampleHistoricalTimelineDefinitions` keeps the real content and the test fixture
+cleanly separate, `sample-*`-ID per `SampleEventDefinitions`'s own precedent, exercising every field
+including a `DivergenceEligible` entry linked to a real sample `EventDefinition`, a multi-figure entry,
+and entries sitting at both range boundaries.
+
+The runtime layer mirrors `Letter`/`CorrespondenceTransitSystem` and `TravelTrip`/`TravelProgressSystem`'s
+own "one real advancing `WorldState` registry plus a derived-not-stored status" split precisely.
+`DivergenceRecord` (a genuine `RuntimeId`-keyed `WorldState` partition, `TriggeringHouseholdId` typed as
+the real `RuntimeId<Household>` rather than a loose string) is fully wired through `WorldSaveDto`/
+`WorldStateMapper`/`StateHasher`/`EntityKinds.cs` exactly like `Letter`/`TravelTrip` before it — a
+recorded Divergence is genuine campaign history, not content. It deliberately omits §10's own
+`chronicleEntryTier` field: §6.7 fixes it at "always maximum tier" with nothing left to actually store, so
+`ChronicleProjector` (Phase 11 item 3) gains a real new case emitting a `ChronicleTier.Legendary` entry
+directly off `DivergenceRecordedEvent`, closing the loop into the real Dynasty Chronicle rather than
+leaving §6.7's "every Divergence is an automatic maximum-tier Chronicle entry" commitment unwired.
+`TriggeringAction` stays a plain, caller-supplied human-readable string rather than something computed
+from a real severity-threshold system — this item builds no such system, matching §11's own open
+"Divergence's exact severity threshold" question and item 3's own precedent for leaving forgery-detection
+mechanics unresolved rather than fabricated. `RecordDivergenceCommand`'s `CommandPipeline` enforces
+"immutable history" from the branching direction: every affected entry must resolve in the catalog, must
+be `DivergenceEligible`, must have a real date at or after `WorldState.Date` (an already-passed real date
+can never be retroactively branched — five new `ValidationErrorCode`s cover each rejection shape plus the
+"already covered by an earlier Divergence" case), following `SendLetterCommand`/`BeginTravelCommand`'s
+identical pipeline shape. `HistoricalTimelineQueries.DivergenceStateOf`/`NamedHistoricalFigureQueries.
+CurrentStatusOf` are the counterfactual-flag half: pure queries deriving all four/three states against
+the one real `DivergenceRecords` list, never stored, matching how `Character.CurrentTravelLocation` favors
+deriving over storing wherever the source fact is already tracked elsewhere.
+
+`HistoricalTimelineScheduler` (`IMonthlySystem<WorldState>`, registered in `TickPhase.Events` alongside
+`EventPoolSystem`) is the item's own namesake mechanism: each tick, fires every catalog entry whose real
+`Date` matches `WorldState.Date` exactly and whose derived state is `OnTrack`, reusing
+`FireEventCommands.BuildPipeline` for a linked entry exactly the way `EventPoolSystem` itself fires a
+definition, or emitting a new lightweight `HistoricalTimelineEntryOccurredEvent` digest when unlinked. An
+already-`Diverged` entry never fires — "immutable history" from the other direction, since once Diverged a
+thread genuinely stops drawing on the real historical roster (§6.7). This codebase's `GameCalendar` (§10's
+own per-household starting-year/current-year/era sketch) stays explicitly out of this item's scope, same
+as the architecture directive requires — that's Start Mode/Core's own job, and this single-household
+simulation already treats `WorldState.Date` as *the* one campaign clock everywhere else, so the scheduler
+does too rather than inventing an unused parallel calendar; `RivalHouseHistoricalFlavor` (§10's own
+`rivalHouseId`/`seededGensName` pair) is likewise untouched — pure flavor-naming for Rival Houses (§6.6),
+unrelated to the scheduler/divergence/validation mechanism this item actually builds. Which entries have
+already fired is real state (`WorldState.FiredHistoricalTimelineEntryIds`), keyed by the content entry's
+own string ID rather than a `RuntimeId` — `DefinitionId<T>` itself implements no `IComparable<T>` for
+`OrderedRegistry`'s own ordering guarantee to sort on — so a save/load round trip never re-fires an
+already-resolved entry. Covered by 55 new tests across
+`tests/Gens.Simulation.Tests/History/{HistoricalYearTests,HistoricalTimelineDefinitionTests,
+HistoricalTimelineCatalogTests,HistoricalTimelineQueriesTests,RecordDivergenceCommandTests,
+HistoricalTimelineSchedulerTests}.cs`, including the real authored catalog building cleanly with every
+cross-reference resolving, the scheduler firing an on-track entry exactly once and never re-firing either
+an already-fired or an already-diverged one (both directly and through a save/load round trip with a
+stable deterministic state hash), firing a linked entry through the real Events pipeline, every
+`RecordDivergenceCommand` validation failure shape and its success path, and both derived-state queries
+across all their real states.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 

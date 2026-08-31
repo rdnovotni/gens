@@ -14,6 +14,7 @@ using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.History;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
@@ -96,6 +97,7 @@ public sealed class WorldState
         RuntimeIdCounter<TravelTrip> travelTripIds,
         RuntimeIdCounter<Letter> letterIds,
         RuntimeIdCounter<LanguageProficiency> languageProficiencyIds,
+        RuntimeIdCounter<DivergenceRecord> divergenceRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -162,6 +164,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<LanguageProficiency>, LanguageProficiency> languageProficiencies,
         OrderedRegistry<RuntimeId<Character>, LiteracyRecord> literacyRecords,
         OrderedRegistry<RuntimeId<Household>, InterpresAppointment> interpresAppointments,
+        OrderedRegistry<RuntimeId<DivergenceRecord>, DivergenceRecord> divergenceRecords,
+        OrderedRegistry<string, GameDate> firedHistoricalTimelineEntryIds,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -206,6 +210,7 @@ public sealed class WorldState
         TravelTripIds = travelTripIds;
         LetterIds = letterIds;
         LanguageProficiencyIds = languageProficiencyIds;
+        DivergenceRecordIds = divergenceRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -272,6 +277,8 @@ public sealed class WorldState
         LanguageProficiencies = languageProficiencies;
         LiteracyRecords = literacyRecords;
         InterpresAppointments = interpresAppointments;
+        DivergenceRecords = divergenceRecords;
+        FiredHistoricalTimelineEntryIds = firedHistoricalTimelineEntryIds;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -368,6 +375,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Languages.LanguageProficiency"/> (Phase 13 item 4).</summary>
     public RuntimeIdCounter<LanguageProficiency> LanguageProficiencyIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="History.DivergenceRecord"/> (Phase 13 item 5).</summary>
+    public RuntimeIdCounter<DivergenceRecord> DivergenceRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -762,6 +772,21 @@ public sealed class WorldState
     /// 4), keyed by the appointing household — at most one active appointment per household.</summary>
     public OrderedRegistry<RuntimeId<Household>, InterpresAppointment> InterpresAppointments { get; } = new();
 
+    /// <summary>Every recorded <see cref="History.DivergenceRecord"/> (Phase 13 item 5; §6.7), in
+    /// ascending <see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once recorded, matching <see
+    /// cref="EdictRecords"/>'s identical "kept for the campaign's lifetime" convention — every Divergence
+    /// is an automatic maximum-tier Dynasty Chronicle entry, not scratch state to discard.</summary>
+    public OrderedRegistry<RuntimeId<DivergenceRecord>, DivergenceRecord> DivergenceRecords { get; } = new();
+
+    /// <summary>Which <see cref="History.HistoricalTimelineEntryDefinition"/>s (by <see
+    /// cref="DefinitionId{T}.Value"/>) <see cref="History.HistoricalTimelineScheduler"/> has already
+    /// fired this campaign, mapped to the date each fired — real state, not derivable, so a save/load
+    /// round trip never re-fires an already-resolved entry. Keyed by the definition's own string ID
+    /// rather than <see cref="OrderedRegistry{TId,TEntity}"/>'s usual <see cref="RuntimeId{T}"/>/key-
+    /// struct key, since <see cref="DefinitionId{T}"/> itself implements no <see cref="IComparable{T}"/>
+    /// this registry's ordering guarantee could sort on.</summary>
+    public OrderedRegistry<string, GameDate> FiredHistoricalTimelineEntryIds { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -819,6 +844,7 @@ public sealed class WorldState
         ["travelTripIds"] = TravelTripIds.Peek,
         ["letterIds"] = LetterIds.Peek,
         ["languageProficiencyIds"] = LanguageProficiencyIds.Peek,
+        ["divergenceRecordIds"] = DivergenceRecordIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -884,6 +910,8 @@ public sealed class WorldState
         ["languageProficiencies"] = LanguageProficiencies.Version,
         ["literacyRecords"] = LiteracyRecords.Version,
         ["interpresAppointments"] = InterpresAppointments.Version,
+        ["divergenceRecords"] = DivergenceRecords.Version,
+        ["firedHistoricalTimelineEntryIds"] = FiredHistoricalTimelineEntryIds.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
