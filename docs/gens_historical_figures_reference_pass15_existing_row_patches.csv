@@ -1,0 +1,58 @@
+id,name,field,old_value,new_value
+adikhalamani,Adikhalamani,era_tags,,pre_timeline_history
+al_mundhir_iii_ibn_al_harith,Al-Mundhir III ibn al-Harith,era_tags,,post_timeline_history
+arnekhamani,Arnekhamani,era_tags,,pre_timeline_history
+arqamani,Arqamani,era_tags,,pre_timeline_history
+attila,Attila,father_id,,mundzuk
+attila,Attila,father_name,,Mundzuk
+attila,Attila,family_relation_seed_count,1,2
+audax,Audax,era_tags,,pre_timeline_history
+bleda,Bleda,father_id,,mundzuk
+bleda,Bleda,father_name,,Mundzuk
+bleda,Bleda,family_relation_seed_count,1,2
+ditalcus,Ditalcus,era_tags,,pre_timeline_history
+gelon_ii,Gelon II,era_tags,,pre_timeline_history
+gulussa,Gulussa,era_tags,,pre_timeline_history
+hero_of_alexandria,Hero of Alexandria,alternate_names,,Heron of Alexandria
+hiero_ii,Hiero II,era_tags,,pre_timeline_history
+hieronymus_of_syracuse,Hieronymus of Syracuse,era_tags,,pre_timeline_history
+homer,Homer,era_tags,,pre_timeline_history
+homer,Homer,overlaps_playable_133BC_to_AD565,,no
+iamblichus,Iamblichus,father_id,,sampsiceramus_i
+iamblichus,Iamblichus,father_name,,Sampsiceramus I
+iamblichus,Iamblichus,family_relation_seed_count,0,1
+iamblichus,Iamblichus,relationship_edge_readiness,unseeded,seeded
+iamblichus,Iamblichus,relationship_confidence,not_researched,high
+indibilis,Indibilis,era_tags,,pre_timeline_history
+kartir,Kartir,era_tags,,crisis_third_century
+lucius_aemilius_paullus_macedonicus,Lucius Aemilius Paullus Macedonicus,era_tags,,pre_timeline_history
+mandonius,Mandonius,era_tags,,pre_timeline_history
+marcus_aemilius_lepidus_porcina,Marcus Aemilius Lepidus Porcina,era_tags,,pre_timeline_history
+mastanabal,Mastanabal,era_tags,,pre_timeline_history
+minurus,Minurus,era_tags,,pre_timeline_history
+monobaz_ii,Monobaz II,alternate_names,,Monobazus II
+octar,Octar,sibling_ids,,mundzuk
+octar,Octar,sibling_names,,Mundzuk
+octar,Octar,family_relation_seed_count,0,1
+octar,Octar,relationship_edge_readiness,unseeded,seeded
+octar,Octar,relationship_confidence,none,medium
+olyndicus,Olyndicus,era_tags,,pre_timeline_history
+praejecta,Praejecta,spouse_ids,,areobindus_died_546
+praejecta,Praejecta,spouse_names,,Areobindus
+praejecta,Praejecta,family_relation_seed_count,2,3
+praejecta,Praejecta,relationship_confidence,medium,high
+rua,Rua,alternate_names,,Rugila;Ruga
+rua,Rua,sibling_ids,,mundzuk
+rua,Rua,sibling_names,,Mundzuk
+rua,Rua,family_relation_seed_count,0,1
+rua,Rua,relationship_edge_readiness,unseeded,seeded
+rua,Rua,relationship_confidence,none,medium
+shanakdakheto,Shanakdakheto,alternate_names,,Shanakhdakheto
+shanakdakheto,Shanakdakheto,era_tags,,pre_timeline_history
+silko,Silko,era_tags,,division_and_western_twilight
+stratonice_of_cappadocia,Stratonice of Cappadocia,era_tags,,pre_timeline_history
+tautalus,Tautalus,era_tags,,pre_timeline_history
+tiberius_sempronius_gracchus_the_elder,Tiberius Sempronius Gracchus the Elder,era_tags,,pre_timeline_history
+viriathus,Viriathus,era_tags,,pre_timeline_history
+zoroaster,Zoroaster,era_tags,,pre_timeline_history
+zoroaster,Zoroaster,overlaps_playable_133BC_to_AD565,,unknown
