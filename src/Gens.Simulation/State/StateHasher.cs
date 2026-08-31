@@ -550,6 +550,31 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.Fame);
         }
 
+        // Already ascending (household, Doctrine type) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.HouseholdDoctrines.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.HouseholdId.Value);
+            hash = MixLong(hash, (long)entry.Key.DoctrineType);
+            hash = MixLong(hash, entry.Value.AffinityScore);
+            hash = MixLong(hash, (long)entry.Value.Tier);
+            hash = MixLong(hash, entry.Value.CapstoneUnlocked ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.CapstoneUsedThisGeneration ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.EdictRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.IssuingHouseholdId.Value);
+            hash = MixLong(hash, (long)entry.Value.Type);
+            hash = MixLong(hash, entry.Value.IssuedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.InfluenceCost);
+            hash = MixLong(hash, entry.Value.DignitasCostToIssue);
+            hash = MixLong(hash, entry.Value.ScandalId.Value);
+            hash = MixLong(hash, entry.Value.LegalCaseId?.Value ?? -1L);
+            hash = MixLong(hash, entry.Value.DemonstrationEffectTriggered ? 1L : 0L);
+        }
+
         return hash;
     }
 

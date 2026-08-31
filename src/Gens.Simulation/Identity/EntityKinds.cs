@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Edicts;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
@@ -209,6 +210,10 @@ internal static class RuntimeIdTagRegistry
         // Phase 12 item 7 — Gens.Simulation.Scandal.ScandalRecord, same "real record as its own tag"
         // convention as LegalCase/PunishableOffense above.
         [typeof(ScandalRecord)] = "scandal",
+        // Phase 12 item 9 — Gens.Simulation.Edicts.EdictRecord, same "real record as its own tag"
+        // convention as ScandalRecord above. HouseholdDoctrineState needs no entry: it's keyed by
+        // HouseholdDoctrineKey, not by its own RuntimeId, matching DynasticEpithet's identical exemption.
+        [typeof(EdictRecord)] = "edict",
     };
 
     public static string Resolve(Type type) =>

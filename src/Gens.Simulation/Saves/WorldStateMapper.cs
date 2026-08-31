@@ -6,7 +6,9 @@ using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
 using Gens.Simulation.Crime;
+using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
+using Gens.Simulation.Edicts;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
@@ -83,6 +85,7 @@ public static class WorldStateMapper
                 SentenceRecordIds = state.SentenceRecordIds.Peek,
                 RansomNegotiationIds = state.RansomNegotiationIds.Peek,
                 ScandalRecordIds = state.ScandalRecordIds.Peek,
+                EdictRecordIds = state.EdictRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -195,6 +198,10 @@ public static class WorldStateMapper
             ScandalRecords = state.ScandalRecords.InAscendingOrder().Select(entry => ToScandalRecordDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterFames = state.CharacterFames.InAscendingOrder().Select(entry => ToCharacterFameDto(entry.Value)).ToArray(),
+            // Already ascending (household, Doctrine type) order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            HouseholdDoctrines = state.HouseholdDoctrines.InAscendingOrder().Select(entry => ToHouseholdDoctrineDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            EdictRecords = state.EdictRecords.InAscendingOrder().Select(entry => ToEdictRecordDto(entry.Value)).ToArray(),
         };
     }
 
@@ -593,6 +600,16 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Character>, CharacterFame>(fame.CharacterId, fame);
             }));
 
+        var householdDoctrines = OrderedRegistry<HouseholdDoctrineKey, HouseholdDoctrineState>.Restore(
+            dto.HouseholdDoctrines.Select(FromHouseholdDoctrineDto));
+
+        var edictRecords = OrderedRegistry<RuntimeId<EdictRecord>, EdictRecord>.Restore(
+            dto.EdictRecords.Select(e =>
+            {
+                var record = FromEdictRecordDto(e);
+                return new KeyValuePair<RuntimeId<EdictRecord>, EdictRecord>(record.EdictId, record);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -631,6 +648,7 @@ public static class WorldStateMapper
             sentenceRecordIds: RuntimeIdCounter<SentenceRecord>.Restore(dto.Counters.SentenceRecordIds),
             ransomNegotiationIds: RuntimeIdCounter<RansomNegotiation>.Restore(dto.Counters.RansomNegotiationIds),
             scandalRecordIds: RuntimeIdCounter<ScandalRecord>.Restore(dto.Counters.ScandalRecordIds),
+            edictRecordIds: RuntimeIdCounter<EdictRecord>.Restore(dto.Counters.EdictRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -690,6 +708,8 @@ public static class WorldStateMapper
             collegia: collegia,
             scandalRecords: scandalRecords,
             characterFames: characterFames,
+            householdDoctrines: householdDoctrines,
+            edictRecords: edictRecords,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2136,6 +2156,50 @@ public static class WorldStateMapper
     private static CharacterFame FromCharacterFameDto(CharacterFameDto dto) => new(
         RuntimeId<Character>.Parse(dto.CharacterId),
         dto.Fame);
+
+    private static HouseholdDoctrineDto ToHouseholdDoctrineDto(HouseholdDoctrineState doctrine) => new()
+    {
+        HouseholdId = doctrine.HouseholdId.ToTaggedString(),
+        DoctrineType = doctrine.DoctrineType.ToString(),
+        AffinityScore = doctrine.AffinityScore,
+        Tier = doctrine.Tier.ToString(),
+        CapstoneUnlocked = doctrine.CapstoneUnlocked,
+        CapstoneUsedThisGeneration = doctrine.CapstoneUsedThisGeneration,
+    };
+
+    private static KeyValuePair<HouseholdDoctrineKey, HouseholdDoctrineState> FromHouseholdDoctrineDto(HouseholdDoctrineDto dto)
+    {
+        var householdId = RuntimeId<Household>.Parse(dto.HouseholdId);
+        var doctrineType = Enum.Parse<HouseholdDoctrineType>(dto.DoctrineType);
+        var state = new HouseholdDoctrineState(
+            householdId, doctrineType, dto.AffinityScore, Enum.Parse<DoctrineTier>(dto.Tier),
+            dto.CapstoneUnlocked, dto.CapstoneUsedThisGeneration);
+        return new KeyValuePair<HouseholdDoctrineKey, HouseholdDoctrineState>(new HouseholdDoctrineKey(householdId, doctrineType), state);
+    }
+
+    private static EdictRecordDto ToEdictRecordDto(EdictRecord record) => new()
+    {
+        EdictId = record.EdictId.ToTaggedString(),
+        IssuingHouseholdId = record.IssuingHouseholdId.ToTaggedString(),
+        Type = record.Type.ToString(),
+        IssuedDateTotalMonths = record.IssuedDate.TotalMonths,
+        InfluenceCost = record.InfluenceCost,
+        DignitasCostToIssue = record.DignitasCostToIssue,
+        ScandalId = record.ScandalId.ToTaggedString(),
+        LegalCaseId = record.LegalCaseId?.ToTaggedString(),
+        DemonstrationEffectTriggered = record.DemonstrationEffectTriggered,
+    };
+
+    private static EdictRecord FromEdictRecordDto(EdictRecordDto dto) => new(
+        RuntimeId<EdictRecord>.Parse(dto.EdictId),
+        RuntimeId<Household>.Parse(dto.IssuingHouseholdId),
+        Enum.Parse<EdictType>(dto.Type),
+        new GameDate(dto.IssuedDateTotalMonths),
+        dto.InfluenceCost,
+        dto.DignitasCostToIssue,
+        RuntimeId<ScandalRecord>.Parse(dto.ScandalId),
+        dto.LegalCaseId is null ? null : RuntimeId<LegalCase>.Parse(dto.LegalCaseId),
+        dto.DemonstrationEffectTriggered);
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {

@@ -31,6 +31,18 @@ public enum ScandalSourceType
     IllicitCollegiumExposure,
     PublicanusCorruption,
     DeliberateRumor,
+
+    /// <summary>Phase 12 item 9's own real, reachable addition — a real Edict's own Reception (§5.1:
+    /// "a genuine backlash chain reading Faction, affected pop groups/Curiales/Rival Houses, and
+    /// severity") routed through this shared engine directly, per this type's own §1 framing as "not a
+    /// new consequence system, but the shared engine... a handful of already-shipped Phase 12 moments
+    /// have been quietly waiting for." See <see cref="Edicts.IssueManumissionEdictCommand"/>, <see
+    /// cref="Edicts.GrantCitizenshipEdictCommand"/>, and <see cref="Edicts.IssueProscriptionCommand"/>.
+    /// Purely additive: nothing in this file's own already-shipped, already-tested <see
+    /// cref="RecordScandalCommand"/> pipeline switches on <see cref="ScandalSourceType"/> at all (only
+    /// <see cref="ScandalSeverity"/> drives its Dignitas penalty), so appending this value changes no
+    /// existing behavior.</summary>
+    EdictBacklash,
 }
 
 /// <summary>§6's severity ladder. <see cref="NotaCensoriaEligible"/> is kept for schema completeness

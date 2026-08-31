@@ -395,6 +395,19 @@ public sealed record WorldSaveDocument
     /// <see cref="ScandalRecords"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(63)]
     public IReadOnlyList<CharacterFameDto> CharacterFames { get; init; } = Array.Empty<CharacterFameDto>();
+
+    /// <summary>Every household's standing against every <see
+    /// cref="Gens.Simulation.Doctrine.HouseholdDoctrineType"/> it has an entry for (Phase 12 item 9),
+    /// already keyed by (household, Doctrine type). Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="CharacterFames"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(64)]
+    public IReadOnlyList<HouseholdDoctrineDto> HouseholdDoctrines { get; init; } = Array.Empty<HouseholdDoctrineDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Edicts.EdictRecord"/> ever issued (Phase 12 item 9),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="HouseholdDoctrines"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(65)]
+    public IReadOnlyList<EdictRecordDto> EdictRecords { get; init; } = Array.Empty<EdictRecordDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -581,6 +594,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(35)]
     public long ScandalRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-9 save has no Edicts.
+    /// Additive-only per ADR 0011's policy, matching <see cref="ScandalRecordIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(36)]
+    public long EdictRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -2609,4 +2628,58 @@ public sealed record CharacterFameDto
 
     [JsonPropertyOrder(1)]
     public required int Fame { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Doctrine.HouseholdDoctrineState"/> (Phase 12 item 9), keyed
+/// by (household, Doctrine type).</summary>
+public sealed record HouseholdDoctrineDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string DoctrineType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int AffinityScore { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Tier { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool CapstoneUnlocked { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool CapstoneUsedThisGeneration { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Edicts.EdictRecord"/> (Phase 12 item 9).</summary>
+public sealed record EdictRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string EdictId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string IssuingHouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Type { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int IssuedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int InfluenceCost { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int DignitasCostToIssue { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string ScandalId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? LegalCaseId { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool DemonstrationEffectTriggered { get; init; }
 }
