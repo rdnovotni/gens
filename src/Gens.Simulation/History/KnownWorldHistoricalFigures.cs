@@ -7,9 +7,10 @@ namespace Gens.Simulation.History;
 /// The real, authored Named Historical Figures roster (Phase 13 item 5; <c>gens-events-historical-
 /// timeline-content.md</c> §6), mirroring <see cref="Cultures.KnownWorldCultures"/>/<see
 /// cref="Languages.KnownWorldLanguages"/>'s own "real content, not a fixture" precedent from item 4.
-/// Every figure §6 names is registered: the ten Republic-era names, all twenty-four Emperors in
-/// succession order, the eight other notable figures, and Jesus of Nazareth per Religions' own
-/// careful-treatment note (§6's closing paragraph).
+/// Every figure §6 names is registered, together with a curated wider-known-world roster drawn from
+/// the historical-figure research reference. The wider roster deliberately represents travel,
+/// scholarship, literature, medicine, law, religion, engineering, patronage, and revolt as well as
+/// rulers and generals, so timeline flavor can reach the full range of Gens systems.
 ///
 /// <see cref="NamedHistoricalFigureDefinition.RealAccessionOrStartYear"/>/<see
 /// cref="NamedHistoricalFigureDefinition.RealDeathOrEndYear"/> are populated wherever §6's own event
@@ -76,6 +77,77 @@ public static class KnownWorldHistoricalFigures
     // Religions' own careful-treatment case.
     public static readonly DefinitionId<NamedHistoricalFigureDefinition> JesusOfNazareth = new("jesus-of-nazareth");
 
+    // Late-antiquity timeline roster.
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Decius = new("decius");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Valerian = new("valerian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> ShapurI = new("shapur-i");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Postumus = new("postumus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Zenobia = new("zenobia");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Aurelian = new("aurelian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Diocletian = new("diocletian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Galerius = new("galerius");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> ConstantineI = new("constantine-i");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Julian = new("julian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> TheodosiusI = new("theodosius-i");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> AlaricI = new("alaric-i");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Attila = new("attila");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Odoacer = new("odoacer");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> RomulusAugustulus = new("romulus-augustulus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> TheodoricTheGreat = new("theodoric-the-great");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> ClovisI = new("clovis-i");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> JustinianI = new("justinian-i");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Belisarius = new("belisarius");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Narses = new("narses");
+
+    // Wider known-world figures: social conflict, letters, scholarship, faith, travel, and craft.
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Spartacus = new("spartacus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Cicero = new("cicero");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Fulvia = new("fulvia");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Virgil = new("virgil");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Strabo = new("strabo");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Livy = new("livy");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> PhiloOfAlexandria = new("philo-of-alexandria");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> SenecaTheYounger = new("seneca-the-younger");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> PaulTheApostle = new("paul-the-apostle");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Columella = new("columella");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Quintilian = new("quintilian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> PedaniusDioscorides = new("pedanius-dioscorides");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Plutarch = new("plutarch");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Tacitus = new("tacitus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> PlinyTheYounger = new("pliny-the-younger");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Arrian = new("arrian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Ptolemy = new("ptolemy");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> HerodesAtticus = new("herodes-atticus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> JuliaBalbilla = new("julia-balbilla");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> JudahHaNasi = new("judah-ha-nasi");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Papinian = new("papinian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> CassiusDio = new("cassius-dio");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Ulpian = new("ulpian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Athenaeus = new("athenaeus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Perpetua = new("perpetua");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Felicity = new("felicity");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Mani = new("mani");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> AnthonyTheGreat = new("anthony-the-great");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> EusebiusOfCaesarea = new("eusebius-of-caesarea");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> EphremTheSyrian = new("ephrem-the-syrian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Hypatia = new("hypatia");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> MesropMashtots = new("mesrop-mashtots");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Egeria = new("egeria");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> SidoniusApollinaris = new("sidonius-apollinaris");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Proclus = new("proclus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> AeliaEudocia = new("aelia-eudocia");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Boethius = new("boethius");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Damascius = new("damascius");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Cassiodorus = new("cassiodorus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> AnthemiusOfTralles = new("anthemius-of-tralles");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> IsidoreOfMiletus = new("isidore-of-miletus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Procopius = new("procopius");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> Tribonian = new("tribonian");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> JohnPhiloponus = new("john-philoponus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> SimpliciusOfCilicia = new("simplicius-of-cilicia");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> JohnLydus = new("john-lydus");
+    public static readonly DefinitionId<NamedHistoricalFigureDefinition> CosmasIndicopleustes = new("cosmas-indicopleustes");
+
     public static NamedHistoricalFigureCatalog BuildCatalog() => new(new[]
     {
         Figure(TiberiusGracchus, "Tiberius Gracchus", HistoricalFigureRole.Senator, end: (133, true)),
@@ -124,6 +196,78 @@ public static class KnownWorldHistoricalFigures
         Figure(Galen, "Galen", HistoricalFigureRole.Other),
 
         Figure(JesusOfNazareth, "Jesus of Nazareth", HistoricalFigureRole.Other),
+
+        Figure(Decius, "Decius", HistoricalFigureRole.HeadOfState, start: (249, false), end: (251, false)),
+        Figure(Valerian, "Valerian", HistoricalFigureRole.HeadOfState, start: (253, false), end: (260, false)),
+        Figure(ShapurI, "Shapur I", HistoricalFigureRole.HeadOfState, start: (240, false), end: (270, false)),
+        Figure(Postumus, "Postumus", HistoricalFigureRole.HeadOfState, start: (260, false), end: (269, false)),
+        Figure(Zenobia, "Zenobia", HistoricalFigureRole.HeadOfState, start: (267, false), end: (272, false)),
+        Figure(Aurelian, "Aurelian", HistoricalFigureRole.HeadOfState, start: (270, false), end: (275, false)),
+        Figure(Diocletian, "Diocletian", HistoricalFigureRole.HeadOfState, start: (284, false), end: (305, false)),
+        Figure(Galerius, "Galerius", HistoricalFigureRole.HeadOfState, start: (293, false), end: (311, false)),
+        Figure(ConstantineI, "Constantine I", HistoricalFigureRole.HeadOfState, start: (306, false), end: (337, false)),
+        Figure(Julian, "Julian", HistoricalFigureRole.HeadOfState, start: (361, false), end: (363, false)),
+        Figure(TheodosiusI, "Theodosius I", HistoricalFigureRole.HeadOfState, start: (379, false), end: (395, false)),
+        Figure(AlaricI, "Alaric I", HistoricalFigureRole.HeadOfState, start: (395, false), end: (410, false)),
+        Figure(Attila, "Attila", HistoricalFigureRole.HeadOfState, start: (434, false), end: (453, false)),
+        Figure(Odoacer, "Odoacer", HistoricalFigureRole.HeadOfState, start: (476, false), end: (493, false)),
+        Figure(RomulusAugustulus, "Romulus Augustulus", HistoricalFigureRole.HeadOfState,
+            start: (475, false), end: (476, false)),
+        Figure(TheodoricTheGreat, "Theodoric the Great", HistoricalFigureRole.HeadOfState,
+            start: (493, false), end: (526, false)),
+        Figure(ClovisI, "Clovis I", HistoricalFigureRole.HeadOfState, start: (481, false), end: (511, false)),
+        Figure(JustinianI, "Justinian I", HistoricalFigureRole.HeadOfState, start: (527, false), end: (565, false)),
+        Figure(Belisarius, "Belisarius", HistoricalFigureRole.General, end: (565, false)),
+        Figure(Narses, "Narses", HistoricalFigureRole.General, end: (573, false)),
+
+        Figure(Spartacus, "Spartacus", HistoricalFigureRole.RebelLeader, end: (71, true)),
+        Figure(Cicero, "Marcus Tullius Cicero", HistoricalFigureRole.Orator, end: (43, true)),
+        Figure(Fulvia, "Fulvia", HistoricalFigureRole.Other, end: (40, true)),
+        Figure(Virgil, "Virgil", HistoricalFigureRole.WriterOrHistorian, end: (19, true)),
+        Figure(Strabo, "Strabo", HistoricalFigureRole.PhilosopherOrScholar, end: (24, false)),
+        Figure(Livy, "Livy", HistoricalFigureRole.WriterOrHistorian, end: (17, false)),
+        Figure(PhiloOfAlexandria, "Philo of Alexandria", HistoricalFigureRole.PhilosopherOrScholar, end: (50, false)),
+        Figure(SenecaTheYounger, "Seneca the Younger", HistoricalFigureRole.PhilosopherOrScholar, end: (65, false)),
+        Figure(PaulTheApostle, "Paul the Apostle", HistoricalFigureRole.ReligiousFigure, end: (65, false)),
+        Figure(Columella, "Columella", HistoricalFigureRole.WriterOrHistorian, end: (70, false)),
+        Figure(Quintilian, "Quintilian", HistoricalFigureRole.Orator, end: (100, false)),
+        Figure(PedaniusDioscorides, "Pedanius Dioscorides", HistoricalFigureRole.PhysicianOrNaturalist, end: (90, false)),
+        Figure(Plutarch, "Plutarch", HistoricalFigureRole.WriterOrHistorian, end: (120, false)),
+        Figure(Tacitus, "Tacitus", HistoricalFigureRole.WriterOrHistorian, end: (120, false)),
+        Figure(PlinyTheYounger, "Pliny the Younger", HistoricalFigureRole.WriterOrHistorian, end: (113, false)),
+        Figure(Arrian, "Arrian", HistoricalFigureRole.WriterOrHistorian, end: (160, false)),
+        Figure(Ptolemy, "Claudius Ptolemy", HistoricalFigureRole.PhilosopherOrScholar, end: (170, false)),
+        Figure(HerodesAtticus, "Herodes Atticus", HistoricalFigureRole.Patron, end: (177, false)),
+        Figure(JuliaBalbilla, "Julia Balbilla", HistoricalFigureRole.WriterOrHistorian, end: (130, false)),
+        Figure(JudahHaNasi, "Judah ha-Nasi", HistoricalFigureRole.ReligiousFigure, end: (217, false)),
+        Figure(Papinian, "Papinian", HistoricalFigureRole.Jurist, end: (212, false)),
+        Figure(CassiusDio, "Cassius Dio", HistoricalFigureRole.WriterOrHistorian, end: (235, false)),
+        Figure(Ulpian, "Ulpian", HistoricalFigureRole.Jurist),
+        Figure(Athenaeus, "Athenaeus", HistoricalFigureRole.WriterOrHistorian, end: (230, false)),
+        Figure(Perpetua, "Vibia Perpetua", HistoricalFigureRole.ReligiousFigure, end: (203, false)),
+        Figure(Felicity, "Felicity of Carthage", HistoricalFigureRole.ReligiousFigure, end: (203, false)),
+        Figure(Mani, "Mani", HistoricalFigureRole.ReligiousFigure, end: (276, false)),
+        Figure(AnthonyTheGreat, "Anthony the Great", HistoricalFigureRole.ReligiousFigure, end: (356, false)),
+        Figure(EusebiusOfCaesarea, "Eusebius of Caesarea", HistoricalFigureRole.WriterOrHistorian, end: (339, false)),
+        Figure(EphremTheSyrian, "Ephrem the Syrian", HistoricalFigureRole.ReligiousFigure, end: (373, false)),
+        Figure(Hypatia, "Hypatia", HistoricalFigureRole.PhilosopherOrScholar, end: (415, false)),
+        Figure(MesropMashtots, "Mesrop Mashtots", HistoricalFigureRole.PhilosopherOrScholar, end: (440, false)),
+        Figure(Egeria, "Egeria", HistoricalFigureRole.ExplorerOrWanderer, start: (381, false), end: (384, false)),
+        Figure(SidoniusApollinaris, "Sidonius Apollinaris", HistoricalFigureRole.WriterOrHistorian, end: (489, false)),
+        Figure(Proclus, "Proclus", HistoricalFigureRole.PhilosopherOrScholar, end: (485, false)),
+        Figure(AeliaEudocia, "Aelia Eudocia", HistoricalFigureRole.Patron, end: (460, false)),
+        Figure(Boethius, "Boethius", HistoricalFigureRole.PhilosopherOrScholar, end: (524, false)),
+        Figure(Damascius, "Damascius", HistoricalFigureRole.PhilosopherOrScholar, end: (538, false)),
+        Figure(Cassiodorus, "Cassiodorus", HistoricalFigureRole.WriterOrHistorian, end: (585, false)),
+        Figure(AnthemiusOfTralles, "Anthemius of Tralles", HistoricalFigureRole.ArchitectOrEngineer, end: (534, false)),
+        Figure(IsidoreOfMiletus, "Isidore of Miletus", HistoricalFigureRole.ArchitectOrEngineer, end: (537, false)),
+        Figure(Procopius, "Procopius of Caesarea", HistoricalFigureRole.WriterOrHistorian, end: (565, false)),
+        Figure(Tribonian, "Tribonian", HistoricalFigureRole.Jurist, end: (547, false)),
+        Figure(JohnPhiloponus, "John Philoponus", HistoricalFigureRole.PhilosopherOrScholar, end: (570, false)),
+        Figure(SimpliciusOfCilicia, "Simplicius of Cilicia", HistoricalFigureRole.PhilosopherOrScholar, end: (560, false)),
+        Figure(JohnLydus, "John Lydus", HistoricalFigureRole.WriterOrHistorian, end: (565, false)),
+        Figure(CosmasIndicopleustes, "Cosmas Indicopleustes", HistoricalFigureRole.ExplorerOrWanderer,
+            start: (530, false), end: (550, false)),
     });
 
     private static NamedHistoricalFigureDefinition Figure(

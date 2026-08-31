@@ -458,7 +458,7 @@ Acta Diurna (The Public Gazette) (new) · Aetius of Amida's Medical Compilation 
 
 *Source: the two dedicated timeline-content docs. Full narrative/dated-event text is deliberately not duplicated here (121 richly-described dated entries between the two docs — reproducing them would just re-author the source documents); the Named Historical Figures rosters are reproduced in full below since they're the compact, genuinely reusable cross-reference surface.*
 
-### 31.1 Named Historical Figures — Full Roster (52 figures)
+### 31.1 Named Historical Figures — Full Timeline Roster (63 figures)
 
 *Source: Events: Historical Timeline (Content) §6 and Events: Historical Timeline (Late Antiquity) §12. All are real, backdrop-only — driving Events by name, never instantiated as an interactive Character.*
 
@@ -475,6 +475,10 @@ Acta Diurna (The Public Gazette) (new) · Aetius of Amida's Medical Compilation 
 **Western Twilight (4):** Alaric · Attila · Odoacer · Romulus Augustulus
 
 **Eastern Renewal (5):** Theodoric the Great · Clovis · Justinian · Belisarius · Narses
+
+The runtime catalog also carries a curated cross-system reference layer beyond these 63 event-roster
+figures. It includes writers, scholars, physicians, jurists, religious figures, patrons, engineers,
+rebels, and travelers whose lives can flavor Gens systems even when they do not anchor a dated event.
 
 ### 31.2 Dated Event Counts by Section
 

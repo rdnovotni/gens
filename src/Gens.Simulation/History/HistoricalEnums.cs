@@ -20,6 +20,16 @@ public enum HistoricalFigureRole
     General,
     Senator,
     Governor,
+    RebelLeader,
+    Orator,
+    WriterOrHistorian,
+    PhilosopherOrScholar,
+    ReligiousFigure,
+    PhysicianOrNaturalist,
+    Jurist,
+    ExplorerOrWanderer,
+    ArchitectOrEngineer,
+    Patron,
     Other,
 }
 
