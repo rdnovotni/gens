@@ -1447,7 +1447,7 @@ Construction order:
 3. [x] Implement letters/messages, courier selection, transit, delivery, response, interception, forgery, and information provenance.
 4. [x] Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
 5. [x] Implement the historical timeline scheduler with immutable history, divergence-eligible events, counterfactual flags, and date-aware content validation.
-6. Implement one complete region profile and only then expand region content in waves.
+6. [x] Implement one complete region profile and only then expand region content in waves.
 7. Add distant holdings and procurator requirements after travel and delegation are stable.
 
 **Exit gate:** a household can act locally, travel, communicate at distance, encounter language/cultural gates, and receive date-appropriate historical events without loading broad region-specific code.
@@ -1761,6 +1761,58 @@ an already-fired or an already-diverged one (both directly and through a save/lo
 stable deterministic state hash), firing a linked entry through the real Events pipeline, every
 `RecordDivergenceCommand` validation failure shape and its success path, and both derived-state queries
 across all their real states.
+
+**Item 6 progress:** the first real, authored region-content wave lands in `KnownWorldRegions.cs`,
+alongside item 1's fixture `SampleRegionProfileDefinitions` in the same `src/Gens.Simulation/Regions/`
+namespace — authoring **Latium** in full against `gens-starting-regions-italian-heartland-design.md`
+§3, the item this roadmap's own item 1 explicitly deferred ("item 6's actual authored region content is
+explicitly out of this item's scope"). Latium is this wave's own deliberate starting point: the launch
+roster's most central region per that document's §5 (Rome's immediate political backyard), and the
+simpler of the Italian Heartland's own split pair — no Reputation Duality and no dated rule override at
+any date (§2's "Shared Italian Identity"), which keeps this first wave a clean, uncomplicated proof that
+the schema holds up for real authored content and not just a fixture. Campania and the rest of the launch
+roster (§5.1) are a deliberate future wave, matching this same construction-order item's own "and only
+then expand region content in waves" framing — this item does not attempt them.
+
+Every §3 subsection maps directly onto `RegionProfileDefinition`'s existing fields: §3.1's terrain
+(river-plain fertility, no mineral deposits, the Via Salaria salt-pan tradition), §3.2's economic
+character (most expensive land on the roster, thin room to expand, grain-import dependency), §3.3's
+political/legal texture (maximum Curia contest, fastest cursus honorum access, an almost entirely
+citizen legal-status mix), §3.4's diplomatic/military exposure (no Frontier neighbor, patronage-based
+officer recruitment, urban-cohort security), §3.5's religious/cultural default (Mos Maiorum, residual
+Etruscan haruspicy influence), and §3.6's regional goods (wine, olive oil, salt, and *peperino* building
+stone) each become one qualitative ref/tag string, exactly as item 1's own schema intends — no numeric
+sizing invented here either, matching every prior item's own standing convention. §3.7's Population &
+Culture Distribution becomes a three-row `CultureDistributionTable` resolving against the real
+`KnownWorldCultures` catalog item 4 built rather than loose strings — Roman/Latin dominant (weight 85),
+residual Etruscan influence (weight 10), and the one required outlier-residual row standing in for
+§3.7's own "rare, individual-level outliers only" close (weight 5) — the first region content to
+actually consume that catalog by reference instead of a fixture's own invented placeholder tags.
+
+§3.8's Gazetteer authors all eight of that section's real locations (Ostia, Tusculum, Praeneste, Tibur,
+Antium, Alba Longa, Lavinium, Gabii) with their real Roles, Prominence Tiers, and grounding notes taken
+directly from the design document's own table, plus each location's real §3.9 Rival Seeding house
+carried as its own `RivalSeatHouseId` free-form tag (Gens Fabricia at Rome, Gens Octavinia at Tusculum,
+Gens Sergiana at Praeneste, Gens Considia at Gabii) — §3.9's own house identities are real content, even
+though no typed Rival House schema exists yet to own them structurally, matching
+`GazetteerLocationDefinition.RivalSeatHouseId`'s own "item 6/9 territory, not this schema's" doc comment.
+Rome itself (§5) is this item's own one disclosed authoring call: the design document frames Rome as
+belonging to neither Latium nor Campania exclusively, but the schema requires every Gazetteer entry to
+declare one owning region, and only Latium exists yet in this wave — so Rome is seated as a Latium
+Gazetteer entry, carrying the catalog-unique `GazetteerRole.Capital` role `RegionProfileCatalog`'s own
+constructor-time check enforces, on the historically accurate reading that Rome sits geographically
+within Latium proper. A future Campania wave does not re-seat Rome; it only gains the shorter Distance
+Tier relationship §6 of that document describes — Distance Tiers themselves stay this item's own
+deferred territory, since `DistanceTierCatalog` (Travel, item 2) already owns that lookup mechanism and
+authoring its real region-pair contents was explicitly left open by that item too. §3.10's Home Anchor
+(Tusculum) is the `homeAnchorLocationId` the schema's own constructor-time check validates resolves to a
+real Gazetteer entry. §3.11's Templated Background flavor, §6's Distance Tiers, and §7's Historical
+Timeline Hooks all stay out of this item's own scope, same as no typed schema field exists yet for any
+of the three — this item authors only what item 1's schema actually has fields for. Covered by 8 new
+tests in `tests/Gens.Simulation.Tests/Regions/KnownWorldRegionsTests.cs`, proving the real catalog builds
+cleanly, the Capital role resolves uniquely to Rome, Reputation Duality reads `None` at every date, the
+Home Anchor resolves to Tusculum, the full Gazetteer roster is present, and the culture distribution
+table's Roman entry outweighs every other row while carrying exactly one outlier-residual entry.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 
