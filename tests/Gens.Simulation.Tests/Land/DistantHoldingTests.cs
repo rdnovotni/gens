@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.Policies;
 using Gens.Simulation.Random;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Saves;
@@ -262,6 +263,38 @@ public sealed class DistantHoldingTests
             state, new AppointProcuratorCommand(state.CommandIds.Issue(), "player", state.Date, null, distantHoldingId, replacementId));
 
         Assert.That(result.Accepted, Is.True);
+    }
+
+    [Test]
+    public void TickRunsBeforeStewardAutonomousDecisionSoADeadProcuratorNeverActsThatSameMonth()
+    {
+        var (state, householdId, distantHoldingId, characterId) = OneDistantHoldingWithACandidate();
+        DistantHoldingCommands.AppointProcuratorPipeline.Execute(
+            state, new AppointProcuratorCommand(state.CommandIds.Issue(), "player", state.Date, null, distantHoldingId, characterId));
+        var backingAssignmentId = state.StewardshipAssignments.InAscendingOrder().Select(entry => entry.Value)
+            .Single(a => a.HouseholdId == householdId && a.Context == StewardshipContext.SecondSettlementProcurator).AssignmentId;
+
+        state.Characters.TryGet(characterId, out var character);
+        state.Characters.Remove(characterId);
+        state.Characters.Add(characterId, character! with { DeathRecord = new DeathRecord(state.Date, DeathCause.Unspecified, ageAtDeath: 40) });
+
+        var homeSettlementId = state.SettlementIds.Issue();
+        var simulation = new MonthlySimulation<WorldState>(new IMonthlySystem<WorldState>[]
+        {
+            new DistantHoldingMismanagementRiskSystem(),
+            new StewardAutonomousDecisionSystem(PolicyActionDefinitions.BuildCatalog(), _ => homeSettlementId),
+        });
+
+        simulation.Tick(state, state.Date, new RandomStreamSet());
+
+        Assert.Multiple(() =>
+        {
+            // If StewardAutonomousDecisionSystem had run first, it would have logged a decision for
+            // this still-formally-active assignment before this system got a chance to end it.
+            Assert.That(state.AutonomousDecisionLogs.InAscendingOrder().Any(entry => entry.Value.AssignmentId == backingAssignmentId), Is.False);
+            state.StewardshipAssignments.TryGet(backingAssignmentId, out var backingAssignment);
+            Assert.That(backingAssignment!.IsActive, Is.False);
+        });
     }
 
     [Test]

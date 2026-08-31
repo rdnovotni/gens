@@ -1856,9 +1856,17 @@ eligible candidate" as named, not hidden, gaps. Land acquisition cost premiums a
 scaling by Distance Tier (§7.2's other two cost vectors) are out of this item's scope for the same reason
 every prior item leaves numeric sizing to Start Modes/a future balancing pass (§13's own "all numeric
 sizing" open question) — this item builds the administrative-overhead vector §7.2 actually specifies a
-concrete rule for, not the other two's still-unsized multipliers. Covered by 15 new tests in
-`tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, including a save/load round trip with a stable
-deterministic state hash.
+concrete rule for, not the other two's still-unsized multipliers. This system also deliberately declares
+no `Prerequisites` (a third automated review finding this pass fixed): `MonthlySimulation`'s own
+alphabetical-tiebreak scheduling (ADR 0004/0005) means a same-phase, equally-prerequisite-free
+`stewardship.autonomousDecision` would otherwise always resolve first every tick, letting a Procurator who
+died that same month still submit an action and roll an incident through
+`StewardAutonomousDecisionSystem` before this system got a chance to end their stale assignment; dropping
+the (non-load-bearing) dependency on `succession.regency` this item originally declared instead lets the
+same tiebreak place `land.distantHoldingMismanagementRisk` strictly before it every month. Covered by 16
+new tests in `tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, including a save/load round trip
+with a stable deterministic state hash and a `MonthlySimulation`-level regression test proving the
+ordering fix.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 

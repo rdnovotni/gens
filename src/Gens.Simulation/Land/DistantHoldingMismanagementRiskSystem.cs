@@ -57,7 +57,22 @@ public sealed class DistantHoldingMismanagementRiskSystem : IMonthlySystem<World
         "commandIds", "commandSequence",
     };
 
-    public IReadOnlyCollection<string> Prerequisites { get; } = new[] { "succession.regency" };
+    // Deliberately no prerequisites (an automated review finding this pass fixed) — same-phase
+    // stewardship.autonomousDecision has none either, and MonthlySimulation's own tie-break (ADR 0004/
+    // 0005: alphabetically smallest ready system id first) then guarantees "land.distant..." always
+    // resolves strictly before "stewardship.autonomousDecision" runs each month, since neither depends
+    // on the other. That ordering matters: leaving a dependency on succession.regency here (this item's
+    // original choice) let stewardship.autonomousDecision — itself prerequisite-free — get picked first
+    // every tick, so a Procurator who died this same month could still submit an action and roll an
+    // incident through StewardAutonomousDecisionSystem before this system ever got a chance to end
+    // their stale assignment. Running unconditionally early instead costs nothing this system's own
+    // logic needs: it reads only distantHoldings/stewardshipAssignments/characters and re-derives
+    // everything itself rather than assuming RegencySystem (succession.regency) already ran — if a
+    // Regency supersedes a Procurator assignment later in the same tick, this system simply sees the
+    // stale ProcuratorCharacterId for one extra month (corrected the next), a narrower, pre-existing
+    // race already inherent to RegencySystem's own identical ordering relative to
+    // stewardship.autonomousDecision, not one this system introduces or need fix.
+    public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
     {
