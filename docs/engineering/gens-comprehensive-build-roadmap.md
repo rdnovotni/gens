@@ -1835,8 +1835,19 @@ rule — "a Far holding without a competent, high-loyalty Procurator... a real, 
 a deterministic flag, not a random incident roll: `DistantHoldingMismanagementRiskSystem` runs monthly,
 reusing `StewardIncidentCatalog.LoyaltyRiskThreshold` (Phase 10 item 2's own Loyalty-risk figure) rather
 than inventing a second one, and reverts a holding to unstaffed whenever its cached Procurator's backing
-assignment lapses (death, or a graver Regency superseding it) instead of keeping a stale pointer. What
-actually happens while the risk flag is active — skimming, drift, an eventual disloyal-Procurator
+assignment lapses — either a graver Regency already superseded it, or (an automated review finding this
+pass fixed) the Procurator died while the assignment was still formally active, in which case this system
+itself ends it through `StewardshipCommands.EndPipeline`, matching `RegencySystem`'s own "supersede via
+the real command, not just drop the pointer" precedent, so a dead Procurator can neither block a
+replacement appointment forever nor let `StewardAutonomousDecisionSystem` keep acting for them.
+`AcquireDistantHoldingCommand` also takes a `RegionProfileCatalog` (a second automated review finding)
+and rejects a `HomeRegionId`/`HoldingRegionId` that names no real, catalog-registered region — it does not
+go further and verify `HoldingRegionId` actually is the acquired `Holding`'s own settlement's region, or
+that `HomeRegionId` actually is the household's real home region, since nothing in this codebase yet links
+a runtime `Settlement` back to its content `RegionProfileDefinition`, or tracks a household's own home
+region as state at all — the same gap `BeginTravelCommand.HomeRegionId` (Travel, item 2) already leaves as
+a bare, caller-supplied parameter; closing that fully is real, larger seam work for whichever future item
+builds that linkage. What actually happens while the risk flag is active — skimming, drift, an eventual disloyal-Procurator
 incident — stays deliberately unbuilt: §11's own open questions ("Disloyal Procurator/Senior Position
 consequences," "Procurator autonomy boundary") are unresolved in the design corpus, so this item only
 surfaces the risk state honestly rather than fabricating an incident mechanic ahead of its own sizing,
@@ -1845,7 +1856,7 @@ eligible candidate" as named, not hidden, gaps. Land acquisition cost premiums a
 scaling by Distance Tier (§7.2's other two cost vectors) are out of this item's scope for the same reason
 every prior item leaves numeric sizing to Start Modes/a future balancing pass (§13's own "all numeric
 sizing" open question) — this item builds the administrative-overhead vector §7.2 actually specifies a
-concrete rule for, not the other two's still-unsized multipliers. Covered by 13 new tests in
+concrete rule for, not the other two's still-unsized multipliers. Covered by 15 new tests in
 `tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, including a save/load round trip with a stable
 deterministic state hash.
 
