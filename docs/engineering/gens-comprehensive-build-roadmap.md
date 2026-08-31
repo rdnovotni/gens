@@ -1443,7 +1443,7 @@ Recommended internal order:
 Construction order:
 
 1. [x] Implement the region profile schema and date-aware rule overrides.
-2. Implement location, route, distance tier, travel party, reservations, duration, risk exposure, arrival, and concurrent character locations.
+2. [x] Implement location, route, distance tier, travel party, reservations, duration, risk exposure, arrival, and concurrent character locations.
 3. Implement letters/messages, courier selection, transit, delivery, response, interception, forgery, and information provenance.
 4. Implement culture and language definitions, literacy, fluency, interpreters, naming pools, and visibility/interaction gates.
 5. Implement the historical timeline scheduler with immutable history, divergence-eligible events, counterfactual flags, and date-aware content validation.
@@ -1486,6 +1486,38 @@ The pre-existing `src/Gens.Simulation/Land/Region.cs` (a `RuntimeId`-keyed settl
 boundary, Phase 6) is untouched — it answers "which region does this settlement belong to," a
 different question from this content-definition schema's "what is a region's authored shape,"
 and nothing here changes its callers.
+
+**Item 2 progress:** the Travel data/state model lands in a new `src/Gens.Simulation/Travel/`
+namespace, closing every construction-order sub-item against `gens-travel-design.md` §10's own
+`Location{}`/`TravelTrip{}` sketch. `TravelLocation` is a value type — not its own `RuntimeId`-keyed
+partition — since every kind's identity already resolves through an entity that exists elsewhere
+(a `Settlement`, a `RegionProfileDefinition`, a Rival House's `Actor`); its `RegionId` field is this
+item's own addition atop §10's literal shape, since nothing yet links a runtime `Settlement`/`Region`
+back to the content `RegionProfileDefinition` (Region Profiles, Phase 13 item 1) a Distance Tier
+lookup needs, and Rome specifically carries no region of its own, instead resolving via whichever
+region's Gazetteer seats it `Capital` (`gens-starting-regions-design.md` §8.3) — a real point of reuse
+between the two items. `DistanceTierCatalog` builds the general Near/Moderate/Far lookup mechanism
+§7.1 asks for, deliberately leaving the actual region-pair contents unauthored per §13's own open
+question; `TravelRoute.Resolve` combines a Distance Tier with §4's route-danger classification
+(`RouteRiskLevel`) and this item's own invented, disclosed Travel Time baseline (1/3/6 months), mirroring
+`DutySlotCatalog`'s "invented numbers, openly labeled" precedent. `TravelTrip` is a real
+`WorldState` partition (`TravelTrips`, `TravelTripIds`), fully wired through `WorldSaveDto`/
+`WorldStateMapper`/`StateHasher`/`EntityKinds`, since a trip's own leg progress is genuine campaign
+state, unlike Region Profiles' pure content. `BeginTravelCommand` resolves the route and reserves
+every `TravelParty` member (§5) — a Character already on a non-`Completed` trip cannot be booked onto
+a second one, via `TravelTripQueries.IsReserved`; `TravelProgressSystem` advances every trip's current
+leg one month at a time and is what actually sets/clears a Character's new `CurrentTravelLocation`
+field (§10's Characters-schema addition, defaulting `null`/"at home") on Arrival and on Completion;
+`BeginReturnCommand` starts the return leg deliberately once Arrived; `RecallTravelCommand` implements
+§5's Recall, always forcing `EncounterCompleted` false. Concurrent trips are a natural consequence of
+`TravelTrips` being an ordinary keyed partition `TravelProgressSystem` iterates in full every tick,
+not a queue — matching §5's "resolve fully concurrently" directly. The Retinue mechanic itself
+(Companions & Court Positions §7, Encounter menus (§7), en-route event content (§4), and Correspondence
+(§8) all stay explicitly out of this item's scope, per their own not-yet-built or future-phase status;
+`TravelParty` only carries retinue member IDs, and `LocationKind.Campaign` is a reserved enum value
+with no constructor yet, since Military & Combat (Phase 16) doesn't exist. Covered by tests in
+`tests/Gens.Simulation.Tests/Travel/TravelTests.cs`, including a save/load round trip with a stable
+deterministic state hash.
 
 ### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
 

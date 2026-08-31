@@ -22,6 +22,7 @@ using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
@@ -29,6 +30,7 @@ using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
+using Gens.Simulation.Travel;
 using Gens.Simulation.Villas;
 
 namespace Gens.Simulation.Saves;
@@ -86,6 +88,7 @@ public static class WorldStateMapper
                 RansomNegotiationIds = state.RansomNegotiationIds.Peek,
                 ScandalRecordIds = state.ScandalRecordIds.Peek,
                 EdictRecordIds = state.EdictRecordIds.Peek,
+                TravelTripIds = state.TravelTripIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -202,6 +205,8 @@ public static class WorldStateMapper
             HouseholdDoctrines = state.HouseholdDoctrines.InAscendingOrder().Select(entry => ToHouseholdDoctrineDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             EdictRecords = state.EdictRecords.InAscendingOrder().Select(entry => ToEdictRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            TravelTrips = state.TravelTrips.InAscendingOrder().Select(entry => ToTravelTripDto(entry.Value)).ToArray(),
         };
     }
 
@@ -610,6 +615,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<EdictRecord>, EdictRecord>(record.EdictId, record);
             }));
 
+        var travelTrips = OrderedRegistry<RuntimeId<TravelTrip>, TravelTrip>.Restore(
+            dto.TravelTrips.Select(t =>
+            {
+                var trip = FromTravelTripDto(t);
+                return new KeyValuePair<RuntimeId<TravelTrip>, TravelTrip>(trip.Id, trip);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -649,6 +661,7 @@ public static class WorldStateMapper
             ransomNegotiationIds: RuntimeIdCounter<RansomNegotiation>.Restore(dto.Counters.RansomNegotiationIds),
             scandalRecordIds: RuntimeIdCounter<ScandalRecord>.Restore(dto.Counters.ScandalRecordIds),
             edictRecordIds: RuntimeIdCounter<EdictRecord>.Restore(dto.Counters.EdictRecordIds),
+            travelTripIds: RuntimeIdCounter<TravelTrip>.Restore(dto.Counters.TravelTripIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -710,6 +723,7 @@ public static class WorldStateMapper
             characterFames: characterFames,
             householdDoctrines: householdDoctrines,
             edictRecords: edictRecords,
+            travelTrips: travelTrips,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -788,6 +802,7 @@ public static class WorldStateMapper
         Flight = character.Flight is null ? null : ToFledRecordDto(character.Flight.Value),
         Pursuit = character.Pursuit is null ? null : ToPursuitRecordDto(character.Pursuit.Value),
         ManumissionPlan = character.ManumissionPlan is null ? null : ToManumissionPlanDto(character.ManumissionPlan.Value),
+        CurrentTravelLocation = character.CurrentTravelLocation is null ? null : ToTravelLocationDto(character.CurrentTravelLocation.Value),
     };
 
     private static RegimenSettingsDto ToRegimenSettingsDto(RegimenSettings regimen) => new()
@@ -894,7 +909,8 @@ public static class WorldStateMapper
         regimen: dto.Regimen is null ? null : FromRegimenSettingsDto(dto.Regimen),
         flight: dto.Flight is null ? null : FromFledRecordDto(dto.Flight),
         pursuit: dto.Pursuit is null ? null : FromPursuitRecordDto(dto.Pursuit),
-        manumissionPlan: dto.ManumissionPlan is null ? null : FromManumissionPlanDto(dto.ManumissionPlan));
+        manumissionPlan: dto.ManumissionPlan is null ? null : FromManumissionPlanDto(dto.ManumissionPlan),
+        currentTravelLocation: dto.CurrentTravelLocation is null ? null : FromTravelLocationDto(dto.CurrentTravelLocation));
 
     private static MarriageRecordDto ToMarriageRecordDto(MarriageRecord record) => new()
     {
@@ -2200,6 +2216,71 @@ public static class WorldStateMapper
         RuntimeId<ScandalRecord>.Parse(dto.ScandalId),
         dto.LegalCaseId is null ? null : RuntimeId<LegalCase>.Parse(dto.LegalCaseId),
         dto.DemonstrationEffectTriggered);
+
+    private static TravelLocationDto ToTravelLocationDto(TravelLocation location) => new()
+    {
+        Kind = location.Kind.ToString(),
+        RegionId = location.RegionId?.Value,
+        SettlementId = location.SettlementId?.ToTaggedString(),
+        ActorId = location.ActorId?.ToTaggedString(),
+    };
+
+    private static TravelLocation FromTravelLocationDto(TravelLocationDto dto)
+    {
+        var kind = Enum.Parse<LocationKind>(dto.Kind);
+        var regionId = dto.RegionId is null ? (DefinitionId<RegionProfileDefinition>?)null : new DefinitionId<RegionProfileDefinition>(dto.RegionId);
+        var settlementId = dto.SettlementId is null ? (RuntimeId<Settlement>?)null : RuntimeId<Settlement>.Parse(dto.SettlementId);
+        var actorId = dto.ActorId is null ? (RuntimeId<Actor>?)null : RuntimeId<Actor>.Parse(dto.ActorId);
+
+        return kind switch
+        {
+            LocationKind.Home => TravelLocation.Home(settlementId!.Value),
+            LocationKind.Rome => TravelLocation.Rome(),
+            LocationKind.ProvincialCapital => TravelLocation.ProvincialCapital(regionId!.Value, settlementId!.Value),
+            LocationKind.RivalEstate => TravelLocation.RivalEstate(actorId!.Value, settlementId!.Value, regionId!.Value),
+            LocationKind.FrontierRegion => TravelLocation.FrontierRegion(regionId!.Value),
+            LocationKind.SecondSettlement => TravelLocation.SecondSettlement(settlementId!.Value, regionId!.Value),
+            _ => throw new FormatException($"Unrestorable Travel Location kind '{dto.Kind}'."),
+        };
+    }
+
+    private static TravelPartyDto ToTravelPartyDto(TravelParty party) => new()
+    {
+        TravelerId = party.TravelerId.ToTaggedString(),
+        RetinueIds = party.RetinueIds.Select(static id => id.ToTaggedString()).ToArray(),
+    };
+
+    private static TravelParty FromTravelPartyDto(TravelPartyDto dto) => TravelParty.Create(
+        RuntimeId<Character>.Parse(dto.TravelerId),
+        dto.RetinueIds.Select(RuntimeId<Character>.Parse).ToArray());
+
+    private static TravelTripDto ToTravelTripDto(TravelTrip trip) => new()
+    {
+        TripId = trip.Id.ToTaggedString(),
+        Party = ToTravelPartyDto(trip.Party),
+        Origin = ToTravelLocationDto(trip.Origin),
+        Destination = ToTravelLocationDto(trip.Destination),
+        DistanceTier = trip.DistanceTier.ToString(),
+        RiskExposure = trip.RiskExposure.ToString(),
+        TravelTimeMonths = trip.TravelTimeMonths,
+        MonthsElapsed = trip.MonthsElapsed,
+        DepartedDateTotalMonths = trip.DepartedDate.TotalMonths,
+        Status = trip.Status.ToString(),
+        EncounterCompleted = trip.EncounterCompleted,
+    };
+
+    private static TravelTrip FromTravelTripDto(TravelTripDto dto) => TravelTrip.Restore(
+        RuntimeId<TravelTrip>.Parse(dto.TripId),
+        FromTravelPartyDto(dto.Party),
+        FromTravelLocationDto(dto.Origin),
+        FromTravelLocationDto(dto.Destination),
+        Enum.Parse<DistanceTier>(dto.DistanceTier),
+        Enum.Parse<RouteRiskLevel>(dto.RiskExposure),
+        dto.TravelTimeMonths,
+        dto.MonthsElapsed,
+        new GameDate(dto.DepartedDateTotalMonths),
+        Enum.Parse<TravelTripStatus>(dto.Status),
+        dto.EncounterCompleted);
 
     private static HouseholdReligionDto ToHouseholdReligionDto(HouseholdReligion religion) => new()
     {

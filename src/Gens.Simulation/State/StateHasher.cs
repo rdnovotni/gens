@@ -16,6 +16,7 @@ using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
+using Gens.Simulation.Travel;
 
 namespace Gens.Simulation.State;
 
@@ -575,6 +576,24 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.DemonstrationEffectTriggered ? 1L : 0L);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.TravelTrips.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.Party.TravelerId.Value);
+            foreach (var retinueId in entry.Value.Party.RetinueIds)
+                hash = MixLong(hash, retinueId.Value);
+            hash = MixTravelLocation(hash, entry.Value.Origin);
+            hash = MixTravelLocation(hash, entry.Value.Destination);
+            hash = MixLong(hash, (long)entry.Value.DistanceTier);
+            hash = MixLong(hash, (long)entry.Value.RiskExposure);
+            hash = MixLong(hash, entry.Value.TravelTimeMonths);
+            hash = MixLong(hash, entry.Value.MonthsElapsed);
+            hash = MixLong(hash, entry.Value.DepartedDate.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.Status);
+            hash = MixLong(hash, entry.Value.EncounterCompleted ? 1L : 0L);
+        }
+
         return hash;
     }
 
@@ -826,6 +845,20 @@ public static class StateHasher
         hash = MixLong(hash, character.ManumissionPlan is null ? -1L : character.ManumissionPlan.Value.GrantorId.Value);
         hash = MixLong(hash, character.ManumissionPlan is null ? -1L : (long)character.ManumissionPlan.Value.Type);
 
+        hash = MixTravelLocation(hash, character.CurrentTravelLocation);
+
+        return hash;
+    }
+
+    private static ulong MixTravelLocation(ulong hash, TravelLocation? location)
+    {
+        if (location is not { } value)
+            return MixLong(hash, -1L);
+
+        hash = MixLong(hash, (long)value.Kind);
+        hash = MixString(hash, value.RegionId?.Value ?? string.Empty);
+        hash = MixLong(hash, value.SettlementId?.Value ?? -1L);
+        hash = MixLong(hash, value.ActorId?.Value ?? -1L);
         return hash;
     }
 
