@@ -145,11 +145,16 @@ public static class KnownWorldRegions
                 "local ritual/augural tradition of its own even after full absorption into Rome's orbit.",
             rivalSeatHouseId: "gens-considia");
 
+        // §3.7 names Etruscan presence explicitly as "residual, religious-influence only" and
+        // "cultural rather than demographic" — already carried in religiousCulturalDefaultRef below —
+        // so it deliberately gets no row here: a weighted CultureDistributionTable row is read by
+        // procedural population generation as a real settled demographic share, which would
+        // contradict §3.7's own "fully absorbed... survives only as residual religious influence"
+        // framing. Only Roman/Latin (dominant) and the required outlier-residual row (individual-level
+        // outliers only, never a settled community, per §3.7's own close) are demographic in that sense.
         var cultureDistribution = new[]
         {
-            new CultureDistributionEntry(KnownWorldCultures.Roman.Value, weight: 85),
-            new CultureDistributionEntry(
-                KnownWorldCultures.Etruscan.Value, weight: 10),
+            new CultureDistributionEntry(KnownWorldCultures.Roman.Value, weight: 95),
             new CultureDistributionEntry("outlier", weight: 5, isOutlierResidual: true),
         };
 

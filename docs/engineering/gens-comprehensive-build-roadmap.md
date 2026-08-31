@@ -1783,11 +1783,14 @@ officer recruitment, urban-cohort security), §3.5's religious/cultural default 
 Etruscan haruspicy influence), and §3.6's regional goods (wine, olive oil, salt, and *peperino* building
 stone) each become one qualitative ref/tag string, exactly as item 1's own schema intends — no numeric
 sizing invented here either, matching every prior item's own standing convention. §3.7's Population &
-Culture Distribution becomes a three-row `CultureDistributionTable` resolving against the real
-`KnownWorldCultures` catalog item 4 built rather than loose strings — Roman/Latin dominant (weight 85),
-residual Etruscan influence (weight 10), and the one required outlier-residual row standing in for
-§3.7's own "rare, individual-level outliers only" close (weight 5) — the first region content to
-actually consume that catalog by reference instead of a fixture's own invented placeholder tags.
+Culture Distribution becomes a two-row `CultureDistributionTable` resolving against the real
+`KnownWorldCultures` catalog item 4 built rather than loose strings — Roman/Latin dominant (weight 95)
+and the one required outlier-residual row standing in for §3.7's own "rare, individual-level outliers
+only" close (weight 5) — the first region content to actually consume that catalog by reference instead
+of a fixture's own invented placeholder tags. Etruscan presence deliberately gets no row here, per an
+automated review finding this pass accepted: §3.7 itself frames it as "residual, religious-influence
+only" and "cultural rather than demographic," which a weighted demographic-generation table would
+contradict — that residue stays exactly where §3.5 already puts it, in `religiousCulturalDefaultRef`.
 
 §3.8's Gazetteer authors all eight of that section's real locations (Ostia, Tusculum, Praeneste, Tibur,
 Antium, Alba Longa, Lavinium, Gabii) with their real Roles, Prominence Tiers, and grounding notes taken
