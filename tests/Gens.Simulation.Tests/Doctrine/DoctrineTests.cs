@@ -196,6 +196,23 @@ public sealed class DoctrineTests
     }
 
     [Test]
+    public void InvokeAncestralSanctionRemainsUsableAfterAffinityDecaysBelowDefining()
+    {
+        // CapstoneUnlocked is documented (HouseholdDoctrineState) to survive Affinity decaying back
+        // below the Defining threshold — the command must gate on that persisted flag, not the current
+        // Tier, or an already-earned capstone becomes unreachable the moment a quiet month ticks it down.
+        var (state, householdId, _) = OneHousehold();
+        var (_, caseId) = ConvictedCaseAgainst(state, householdId);
+        HouseholdDoctrineResolver.Set(
+            state, new HouseholdDoctrineState(householdId, HouseholdDoctrineType.MosMaiorum, 10, DoctrineTier.Emerging, CapstoneUnlocked: true));
+
+        var result = InvokeAncestralSanctionCommands.Pipeline.Execute(
+            state, new InvokeAncestralSanctionCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, caseId));
+
+        Assert.That(result.Accepted, Is.True);
+    }
+
+    [Test]
     public void InvokeAncestralSanctionOverturnsVerdictAndRestoresDignitasThenCannotBeUsedTwice()
     {
         var (state, householdId, _) = OneHousehold();

@@ -1,6 +1,7 @@
 using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Economy;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
@@ -117,7 +118,11 @@ public static class IssueProscriptionCommands
         var demonstrationTriggered = false;
         foreach (var entry in state.Actors.InAscendingOrder())
         {
-            if (entry.Key == command.TargetActorId || entry.Value.ActorType != LivingWorldActorType.Gens)
+            // §5.7's demonstration effect is explicitly regional ("every regional Rival House"), not
+            // campaign-wide — LivingWorldActor already carries its own RegionId, so this filters to the
+            // target's own region rather than shifting every tracked Gens actor everywhere.
+            if (entry.Key == command.TargetActorId || entry.Value.ActorType != LivingWorldActorType.Gens ||
+                entry.Value.RegionId != target!.RegionId)
                 continue;
 
             var result = AdjustHouseStandingCommands.Pipeline.Execute(
@@ -149,12 +154,22 @@ public static class IssueProscriptionCommands
         return events.ToArray();
     }
 
+    /// <summary>Sizes and moves the seizure off the target's own <see
+    /// cref="LivingWorldActorNetWorth.Band"/> — the only wealth figure a Gens actor actually carries
+    /// (<see cref="EdictCatalog.ProscriptionMaxSeizure"/>'s own doc comment: <see
+    /// cref="LedgerAccountKey.ForActor"/> is never funded for a Gens actor, only for a Collegium, so
+    /// reading it here always seized zero from a real rival house). The seized amount enters the
+    /// issuing household's Treasury from the <see cref="LedgerAccountKey.Mint"/> system account — the
+    /// same "a household-external source of tracked money" convention <see
+    /// cref="Stewardship.StewardAutonomousDecisionSystem"/> already uses — since a Background/Noteworthy
+    /// actor's wealth Band has no ledger account of its own for a balanced two-sided posting to draw
+    /// from. The target's own Band steps down one tier to make the seizure real on the actor's own
+    /// stored state, not just a number materializing on the issuer's side.</summary>
     private static (Money Amount, List<IDomainEvent> Events) SeizeAssets(WorldState state, IssueProscriptionCommand command)
     {
-        var targetBalance = state.LedgerAccounts.TryGet(LedgerAccountKey.ForActor(command.TargetActorId), out var account)
-            ? account!.Balance
-            : Money.Zero;
-        var seizeAmount = targetBalance < EdictCatalog.ProscriptionMaxSeizure ? targetBalance : EdictCatalog.ProscriptionMaxSeizure;
+        state.Actors.TryGet(command.TargetActorId, out var target);
+        var band = target!.NetWorth.Band;
+        var seizeAmount = EdictCatalog.ProscriptionSeizureByBand[band];
 
         if (seizeAmount <= Money.Zero)
             return (Money.Zero, new List<IDomainEvent>());
@@ -163,10 +178,15 @@ public static class IssueProscriptionCommands
             state, command.SubmittedDate, LedgerTransactionCategory.Transfers,
             new[]
             {
-                new LedgerPosting(LedgerAccountKey.ForActor(command.TargetActorId), -seizeAmount),
+                new LedgerPosting(LedgerAccountKey.Mint, -seizeAmount),
                 new LedgerPosting(LedgerAccountKey.ForHousehold(command.IssuingHouseholdId), seizeAmount),
             },
             reference: $"edicts:proscription:{command.CommandId.ToTaggedString()}");
+
+        var downgradedBand = (HouseholdWealthBand)Math.Clamp(
+            (int)band - 1, (int)HouseholdWealthBand.Ruined, (int)HouseholdWealthBand.Wealthy);
+        state.Actors.Remove(command.TargetActorId);
+        state.Actors.Add(command.TargetActorId, target with { NetWorth = target.NetWorth with { Band = downgradedBand } });
 
         return (seizeAmount, new List<IDomainEvent> { posted });
     }

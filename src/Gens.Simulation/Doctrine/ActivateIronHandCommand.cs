@@ -58,7 +58,10 @@ public static class ActivateIronHandCommands
     private static ValidationErrorCode? Validate(WorldState state, ActivateIronHandCommand command)
     {
         var doctrine = HouseholdDoctrineResolver.Current(state, command.HouseholdId, HouseholdDoctrineType.DomusDura);
-        if (doctrine.Tier != DoctrineTier.Defining)
+        // Gates on the persisted CapstoneUnlocked flag, not the current Tier — see
+        // InvokeAncestralSanctionCommands' identical reasoning for why a Tier check would strand an
+        // already-earned capstone the moment Affinity decays back below Defining.
+        if (!doctrine.CapstoneUnlocked)
             return DoctrineNotDefining;
         if (doctrine.CapstoneUsedThisGeneration)
             return AlreadyActive;

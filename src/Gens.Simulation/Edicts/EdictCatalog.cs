@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Gens.Simulation.Ledger;
 
 namespace Gens.Simulation.Edicts;
@@ -22,12 +23,30 @@ public static class EdictCatalog
     public const int ProscriptionInfluenceCost = 25;
     public const int ProscriptionDignitasCost = 10;
 
-    /// <summary>§5.7's "seizing assets in one stroke" — the cap on how much of the target Actor's own
-    /// <see cref="LedgerAccountKey.ForActor"/> balance a <see cref="IssueProscriptionCommand"/> seizes,
-    /// mirroring <see cref="Legal.LegalCatalog.MaxBriberyWeight"/>'s own "cap, don't take everything"
-    /// shape for a resource this codebase already tracks. A target with less than this amount on hand
-    /// simply has its full balance seized, never more than it holds.</summary>
+    /// <summary>§5.7's "seizing assets in one stroke," sized off the target <see
+    /// cref="Actors.LivingWorldActor"/>'s own <see cref="Actors.LivingWorldActorNetWorth.Band"/> — the
+    /// only wealth figure a Gens actor actually carries. <see cref="Actors.LivingWorldActorNetWorth.Figure"/>
+    /// is never populated anywhere in this codebase (confirmed by direct search), and <see
+    /// cref="LedgerAccountKey.ForActor"/> is only ever funded for <see
+    /// cref="Actors.LivingWorldActorType.Collegium"/> actors (<see
+    /// cref="Collegia.FundCollegiumArcaCommand"/>) — a rival Gens actor's own ledger account is always
+    /// empty, so seizing from it (this item's original, incorrect implementation) reported and
+    /// transferred zero for every real rival house. <see cref="ProscriptionSeizureByBand"/> is the
+    /// corrected, real sizing.</summary>
     public static readonly Money ProscriptionMaxSeizure = Money.FromDenarii(150);
+
+    /// <summary>The real seizure amount per <see cref="Actors.LivingWorldActorNetWorth.Band"/> — a
+    /// <see cref="Economy.HouseholdWealthBand.Ruined"/> target has nothing left to seize, and <see
+    /// cref="Economy.HouseholdWealthBand.Wealthy"/> caps at <see cref="ProscriptionMaxSeizure"/> itself.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<Economy.HouseholdWealthBand, Money> ProscriptionSeizureByBand =
+        new Dictionary<Economy.HouseholdWealthBand, Money>
+        {
+            [Economy.HouseholdWealthBand.Ruined] = Money.Zero,
+            [Economy.HouseholdWealthBand.Modest] = Money.FromDenarii(50),
+            [Economy.HouseholdWealthBand.Comfortable] = Money.FromDenarii(100),
+            [Economy.HouseholdWealthBand.Wealthy] = ProscriptionMaxSeizure,
+        };
 
     // ---- Reception (§5.1) — every real Edict's own backlash is a real Scandal (see
     // ScandalSourceType.EdictBacklash's own doc comment) at a severity this catalog names per type. ---

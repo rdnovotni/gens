@@ -67,7 +67,11 @@ public static class InvokeAncestralSanctionCommands
     private static ValidationErrorCode? Validate(WorldState state, InvokeAncestralSanctionCommand command)
     {
         var doctrine = HouseholdDoctrineResolver.Current(state, command.HouseholdId, HouseholdDoctrineType.MosMaiorum);
-        if (doctrine.Tier != DoctrineTier.Defining)
+        // Gates on the persisted CapstoneUnlocked flag, not the current Tier: HouseholdDoctrineState's own
+        // doc comment says a capstone once earned stays earned even if Affinity later decays back below
+        // Defining — checking Tier directly here would silently contradict that and strand an earned
+        // capstone the moment a quiet month ticks it down.
+        if (!doctrine.CapstoneUnlocked)
             return DoctrineNotDefining;
         if (doctrine.CapstoneUsedThisGeneration)
             return CapstoneAlreadyUsed;

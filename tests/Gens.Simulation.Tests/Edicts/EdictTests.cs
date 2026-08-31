@@ -245,15 +245,9 @@ public sealed class EdictTests
         state.Actors.Remove(target.ActorId);
         state.Actors.Add(target.ActorId, target with { HeadCharacterId = targetHeadId });
 
-        // Fund the target's own Actor ledger account so seizure has something real to move.
-        LedgerService.Post(
-            state, state.Date, LedgerTransactionCategory.Treasury,
-            new[]
-            {
-                new LedgerPosting(LedgerAccountKey.ForActor(target.ActorId), Money.FromDenarii(80)),
-                new LedgerPosting(new LedgerAccountKey(LedgerAccountKind.System, "test:seed"), Money.FromDenarii(-80)),
-            });
-
+        // TargetRivalActor seeds a Modest NetWorth.Band — the real, only wealth figure a Gens actor
+        // carries (its own LedgerAccountKey.ForActor is never funded in production), so seizure reads
+        // and steps down that Band directly rather than a manually-funded Actor ledger account.
         var otherActor = TargetRivalActor(state, regionId, settlementId);
 
         var result = IssueProscriptionCommands.Pipeline.Execute(
@@ -263,11 +257,11 @@ public sealed class EdictTests
         {
             Assert.That(result.Accepted, Is.True);
             Assert.That(
-                state.LedgerAccounts.TryGet(LedgerAccountKey.ForActor(target.ActorId), out var targetAccount) ? targetAccount!.Balance : Money.Zero,
-                Is.EqualTo(Money.Zero));
+                state.Actors.TryGet(target.ActorId, out var seizedTarget) ? seizedTarget!.NetWorth.Band : (HouseholdWealthBand?)null,
+                Is.EqualTo(HouseholdWealthBand.Ruined));
             Assert.That(
                 state.LedgerAccounts.TryGet(LedgerAccountKey.ForHousehold(householdId), out var householdAccount) ? householdAccount!.Balance : Money.Zero,
-                Is.EqualTo(Money.FromDenarii(80)));
+                Is.EqualTo(EdictCatalog.ProscriptionSeizureByBand[HouseholdWealthBand.Modest]));
             Assert.That(
                 state.Relationships.TryGet(new RelationshipKey(headId, targetHeadId), out var relationship) ? relationship.Opinion : 0,
                 Is.LessThan(0));

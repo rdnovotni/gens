@@ -62,7 +62,10 @@ public static class PerformGreatRiteCommands
     private static ValidationErrorCode? Validate(WorldState state, PerformGreatRiteCommand command)
     {
         var doctrine = HouseholdDoctrineResolver.Current(state, command.HouseholdId, HouseholdDoctrineType.DomusPia);
-        if (doctrine.Tier != DoctrineTier.Defining)
+        // Gates on the persisted CapstoneUnlocked flag, not the current Tier — see
+        // InvokeAncestralSanctionCommands' identical reasoning for why a Tier check would strand an
+        // already-earned capstone the moment Affinity decays back below Defining.
+        if (!doctrine.CapstoneUnlocked)
             return DoctrineNotDefining;
         if (doctrine.CapstoneUsedThisGeneration)
             return CapstoneAlreadyUsed;
