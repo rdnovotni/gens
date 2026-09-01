@@ -79,6 +79,22 @@ public sealed class BuildingInstance
         Condition = condition;
     }
 
+    /// <summary>Writes a Disaster Event's own condition drop (<c>Hazards.DisasterDamageCalculator</c>,
+    /// Phase 14 item 3; <c>gens-natural-disasters-design.md</c> §5.2) directly into <see
+    /// cref="Condition"/> — the mirror image of <see cref="Repair"/>: <see cref="Repair"/> only ever
+    /// moves condition up, this only ever moves it down, and both share the same "this instance is the
+    /// one place condition changes" discipline <see cref="ApplyUpkeep"/> already established. Floored at
+    /// <see cref="BuildingCondition.Ruined"/> rather than throwing past it — §5.2's own "a Catastrophic
+    /// result can push condition all the way to Destroyed" reads a Catastrophic hit against an
+    /// already-damaged building as still only ever bottoming out at Ruined, never an error.</summary>
+    public void ApplyDisasterDamage(int stepsLost)
+    {
+        if (stepsLost <= 0)
+            throw new ArgumentOutOfRangeException(nameof(stepsLost), stepsLost, "Disaster damage must remove at least one condition step.");
+        var floored = (int)Condition - stepsLost;
+        Condition = floored <= (int)BuildingCondition.Ruined ? BuildingCondition.Ruined : (BuildingCondition)floored;
+    }
+
     /// <summary>Rebuilds a building instance from persisted save data (ADR 0010), bypassing the
     /// constructor's "always starts Pristine and unstaffed" default and <see cref="ApplyUpkeep"/>/<see
     /// cref="Repair"/>'s step-at-a-time validation — the condition and staffing were already valid when

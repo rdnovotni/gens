@@ -67,11 +67,13 @@ public sealed class HealthSaveRoundTripTests
 
         var activeOutbreakId = state.EpidemicOutbreakIds.Issue();
         state.EpidemicOutbreaks.Add(activeOutbreakId, EpidemicOutbreak.Create(
-            activeOutbreakId, settlementId, DiseaseCatalog.Pestilence, new GameDate(15)) with { SettlementQuarantineActive = true });
+            activeOutbreakId, settlementId, DiseaseCatalog.Pestilence, new GameDate(15)) with
+        { SettlementQuarantineActive = true });
 
         var endedOutbreakId = state.EpidemicOutbreakIds.Issue();
         var ended = EpidemicOutbreak.Create(endedOutbreakId, settlementId, DiseaseCatalog.EntericFever, new GameDate(10))
-            with { Status = EpidemicOutbreakStatus.Ended, ImperialScale = true, ResolvedDate = new GameDate(18) };
+            with
+        { Status = EpidemicOutbreakStatus.Ended, ImperialScale = true, ResolvedDate = new GameDate(18) };
         state.EpidemicOutbreaks.Add(endedOutbreakId, ended);
 
         var characterId = state.CharacterIds.Issue();
@@ -79,7 +81,8 @@ public sealed class HealthSaveRoundTripTests
         var caseId = state.CharacterHealthConditionIds.Issue();
         state.CharacterHealthConditions.Add(caseId, CharacterHealthCondition.Create(
             caseId, characterId, DiseaseCatalog.Pestilence, HealthConditionCategory.Acute, hasCure: false, severity: 40, new GameDate(15))
-            with { Quarantined = true });
+            with
+        { Quarantined = true });
 
         var beforeHash = StateHasher.Hash(state);
         var dto = WorldStateMapper.ToDto(state);

@@ -14,6 +14,7 @@ using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Hazards;
 using Gens.Simulation.Health;
 using Gens.Simulation.History;
 using Gens.Simulation.Identity;
@@ -102,6 +103,7 @@ public sealed class WorldState
         RuntimeIdCounter<DistantHolding> distantHoldingIds,
         RuntimeIdCounter<CharacterHealthCondition> characterHealthConditionIds,
         RuntimeIdCounter<EpidemicOutbreak> epidemicOutbreakIds,
+        RuntimeIdCounter<DisasterEvent> disasterEventIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -173,6 +175,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition> characterHealthConditions,
         OrderedRegistry<RuntimeId<Settlement>, SettlementSanitationInvestment> settlementSanitationInvestments,
         OrderedRegistry<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak> epidemicOutbreaks,
+        OrderedRegistry<RuntimeId<DisasterEvent>, DisasterEvent> disasterEvents,
+        OrderedRegistry<RuntimeId<Plot>, DormantVolcano> dormantVolcanoes,
         OrderedRegistry<string, GameDate> firedHistoricalTimelineEntryIds,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
@@ -222,6 +226,7 @@ public sealed class WorldState
         DistantHoldingIds = distantHoldingIds;
         CharacterHealthConditionIds = characterHealthConditionIds;
         EpidemicOutbreakIds = epidemicOutbreakIds;
+        DisasterEventIds = disasterEventIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -293,6 +298,8 @@ public sealed class WorldState
         CharacterHealthConditions = characterHealthConditions;
         SettlementSanitationInvestments = settlementSanitationInvestments;
         EpidemicOutbreaks = epidemicOutbreaks;
+        DisasterEvents = disasterEvents;
+        DormantVolcanoes = dormantVolcanoes;
         FiredHistoricalTimelineEntryIds = firedHistoricalTimelineEntryIds;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
@@ -402,6 +409,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Health.EpidemicOutbreak"/> (Phase 14 item 2).</summary>
     public RuntimeIdCounter<EpidemicOutbreak> EpidemicOutbreakIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Hazards.DisasterEvent"/> (Phase 14 item 3).</summary>
+    public RuntimeIdCounter<DisasterEvent> DisasterEventIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -825,6 +835,19 @@ public sealed class WorldState
     /// "resolved or not, kept for the campaign's lifetime" convention.</summary>
     public OrderedRegistry<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak> EpidemicOutbreaks { get; } = new();
 
+    /// <summary>Every fired §5 <see cref="Hazards.DisasterEvent"/> (Phase 14 item 3), in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once fired, matching <see
+    /// cref="EpidemicOutbreaks"/>'s identical "resolved or not, kept for the campaign's lifetime"
+    /// convention — a Disaster Event is real campaign history, not scratch state to discard.</summary>
+    public OrderedRegistry<RuntimeId<DisasterEvent>, DisasterEvent> DisasterEvents { get; } = new();
+
+    /// <summary>Every §2.2 <see cref="Hazards.DormantVolcano"/> designation (Phase 14 item 3), keyed
+    /// directly by the <see cref="RuntimeId{Plot}"/> it was designated on — a plot missing an entry here
+    /// simply carries no Dormant Volcano, the same "absence reads as the default" convention <see
+    /// cref="SettlementSanitationInvestments"/> already established for its own owner-keyed
+    /// partition.</summary>
+    public OrderedRegistry<RuntimeId<Plot>, DormantVolcano> DormantVolcanoes { get; } = new();
+
     /// <summary>Which <see cref="History.HistoricalTimelineEntryDefinition"/>s (by <see
     /// cref="DefinitionId{T}.Value"/>) <see cref="History.HistoricalTimelineScheduler"/> has already
     /// fired this campaign, mapped to the date each fired — real state, not derivable, so a save/load
@@ -895,6 +918,7 @@ public sealed class WorldState
         ["distantHoldingIds"] = DistantHoldingIds.Peek,
         ["characterHealthConditionIds"] = CharacterHealthConditionIds.Peek,
         ["epidemicOutbreakIds"] = EpidemicOutbreakIds.Peek,
+        ["disasterEventIds"] = DisasterEventIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -965,6 +989,8 @@ public sealed class WorldState
         ["characterHealthConditions"] = CharacterHealthConditions.Version,
         ["settlementSanitationInvestments"] = SettlementSanitationInvestments.Version,
         ["epidemicOutbreaks"] = EpidemicOutbreaks.Version,
+        ["disasterEvents"] = DisasterEvents.Version,
+        ["dormantVolcanoes"] = DormantVolcanoes.Version,
         ["firedHistoricalTimelineEntryIds"] = FiredHistoricalTimelineEntryIds.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,

@@ -41,7 +41,8 @@ public sealed class SetPersonalQuarantineCommandTests
         state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
         var caseId = state.CharacterHealthConditionIds.Issue();
         state.CharacterHealthConditions.Add(caseId, CharacterHealthCondition.Create(
-            caseId, characterId, TestFever, HealthConditionCategory.Acute, hasCure: false, severity: 40, new GameDate(9)) with { Quarantined = true });
+            caseId, characterId, TestFever, HealthConditionCategory.Acute, hasCure: false, severity: 40, new GameDate(9)) with
+        { Quarantined = true });
 
         SetPersonalQuarantineCommands.Pipeline.Execute(
             state, new SetPersonalQuarantineCommand(state.CommandIds.Issue(), "player", new GameDate(10), null, caseId, false));
@@ -72,7 +73,8 @@ public sealed class SetPersonalQuarantineCommandTests
         var caseId = state.CharacterHealthConditionIds.Issue();
         var resolved = CharacterHealthCondition.Create(
             caseId, characterId, TestFever, HealthConditionCategory.Acute, hasCure: false, severity: 40, new GameDate(9))
-            with { Status = CharacterHealthConditionStatus.Recovered, ResolvedDate = new GameDate(10) };
+            with
+        { Status = CharacterHealthConditionStatus.Recovered, ResolvedDate = new GameDate(10) };
         state.CharacterHealthConditions.Add(caseId, resolved);
 
         var command = new SetPersonalQuarantineCommand(state.CommandIds.Issue(), "player", new GameDate(10), null, caseId, true);

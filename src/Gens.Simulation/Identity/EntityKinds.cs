@@ -7,6 +7,7 @@ using Gens.Simulation.Edicts;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
+using Gens.Simulation.Hazards;
 using Gens.Simulation.Health;
 using Gens.Simulation.History;
 using Gens.Simulation.Interactions;
@@ -246,6 +247,11 @@ internal static class RuntimeIdTagRegistry
         // Phase 14 item 2 — Gens.Simulation.Health.EpidemicOutbreak, same "real record as its own tag"
         // convention as CharacterHealthCondition above.
         [typeof(EpidemicOutbreak)] = "epidemicoutbreak",
+        // Phase 14 item 3 — Gens.Simulation.Hazards.DisasterEvent, same "real record as its own tag"
+        // convention as EpidemicOutbreak above. DormantVolcano needs no entry here: it is keyed by its
+        // own Plot's RuntimeId<Plot>, never instantiated with its own RuntimeId<DormantVolcano>, the
+        // same exemption SettlementSanitationInvestment (keyed by RuntimeId<Settlement>) already has.
+        [typeof(DisasterEvent)] = "disasterevent",
     };
 
     public static string Resolve(Type type) =>
