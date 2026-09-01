@@ -1,4 +1,5 @@
 using Gens.Simulation.Characters;
+using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
