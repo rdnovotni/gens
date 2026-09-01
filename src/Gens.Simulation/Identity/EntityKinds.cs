@@ -7,6 +7,7 @@ using Gens.Simulation.Edicts;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
+using Gens.Simulation.Health;
 using Gens.Simulation.History;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
@@ -239,6 +240,9 @@ internal static class RuntimeIdTagRegistry
         // Phase 13 item 7 — Gens.Simulation.Land.DistantHolding, same "real record as its own tag"
         // convention as DivergenceRecord above.
         [typeof(DistantHolding)] = "distantholding",
+        // Phase 14 item 1 — Gens.Simulation.Health.CharacterHealthCondition, same "real record as its
+        // own tag" convention as DistantHolding above.
+        [typeof(CharacterHealthCondition)] = "healthcond",
     };
 
     public static string Resolve(Type type) =>

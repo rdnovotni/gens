@@ -149,6 +149,11 @@ public static class CampaignBootstrapper
     /// interception/forgery risk resolution.</summary>
     public const string CorrespondenceRiskStreamName = Correspondence.CorrespondenceTransitSystem.RiskStreamName;
 
+    /// <summary>The named random stream <see cref="Health.CharacterHealthConditionSystem"/> reserves
+    /// for its monthly recovery/fatality rolls (Phase 14 item 1), kept distinct from every other stream
+    /// here for the same rule-8 reason.</summary>
+    public const string HealthConditionProgressionStreamName = "health.conditionProgression";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -184,6 +189,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(LegalMajorCaseVerdictOutcomeStreamName, config.Seed);
         streams.AddDerived(CrimeDetentionEscapeAttemptStreamName, config.Seed);
         streams.AddDerived(CorrespondenceRiskStreamName, config.Seed);
+        streams.AddDerived(HealthConditionProgressionStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

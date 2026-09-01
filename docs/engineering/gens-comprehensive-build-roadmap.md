@@ -1849,13 +1849,13 @@ concrete rule for, not the other two's still-unsized multipliers. Covered by 13 
 `tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, including a save/load round trip with a stable
 deterministic state hash.
 
-### Phase 14 — Add health, disease, disasters, and mobile populations — ⬜ NOT STARTED
+### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 1 of 5)
 
 **Outcome:** environmental and biological pressure matters without becoming arbitrary save destruction.
 
 Construction order:
 
-1. Extend health with conditions, exposure, resistance/immunity, treatment, recovery, mortality attribution, and care capacity.
+1. [x] Extend health with conditions, exposure, resistance/immunity, treatment, recovery, mortality attribution, and care capacity.
 2. Implement sanitation, food/water quality, crowding, livestock disease, endemic pressure, outbreaks, and quarantine.
 3. Implement environmental hazard profiles, forecast/knowledge, disaster instances, damage, displacement, recovery, and region/date modifiers.
 4. Implement wandering population cohorts, routes, needs, fame/visibility, settlement interaction, recruitment, and promotion to named characters.
@@ -1864,6 +1864,68 @@ Construction order:
 **Exit gate:** hazards have visible causes, warnings where appropriate, bounded losses, recovery paths, and deterministic fixtures; they do not bypass ownership, ledger, health, or event rules.
 
 **Primary design inputs:** `gens-disease-public-health-design.md`, `gens-natural-disasters-design.md`, `gens-wandering-populations-design.md`.
+
+**Item 1 progress:** the generic, disease-agnostic Health substrate lands in a new
+`src/Gens.Simulation/Health/` namespace, deliberately scoped narrower than
+`gens-disease-public-health-design.md` as a whole — §2's seven named endemic diseases, §3's four named
+epidemics, their terrain/sanitation/crowding-driven Exposure drivers, contagion spread, quarantine
+(§4), Sanitation Investment (§6), and livestock/zoonotic crossover (§8) are all explicitly item 2's
+"sanitation... endemic pressure, outbreaks, quarantine" territory, matching the design doc's own
+"representative rather than exhaustive" framing and this roadmap's own item-by-item split. This item
+instead builds the reusable machinery every one of those future named diseases will plug into:
+`HealthConditionDefinition`/`HealthConditionCatalog` (content, empty until item 2 authors real
+content) mirror `Cultures.CultureDefinition`/`CultureCatalog`'s identical "sealed record,
+constructor-validates, duplicate-ID-rejecting catalog" shape exactly. `CharacterHealthCondition` is
+the new `RuntimeId`-keyed `WorldState` partition (`CharacterHealthConditions`, wired through
+`StateHasher`/`WorldSaveDto`/`WorldStateMapper` the same five-file way every prior runtime partition
+has been) — one entry per standing case, snapshotting its `HealthConditionDefinition`'s Category and
+HasCure at onset so no system needs catalog access at tick time, the same reasoning `PermanentInjury`
+already established for never re-resolving content. Deliberately not named `HealthCondition`: that
+identifier is already `Characters.Condition`'s own five-stat Health/Fatigue/Loyalty/Ambition/Fertility
+block (`gens-familia-design.md` §2.3), a wholly different concept. §5's Immunity is not a separate
+record: a case that resolves `Recovered` with `GrantedImmunity` set (true only for an
+`Acute`/epidemic-layer case, never a `Chronic`/endemic one, per §5's own "survives an Epidemic"
+framing) is simply kept in the registry forever, matching `EventInstances`'s "resolved or not, kept
+for the campaign's lifetime" convention — `HealthQueries.IsImmune`/`HasActiveCondition`/
+`ActiveConditionsFor` are linear scans over it, the same shape `Languages.LanguageProficiencyQueries`
+already established for an equivalent "a Character legitimately holds several entries at once"
+collection. `AfflictCharacterCommand` is the entry point future callers (item 2's contagion rolls,
+item 3's disaster-aftermath flares, Natural Disasters' Flood/Famine triggers) will use once they
+exist — an explicit "hook" needing no caller wired up in this item, the same discipline
+`ApplyPermanentInjuryCommand` already used; it rejects a duplicate active case of the same condition
+and, mechanically realizing §5's whole payoff, rejects afflicting an already-immune Character outright.
+
+Treatment, recovery, mortality attribution, and care capacity are real, tested mechanisms, not just
+scaffolding. `HealthConditionProgressionCalculator` (drain/recovery/fatality/severity-drift) and
+`CareCapacityCalculator` (a Physician's bounded monthly caseload from `LaborSkills.Medicine` via the
+existing `DutySlot.Physician` duty slot) are pure, RNG-free functions extending
+`Characters.MortalityCalculator`'s own "documented as invented, pending playtesting" precedent — no
+numeric exposure/immunity/treatment/recovery curve exists anywhere in the design corpus
+(§12's own "All numeric sizing" open question), so every constant is this implementation's own
+invented figure, disclosed in each calculator's doc comment, chosen only so that an Acute
+(epidemic-layer) case drains Health and risks death faster than a Chronic (endemic-layer) one, both
+resolve faster than they fester, Physician treatment measurably improves every one of those odds, and
+an incurable condition (`HasCure` false) resists treatment far more than a curable one — §2's Roman
+Fever/Consumption "no real cure — only managed severity" framing made literal. `CharacterHealthConditionSystem`
+(`TickPhase.Hazards` — this same roadmap wave's own phase) is the monthly tick: it resolves each
+afflicted Household's bounded care-capacity allocation (earliest-onset cases treated first when
+capacity falls short), applies drain, rolls recovery or fatality, and on a fatal roll kills the
+Character through Familia's existing unrestricted death mechanism (§10) — closing marriages the exact
+way `CharacterLifecycleSystem` already does for an old-age death. Mortality attribution is this item's
+own closed gap: `DeathRecord` gains an additive, nullable `ConditionId` field (no migration needed,
+ADR 0011's pre-v1 additive policy) so a Disease death can finally name *which* condition caused it,
+where previously `DeathCause.Disease` existed only as an unattributed enum value populated by
+`CharacterLifecycleSystem`'s own coarse Infant-stage heuristic — that older heuristic is untouched;
+this item only adds the richer attribution path future disease content will actually use. Covered by
+39 new tests across `tests/Gens.Simulation.Tests/Health/{HealthConditionCatalogTests,
+HealthConditionProgressionCalculatorTests,CareCapacityCalculatorTests,AfflictCharacterCommandTests,
+HealthQueriesTests,CharacterHealthConditionSystemTests,HealthSaveRoundTripTests}.cs`, including a
+save/load round trip with a stable deterministic state hash for the new `CharacterHealthConditions`
+`WorldState` partition and the `DeathRecord.ConditionId` addition together. Deliberately out of scope,
+named for item 2: the seven endemic/four epidemic named diseases themselves, their terrain/sanitation/
+crowding Exposure drivers, contagion spread, quarantine, Sanitation Investment, and livestock disease;
+named for items 3/5: Natural Disasters' hazard profiles and the Antonine Plague's own Event Chain and
+cross-system wiring into goods/buildings/markets/travel/events/reports.
 
 ### Phase 15 — Add advanced commerce, property, and public investment — ⬜ NOT STARTED
 
