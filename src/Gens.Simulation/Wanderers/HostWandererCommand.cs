@@ -162,14 +162,19 @@ public static class HostWandererCommands
                 reference: $"wanderers:host:{command.WandererId.ToTaggedString()}:{command.SubmittedDate.TotalMonths}"));
         }
 
-        DignitasResolver.Apply(state, command.HouseholdId, profile.HostDignitasGain);
+        // §4's "a genuinely more valuable Host... target" made literal: the delivered benefit scales
+        // with the Wanderer's own current Fame (see WandererFameCalculator.ScaleByFame's own doc
+        // comment), not just the fixed per-type base amount.
+        var dignitasGain = WandererFameCalculator.ScaleByFame(profile.HostDignitasGain, wanderer.Fame);
+        DignitasResolver.Apply(state, command.HouseholdId, dignitasGain);
 
         var healthRestored = 0;
         if (command.BeneficiaryCharacterId is { } beneficiaryId)
         {
             state.Characters.TryGet(beneficiaryId, out var beneficiary);
             var condition = beneficiary!.Condition;
-            var restoredHealth = Math.Min(100, condition.Health + PhysicianHealthRecovery);
+            var healthRecovery = WandererFameCalculator.ScaleByFame(PhysicianHealthRecovery, wanderer.Fame);
+            var restoredHealth = Math.Min(100, condition.Health + healthRecovery);
             healthRestored = restoredHealth - condition.Health;
             state.Characters.Remove(beneficiaryId);
             state.Characters.Add(beneficiaryId, beneficiary with

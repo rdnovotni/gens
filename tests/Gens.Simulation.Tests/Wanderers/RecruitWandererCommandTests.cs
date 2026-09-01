@@ -179,6 +179,28 @@ public sealed class RecruitWandererCommandTests
     }
 
     [Test]
+    public void AnInvalidRandomStreamLeavesNoPartiallyAppliedRecruitmentFee()
+    {
+        var (state, householdId, settlementId) = Campaign();
+        var wanderer = WandererTestFixtures.AddWanderer(state);
+        var emptyStreams = new RandomStreamSet();
+        var pipeline = RecruitWandererCommands.CreatePipeline(emptyStreams, WandererTestFixtures.TypeCatalog);
+        var command = new RecruitWandererCommand(
+            state.CommandIds.Issue(), "player", Now, null, wanderer.Id, householdId, settlementId, "unregistered-stream");
+
+        Assert.That(() => pipeline.Execute(state, command), Throws.TypeOf<KeyNotFoundException>());
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                state.LedgerAccounts.TryGet(LedgerAccountKey.ForHousehold(householdId), out _), Is.False,
+                "generation must fail before the recruitment fee is ever posted.");
+            Assert.That(state.Characters.InAscendingOrder(), Is.Empty);
+            Assert.That(state.WandererEngagements.InAscendingOrder(), Is.Empty);
+        });
+    }
+
+    [Test]
     public void ValidationRejectsAMissingWandererAndAnUnknownSettlement()
     {
         var (state, householdId, _) = Campaign();

@@ -88,4 +88,33 @@ public sealed class WandererFameCalculatorTests
             Assert.That(WandererFameCalculator.MaximumStartingFame, Is.LessThanOrEqualTo(100));
         });
     }
+
+    [Test]
+    public void AHighFameWandererDeliversAMoreValuableHostBenefitThanAnObscureOne()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(WandererFameCalculator.ScaleByFame(10, 0), Is.EqualTo(5));
+            Assert.That(WandererFameCalculator.ScaleByFame(10, 50), Is.EqualTo(10), "Fame 50 reproduces the base amount exactly.");
+            Assert.That(WandererFameCalculator.ScaleByFame(10, 100), Is.EqualTo(15));
+            Assert.That(WandererFameCalculator.ScaleByFame(10, 0), Is.LessThan(WandererFameCalculator.ScaleByFame(10, 100)));
+        });
+    }
+
+    [Test]
+    public void AScaledBenefitNeverDropsBelowOne()
+    {
+        Assert.That(WandererFameCalculator.ScaleByFame(1, 0), Is.EqualTo(1));
+    }
+
+    [Test]
+    public void ScaleByFameRejectsANonPositiveBaseAmountOrAnOutOfRangeFame()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(() => WandererFameCalculator.ScaleByFame(0, 50), Throws.TypeOf<ArgumentOutOfRangeException>());
+            Assert.That(() => WandererFameCalculator.ScaleByFame(10, -1), Throws.TypeOf<ArgumentOutOfRangeException>());
+            Assert.That(() => WandererFameCalculator.ScaleByFame(10, 101), Throws.TypeOf<ArgumentOutOfRangeException>());
+        });
+    }
 }
