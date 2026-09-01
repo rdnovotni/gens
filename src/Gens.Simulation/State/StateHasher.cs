@@ -74,6 +74,8 @@ public static class StateHasher
         hash = MixLong(hash, state.DisasterEventIds.Peek);
         hash = MixLong(hash, state.WandererIds.Peek);
         hash = MixLong(hash, state.WandererEngagementIds.Peek);
+        hash = MixLong(hash, state.DistrictIds.Peek);
+        hash = MixLong(hash, state.PropertyRecordIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -829,6 +831,7 @@ public static class StateHasher
             hash = MixLong(hash, (long)record.ManagementStatus);
             hash = MixLong(hash, record.OperatorCharacterId?.Value ?? -1L);
             hash = MixLong(hash, record.OperatorIsSkimming ? 1L : 0L);
+            hash = MixLong(hash, record.OperatorHasEverSkimmed ? 1L : 0L);
             hash = MixLong(hash, record.OperatorTenureMonths);
             hash = MixLong(hash, record.OperatorBuyoutOffered ? 1L : 0L);
             hash = MixLong(hash, record.LesseeId?.Value ?? -1L);
@@ -845,6 +848,7 @@ public static class StateHasher
             hash = MixLong(hash, (long)extension.ManagementStatus);
             hash = MixLong(hash, extension.OperatorCharacterId?.Value ?? -1L);
             hash = MixLong(hash, extension.OperatorIsSkimming ? 1L : 0L);
+            hash = MixLong(hash, extension.OperatorHasEverSkimmed ? 1L : 0L);
             hash = MixLong(hash, extension.OperatorTenureMonths);
             hash = MixLong(hash, extension.OperatorBuyoutOffered ? 1L : 0L);
             hash = MixLong(hash, extension.LesseeId?.Value ?? -1L);

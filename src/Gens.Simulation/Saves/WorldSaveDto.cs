@@ -3446,6 +3446,9 @@ public sealed record PropertyRecordDto
 
     [JsonPropertyOrder(14)]
     public required int Condition { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public required bool OperatorHasEverSkimmed { get; init; }
 }
 
 /// <summary>One Plot's §3 management-status/ownership extension (Phase 15 item 1) — <see
@@ -3478,4 +3481,7 @@ public sealed record PlotPropertyExtensionDto
 
     [JsonPropertyOrder(8)]
     public required long ValueRawValue { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool OperatorHasEverSkimmed { get; init; }
 }

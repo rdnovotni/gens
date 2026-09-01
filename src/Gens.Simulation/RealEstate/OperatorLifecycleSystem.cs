@@ -74,6 +74,7 @@ public sealed class OperatorLifecycleSystem : IMonthlySystem<WorldState>
             return;
 
         var isSkimming = operatorCharacter.Condition.Loyalty < RealEstateCatalog.SkimmingLoyaltyThreshold;
+        var hasEverSkimmed = view.OperatorHasEverSkimmed || isSkimming;
         var tenure = view.OperatorTenureMonths + 1;
 
         var districtPropertyValue = view.DistrictId is { } districtId && state.Districts.TryGet(districtId, out var district)
@@ -81,14 +82,14 @@ public sealed class OperatorLifecycleSystem : IMonthlySystem<WorldState>
             : RealEstateCatalog.BaselinePropertyValue;
 
         var buyoutOffered = view.OperatorBuyoutOffered || (
-            !isSkimming &&
+            !hasEverSkimmed &&
             tenure >= RealEstateCatalog.BuyoutMinimumTenureMonths &&
             operatorCharacter.Condition.Ambition >= RealEstateCatalog.BuyoutAmbitionThreshold &&
             operatorCharacter.GetEffectiveAttributes().Stewardship >= RealEstateCatalog.BuyoutStewardshipThreshold &&
             view.DistrictId is not null &&
             districtPropertyValue >= RealEstateCatalog.BuyoutDistrictPropertyValueThreshold);
 
-        PropertyResolver.SetOperatorState(state, subject, isSkimming, tenure, buyoutOffered);
+        PropertyResolver.SetOperatorState(state, subject, isSkimming, hasEverSkimmed, tenure, buyoutOffered);
 
         if (buyoutOffered && !view.OperatorBuyoutOffered)
         {

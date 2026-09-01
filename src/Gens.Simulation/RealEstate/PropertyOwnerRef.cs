@@ -123,32 +123,67 @@ public readonly record struct PropertyOwnerRef(PropertyOwnerKind Kind, string? O
     /// kinds.</summary>
     public string ToTaggedOwnerId() => OwnerId is null ? Kind.ToString() : $"{Kind}{Separator}{OwnerId}";
 
-    /// <summary>Legacy prefix for a bare <see cref="RuntimeId{Household}"/> tagged string, predating
-    /// this item: <see cref="Land.AcquirePlotCommands"/>' own <see
-    /// cref="Land.HouseholdEconomyCalculator.TryGetOwningHousehold"/> convention (Phase 6/8) already
-    /// stores <see cref="Plot.OwnerId"/> as a bare household tag with no owner-kind prefix at all. A
-    /// Plot acquired before this item shipped therefore parses here too, read as <see
-    /// cref="PropertyOwnerKind.PlayerHousehold"/> — the same value that convention always implicitly
-    /// meant.</summary>
-    private const string LegacyHouseholdPrefix = "household_";
+    /// <summary>Legacy bare <see cref="RuntimeId{T}"/> tagged-string prefixes predating this item, each
+    /// mapped to the owner kind that convention always implicitly meant: <see
+    /// cref="Land.HouseholdEconomyCalculator.TryGetOwningHousehold"/> (Phase 6/8) already stores <see
+    /// cref="Plot.OwnerId"/> as a bare household tag with no owner-kind prefix, and <see
+    /// cref="Land.Plot.OwnerId"/>'s own doc comment ("households, characters, civic bodies, temples,
+    /// and partnerships may all own land") names three further bare-tagged forms a pre-upgrade Plot can
+    /// legally carry: a bare Character tag, a bare Settlement tag (the civic-body case, §2's
+    /// Municipal), and a bare Actor tag. A bare Actor tag is inherently ambiguous between <see
+    /// cref="PropertyOwnerKind.RivalGens"/> and <see cref="PropertyOwnerKind.Collegium"/> — both key
+    /// off the same <see cref="RuntimeId{Actor}"/> — so it resolves to RivalGens, the more general of
+    /// the two, on the same "best-effort legacy read, not a lossless round trip" basis <see
+    /// cref="PropertyOwnerKind.Temple"/>'s and <see cref="PropertyOwnerKind.Societas"/>'s own free-form
+    /// (never previously tagged at all) legacy forms simply cannot recover.</summary>
+    private static readonly (string Prefix, PropertyOwnerKind Kind)[] LegacyBarePrefixes =
+    {
+        ("household_", PropertyOwnerKind.PlayerHousehold),
+        ("char_", PropertyOwnerKind.IndividualCharacter),
+        ("settlement_", PropertyOwnerKind.Municipal),
+        ("actor_", PropertyOwnerKind.RivalGens),
+    };
 
-    public static PropertyOwnerRef Parse(string taggedOwnerId)
+    /// <summary>Non-throwing form of <see cref="Parse"/> — used by callers (e.g. <see
+    /// cref="PropertyResolver.TryResolve"/>'s own monthly-tick callers) that must not abort an entire
+    /// tick over one property carrying an owner tag genuinely outside every recognized legacy or
+    /// current form (a free-form pre-upgrade Temple or Societas display name, chiefly).</summary>
+    public static bool TryParse(string taggedOwnerId, out PropertyOwnerRef ownerRef)
     {
         if (string.IsNullOrWhiteSpace(taggedOwnerId))
-            throw new ArgumentException("A tagged owner ID is required.", nameof(taggedOwnerId));
+        {
+            ownerRef = default;
+            return false;
+        }
 
         var splitIndex = taggedOwnerId.IndexOf(Separator, StringComparison.Ordinal);
         var kindText = splitIndex < 0 ? taggedOwnerId : taggedOwnerId[..splitIndex];
-        if (!Enum.TryParse<PropertyOwnerKind>(kindText, out var kind))
+        if (Enum.TryParse<PropertyOwnerKind>(kindText, out var kind))
         {
-            if (taggedOwnerId.StartsWith(LegacyHouseholdPrefix, StringComparison.Ordinal))
-                return new PropertyOwnerRef(PropertyOwnerKind.PlayerHousehold, taggedOwnerId);
-
-            throw new FormatException($"'{taggedOwnerId}' is not a recognized {nameof(PropertyOwnerRef)}.");
+            var ownerId = splitIndex < 0 ? null : taggedOwnerId[(splitIndex + Separator.Length)..];
+            ownerRef = new PropertyOwnerRef(kind, ownerId);
+            return true;
         }
 
-        var ownerId = splitIndex < 0 ? null : taggedOwnerId[(splitIndex + Separator.Length)..];
-        return new PropertyOwnerRef(kind, ownerId);
+        foreach (var (prefix, legacyKind) in LegacyBarePrefixes)
+        {
+            if (taggedOwnerId.StartsWith(prefix, StringComparison.Ordinal))
+            {
+                ownerRef = new PropertyOwnerRef(legacyKind, taggedOwnerId);
+                return true;
+            }
+        }
+
+        ownerRef = default;
+        return false;
+    }
+
+    public static PropertyOwnerRef Parse(string taggedOwnerId)
+    {
+        if (TryParse(taggedOwnerId, out var ownerRef))
+            return ownerRef;
+
+        throw new FormatException($"'{taggedOwnerId}' is not a recognized {nameof(PropertyOwnerRef)}.");
     }
 
     private static string RequireName(string value, string paramName)

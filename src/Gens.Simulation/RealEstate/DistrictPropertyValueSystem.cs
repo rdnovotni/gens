@@ -3,6 +3,7 @@ using Gens.Simulation.Commands;
 using Gens.Simulation.Hazards;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.Ledger;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Regions;
 using Gens.Simulation.State;
@@ -44,8 +45,9 @@ public sealed class DistrictPropertyValueSystem : IMonthlySystem<WorldState>
 
     public string Id => "realEstate.districtPropertyValue";
     public TickPhase Phase => TickPhase.MarketsLedger;
-    public IReadOnlyCollection<string> Reads { get; } = new[] { "districts", "popGroups", "disasterEvents" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "districts" };
+    public IReadOnlyCollection<string> Reads { get; } =
+        new[] { "districts", "popGroups", "disasterEvents", "plotPropertyExtensions", "propertyRecords" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "districts", "plotPropertyExtensions", "propertyRecords" };
     public IReadOnlyCollection<string> Prerequisites { get; } = new[] { "characters.contentment", "characters.migration" };
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -78,9 +80,43 @@ public sealed class DistrictPropertyValueSystem : IMonthlySystem<WorldState>
 
             state.Districts.Remove(entry.Key);
             state.Districts.Add(entry.Key, district with { PropertyValue = moved, PreviousSettlementPopulation = population });
+
+            RepriceLinkedProperties(state, entry.Key, district.PropertyValue, moved);
         }
 
         return Array.Empty<IDomainEvent>();
+    }
+
+    /// <summary>§9's "value... moving from... the District's own trend": every Plot or PropertyRecord
+    /// linked to this District (<see cref="PlotPropertyExtension.DistrictId"/>/<see
+    /// cref="PropertyRecord.DistrictId"/>) has its own tracked <see cref="PropertyView.Value"/> rescaled
+    /// by the same fraction the District's own Property Value just moved — so a transfer price or an
+    /// Operator's remittance, both read straight off that tracked Value, actually feel population,
+    /// Contentment, disaster damage, and Gazetteer Prominence the way §4/§9 require, rather than only
+    /// the District's own index number moving in isolation. A property still priced at <see
+    /// cref="Money.Zero"/> (never yet priced by a real acquisition/sale) stays zero — there is nothing
+    /// yet to rescale.</summary>
+    private static void RepriceLinkedProperties(WorldState state, RuntimeId<District> districtId, Fixed64 previousValue, Fixed64 newValue)
+    {
+        if (previousValue == Fixed64.Zero || previousValue == newValue)
+            return;
+
+        var ratio = Fixed64.Divide(newValue, previousValue);
+
+        foreach (var entry in state.PlotPropertyExtensions.InAscendingOrder().ToArray())
+        {
+            if (entry.Value.DistrictId != districtId || entry.Value.Value == Money.Zero)
+                continue;
+            PlotPropertyResolver.Set(state, entry.Value with { Value = entry.Value.Value.Scale(ratio) });
+        }
+
+        foreach (var entry in state.PropertyRecords.InAscendingOrder().ToArray())
+        {
+            if (entry.Value.DistrictId != districtId || entry.Value.Value == Money.Zero)
+                continue;
+            state.PropertyRecords.Remove(entry.Key);
+            state.PropertyRecords.Add(entry.Key, entry.Value with { Value = entry.Value.Value.Scale(ratio) });
+        }
     }
 
     private static (int Population, Fixed64 Contentment) SettlementDemographics(WorldState state, RuntimeId<Settlement> settlementId)

@@ -17,6 +17,7 @@ public readonly record struct PropertyView(
     PropertyManagementStatus ManagementStatus,
     RuntimeId<Character>? OperatorCharacterId,
     bool OperatorIsSkimming,
+    bool OperatorHasEverSkimmed,
     int OperatorTenureMonths,
     bool OperatorBuyoutOffered,
     RuntimeId<Household>? LesseeId,
@@ -41,7 +42,8 @@ public static class PropertyResolver
         {
             case PropertySubjectKind.Plot:
                 {
-                    if (!state.Plots.TryGet(subject.AsPlotId(), out var plot) || plot.OwnerId is null)
+                    if (!state.Plots.TryGet(subject.AsPlotId(), out var plot) || plot.OwnerId is null ||
+                        !PropertyOwnerRef.TryParse(plot.OwnerId, out var owner))
                     {
                         view = default;
                         return false;
@@ -49,10 +51,10 @@ public static class PropertyResolver
 
                     var extension = PlotPropertyResolver.Current(state, subject.AsPlotId());
                     view = new PropertyView(
-                        subject, PropertyOwnerRef.Parse(plot.OwnerId), plot.SettlementId, extension.DistrictId,
+                        subject, owner, plot.SettlementId, extension.DistrictId,
                         extension.ManagementStatus, extension.OperatorCharacterId, extension.OperatorIsSkimming,
-                        extension.OperatorTenureMonths, extension.OperatorBuyoutOffered, extension.LesseeId,
-                        extension.Value, plot.Condition);
+                        extension.OperatorHasEverSkimmed, extension.OperatorTenureMonths, extension.OperatorBuyoutOffered,
+                        extension.LesseeId, extension.Value, plot.Condition);
                     return true;
                 }
 
@@ -66,8 +68,9 @@ public static class PropertyResolver
 
                     view = new PropertyView(
                         subject, record.Owner, record.SettlementId, record.DistrictId, record.ManagementStatus,
-                        record.OperatorCharacterId, record.OperatorIsSkimming, record.OperatorTenureMonths,
-                        record.OperatorBuyoutOffered, record.LesseeId, record.Value, record.Condition);
+                        record.OperatorCharacterId, record.OperatorIsSkimming, record.OperatorHasEverSkimmed,
+                        record.OperatorTenureMonths, record.OperatorBuyoutOffered, record.LesseeId, record.Value,
+                        record.Condition);
                     return true;
                 }
 
@@ -91,18 +94,20 @@ public static class PropertyResolver
             ManagementStatus = status,
             OperatorCharacterId = status == PropertyManagementStatus.LeasedOut ? operatorCharacterId : null,
             OperatorIsSkimming = operatorChanged ? false : view.OperatorIsSkimming,
+            OperatorHasEverSkimmed = operatorChanged ? false : view.OperatorHasEverSkimmed,
             OperatorTenureMonths = operatorChanged ? 0 : view.OperatorTenureMonths,
             OperatorBuyoutOffered = operatorChanged ? false : view.OperatorBuyoutOffered,
         });
     }
 
     public static void SetOperatorState(
-        WorldState state, PropertySubjectRef subject, bool isSkimming, int tenureMonths, bool buyoutOffered)
+        WorldState state, PropertySubjectRef subject, bool isSkimming, bool hasEverSkimmed, int tenureMonths, bool buyoutOffered)
     {
         TryResolve(state, subject, out var view);
         Mutate(state, subject, view with
         {
             OperatorIsSkimming = isSkimming,
+            OperatorHasEverSkimmed = hasEverSkimmed,
             OperatorTenureMonths = tenureMonths,
             OperatorBuyoutOffered = buyoutOffered,
         });
@@ -139,7 +144,8 @@ public static class PropertyResolver
 
                     PlotPropertyResolver.Set(state, PlotPropertyExtension.Restore(
                         plotId, next.DistrictId, next.ManagementStatus, next.OperatorCharacterId, next.OperatorIsSkimming,
-                        next.OperatorTenureMonths, next.OperatorBuyoutOffered, next.LesseeId, next.Value));
+                        next.OperatorHasEverSkimmed, next.OperatorTenureMonths, next.OperatorBuyoutOffered, next.LesseeId,
+                        next.Value));
                     return;
                 }
 
@@ -155,6 +161,7 @@ public static class PropertyResolver
                         ManagementStatus = next.ManagementStatus,
                         OperatorCharacterId = next.OperatorCharacterId,
                         OperatorIsSkimming = next.OperatorIsSkimming,
+                        OperatorHasEverSkimmed = next.OperatorHasEverSkimmed,
                         OperatorTenureMonths = next.OperatorTenureMonths,
                         OperatorBuyoutOffered = next.OperatorBuyoutOffered,
                         LesseeId = next.LesseeId,

@@ -78,6 +78,41 @@ public sealed class RealEstateTests
     }
 
     [Test]
+    public void PropertyOwnerRefParsesLegacyBareCharacterSettlementAndActorTags()
+    {
+        var characterId = new RuntimeIdCounter<Character>().Issue();
+        var settlementId = new RuntimeIdCounter<Settlement>().Issue();
+        var actorId = new RuntimeIdCounter<Actor>().Issue();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(PropertyOwnerRef.Parse(characterId.ToTaggedString()).Kind, Is.EqualTo(PropertyOwnerKind.IndividualCharacter));
+            Assert.That(PropertyOwnerRef.Parse(settlementId.ToTaggedString()).Kind, Is.EqualTo(PropertyOwnerKind.Municipal));
+            Assert.That(PropertyOwnerRef.Parse(actorId.ToTaggedString()).Kind, Is.EqualTo(PropertyOwnerKind.RivalGens));
+        });
+    }
+
+    [Test]
+    public void PropertyOwnerRefTryParseFailsGracefullyForAnUnrecognizedLegacyTag()
+    {
+        var parsed = PropertyOwnerRef.TryParse("Temple of Diana Nemorensis", out _);
+
+        Assert.That(parsed, Is.False);
+    }
+
+    [Test]
+    public void TryResolveSkipsAPlotWithAnUnparseableLegacyOwnerTagInsteadOfThrowing()
+    {
+        var (state, settlementId) = OneVicusSettlement();
+        var plotId = state.PlotIds.Issue();
+        state.Plots.Add(plotId, Plot.Create(plotId, settlementId, ownerId: "Temple of Diana Nemorensis"));
+
+        var resolved = PropertyResolver.TryResolve(state, PropertySubjectRef.ForPlot(plotId), out _);
+
+        Assert.That(resolved, Is.False);
+    }
+
+    [Test]
     public void PropertyOwnerRefCoversEveryOwnershipTypeSection2Names()
     {
         var actorId = new RuntimeIdCounter<Actor>().Issue();
@@ -194,6 +229,45 @@ public sealed class RealEstateTests
 
         state.Districts.TryGet(districtId, out var district);
         Assert.That(district!.PropertyValue, Is.GreaterThanOrEqualTo(RealEstateCatalog.MinimumPropertyValue));
+    }
+
+    [Test]
+    public void DistrictPropertyValueChangesRepriceLinkedPlotsAndPropertyRecords()
+    {
+        var (state, settlementId) = OneVicusSettlement();
+        var districtId = state.DistrictIds.Issue();
+        state.Districts.Add(districtId, District.Create(districtId, settlementId, "Forum District"));
+
+        var householdId = state.HouseholdIds.Issue();
+        var plotId = OwnedPlot(state, settlementId, householdId);
+        PropertyResolver.SetDistrict(state, PropertySubjectRef.ForPlot(plotId), districtId);
+        PropertyResolver.SetValue(state, PropertySubjectRef.ForPlot(plotId), Money.FromDenarii(10000));
+
+        var recordId = state.PropertyRecordIds.Issue();
+        state.PropertyRecords.Add(recordId, PropertyRecord.Create(
+            recordId, PropertyAssetType.NamedHolding, "Warehouse of the Grain Guild",
+            PropertyOwnerRef.ForTemple("Temple of Ceres"), Money.FromDenarii(2000), settlementId, districtId));
+
+        var groupKey = new PopGroupKey(settlementId, PopGroupType.Operarii);
+        state.PopGroups.Add(groupKey, PopGroup.Create(
+            settlementId, PopGroupType.Operarii, size: 100, contentment: Fixed64.FromRaw(900_000)));
+
+        var system = new DistrictPropertyValueSystem();
+        for (var month = 1; month <= 5; month++)
+            system.Tick(state, Tick(month));
+
+        state.Districts.TryGet(districtId, out var district);
+        Assert.That(district!.PropertyValue, Is.GreaterThan(RealEstateCatalog.BaselinePropertyValue));
+
+        PropertyResolver.TryResolve(state, PropertySubjectRef.ForPlot(plotId), out var plotView);
+        PropertyResolver.TryResolve(state, PropertySubjectRef.ForPropertyRecord(recordId), out var recordView);
+        Assert.Multiple(() =>
+        {
+            Assert.That(plotView.Value, Is.GreaterThan(Money.FromDenarii(10000)),
+                "A gentrifying District's rising Property Value must reprice the Plots linked to it.");
+            Assert.That(recordView.Value, Is.GreaterThan(Money.FromDenarii(2000)),
+                "The same repricing must reach a linked PropertyRecord (Ship/Named Holding), not just Plots.");
+        });
     }
 
     // ---- TransferPropertyCommand (§5, §9) ---------------------------------------------------------
@@ -515,6 +589,55 @@ public sealed class RealEstateTests
     }
 
     [Test]
+    public void AnOperatorWhoOnceSkimmedNeverQualifiesForABuyoutEvenAfterLoyaltyRecovers()
+    {
+        var (state, settlementId) = OneVicusSettlement();
+        var districtId = state.DistrictIds.Issue();
+        state.Districts.Add(districtId, District.Create(
+            districtId, settlementId, "Forum District", propertyValue: RealEstateCatalog.BuyoutDistrictPropertyValueThreshold + Fixed64.FromInt(1)));
+
+        var householdId = state.HouseholdIds.Issue();
+        var plotId = OwnedPlot(state, settlementId, householdId);
+        PropertyResolver.SetValue(state, PropertySubjectRef.ForPlot(plotId), Money.FromDenarii(5000));
+        PropertyResolver.SetDistrict(state, PropertySubjectRef.ForPlot(plotId), districtId);
+
+        // Starts unqualified (low Loyalty, actively skimming) — §6.1's buyout precondition is "has
+        // never skimmed," not merely "isn't skimming this month."
+        var operatorId = AliveCharacter(
+            state, householdId, loyalty: 10, ambition: RealEstateCatalog.BuyoutAmbitionThreshold + 5,
+            stewardship: RealEstateCatalog.BuyoutStewardshipThreshold + 5);
+        SetPropertyManagementCommands.Pipeline.Execute(
+            state, new SetPropertyManagementCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null, PropertySubjectRef.ForPlot(plotId),
+                PropertyManagementStatus.LeasedOut, operatorId));
+
+        var system = new OperatorLifecycleSystem();
+        system.Tick(state, Tick(2));
+        PropertyResolver.TryResolve(state, PropertySubjectRef.ForPlot(plotId), out var afterSkimming);
+        Assert.That(afterSkimming.OperatorHasEverSkimmed, Is.True);
+
+        // Loyalty recovers well above the skimming threshold for the rest of the tenure.
+        state.Characters.TryGet(operatorId, out var operatorCharacter);
+        var condition = operatorCharacter!.Condition;
+        state.Characters.Remove(operatorId);
+        state.Characters.Add(operatorId, operatorCharacter with
+        {
+            Condition = new Condition(condition.Health, condition.Fatigue, 90, condition.Ambition, condition.Fertility),
+        });
+
+        for (var month = 3; month <= RealEstateCatalog.BuyoutMinimumTenureMonths + 1; month++)
+            system.Tick(state, Tick(month));
+
+        PropertyResolver.TryResolve(state, PropertySubjectRef.ForPlot(plotId), out var view);
+        Assert.Multiple(() =>
+        {
+            Assert.That(view.OperatorIsSkimming, Is.False, "Loyalty has recovered, so this month's reading is honest.");
+            Assert.That(view.OperatorHasEverSkimmed, Is.True, "The historical skim is never erased for the same assignment.");
+            Assert.That(view.OperatorBuyoutOffered, Is.False, "A once-skimming Operator never qualifies for a buyout offer.");
+        });
+    }
+
+    [Test]
     public void DecliningABuyoutOfferClearsTheFlagAndKeepsTheLeaseRunning()
     {
         var (state, settlementId) = OneVicusSettlement();
@@ -525,7 +648,8 @@ public sealed class RealEstateTests
             state, new SetPropertyManagementCommand(
                 state.CommandIds.Issue(), "player", new GameDate(1), null, PropertySubjectRef.ForPlot(plotId),
                 PropertyManagementStatus.LeasedOut, operatorId));
-        PropertyResolver.SetOperatorState(state, PropertySubjectRef.ForPlot(plotId), isSkimming: false, tenureMonths: 130, buyoutOffered: true);
+        PropertyResolver.SetOperatorState(
+            state, PropertySubjectRef.ForPlot(plotId), isSkimming: false, hasEverSkimmed: false, tenureMonths: 130, buyoutOffered: true);
 
         var result = ResolveOperatorBuyoutCommands.Pipeline.Execute(
             state, new ResolveOperatorBuyoutCommand(state.CommandIds.Issue(), "player", new GameDate(2), null, PropertySubjectRef.ForPlot(plotId), Accept: false));

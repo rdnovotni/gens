@@ -28,6 +28,14 @@ public sealed record PlotPropertyExtension
     public required PropertyManagementStatus ManagementStatus { get; init; }
     public RuntimeId<Character>? OperatorCharacterId { get; init; }
     public bool OperatorIsSkimming { get; init; }
+
+    /// <summary>§6.1's buyout precondition "has never skimmed" — unlike <see
+    /// cref="OperatorIsSkimming"/> (this month's reading only, overwritten every tick so an audit
+    /// always reads current truth), this stays true for the rest of the current Operator's assignment
+    /// once any month sets it, so a later recovered Loyalty reading cannot quietly requalify an
+    /// Operator who has, in fact, skimmed before. Reset to <c>false</c> only when the Operator
+    /// changes, alongside every other per-assignment field.</summary>
+    public bool OperatorHasEverSkimmed { get; init; }
     public int OperatorTenureMonths { get; init; }
     public bool OperatorBuyoutOffered { get; init; }
 
@@ -49,6 +57,7 @@ public sealed record PlotPropertyExtension
         ManagementStatus = PropertyManagementStatus.DirectlyManaged,
         OperatorCharacterId = null,
         OperatorIsSkimming = false,
+        OperatorHasEverSkimmed = false,
         OperatorTenureMonths = 0,
         OperatorBuyoutOffered = false,
         LesseeId = null,
@@ -62,6 +71,7 @@ public sealed record PlotPropertyExtension
         PropertyManagementStatus managementStatus,
         RuntimeId<Character>? operatorCharacterId,
         bool operatorIsSkimming,
+        bool operatorHasEverSkimmed,
         int operatorTenureMonths,
         bool operatorBuyoutOffered,
         RuntimeId<Household>? lesseeId,
@@ -72,6 +82,7 @@ public sealed record PlotPropertyExtension
             ManagementStatus = managementStatus,
             OperatorCharacterId = operatorCharacterId,
             OperatorIsSkimming = operatorIsSkimming,
+            OperatorHasEverSkimmed = operatorHasEverSkimmed,
             OperatorTenureMonths = operatorTenureMonths,
             OperatorBuyoutOffered = operatorBuyoutOffered,
             LesseeId = lesseeId,

@@ -52,6 +52,11 @@ public sealed record PropertyRecord
     /// Operator's own Core Attributes/Loyalty — set only while an Operator is assigned.</summary>
     public bool OperatorIsSkimming { get; init; }
 
+    /// <summary>§6.1's buyout precondition "has never skimmed" — see <see
+    /// cref="PlotPropertyExtension.OperatorHasEverSkimmed"/>'s identical doc comment for why this is
+    /// tracked separately from <see cref="OperatorIsSkimming"/>.</summary>
+    public bool OperatorHasEverSkimmed { get; init; }
+
     /// <summary>How many consecutive months the current Operator has held this assignment — §6.1's "a
     /// decade" of steady tenure before a real buyout becomes plausible; reset to zero whenever the
     /// Operator changes.</summary>
@@ -106,6 +111,7 @@ public sealed record PropertyRecord
             ManagementStatus = PropertyManagementStatus.DirectlyManaged,
             OperatorCharacterId = null,
             OperatorIsSkimming = false,
+            OperatorHasEverSkimmed = false,
             OperatorTenureMonths = 0,
             OperatorBuyoutOffered = false,
             LesseeId = null,
@@ -125,6 +131,7 @@ public sealed record PropertyRecord
         PropertyManagementStatus managementStatus,
         RuntimeId<Character>? operatorCharacterId,
         bool operatorIsSkimming,
+        bool operatorHasEverSkimmed,
         int operatorTenureMonths,
         bool operatorBuyoutOffered,
         RuntimeId<Household>? lesseeId,
@@ -141,6 +148,7 @@ public sealed record PropertyRecord
             ManagementStatus = managementStatus,
             OperatorCharacterId = operatorCharacterId,
             OperatorIsSkimming = operatorIsSkimming,
+            OperatorHasEverSkimmed = operatorHasEverSkimmed,
             OperatorTenureMonths = operatorTenureMonths,
             OperatorBuyoutOffered = operatorBuyoutOffered,
             LesseeId = lesseeId,

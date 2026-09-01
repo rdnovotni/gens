@@ -98,7 +98,9 @@ public static class ResolveOperatorBuyoutCommands
         // TryResolve after the transfer would resolve a fresh, unmanaged property, so this command
         // does not need a second write there).
         if (!command.Accept)
-            PropertyResolver.SetOperatorState(state, command.Subject, view.OperatorIsSkimming, view.OperatorTenureMonths, buyoutOffered: false);
+            PropertyResolver.SetOperatorState(
+                state, command.Subject, view.OperatorIsSkimming, view.OperatorHasEverSkimmed, view.OperatorTenureMonths,
+                buyoutOffered: false);
 
         events.Add(new OperatorBuyoutResolvedEvent(
             state.EventIds.Issue(), command.SubmittedDate, command.Subject, operatorId, command.Accept, price,

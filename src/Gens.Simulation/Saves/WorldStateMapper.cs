@@ -1383,6 +1383,7 @@ public static class WorldStateMapper
         LesseeId = record.LesseeId?.ToTaggedString(),
         ValueRawValue = record.Value.RawValue,
         Condition = record.Condition.Value,
+        OperatorHasEverSkimmed = record.OperatorHasEverSkimmed,
     };
 
     private static PropertyRecord FromPropertyRecordDto(PropertyRecordDto dto) => PropertyRecord.Restore(
@@ -1395,6 +1396,7 @@ public static class WorldStateMapper
         Enum.Parse<PropertyManagementStatus>(dto.ManagementStatus),
         dto.OperatorCharacterId is { } operatorId ? RuntimeId<Character>.Parse(operatorId) : null,
         dto.OperatorIsSkimming,
+        dto.OperatorHasEverSkimmed,
         dto.OperatorTenureMonths,
         dto.OperatorBuyoutOffered,
         dto.LesseeId is { } lesseeId ? RuntimeId<Household>.Parse(lesseeId) : null,
@@ -1412,6 +1414,7 @@ public static class WorldStateMapper
         OperatorBuyoutOffered = extension.OperatorBuyoutOffered,
         LesseeId = extension.LesseeId?.ToTaggedString(),
         ValueRawValue = extension.Value.RawValue,
+        OperatorHasEverSkimmed = extension.OperatorHasEverSkimmed,
     };
 
     private static PlotPropertyExtension FromPlotPropertyExtensionDto(PlotPropertyExtensionDto dto) => PlotPropertyExtension.Restore(
@@ -1420,6 +1423,7 @@ public static class WorldStateMapper
         Enum.Parse<PropertyManagementStatus>(dto.ManagementStatus),
         dto.OperatorCharacterId is { } operatorId ? RuntimeId<Character>.Parse(operatorId) : null,
         dto.OperatorIsSkimming,
+        dto.OperatorHasEverSkimmed,
         dto.OperatorTenureMonths,
         dto.OperatorBuyoutOffered,
         dto.LesseeId is { } lesseeId ? RuntimeId<Household>.Parse(lesseeId) : null,
