@@ -169,6 +169,17 @@ public static class CampaignBootstrapper
     /// other stream here for the same rule-8 reason.</summary>
     public const string NaturalDisasterStreamName = "hazards.naturalDisaster";
 
+    /// <summary>The named random stream <see cref="Wanderers.WandererSystem"/> reserves for its monthly
+    /// Itinerary destination draw (Phase 14 item 4), kept distinct from every other stream here for the
+    /// same rule-8 reason.</summary>
+    public const string WandererItineraryStreamName = "wanderers.itinerary";
+
+    /// <summary>The named random stream <see cref="Wanderers.InstantiateWandererCommand"/> and <see
+    /// cref="Wanderers.RecruitWandererCommand"/> reserve for their own identity/backfill draws (Phase 14
+    /// item 4), kept distinct from <see cref="WandererItineraryStreamName"/> so a Wanderer's tour and a
+    /// Wanderer's generation never shift each other's draws out from under them (rule 8).</summary>
+    public const string WandererGenerationStreamName = "wanderers.generation";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -208,6 +219,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(EndemicIllnessStreamName, config.Seed);
         streams.AddDerived(EpidemicContagionStreamName, config.Seed);
         streams.AddDerived(NaturalDisasterStreamName, config.Seed);
+        streams.AddDerived(WandererItineraryStreamName, config.Seed);
+        streams.AddDerived(WandererGenerationStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

@@ -37,6 +37,7 @@ using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
 using Gens.Simulation.Travel;
 using Gens.Simulation.Villas;
+using Gens.Simulation.Wanderers;
 
 namespace Gens.Simulation.Saves;
 
@@ -101,6 +102,8 @@ public static class WorldStateMapper
                 CharacterHealthConditionIds = state.CharacterHealthConditionIds.Peek,
                 EpidemicOutbreakIds = state.EpidemicOutbreakIds.Peek,
                 DisasterEventIds = state.DisasterEventIds.Peek,
+                WandererIds = state.WandererIds.Peek,
+                WandererEngagementIds = state.WandererEngagementIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -247,6 +250,11 @@ public static class WorldStateMapper
             DisasterEvents = state.DisasterEvents.InAscendingOrder().Select(entry => ToDisasterEventDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             DormantVolcanoes = state.DormantVolcanoes.InAscendingOrder().Select(entry => ToDormantVolcanoDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Wanderers = state.Wanderers.InAscendingOrder().Select(entry => ToWandererDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            WandererEngagements = state.WandererEngagements.InAscendingOrder()
+                .Select(entry => ToWandererEngagementDto(entry.Value)).ToArray(),
         };
     }
 
@@ -743,6 +751,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Plot>, DormantVolcano>(volcano.PlotId, volcano);
             }));
 
+        var wanderers = OrderedRegistry<RuntimeId<Wanderer>, Wanderer>.Restore(
+            dto.Wanderers.Select(w =>
+            {
+                var wanderer = FromWandererDto(w);
+                return new KeyValuePair<RuntimeId<Wanderer>, Wanderer>(wanderer.Id, wanderer);
+            }));
+
+        var wandererEngagements = OrderedRegistry<RuntimeId<WandererEngagement>, WandererEngagement>.Restore(
+            dto.WandererEngagements.Select(e =>
+            {
+                var engagement = FromWandererEngagementDto(e);
+                return new KeyValuePair<RuntimeId<WandererEngagement>, WandererEngagement>(engagement.Id, engagement);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -790,6 +812,8 @@ public static class WorldStateMapper
             characterHealthConditionIds: RuntimeIdCounter<CharacterHealthCondition>.Restore(dto.Counters.CharacterHealthConditionIds),
             epidemicOutbreakIds: RuntimeIdCounter<EpidemicOutbreak>.Restore(dto.Counters.EpidemicOutbreakIds),
             disasterEventIds: RuntimeIdCounter<DisasterEvent>.Restore(dto.Counters.DisasterEventIds),
+            wandererIds: RuntimeIdCounter<Wanderer>.Restore(dto.Counters.WandererIds),
+            wandererEngagementIds: RuntimeIdCounter<WandererEngagement>.Restore(dto.Counters.WandererEngagementIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -863,6 +887,8 @@ public static class WorldStateMapper
             epidemicOutbreaks: epidemicOutbreaks,
             disasterEvents: disasterEvents,
             dormantVolcanoes: dormantVolcanoes,
+            wanderers: wanderers,
+            wandererEngagements: wandererEngagements,
             firedHistoricalTimelineEntryIds: firedHistoricalTimelineEntryIds,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
@@ -1199,6 +1225,89 @@ public static class WorldStateMapper
         HasErupted = dto.HasErupted,
         PostEruptionFertilityBoostActive = dto.PostEruptionFertilityBoostActive,
     };
+
+    private static WandererDto ToWandererDto(Wanderer wanderer) => new()
+    {
+        Id = wanderer.Id.ToTaggedString(),
+        Praenomen = wanderer.Name.Praenomen,
+        Nomen = wanderer.Name.Nomen,
+        Cognomen = wanderer.Name.Cognomen,
+        Sex = wanderer.Sex.ToString(),
+        BirthDateTotalMonths = wanderer.BirthDate.TotalMonths,
+        LegalStatus = wanderer.LegalStatus.ToString(),
+        Culture = wanderer.Culture.Value,
+        WandererType = wanderer.Type.ToString(),
+        CurrentLocationId = wanderer.CurrentLocationId.Value,
+        Itinerary = wanderer.Itinerary
+            .Select(stop => new WandererItineraryStopDto
+            {
+                LocationId = stop.LocationId.Value,
+                ArrivalMonth = stop.ArrivalMonth,
+            })
+            .ToArray(),
+        Fame = wanderer.Fame,
+        FameTrend = wanderer.FameTrend.ToString(),
+        IsActivelyTracked = wanderer.IsActivelyTracked,
+        Status = wanderer.Status.ToString(),
+        MonthsSinceLastEngagement = wanderer.MonthsSinceLastEngagement,
+        InterestedHouseholdIds = wanderer.InterestedHouseholdIds.Select(id => id.ToTaggedString()).ToArray(),
+        CommittedHouseholdId = wanderer.CommittedHouseholdId?.ToTaggedString(),
+        RecruitedCharacterId = wanderer.RecruitedCharacterId?.ToTaggedString(),
+    };
+
+    private static Wanderer FromWandererDto(WandererDto dto) => new()
+    {
+        Id = RuntimeId<Wanderer>.Parse(dto.Id),
+        Name = new CharacterName(dto.Praenomen, dto.Nomen, dto.Cognomen),
+        Sex = Enum.Parse<Sex>(dto.Sex),
+        BirthDate = new GameDate(dto.BirthDateTotalMonths),
+        LegalStatus = Enum.Parse<LegalStatus>(dto.LegalStatus),
+        Culture = new DefinitionId<Culture>(dto.Culture),
+        Type = Enum.Parse<WandererType>(dto.WandererType),
+        CurrentLocationId = new DefinitionId<GazetteerLocationDefinition>(dto.CurrentLocationId),
+        Itinerary = dto.Itinerary
+            .Select(stop => new WandererItineraryStop(
+                new DefinitionId<GazetteerLocationDefinition>(stop.LocationId), stop.ArrivalMonth))
+            .ToArray(),
+        Fame = dto.Fame,
+        FameTrend = Enum.Parse<WandererFameTrend>(dto.FameTrend),
+        IsActivelyTracked = dto.IsActivelyTracked,
+        Status = Enum.Parse<WandererStatus>(dto.Status),
+        MonthsSinceLastEngagement = dto.MonthsSinceLastEngagement,
+        InterestedHouseholdIds = dto.InterestedHouseholdIds.Select(RuntimeId<Household>.Parse).ToArray(),
+        CommittedHouseholdId = dto.CommittedHouseholdId is { } committed ? RuntimeId<Household>.Parse(committed) : null,
+        RecruitedCharacterId = dto.RecruitedCharacterId is { } recruited ? RuntimeId<Character>.Parse(recruited) : null,
+    };
+
+    private static WandererEngagementDto ToWandererEngagementDto(WandererEngagement engagement) => new()
+    {
+        Id = engagement.Id.ToTaggedString(),
+        WandererId = engagement.WandererId.ToTaggedString(),
+        HouseholdId = engagement.HouseholdId.ToTaggedString(),
+        EngagementType = engagement.EngagementType.ToString(),
+        OccurredDateTotalMonths = engagement.OccurredDate.TotalMonths,
+        FeePaidMinorUnits = engagement.FeePaid.RawValue,
+        DignitasGained = engagement.DignitasGained,
+        WandererFameGained = engagement.WandererFameGained,
+        HealthRestored = engagement.HealthRestored,
+        BeneficiaryCharacterId = engagement.BeneficiaryCharacterId?.ToTaggedString(),
+        ResultingCharacterId = engagement.ResultingCharacterId?.ToTaggedString(),
+        ResultingDutySlot = engagement.ResultingDutySlot?.ToString(),
+    };
+
+    private static WandererEngagement FromWandererEngagementDto(WandererEngagementDto dto) => WandererEngagement.Create(
+        RuntimeId<WandererEngagement>.Parse(dto.Id),
+        RuntimeId<Wanderer>.Parse(dto.WandererId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<WandererEngagementType>(dto.EngagementType),
+        new GameDate(dto.OccurredDateTotalMonths),
+        Money.FromMinorUnits(dto.FeePaidMinorUnits),
+        dto.DignitasGained,
+        dto.WandererFameGained,
+        dto.HealthRestored,
+        dto.BeneficiaryCharacterId is { } beneficiary ? RuntimeId<Character>.Parse(beneficiary) : null,
+        dto.ResultingCharacterId is { } resulting ? RuntimeId<Character>.Parse(resulting) : null,
+        dto.ResultingDutySlot is { } slot ? Enum.Parse<DutySlot>(slot) : null);
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

@@ -1868,7 +1868,7 @@ new tests in `tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, includin
 with a stable deterministic state hash and a `MonthlySimulation`-level regression test proving the
 ordering fix.
 
-### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 3 of 5)
+### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 4 of 5)
 
 **Outcome:** environmental and biological pressure matters without becoming arbitrary save destruction.
 
@@ -1877,7 +1877,7 @@ Construction order:
 1. [x] Extend health with conditions, exposure, resistance/immunity, treatment, recovery, mortality attribution, and care capacity.
 2. [x] Implement sanitation, food/water quality, crowding, livestock disease, endemic pressure, outbreaks, and quarantine.
 3. [x] Implement environmental hazard profiles, forecast/knowledge, disaster instances, damage, displacement, recovery, and region/date modifiers.
-4. Implement wandering population cohorts, routes, needs, fame/visibility, settlement interaction, recruitment, and promotion to named characters.
+4. [x] Implement wandering population cohorts, routes, needs, fame/visibility, settlement interaction, recruitment, and promotion to named characters.
 5. Integrate hazards with goods, buildings, populations, markets, travel, events, institutions, and reports through shared events and effects.
 
 **Exit gate:** hazards have visible causes, warnings where appropriate, bounded losses, recovery paths, and deterministic fixtures; they do not bypass ownership, ledger, health, or event rules.
@@ -2087,6 +2087,127 @@ hash covering both new partitions). Full suite: 1,371 tests green, `dotnet build
 Release and `dotnet format --verify-no-changes` all clean on every file this item touched or added (the
 six pre-existing `WHITESPACE` findings in unrelated `Health/` test files predate this item's own branch
 point entirely, confirmed by re-running `dotnet format` against the prior commit).
+
+**Item 4 progress:** the itinerant layer `gens-wandering-populations-design.md` describes lands in a new
+`src/Gens.Simulation/Wanderers/` namespace — thirteen new files, two new `RuntimeId`-keyed `WorldState`
+partitions wired through the same five files (`WorldState.cs`/`StateHasher.cs`/`WorldSaveDto.cs`/
+`WorldStateMapper.cs`/`EntityKinds.cs`) every prior runtime partition has been, and no change to any
+existing system's behavior. `WandererType` authors §2's six categories; `WandererTypeProfile`/
+`WandererTypeCatalog` hold their content in the identical "sealed record, constructor-validates,
+duplicate-ID-rejecting catalog" shape `Health.HealthConditionCatalog` and `Cultures.CultureCatalog`
+already established — but authored in full here rather than shipped empty, since §2's six types *are*
+this item's content. `Wanderer` is the entity itself (name, sex, birth date, culture, type, current
+location, itinerary, fame, fame trend, `IsActivelyTracked`, engagement status, competition state), kept
+in `WorldState.Wanderers` forever once created — even a Recruited one, as the campaign's own record of
+who that person was before they joined — matching `Hazards.DisasterEvent`'s identical "real campaign
+history, not scratch state" convention; `WandererEngagement` is the second partition, §10's own
+engagement record with `benefitDelivered` decomposed into the concrete fields this codebase can actually
+maintain, the same "real record, honestly narrowed" move `DisasterEvent`'s own doc comment already made
+for §8's `affectedPlotIds`.
+
+§8's sampling-and-promotion pattern is taken literally rather than approximated: **no ambient pool is
+stored at all** — an ambient Wanderer has no record, no ID, and costs nothing, exactly the way
+`Characters.PopGroup` holds no per-unit rows and `Actors.LivingWorldActor`'s Background tier holds no
+head Character until real contact promotes it. `InstantiateWandererCommand` is the single promotion
+door, drawing its identity from `CharacterIdentityGenerator` in that generator's own fixed draw order,
+the same primitives and same order `Characters.PromoteToNamedCommand` and
+`Actors.LivingWorldActorHeadGenerator` already use, and enforcing §8's restraint mechanically (one
+tracked Wanderer of a given type per location at a time). §3's Itinerary is a **Gazetteer-anchored**
+route, not a Settlement-anchored one, for a mechanical reason rather than a stylistic one:
+`Regions.GazetteerLocationDefinition` is the only place in this codebase carrying the `ProminenceTier`
+and `GazetteerRole` data §3's type-specific weighting actually reads, and nothing links a runtime
+`Land.Settlement` back to a content region profile — the gap `Travel.TravelLocation`'s own doc comment
+already discloses. `WandererItineraryCalculator` is a pure, RNG-free weighting (base weight, per-matched-
+preferred-role weight, and a Prominence-step bonus for the types §3 says seek renown), with the single
+`uint` draw passed in by the System, the same calculator/System split `Hazards.DisasterSeverityCalculator`
+established. `WandererFameCalculator` mirrors Rival Houses' Rising/Established/Declining shape exactly as
+§4 and §9 both instruct, with one deliberate inversion disclosed in its own doc comment: Rival Houses
+*drifts the trend and lets the fortune follow* because a Background house has no observable fortune;
+a Wanderer's Fame is a real monthly number, so the trend is *derived* from the actual movement rather
+than rolled — the same shape applied to the layer that has data. `WandererSystem`
+(`TickPhase.RelationshipsActors` — the phase `Actors.BackgroundHouseDriftSystem` and `Fame.FameDecaySystem`
+already run in, deliberately not items 1-3's `Hazards`, since nothing here is a hazard) ages the
+obscurity counter, applies §4's decay, recomputes the trend, and advances the Itinerary once a Wanderer
+has dwelled a season (§7.1's own "expected to move on within a season," the one concrete pacing figure
+the design document gives).
+
+§6's two engagements are real and tested. **Host** (`HostWandererCommand`) posts the type's fee from the
+household's own real Ledger account (`LedgerAccountKey.ForHousehold`, mirroring
+`Health.SanitationInvestmentSystem`'s identical System-account-sink shape), raises the Wanderer's own
+Fame, and delivers exactly the two of §6's five named benefits that have a real hook: a **Dignitas** gain
+through `Reputation.DignitasResolver.Apply` (a disclosed substitution for "Cultural Prestige," which
+exists nowhere in this codebase — Dignitas is the real household-standing primitive whose own doc comment
+already says it is "moved by nearly everything"), and, for a Physician, a real **Health recovery** on a
+named household member's `Characters.Condition.Health`. **Recruit** (`RecruitWandererCommand`) performs
+Familia's real promotion sequence with Familia's real primitives (`CharacterBackfillGenerator`,
+`CharacterVisualProfileGenerator`, `Character.Create`, tagged `CharacterSource.CourtPosition` — the enum
+value that source's own doc comment already reserves for exactly this), replaying the Wanderer's stored
+name/sex/birth date/culture verbatim so the resulting Character genuinely *is* the person the player has
+been tracking; it deliberately does not submit `PromoteToNamedCommand` itself, since that command's whole
+contract is decrementing a source `PopGroup` (ADR 0009) and a Wanderer was never counted in any
+settlement's demographics — routing through it would silently destroy a unit of population to pay for
+someone who never came from there. The recruit is placed into `DutySlot.Physician` (or
+`DutySlot.Craftsman` for an Architect/Engineer) only after clearing the same `DutySlotCatalog`
+competence and capacity gates `AssignDutyCommand` enforces; failing either is not a rejection, just no
+slot. And Recruit is where §4's parallel Fame value stops being parallel: the new Character's own
+`Fame.CharacterFame` is seeded from the Wanderer's accumulated Fame through `Fame.FameResolver.Apply`,
+finally giving `Fame.FameSourceType.WandererRenown` — a value whose own doc comment has said "needs
+Wandering Populations, unbuilt" since Phase 12 — a real system behind it. §7's Competition is real and
+symmetric: `RegisterWandererInterestCommand` records declared interest (gated on
+`WandererFameCalculator.CompetitionVisibilityThreshold`, §7's own "*sufficiently* high-Fame"), and the
+first Host or Recruit from any household stamps `CommittedHouseholdId`, empties the interest list, and
+makes every other household's engagement fail with `CommittedElsewhere` — §7's "resolved the instant
+either side actually commits rather than held open indefinitely," deterministic, no tiebreak, no queue.
+
+Deliberately, honestly deferred, each named rather than faked, matching this phase's discipline
+throughout. **All three of §5's encounter paths have no caller**, and the reasons are concrete and
+disclosed in `InstantiateWandererCommands`'s own doc comment: Travel's Arrival-Encounter framework (§7 of
+that document) does not exist — `Travel/` ships `TravelTrip`, `TravelRoute`, `TravelProgressSystem` and
+`RouteRiskLevel`, but no arrival-encounter concept of any kind; `Correspondence/`'s real `LetterAction`
+roster carries no rumor/news-of-a-person action for §5's ambient-rumor path to ride; and §5's
+direct-approach path needs a Prominence gate that §11 itself lists as unsized *and* that has no
+Prominence field in this codebase to read. The command therefore records which of the three triggered it
+and waits for a caller — the same "hook now, caller later" discipline item 1 used for
+`AfflictCharacterCommand` and item 3 for `DesignateDormantVolcanoCommand`. **Four of §3's five named
+gravitational pulls are disclosed proxies, not real reads** (`WandererTypeCatalog`'s own doc comment
+enumerates each): Education & Culture's Institutions of Renown exist as no record, field, or tag
+anywhere, so a Philosopher reads high `ProminenceTier` — §3's own "and other high-Prominence Gazetteer
+locations" clause taken as the whole rule; Buildings exposes no construction-cost or in-progress-
+commission concept for an Architect; Market Dynamics margins are per-settlement with no Gazetteer link
+for a Merchant; Games & Spectacle is unbuilt and `Villas` exposes no Symposium-demand reading for an
+Entertainer; and `Health.EpidemicOutbreak`, though real and live, is settlement-keyed and so cannot steer
+movement across a Gazetteer roster for a Physician. Only the Holy Man's `GazetteerRole.Sanctuary` pull is
+close to a genuine read. This is the same disclosed-proxy discipline `DiseaseCatalog` set for Saturnism's
+mining driver and `HazardExposureCalculator` for Forest Cover. **Three of §6's five Host benefits are
+deferred**: a construction discount (Buildings has no per-commission cost hook), a rare goods purchase
+(Markets has no rare-goods tier and no Gazetteer-to-Settlement link to buy at), and a Favor gain
+(`Reputation.FavorObligation` is real but strictly Character-to-Character, and a Wanderer is by
+construction not yet a Character). **No co-location check** is possible on either engagement command, for
+that same Gazetteer/Settlement gap, and it is disclosed rather than approximated with a check that would
+be wrong. **No rival-AI decision** drives §7 from the other side: `Actors.RivalAmbitionSystem` is the only
+place a rival house autonomously wants anything and its `RivalAmbitionCatalog` is a closed roster of
+house-scale ambitions with no notion of an individual as a target and no spending path — so
+`RegisterWandererInterestCommand` is built as the neutral mechanism *either* side uses, ready for a
+future Rival Houses pass to drive with a rival's household ID. §10's own `wasPlayerAwareViaRumor` field
+is carried nowhere for the same reason its rumor path has no caller. Nothing spawns or retires a Wanderer
+on its own, either: §8 is explicit that instantiation is trigger-driven, §11's second open question
+("Wanderer count per region/era... isn't specified") is the same gap from the other side, and no
+lifecycle rule for an itinerant is written anywhere in the design corpus. Every numeric constant across
+`WandererTypeCatalog`, `WandererItineraryCalculator`, and `WandererFameCalculator` is this
+implementation's own invented figure, disclosed in each file exactly as items 1-3 disclosed theirs (§11's
+own first open question names Fame growth/decay rates, itinerary movement frequency, and the direct-
+approach Prominence threshold as all unsized), chosen only to preserve the orderings the design document
+states — a Recruit always dearer than a Host, a public spectacle worth more standing than a private
+consultation, a Wanderer left unengaged measurably fading but not vanishing within a season. Covered by
+61 new tests across `tests/Gens.Simulation.Tests/Wanderers/` (`WandererTypeCatalogTests`,
+`WandererItineraryCalculatorTests`, `WandererFameCalculatorTests`, `InstantiateWandererCommandTests`,
+`HostWandererCommandTests`, `RecruitWandererCommandTests`, `WandererCompetitionTests`,
+`WandererSystemTests`, and `WanderersSaveRoundTripTests` — a save/load round trip with a stable
+deterministic state hash covering both new partitions, mirroring `HazardsSaveRoundTripTests` exactly),
+including exhaustive weighted-selection coverage proving every destination gets precisely its weight,
+seed-reproducibility tests for both the generation draw and a twelve-month tour, and a seed-searched
+Physician recruit proving the real `DutySlot.Physician` placement end to end. Full suite: 1,436 tests
+green, `dotnet build`/`dotnet test` in Release and `dotnet format --verify-no-changes` all clean.
 
 ### Phase 15 — Add advanced commerce, property, and public investment — ⬜ NOT STARTED
 
