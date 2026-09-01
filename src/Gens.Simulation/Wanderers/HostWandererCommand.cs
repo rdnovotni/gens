@@ -199,12 +199,12 @@ public static class HostWandererCommands
         var engagementId = state.WandererEngagementIds.Issue();
         state.WandererEngagements.Add(engagementId, WandererEngagement.Create(
             engagementId, command.WandererId, command.HouseholdId, WandererEngagementType.Host,
-            command.SubmittedDate, profile.HostFee, profile.HostDignitasGain, newFame - previousFame,
+            command.SubmittedDate, profile.HostFee, dignitasGain, newFame - previousFame,
             healthRestored, command.BeneficiaryCharacterId));
 
         events.Add(new WandererHostedEvent(
             state.EventIds.Issue(), command.SubmittedDate, command.WandererId, command.HouseholdId,
-            engagementId, profile.HostDignitasGain, newFame - previousFame, healthRestored,
+            engagementId, dignitasGain, newFame - previousFame, healthRestored,
             command.CommandId.ToTaggedString()));
 
         return events.ToArray();
