@@ -21,6 +21,7 @@ using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Travel;
+using Gens.Simulation.Wanderers;
 
 namespace Gens.Simulation.State;
 
@@ -70,6 +71,8 @@ public static class StateHasher
         hash = MixLong(hash, state.CharacterHealthConditionIds.Peek);
         hash = MixLong(hash, state.EpidemicOutbreakIds.Peek);
         hash = MixLong(hash, state.DisasterEventIds.Peek);
+        hash = MixLong(hash, state.WandererIds.Peek);
+        hash = MixLong(hash, state.WandererEngagementIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -719,6 +722,55 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.SettlementId.Value);
             hash = MixLong(hash, entry.Value.HasErupted ? 1L : 0L);
             hash = MixLong(hash, entry.Value.PostEruptionFertilityBoostActive ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Wanderers.InAscendingOrder())
+        {
+            var wanderer = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, wanderer.Name.Praenomen);
+            hash = MixString(hash, wanderer.Name.Nomen);
+            hash = MixString(hash, wanderer.Name.Cognomen ?? string.Empty);
+            hash = MixLong(hash, (long)wanderer.Sex);
+            hash = MixLong(hash, wanderer.BirthDate.TotalMonths);
+            hash = MixLong(hash, (long)wanderer.LegalStatus);
+            hash = MixString(hash, wanderer.Culture.Value);
+            hash = MixLong(hash, (long)wanderer.Type);
+            hash = MixString(hash, wanderer.CurrentLocationId.Value);
+            foreach (var stop in wanderer.Itinerary)
+            {
+                hash = MixString(hash, stop.LocationId.Value);
+                hash = MixLong(hash, stop.ArrivalMonth);
+            }
+
+            hash = MixLong(hash, wanderer.Fame);
+            hash = MixLong(hash, (long)wanderer.FameTrend);
+            hash = MixLong(hash, wanderer.IsActivelyTracked ? 1L : 0L);
+            hash = MixLong(hash, (long)wanderer.Status);
+            hash = MixLong(hash, wanderer.MonthsSinceLastEngagement);
+            foreach (var householdId in wanderer.InterestedHouseholdIds)
+                hash = MixLong(hash, householdId.Value);
+            hash = MixLong(hash, wanderer.CommittedHouseholdId?.Value ?? -1L);
+            hash = MixLong(hash, wanderer.RecruitedCharacterId?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.WandererEngagements.InAscendingOrder())
+        {
+            var engagement = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, engagement.WandererId.Value);
+            hash = MixLong(hash, engagement.HouseholdId.Value);
+            hash = MixLong(hash, (long)engagement.EngagementType);
+            hash = MixLong(hash, engagement.OccurredDate.TotalMonths);
+            hash = MixLong(hash, engagement.FeePaid.RawValue);
+            hash = MixLong(hash, engagement.DignitasGained);
+            hash = MixLong(hash, engagement.WandererFameGained);
+            hash = MixLong(hash, engagement.HealthRestored);
+            hash = MixLong(hash, engagement.BeneficiaryCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, engagement.ResultingCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, engagement.ResultingDutySlot is { } slot ? (long)slot : -1L);
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.

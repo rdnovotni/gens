@@ -33,6 +33,7 @@ using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
 using Gens.Simulation.Travel;
+using Gens.Simulation.Wanderers;
 
 namespace Gens.Simulation.State;
 
@@ -104,6 +105,8 @@ public sealed class WorldState
         RuntimeIdCounter<CharacterHealthCondition> characterHealthConditionIds,
         RuntimeIdCounter<EpidemicOutbreak> epidemicOutbreakIds,
         RuntimeIdCounter<DisasterEvent> disasterEventIds,
+        RuntimeIdCounter<Wanderer> wandererIds,
+        RuntimeIdCounter<WandererEngagement> wandererEngagementIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -177,6 +180,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak> epidemicOutbreaks,
         OrderedRegistry<RuntimeId<DisasterEvent>, DisasterEvent> disasterEvents,
         OrderedRegistry<RuntimeId<Plot>, DormantVolcano> dormantVolcanoes,
+        OrderedRegistry<RuntimeId<Wanderer>, Wanderer> wanderers,
+        OrderedRegistry<RuntimeId<WandererEngagement>, WandererEngagement> wandererEngagements,
         OrderedRegistry<string, GameDate> firedHistoricalTimelineEntryIds,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
@@ -227,6 +232,8 @@ public sealed class WorldState
         CharacterHealthConditionIds = characterHealthConditionIds;
         EpidemicOutbreakIds = epidemicOutbreakIds;
         DisasterEventIds = disasterEventIds;
+        WandererIds = wandererIds;
+        WandererEngagementIds = wandererEngagementIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -300,6 +307,8 @@ public sealed class WorldState
         EpidemicOutbreaks = epidemicOutbreaks;
         DisasterEvents = disasterEvents;
         DormantVolcanoes = dormantVolcanoes;
+        Wanderers = wanderers;
+        WandererEngagements = wandererEngagements;
         FiredHistoricalTimelineEntryIds = firedHistoricalTimelineEntryIds;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
@@ -412,6 +421,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Hazards.DisasterEvent"/> (Phase 14 item 3).</summary>
     public RuntimeIdCounter<DisasterEvent> DisasterEventIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.Wanderers.Wanderer"/> (Phase 14 item 4).</summary>
+    public RuntimeIdCounter<Wanderer> WandererIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.Wanderers.WandererEngagement"/> (Phase 14 item 4).</summary>
+    public RuntimeIdCounter<WandererEngagement> WandererEngagementIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -848,6 +863,19 @@ public sealed class WorldState
     /// partition.</summary>
     public OrderedRegistry<RuntimeId<Plot>, DormantVolcano> DormantVolcanoes { get; } = new();
 
+    /// <summary>Every individually-tracked <see cref="Gens.Simulation.Wanderers.Wanderer"/> (Phase 14 item 4), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once instantiated — even a
+    /// Recruited Wanderer stays, as the campaign's own record of who that person was before they
+    /// joined — matching <see cref="DisasterEvents"/>'s identical "real campaign history, not scratch
+    /// state to discard" convention. Purely ambient Wanderers are never stored at all (see <see
+    /// cref="Gens.Simulation.Wanderers.Wanderer"/>'s own doc comment on §8's sampling pattern).</summary>
+    public OrderedRegistry<RuntimeId<Wanderer>, Wanderer> Wanderers { get; } = new();
+
+    /// <summary>Every completed §6 <see cref="Gens.Simulation.Wanderers.WandererEngagement"/> (Phase 14 item 4), in
+    /// ascending-<see cref="RuntimeId{T}"/> (chronological) order, kept forever once written for the
+    /// same reason as <see cref="Wanderers"/> itself.</summary>
+    public OrderedRegistry<RuntimeId<WandererEngagement>, WandererEngagement> WandererEngagements { get; } = new();
+
     /// <summary>Which <see cref="History.HistoricalTimelineEntryDefinition"/>s (by <see
     /// cref="DefinitionId{T}.Value"/>) <see cref="History.HistoricalTimelineScheduler"/> has already
     /// fired this campaign, mapped to the date each fired — real state, not derivable, so a save/load
@@ -919,6 +947,8 @@ public sealed class WorldState
         ["characterHealthConditionIds"] = CharacterHealthConditionIds.Peek,
         ["epidemicOutbreakIds"] = EpidemicOutbreakIds.Peek,
         ["disasterEventIds"] = DisasterEventIds.Peek,
+        ["wandererIds"] = WandererIds.Peek,
+        ["wandererEngagementIds"] = WandererEngagementIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -991,6 +1021,8 @@ public sealed class WorldState
         ["epidemicOutbreaks"] = EpidemicOutbreaks.Version,
         ["disasterEvents"] = DisasterEvents.Version,
         ["dormantVolcanoes"] = DormantVolcanoes.Version,
+        ["wanderers"] = Wanderers.Version,
+        ["wandererEngagements"] = WandererEngagements.Version,
         ["firedHistoricalTimelineEntryIds"] = FiredHistoricalTimelineEntryIds.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,

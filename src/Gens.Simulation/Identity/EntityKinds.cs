@@ -22,6 +22,7 @@ using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Travel;
+using Gens.Simulation.Wanderers;
 
 namespace Gens.Simulation.Identity;
 
@@ -252,6 +253,10 @@ internal static class RuntimeIdTagRegistry
         // own Plot's RuntimeId<Plot>, never instantiated with its own RuntimeId<DormantVolcano>, the
         // same exemption SettlementSanitationInvestment (keyed by RuntimeId<Settlement>) already has.
         [typeof(DisasterEvent)] = "disasterevent",
+        // Phase 14 item 4 — Gens.Simulation.Wanderers.Wanderer and Gens.Simulation.Wanderers.
+        // WandererEngagement, same "real record as its own tag" convention as DisasterEvent above.
+        [typeof(Wanderer)] = "wanderer",
+        [typeof(WandererEngagement)] = "wandererengagement",
     };
 
     public static string Resolve(Type type) =>

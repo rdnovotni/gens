@@ -491,6 +491,18 @@ public sealed record WorldSaveDocument
     /// reasoning.</summary>
     [JsonPropertyOrder(78)]
     public IReadOnlyList<DormantVolcanoDto> DormantVolcanoes { get; init; } = Array.Empty<DormantVolcanoDto>();
+
+    /// <summary>Every individually-tracked <see cref="Gens.Simulation.Wanderers.Wanderer"/> (Phase 14
+    /// item 4), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="DormantVolcanoes"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(79)]
+    public IReadOnlyList<WandererDto> Wanderers { get; init; } = Array.Empty<WandererDto>();
+
+    /// <summary>Every completed §6 <see cref="Gens.Simulation.Wanderers.WandererEngagement"/> (Phase 14
+    /// item 4), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="Wanderers"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(80)]
+    public IReadOnlyList<WandererEngagementDto> WandererEngagements { get; init; } = Array.Empty<WandererEngagementDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -731,6 +743,18 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(44)]
     public long DisasterEventIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-14-item-4 save has no Wanderers.
+    /// Additive-only per ADR 0011's policy, matching <see cref="DisasterEventIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(45)]
+    public long WandererIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-14-item-4 save has no Wanderer
+    /// engagements. Additive-only per ADR 0011's policy, matching <see cref="WandererIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(46)]
+    public long WandererEngagementIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3183,6 +3207,120 @@ public sealed record DisasterEventDto
 
     [JsonPropertyOrder(8)]
     public required bool PerennialCropSetback { get; init; }
+}
+
+/// <summary>One stop on a <see cref="Gens.Simulation.Wanderers.Wanderer"/>'s Itinerary (Phase 14 item
+/// 4).</summary>
+public sealed record WandererItineraryStopDto
+{
+    [JsonPropertyOrder(0)]
+    public required string LocationId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int ArrivalMonth { get; init; }
+}
+
+/// <summary>One individually-tracked <see cref="Gens.Simulation.Wanderers.Wanderer"/> (Phase 14 item
+/// 4).</summary>
+public sealed record WandererDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Praenomen { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Nomen { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? Cognomen { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Sex { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int BirthDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string LegalStatus { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string Culture { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string WandererType { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required string CurrentLocationId { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required IReadOnlyList<WandererItineraryStopDto> Itinerary { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required int Fame { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required string FameTrend { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required bool IsActivelyTracked { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public required int MonthsSinceLastEngagement { get; init; }
+
+    [JsonPropertyOrder(16)]
+    public required IReadOnlyList<string> InterestedHouseholdIds { get; init; }
+
+    [JsonPropertyOrder(17)]
+    public string? CommittedHouseholdId { get; init; }
+
+    [JsonPropertyOrder(18)]
+    public string? RecruitedCharacterId { get; init; }
+}
+
+/// <summary>One completed §6 <see cref="Gens.Simulation.Wanderers.WandererEngagement"/> (Phase 14 item
+/// 4).</summary>
+public sealed record WandererEngagementDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string WandererId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string EngagementType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int OccurredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required long FeePaidMinorUnits { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int DignitasGained { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int WandererFameGained { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int HealthRestored { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? BeneficiaryCharacterId { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? ResultingCharacterId { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public string? ResultingDutySlot { get; init; }
 }
 
 /// <summary>One §2.2 <see cref="Gens.Simulation.Hazards.DormantVolcano"/> designation (Phase 14 item
