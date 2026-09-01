@@ -19,6 +19,7 @@ using Gens.Simulation.Markets;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
+using Gens.Simulation.Societates;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Travel;
@@ -849,6 +850,38 @@ public static class StateHasher
             hash = MixLong(hash, extension.OperatorBuyoutOffered ? 1L : 0L);
             hash = MixLong(hash, extension.LesseeId?.Value ?? -1L);
             hash = MixLong(hash, extension.Value.RawValue);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Societates.InAscendingOrder())
+        {
+            var societas = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)societas.PartnershipType);
+            hash = MixLong(hash, (long)societas.GovernanceModel);
+            hash = MixString(hash, societas.DurationOrPurpose);
+            hash = MixLong(hash, societas.DesignatedPartner?.Kind is { } designatedKind ? (long)designatedKind : -1L);
+            hash = MixString(hash, societas.DesignatedPartner?.OwnerId ?? string.Empty);
+            foreach (var partner in societas.Partners)
+            {
+                hash = MixLong(hash, (long)partner.Owner.Kind);
+                hash = MixString(hash, partner.Owner.OwnerId ?? string.Empty);
+                hash = MixLong(hash, partner.ShareFraction.RawValue);
+                hash = MixLong(hash, partner.IsSuspectedSkimming ? 1L : 0L);
+            }
+            hash = MixLong(hash, societas.LinkedPropertySubject?.Kind is { } subjectKind ? (long)subjectKind : -1L);
+            hash = MixString(hash, societas.LinkedPropertySubject?.SubjectId ?? string.Empty);
+            hash = MixLong(hash, societas.IsActive ? 1L : 0L);
+            hash = MixLong(hash, societas.DissolutionTrigger is { } trigger ? (long)trigger : -1L);
+            hash = MixLong(hash, societas.DissolvedDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId (by Legal Case ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ActioProSocioLinks.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.SocietasId.Value);
+            hash = MixLong(hash, (long)entry.Value.DisputeType);
         }
 
         return hash;

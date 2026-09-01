@@ -6,6 +6,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
+using Gens.Simulation.Societates;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -124,6 +125,9 @@ internal static class LegalCaseRuling
 
         if (verdict == LegalCaseVerdict.Convicted)
             events.AddRange(RecordConvictionAsPunishableOffense(state, legalCase, date, causationId));
+
+        if (legalCase.CaseType == LegalCaseType.PartnershipDispute)
+            events.AddRange(ActioProSocioResolutionHook.Apply(state, legalCase, verdict, date, causationId));
 
         events.Add(new LegalCaseRuledEvent(
             state.EventIds.Issue(), date, legalCase.CaseId, legalCase.CaseType, legalCase.PlaintiffId, legalCase.DefendantId,

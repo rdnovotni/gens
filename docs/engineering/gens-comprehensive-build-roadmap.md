@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 1 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 2 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -2484,6 +2484,135 @@ round trip with the deterministic state hash staying stable across every new par
 `SuccessionDynastyExitGateTests` (`succession.handoff` under-declaring its own write set) was directly
 confirmed via `git stash` to predate this item and is left untouched, per this item's own "don't touch
 other phases' content" scope.
+
+**Item 2 progress:** Societates &amp; Business Partnerships lands as a new domain,
+`src/Gens.Simulation/Societates/` (`gens-societates-business-partnerships-design.md`, its own direct
+deep-dive extension of Land Ownership &amp; Real Estate §7's own brief Societas paragraph — item 1's own
+`PropertyOwnerKind.Societas` placeholder, previously a free-form display name resolving against nothing,
+is where this item's real partnership entity actually attaches).
+
+§2's three partnership types and §4's three governance models land as `PartnershipType` and
+`SocietasGovernanceModel`; `Societas` itself (§10's own data model, extending Land Ownership &amp; Real
+Estate §7's `SocietasRecord` sketch) reuses item 1's own `PropertyOwnerRef` directly for every partner
+reference — the identical "any owner kind this codebase already has a tagged reference for" shape §10's
+own `{ ownerType, ownerId }` sketch already wanted, not a second parallel reference type — and its own
+`LinkedPropertySubject` reuses item 1's `PropertySubjectRef` for "the actual venture or Property Record
+this Societas was formed around" rather than inventing a third. §3's unlimited liability is deliberately
+**not** a per-partner field on `SocietasPartner`, unlike §10's own sketch: the design doc treats it as
+absolute and uniform for every partner in every Societas, so this item encodes that as a documented
+constant rather than a redundant always-`"unlimited"` string repeated on every partner.
+`FormSocietasCommand` (§5's negotiated *lex societatis*) validates the real structural content a
+negotiation actually produces — partner count, share fractions summing to exactly one, a designated
+partner required and a real member for Dominant/Silent Partner governance and disallowed for Equal
+Partners — folding §10's separate `lexSocietatis.profitSplit` field directly into each partner's own
+`ShareFraction` rather than duplicating the same numbers twice.
+
+§3's `UnlimitedLiabilityEvent` lands as `TriggerUnlimitedLiabilityCommand`, sized from the linked
+venture's own tracked Value where one resolves (else a flat, this-item-invented Denarii figure,
+`SocietatesCatalog.BaseUnlimitedLiabilityAmount`), scaled further by
+`OmniumBonorumLiabilityMultiplier` for a Societas Omnium Bonorum specifically — §3's own worked
+"contained loss... genuine, complete ruin" contrast made concrete. It deliberately does not write
+`Economy.InsolvencyState` directly: that partition has exactly one real writer, the already-shipped
+`InsolvencySystem`'s own monthly Net Worth tick, so this command only posts a real Ledger debit against
+the exposed partner's own household account and lets that existing system organically detect the
+resulting Net Worth collapse on its own normal schedule — §3's cross-integration read literally
+("reachable through a partner's own failure," not force-set).
+
+§7's "suspected skimming or fraud... detectable the same way" as Land Ownership &amp; Real Estate's own
+Operator-skimming risk lands as `PartnerSkimmingRiskSystem`, reusing `RealEstateCatalog.
+SkimmingLoyaltyThreshold` directly rather than a second threshold, but — since a business partner is an
+equal, not a hired Operator — additionally gated on the content-authored `greedy` Trait (`content/
+source/traits/congenital.json`, already authored, no content change needed), read directly off
+`Character.Traits` per `Legal.LegalCatalog.LitigiousTraitId`'s own identical "no compiled TraitCatalog
+reachable here" precedent. `AuditPartnerCommand` mirrors `RealEstate.AuditPropertyOperatorCommand`
+almost exactly: it reveals that already-resolved ground truth and applies the one real
+honest-partner consequence (a Loyalty penalty for a false accusation) rather than rolling anything
+itself. Only a partner resolving to a real, living Character (`PlayerHousehold` via its recorded
+household head, or `IndividualCharacter` directly) ever carries a skim verdict at all — every other
+owner kind (Rival Gens, Temple, Collegium, etc.) has no single Character this item can read Loyalty/
+Greed off, an honest narrowing named directly in that system's own doc comment.
+
+§6's *actio pro socio* lands as a real, new `Legal.LegalCaseType.PartnershipDispute` case value, filed
+through `FileActioProSocioCommand` — a thin wrapper around the already-shipped `FileLawsuitCommands.
+CreatePipeline`, always at `LegalCaseDepth.Major` (never Quick, both because an actio pro socio is
+inherently "a full, honest accounting," and because Quick Resolution would otherwise rule the case
+inline before this item's own link record could be written). That link — which Societas and which of
+§7's three `PartnerDisputeType`s (`SuspectedFraud`, `EarlyExitDispute`,
+`ProfitDistributionDisagreement`) a given case is actually about — is `ActioProSocioLink`, a new,
+sparse `WorldState` partition keyed by the already-issued `RuntimeId<LegalCase>`, matching `RealEstate.
+PlotPropertyExtension`'s own "wrap the existing record in a parallel partition rather than edit its
+schema" convention. **This is this item's one deliberate, named divergence from §10's own literal data
+model**, which sketches a separate `ActioProSocioCase { caseId, societasId, filingPartnerId,
+respondentPartnerId, disputeType, resolution }` record: rather than build that second, parallel case
+entity duplicating `LegalCase`'s own already-tested Filed/EvidenceGathering/Hearing/Ruled machinery,
+this item extends the existing one exactly the way the roadmap's own construction rules and §6's own
+text both call for ("the same evidence-and-Hearing structure that document already uses... rather than
+an invented parallel process") — the identical judgment call item 1 named for `PropertyOwnerRef`
+diverging from `Land.Plot.OwnerId`'s previously bare string, applied here to a case record instead of an
+owner reference. A further, related narrowing: filing an *actio pro socio* requires both the filing and
+respondent partner to be `PropertyOwnerKind.PlayerHousehold` — `LegalCase` already resolves every case
+at Household granularity (that record's own pre-existing scope decision from Phase 12 item 4), and this
+item does not add a Character-to-Household reverse lookup just to let an `IndividualCharacter` partner
+file or answer one directly.
+
+`ActioProSocioResolutionHook` is the real mechanical follow-through once such a case is actually ruled —
+an additive, gated call from `Legal.LegalCaseRuling.Apply` exactly when `CaseType ==
+PartnershipDispute`, matching that method's own already-established `RecordWeaponizedLegalCaseScandal`
+precedent (Phase 12 item 7's Scandal domain already reaching forward into `LegalCaseRuling.Apply` this
+same way) rather than this item inventing a second consequence-dispatch mechanism. A confirmed
+`SuspectedFraud` (ruled for the plaintiff) dissolves the Societas via `DissolveSocietasCommand`'s own
+`Fraud` trigger — gated to the `"system"` actor sentinel, so a player can never submit that trigger
+directly, only this hook, once a real verdict actually confirms it — and calls in unlimited liability
+against the confirmed-fraudulent respondent. A granted `EarlyExitDispute` withdraws the plaintiff partner
+via `WithdrawPartnerCommand`, which redistributes the exiting partner's own `ShareFraction`
+proportionally across the remaining partners, or dissolves the whole Societas outright
+(`SocietasDissolutionTrigger.MutualAgreement`) if fewer than two partners would remain — a one-partner
+"partnership" is not a partnership at all. `ProfitDistributionDisagreement` is a real, investigated scope
+cut: it receives `LegalCaseRuling.Apply`'s own ordinary Dignitas/relationship consequences like any other
+case, but no further mechanical rebalancing, since no per-partner cash-flow or profit-remittance engine
+exists for a Societas itself (only a linked, already-leased `RealEstate.PropertyRecord`/Plot has one) for
+this item to actually redistribute — inventing a redistribution formula §5's own negotiated *lex
+societatis* never specified numerically was rejected in favor of naming the gap directly, matching
+`OperatorLifecycleSystem`'s own precedent for a design branch this codebase cannot yet build without
+fabricating an unspecified formula.
+
+`DissolveSocietasCommand` itself is §6's uncontested path ("mutual agreement, a natural Societas Unius
+Rei completion, or an amicable Societas Omnium Bonorum wind-down... no case required"), reachable
+directly for every `SocietasDissolutionTrigger` except `Fraud`. `PartnerDisputeRiskQuery` is §7/§9's
+Ambition half of "a partner's own Reactive Traits (Ambition, Greed)... directly determine a partner's
+own likelihood of triggering §7's own dispute types" — a pure, non-mutating read over Ambition (Core
+Condition), matching `Queries.FameDivergenceQuery`'s own "a descriptive gap between fields this project
+already has" precedent: no autonomous NPC decision loop reads it yet (this item builds no
+`RivalAmbitionSystem`-equivalent for Societates — no design-doc call for one, and no such caller exists
+in this codebase), so it is exercised directly by this item's own tests standing in for that future
+caller, the same "the primitive ships, the caller doesn't exist yet" precedent `AdjustDignitasCommand`
+and `AdjustFameCommand` both already established for their own first callers.
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than
+assumption:** `PartnershipType.Publicani` is formable (every real category §2 names is represented, per
+`Legal.LegalCase.CaseType`'s own "every real category represented" precedent) but structurally inert —
+no Publicanus Contract entity exists anywhere in this codebase (Land Ownership &amp; Real Estate §8,
+confirmed unbuilt by direct search, the same gap item 1's own doc comments already named), so §10's own
+`linkedPublicanusContractId` field is omitted from `Societas` entirely rather than kept as an always-null
+field with nothing to ever set it. §8's Notable Businesses integration (a Merge as a Societas formation,
+a joint Acquisition as a Societas Unius Rei) is not wired for the identical reason — Notable Businesses
+is Phase 15 item 4, confirmed unbuilt by direct search. Fame is untouched: no source in `Fame.
+FameSourceType` names a Societas trigger, and this item invents none. §11's own three open questions
+(internal liability-capping side-agreements, multiple simultaneous societates and how exposure stacks,
+and the precise NPC conditions for offering/accepting a Societas Omnium Bonorum) are left open, matching
+that section's own explicit framing. Covered in
+`tests/Gens.Simulation.Tests/Societates/SocietatesTests.cs` (19 tests): formation across every
+partnership type and governance model plus its negotiated-terms validation failures, unlimited
+liability's Ledger debit and the Omnium Bonorum/Unius Rei exposure contrast, the skimming ground-truth
+system correctly distinguishing a low-Loyalty-and-greedy partner from an honest one and the audit
+command's false-accusation penalty, a filed *actio pro socio*'s real `PartnershipDispute` case and
+`ActioProSocioLink`, a rejected non-household respondent, a confirmed-fraud ruling's dissolution and
+unlimited-liability call-in, a granted early-exit ruling's withdrawal, proportional share redistribution
+across three-or-more partners, uncontested dissolution and the rejected player-submitted Fraud trigger,
+the Ambition-based dispute-risk query, and a save/load round trip with the deterministic state hash
+staying stable across every new partition. `dotnet build`/`dotnet test`/`dotnet format --verify-no-
+changes` all pass (1503/1503 tests, `dotnet run --project tools/Gens.ContentCompiler -- validate content`
+unaffected since this item adds no new content).
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 

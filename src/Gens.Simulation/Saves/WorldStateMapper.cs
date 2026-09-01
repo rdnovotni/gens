@@ -33,6 +33,7 @@ using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
+using Gens.Simulation.Societates;
 using Gens.Simulation.State;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -108,6 +109,7 @@ public static class WorldStateMapper
                 WandererEngagementIds = state.WandererEngagementIds.Peek,
                 DistrictIds = state.DistrictIds.Peek,
                 PropertyRecordIds = state.PropertyRecordIds.Peek,
+                SocietasIds = state.SocietasIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -266,6 +268,11 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             PlotPropertyExtensions = state.PlotPropertyExtensions.InAscendingOrder()
                 .Select(entry => ToPlotPropertyExtensionDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Societates = state.Societates.InAscendingOrder().Select(entry => ToSocietasDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ActioProSocioLinks = state.ActioProSocioLinks.InAscendingOrder()
+                .Select(entry => ToActioProSocioLinkDto(entry.Value)).ToArray(),
         };
     }
 
@@ -797,6 +804,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Plot>, PlotPropertyExtension>(extension.PlotId, extension);
             }));
 
+        var societates = OrderedRegistry<RuntimeId<Societas>, Societas>.Restore(
+            dto.Societates.Select(s =>
+            {
+                var societas = FromSocietasDto(s);
+                return new KeyValuePair<RuntimeId<Societas>, Societas>(societas.Id, societas);
+            }));
+
+        var actioProSocioLinks = OrderedRegistry<RuntimeId<LegalCase>, ActioProSocioLink>.Restore(
+            dto.ActioProSocioLinks.Select(l =>
+            {
+                var link = FromActioProSocioLinkDto(l);
+                return new KeyValuePair<RuntimeId<LegalCase>, ActioProSocioLink>(link.CaseId, link);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -848,6 +869,7 @@ public static class WorldStateMapper
             wandererEngagementIds: RuntimeIdCounter<WandererEngagement>.Restore(dto.Counters.WandererEngagementIds),
             districtIds: RuntimeIdCounter<District>.Restore(dto.Counters.DistrictIds),
             propertyRecordIds: RuntimeIdCounter<PropertyRecord>.Restore(dto.Counters.PropertyRecordIds),
+            societasIds: RuntimeIdCounter<Societas>.Restore(dto.Counters.SocietasIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -927,6 +949,8 @@ public static class WorldStateMapper
             districts: districts,
             propertyRecords: propertyRecords,
             plotPropertyExtensions: plotPropertyExtensions,
+            societates: societates,
+            actioProSocioLinks: actioProSocioLinks,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1424,6 +1448,63 @@ public static class WorldStateMapper
         dto.OperatorBuyoutOffered,
         dto.LesseeId is { } lesseeId ? RuntimeId<Household>.Parse(lesseeId) : null,
         Money.FromMinorUnits(dto.ValueRawValue));
+
+    private static SocietasPartnerDto ToSocietasPartnerDto(SocietasPartner partner) => new()
+    {
+        OwnerKind = partner.Owner.Kind.ToString(),
+        OwnerId = partner.Owner.OwnerId,
+        ShareFractionRawValue = partner.ShareFraction.RawValue,
+        IsSuspectedSkimming = partner.IsSuspectedSkimming,
+    };
+
+    private static SocietasPartner FromSocietasPartnerDto(SocietasPartnerDto dto) => new(
+        new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.OwnerKind), dto.OwnerId),
+        Fixed64.FromRaw(dto.ShareFractionRawValue),
+        dto.IsSuspectedSkimming);
+
+    private static SocietasDto ToSocietasDto(Societas societas) => new()
+    {
+        Id = societas.Id.ToTaggedString(),
+        PartnershipType = societas.PartnershipType.ToString(),
+        GovernanceModel = societas.GovernanceModel.ToString(),
+        DurationOrPurpose = societas.DurationOrPurpose,
+        DesignatedPartnerOwnerKind = societas.DesignatedPartner?.Kind.ToString(),
+        DesignatedPartnerOwnerId = societas.DesignatedPartner?.OwnerId,
+        Partners = societas.Partners.Select(ToSocietasPartnerDto).ToArray(),
+        LinkedPropertySubjectKind = societas.LinkedPropertySubject?.Kind.ToString(),
+        LinkedPropertySubjectId = societas.LinkedPropertySubject?.SubjectId,
+        IsActive = societas.IsActive,
+        DissolutionTrigger = societas.DissolutionTrigger?.ToString(),
+        DissolvedDateTotalMonths = societas.DissolvedDate?.TotalMonths,
+    };
+
+    private static Societas FromSocietasDto(SocietasDto dto) => Societas.Restore(
+        RuntimeId<Societas>.Parse(dto.Id),
+        Enum.Parse<PartnershipType>(dto.PartnershipType),
+        Enum.Parse<SocietasGovernanceModel>(dto.GovernanceModel),
+        dto.DurationOrPurpose,
+        dto.DesignatedPartnerOwnerKind is { } designatedKind
+            ? new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(designatedKind), dto.DesignatedPartnerOwnerId)
+            : null,
+        dto.Partners.Select(FromSocietasPartnerDto).ToArray(),
+        dto.LinkedPropertySubjectKind is { } subjectKind
+            ? new PropertySubjectRef(Enum.Parse<PropertySubjectKind>(subjectKind), dto.LinkedPropertySubjectId!)
+            : null,
+        dto.IsActive,
+        dto.DissolutionTrigger is { } trigger ? Enum.Parse<SocietasDissolutionTrigger>(trigger) : null,
+        dto.DissolvedDateTotalMonths is { } months ? new GameDate(months) : null);
+
+    private static ActioProSocioLinkDto ToActioProSocioLinkDto(ActioProSocioLink link) => new()
+    {
+        CaseId = link.CaseId.ToTaggedString(),
+        SocietasId = link.SocietasId.ToTaggedString(),
+        DisputeType = link.DisputeType.ToString(),
+    };
+
+    private static ActioProSocioLink FromActioProSocioLinkDto(ActioProSocioLinkDto dto) => new(
+        RuntimeId<LegalCase>.Parse(dto.CaseId),
+        RuntimeId<Societas>.Parse(dto.SocietasId),
+        Enum.Parse<PartnerDisputeType>(dto.DisputeType));
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

@@ -20,6 +20,7 @@ using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
+using Gens.Simulation.Societates;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Travel;
@@ -262,6 +263,11 @@ internal static class RuntimeIdTagRegistry
         // as its own tag" convention as Wanderer/WandererEngagement above.
         [typeof(District)] = "district",
         [typeof(PropertyRecord)] = "propertyrecord",
+        // Phase 15 item 2 — Gens.Simulation.Societates.Societas, same "real record as its own tag"
+        // convention as District/PropertyRecord above. ActioProSocioLink needs no entry: it is keyed
+        // by RuntimeId<LegalCase> (the already-issued case ID), not by its own RuntimeId, matching
+        // DynasticEpithet's identical exemption above.
+        [typeof(Societas)] = "societas",
     };
 
     public static string Resolve(Type type) =>

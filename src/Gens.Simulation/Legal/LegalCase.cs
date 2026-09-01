@@ -29,6 +29,19 @@ public enum LegalCaseType
     Political,
     Family,
     Military,
+
+    /// <summary>§6's <c>actio pro socio</c> (Phase 15 item 2; <c>gens-societates-business-
+    /// partnerships-design.md</c> §6) — "a contested Societas dissolution... resolves as a real, new
+    /// Legal &amp; Court case type, distinct from an ordinary civil dispute, with the same
+    /// evidence-and-Hearing structure... rather than an invented parallel process." Which <see
+    /// cref="Societates.Societas"/> and <see cref="Societates.PartnerDisputeType"/> a given case is
+    /// actually about lives in a separate, sparse <see cref="Societates.ActioProSocioLink"/>
+    /// partition keyed by this case's own ID, not on this record itself — matching <see
+    /// cref="IsPatriaPotestasCase"/>'s own "extend the existing record with a flag/side-partition
+    /// rather than invent a parallel case entity" convention, one step further (a whole partition
+    /// instead of one inline field, since a Societas dispute needs two extra pieces of data an inline
+    /// bool can't carry).</summary>
+    PartnershipDispute,
 }
 
 /// <summary>§4 vs §5: a Quick case resolves in the single <see cref="FileLawsuitCommand"/> submission
