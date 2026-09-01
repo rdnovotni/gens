@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Health;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
@@ -26,6 +27,13 @@ namespace Gens.Simulation.Markets;
 /// between Stockpiles or post any <see cref="LedgerService"/> transaction — matching a stockpile or
 /// a household's own ledger is exactly Phase 8 item 5's "household purchasing... and inventory
 /// reservation," explicitly out of this phase's scope; this system only measures and prices.
+///
+/// <para>Phase 14 item 5's own closed gap: total supply is scaled by <see
+/// cref="QuarantineEffectCalculator.CommerceSupplyMultiplier"/> before it ever reaches <see
+/// cref="MarketClearingCalculator.ComputeClearing"/> when the settlement is currently under an active
+/// Settlement-Wide Quarantine (<see cref="HealthQueries.IsSettlementUnderQuarantine"/>) — <c>gens-
+/// disease-public-health-design.md</c> §4.2's own "at a real Contentment and Commerce cost," the
+/// Commerce half; <see cref="Health.EpidemicContagionSystem"/> carries the Contentment half.</para>
 /// </summary>
 public sealed class MarketClearingSystem : IMonthlySystem<WorldState>
 {
@@ -60,7 +68,8 @@ public sealed class MarketClearingSystem : IMonthlySystem<WorldState>
 
     public string Id => "markets.clearing";
     public TickPhase Phase => TickPhase.MarketsLedger;
-    public IReadOnlyCollection<string> Reads { get; } = new[] { "settlements", "holdings", "stockpiles", "popGroups", "marketPrices" };
+    public IReadOnlyCollection<string> Reads { get; } =
+        new[] { "settlements", "holdings", "stockpiles", "popGroups", "marketPrices", "epidemicOutbreaks" };
     public IReadOnlyCollection<string> Writes { get; } = new[] { "marketPrices", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = new[] { "buildings.production", "characters.needsConsumption" };
 
@@ -75,12 +84,15 @@ public sealed class MarketClearingSystem : IMonthlySystem<WorldState>
         {
             var settlementId = settlementEntry.Key;
             var lines = new List<MarketClearingLine>();
+            var commerceMultiplier = QuarantineEffectCalculator.CommerceSupplyMultiplier(
+                HealthQueries.IsSettlementUnderQuarantine(state, settlementId));
 
             foreach (var goodId in _tradedGoods)
             {
                 var supplyOrders = CollectSupplyOrders(state, settlementId, goodId);
                 var demandOrders = CollectDemandOrders(state, settlementId, goodId);
-                var totalSupply = supplyOrders.Sum(static order => order.Quantity);
+                var rawSupply = supplyOrders.Sum(static order => order.Quantity);
+                var totalSupply = (long)Math.Round(rawSupply * commerceMultiplier, MidpointRounding.AwayFromZero);
                 var totalDemand = demandOrders.Sum(static order => order.Quantity);
 
                 var (cleared, unsatisfied) = MarketClearingCalculator.ComputeClearing(totalSupply, totalDemand);

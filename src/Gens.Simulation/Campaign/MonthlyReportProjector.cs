@@ -146,6 +146,18 @@ public static class MonthlyReportProjector
         EventFiredEvent => ReportImportance.Medium,
         EventExpiredEvent or EventStageAdvancedEvent => ReportImportance.Medium,
         EventOptionResolvedEvent or SampleEventOptionOutcomeEvent => ReportImportance.Low,
+
+        // Phase 14 item 5: a hazard/epidemic/wanderer event's own severity, not just its namespace,
+        // decides how loudly the report treats it — matching this switch's own existing "a fired
+        // Household/Imperial event is High, its own later follow-up reads as ordinary" shape.
+        Hazards.DisasterEventOccurredEvent { Severity: Hazards.DisasterSeverity.Severe or Hazards.DisasterSeverity.Catastrophic } =>
+            ReportImportance.High,
+        Hazards.DisasterEventOccurredEvent => ReportImportance.Medium,
+        Hazards.HazardElevatedExposureWarningEvent => ReportImportance.Medium,
+        Health.EpidemicOutbreakIgnitedEvent => ReportImportance.High,
+        Health.AntoninePlagueOnsetEvent or Health.AntoninePlagueWaningEvent => ReportImportance.High,
+        Wanderers.WandererRecruitedEvent => ReportImportance.High,
+
         _ => ReportImportance.Medium,
     };
 

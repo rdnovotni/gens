@@ -21,6 +21,17 @@ public static class EpidemicSpreadCalculator
     public static double MonthlyIgnitionProbability(double sanitationMultiplier) =>
         Clamp(0.006 * Math.Max(0.0, sanitationMultiplier));
 
+    /// <summary>§9's own Antonine Plague framing: Pestilence ignition "elevat[ed]... everywhere
+    /// regardless of individual household preparation" for the real duration of <see
+    /// cref="AntoninePlagueEra.IsActive"/>. Applied only to Pestilence's own ignition roll (<see
+    /// cref="EpidemicContagionSystem"/>), on top of — not instead of — <paramref
+    /// name="sanitationMultiplier"/>, since §9 itself only claims the pandemic overrides "individual
+    /// household preparation," not settlement-level Sanitation Investment. This implementation's own
+    /// invented multiplier, chosen only so a Pestilence outbreak reads as a genuinely different order of
+    /// likelihood during the historical era than an ordinary local ignition roll.</summary>
+    public static double AntoninePlagueIgnitionProbability(double sanitationMultiplier) =>
+        Clamp(8.0 * 0.006 * Math.Max(0.0, sanitationMultiplier));
+
     /// <summary>§3.1's person-to-person vector (Pestilence, Pox, Camp Fever): the probability one
     /// susceptible Character catches the disease this month from <paramref
     /// name="infectedHouseholdMembers"/> already-infected Household co-members — the "real Contact"

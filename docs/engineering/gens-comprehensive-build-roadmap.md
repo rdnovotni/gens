@@ -76,7 +76,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 11** — Guarantee dynasty continuity and historical memory
 - [x] **Phase 12** — Build institutions, reputation, law, religion, and public life
 - [x] **Phase 13** — Add geography, travel, correspondence, culture, and history
-- [ ] **Phase 14** — Add health, disease, disasters, and mobile populations
+- [x] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [ ] **Phase 15** — Add advanced commerce, property, and public investment
 - [ ] **Phase 16** — Add espionage, banditry, military force, and diplomacy
 - [ ] **Phase 17** — Add deep relationships, activities, culture, and legacy objects
@@ -1868,7 +1868,7 @@ new tests in `tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, includin
 with a stable deterministic state hash and a `MonthlySimulation`-level regression test proving the
 ordering fix.
 
-### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 4 of 5)
+### Phase 14 — Add health, disease, disasters, and mobile populations — ✅ COMPLETE
 
 **Outcome:** environmental and biological pressure matters without becoming arbitrary save destruction.
 
@@ -1878,7 +1878,7 @@ Construction order:
 2. [x] Implement sanitation, food/water quality, crowding, livestock disease, endemic pressure, outbreaks, and quarantine.
 3. [x] Implement environmental hazard profiles, forecast/knowledge, disaster instances, damage, displacement, recovery, and region/date modifiers.
 4. [x] Implement wandering population cohorts, routes, needs, fame/visibility, settlement interaction, recruitment, and promotion to named characters.
-5. Integrate hazards with goods, buildings, populations, markets, travel, events, institutions, and reports through shared events and effects.
+5. [x] Integrate hazards with goods, buildings, populations, markets, travel, events, institutions, and reports through shared events and effects.
 
 **Exit gate:** hazards have visible causes, warnings where appropriate, bounded losses, recovery paths, and deterministic fixtures; they do not bypass ownership, ledger, health, or event rules.
 
@@ -2208,6 +2208,133 @@ including exhaustive weighted-selection coverage proving every destination gets 
 seed-reproducibility tests for both the generation draw and a twelve-month tour, and a seed-searched
 Physician recruit proving the real `DutySlot.Physician` placement end to end. Full suite: 1,436 tests
 green, `dotnet build`/`dotnet test` in Release and `dotnet format --verify-no-changes` all clean.
+
+**Item 5 progress:** the cross-system integration wave closes every gap items 1-4's own progress notes
+named explicitly as theirs, verified against the real code rather than trusted from those notes' own
+(occasionally stale) wording, and touches no ownership/ledger/health/event invariant directly — every
+effect below goes through a real command/system exactly like items 1-4's own discipline required.
+
+**Disaster Relief as a Funded Action** (`gens-natural-disasters-design.md` §6.2, named absent by both item
+3 and item 4's own closing sentences) is `Policies.FundDisasterReliefCommand`, built in the identical
+shape `Policies.FundFestivalCommand` already established for this codebase's one other authored Funded
+Action — a one-off Household spend posted through the real Ledger into a named `fundedaction:
+disasterrelief` system sink, never a second untracked account. It is only eligible against an existing
+`Hazards.DisasterEvent` at `Severe` or `Catastrophic` severity (§6.2's own "rarely justifies the political
+theater... concentrated at Severe and Catastrophic") and only once per Event (a new, additive
+`DisasterEvent.ReliefFunded` bool, ADR 0011, wired through the same `WorldSaveDto`/`WorldStateMapper`/
+`StateHasher` three files a field addition to an already-wired partition needs — no `EntityKinds` change,
+since `DisasterEvent` already has one). The real patronage payoff is a flat, disclosed-as-invented
+Dignitas gain through `Reputation.DignitasResolver.Apply`, the same Cultural-Prestige-to-Dignitas
+substitution `Wanderers.HostWandererCommand` already used.
+
+**Settlement-Wide Quarantine's real Contentment and Commerce cost** (`gens-disease-public-health-design.md`
+§4.2, named absent by item 2's own closing sentence and by `Health.SetSettlementQuarantineCommand`'s own
+doc comment) is now real on both halves, both hanging off one new shared read,
+`Health.HealthQueries.IsSettlementUnderQuarantine`: the Contentment half is a new, invented
+`QuarantineEffectCalculator.ContentmentImpact` felt shock `Health.EpidemicContagionSystem` applies every
+month a settlement's outbreak keeps `SettlementQuarantineActive` true, the same "same-month shock, not a
+persisted debuff" shape `Hazards.NaturalDisasterSystem`'s own Contentment hit already established (`
+Characters.ContentmentSystem` still recomputes its own formula next month regardless); the Commerce half
+is a new `QuarantineEffectCalculator.CommerceSupplyMultiplier` `Markets.MarketClearingSystem` now applies
+to a quarantined settlement's total cleared supply before it ever reaches `MarketClearingCalculator.
+ComputeClearing` — a real, felt trade-off against Quarantine's own spread-reduction benefit rather than a
+free lever.
+
+**The Antonine Plague's own Event Chain** (`gens-disease-public-health-design.md` §9, named absent by both
+item 1's and item 3's own closing sentences and disclosed twice as shared item-3/item-5 business) is a new
+`Health.AntoninePlagueEra` — a deterministic, computed-on-demand read of `WorldState.Date` against the real
+historical AD 165-180 range (`History.HistoricalYear.ToGameDate`, the same conversion every other real date
+in this codebase uses), needing no new `WorldState` partition or migration at all, matching
+`Hazards.HazardExposureProfile`'s own "computed on demand, never a snapshot that could drift" precedent.
+This is a deliberate scoping call, disclosed in `AntoninePlagueEra`'s own doc comment: §9 itself frames the
+date as foreknown rather than a player choice (Events §6.3's "player foreknowledge... remains a deliberate
+feature"), so there is no option menu to author against — building a full interactive multi-stage
+`Events.EventDefinition` for it would add UI-facing option content this item doesn't own, not a realer
+Event Chain, and `History.KnownWorldHistoricalTimeline`'s own doc comment already disclaims authoring that
+machinery in full for any of its roughly ninety entries. The Chain is real in the two ways the design doc
+actually asks for: `Health.EpidemicContagionSystem` now emits a once-only `AntoninePlagueOnsetEvent`/
+`AntoninePlagueWaningEvent` pair at the two boundary months, and for the whole of that era every newly-
+ignited Pestilence outbreak (a) rolls against a new, invented, elevated `EpidemicSpreadCalculator.
+AntoninePlagueIgnitionProbability` instead of the ordinary ignition curve — §9's own "elevating Pestilence
+Exposure everywhere regardless of individual household preparation" made literal — and (b) is stamped
+`EpidemicOutbreak.ImperialScale = true`, the real caller item 2 built that flag as a callerless hook for,
+so `QuarantineEffectCalculator.SettlementSpreadMultiplier`'s already-written Imperial-scale reduced-
+effectiveness case finally fires for real. Honestly narrower than §9 in one further way, disclosed in
+`AntoninePlagueEra`'s own doc comment: "a returning campaign or Roman Service Character flagged as the
+real historical introduction vector" is not modeled — no Military & Combat campaign-return or Roman
+Service concept exists anywhere in this codebase for this item to read, so the onset fires purely off
+`WorldState.Date`.
+
+**`HazardQueries`'s forecast/knowledge surfacing** (item 3's own narrowly-scoped "a readable number, not a
+separate UI," naming the rest as item 5's) is now a real, felt warning rather than only a passive read: a
+new `Hazards.HazardWarningCalculator.IsElevated` threshold (this implementation's own invented figure) and
+a new `HazardElevatedExposureWarningEvent`, which `Hazards.NaturalDisasterSystem` emits for any settlement/
+hazard pair whose live Exposure crosses that threshold in a month no Event actually ignited — Phase 14's
+own exit-gate "warnings where appropriate" language made real. No separate UI or forecast-state concept was
+built for it, deliberately: this codebase's **Monthly Report already picks up every domain event generically**
+(`Campaign.MonthlyReportProjector.Project` operates over the whole month's `IDomainEvent` list with no
+namespace allowlist), so `HazardElevatedExposureWarningEvent`, `Hazards.DisasterEventOccurredEvent`,
+`Health.EpidemicOutbreakIgnitedEvent`, and every `Wanderers` engagement event items 3/4 already emit were
+already surfacing into the report with zero further wiring the moment this item verified it — the one real
+addition here is `MonthlyReportProjector.ImportanceOf` now reading a Disaster Event's own `Severity` (only
+`Severe`/`Catastrophic` reads `High`), an ignited Epidemic outbreak, an Antonine Plague onset/waning marker,
+and a completed Wanderer Recruitment as `High` rather than the generic fallback `Medium` — a small, real,
+non-speculative addition exactly as scoped, not a new pipeline.
+
+**Wandering Populations' three Encounter paths, re-verified against the real code rather than trusted from
+item 4's own wording:** `Travel.TravelTrip`'s Arrival state machine (`TravelTripStatus.Arrived`,
+`EncounterCompleted`) turned out to already exist since Phase 13 item 2 — item 4's own "no arrival-
+encounter concept of any kind" was stale even when item 4 was written — but wiring `TravelArrival` for real
+is still genuinely blocked, for a different, narrower reason this item confirmed by reading `Travel.
+TravelLocation` directly: it carries a `SettlementId`/`RegionId`/`ActorId`, never a `DefinitionId<Regions.
+GazetteerLocationDefinition>`, and a `Wanderer`'s own `CurrentLocationId` is Gazetteer-anchored specifically
+(item 4's own mechanical reason for that anchoring) — there is still no way to check "did the player's
+Travel destination match this Wanderer's current Gazetteer stop" without inventing a Settlement/Region-to-
+Gazetteer-location mapping that does not exist anywhere in this codebase, the same gap item 4's own "no
+co-location check is possible" disclosure already named from the engagement-command side. `Correspondence.
+LetterAction.NewsAndGossip` (added after item 4's own text was written, in the same Phase 13 pass) was
+checked as a candidate real hook for the Ambient Rumor path and found not to be one: its own doc comment
+frames it as "a distant Character's own life update" — an already-known Character, not an unmet Wanderer —
+so it answers a different question than §5's rumor-about-a-notable-stranger path. The direct-approach
+path's own missing Prominence field remains unbuilt. All three stay the same disclosed "hook now, caller
+later" `InstantiateWandererCommand` item 4 already built, now re-confirmed rather than assumed still absent.
+
+**Livestock disease** (`gens-disease-public-health-design.md` §8, named open by item 2's own closing
+sentence) was searched for again rather than assumed: still no real Herd/Livestock/Vilicus/Pasture concept
+anywhere in this codebase (`grep`-verified across `src/Gens.Simulation`), so Murrain/Scab and their
+zoonotic crossover remain fully open, honestly, rather than invented against a system that does not exist —
+this item does not own building a livestock system just to close the checkbox.
+
+Every new numeric constant (`QuarantineEffectCalculator.ContentmentImpact`/`CommerceSupplyMultiplier`,
+`EpidemicSpreadCalculator.AntoninePlagueIgnitionProbability`, `HazardWarningCalculator`'s own threshold,
+`FundDisasterReliefCommands.DignitasGain`) is this implementation's own invented figure, disclosed in each
+file's own doc comment exactly as items 1-4 disclosed theirs, chosen only to preserve the orderings the
+design docs state (Quarantine's Contentment cost sized well below a Disaster Event's own Catastrophic-tier
+shock; the Antonine Plague's own ignition curve read as a genuinely different order of likelihood than an
+ordinary local outbreak). Covered by 21 new tests across `FundDisasterReliefCommandTests`
+(`tests/Gens.Simulation.Tests/Policies/`), six new cases in `EpidemicContagionSystemTests` (Contentment
+shock with and without an active Quarantine, the Antonine Plague onset/waning markers each firing exactly
+once on their own real months, and a seed-searched Pestilence ignition proving the real `ImperialScale`
+stamp), a new elevated-Exposure-without-ignition case in `NaturalDisasterSystemTests`, a new
+quarantine-reduces-supply case in `MarketClearingSystemTests`, two new Importance-mapping cases in
+`MonthlyReportProjectorTests`, and an extended `HazardsSaveRoundTripTests` covering `DisasterEvent.
+ReliefFunded`'s own round trip and deterministic state hash alongside item 3's own. Full suite: 1,457 tests
+green (up from item 4's own 1,436), `dotnet build`/`dotnet test` in Release and `dotnet format Gens.slnx
+--verify-no-changes` all clean.
+
+**Phase 14 exit gate, assessed honestly:** hazards have visible causes (`Hazards.DisasterEvent`'s own
+terrain/exposure-driven ignition), real warnings where appropriate (this item's own
+`HazardElevatedExposureWarningEvent`), bounded losses (every damage/population/Contentment effect across
+items 3-5 is capped and severity-scaled, never unbounded), real recovery paths (Repair for buildings,
+Sanitation Investment and Quarantine for disease, Disaster Relief for the political/financial side), and
+deterministic fixtures throughout (every new mechanism across items 1-5 is either pure/RNG-free or driven
+by a caller-supplied `uint` draw with seed-searched or seed-reproducibility tests). No system in this wave
+bypasses ownership, ledger, health, or event rules — every mutation goes through a real `CommandPipeline`
+or an existing `IMonthlySystem`'s own established write path. Every remaining gap (Wanderer Encounter
+co-location, livestock disease, Volcanic Eruption's own real trigger, Soil Fertility/Forest Cover/Slope
+Stability as real player levers, and the handful of other proxies items 3/4 already disclosed) is a
+genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
+phase is marked complete on that basis.
 
 ### Phase 15 — Add advanced commerce, property, and public investment — ⬜ NOT STARTED
 

@@ -3207,6 +3207,10 @@ public sealed record DisasterEventDto
 
     [JsonPropertyOrder(8)]
     public required bool PerennialCropSetback { get; init; }
+
+    /// <summary>Additive (ADR 0011), Phase 14 item 5 — absent (defaults false) in any save predating it.</summary>
+    [JsonPropertyOrder(9)]
+    public bool ReliefFunded { get; init; }
 }
 
 /// <summary>One stop on a <see cref="Gens.Simulation.Wanderers.Wanderer"/>'s Itinerary (Phase 14 item

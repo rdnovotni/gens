@@ -713,6 +713,7 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.BuildingsDamaged);
             hash = MixLong(hash, entry.Value.PopulationLost);
             hash = MixLong(hash, entry.Value.PerennialCropSetback ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.ReliefFunded ? 1L : 0L);
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.

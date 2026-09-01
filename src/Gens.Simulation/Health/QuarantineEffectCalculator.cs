@@ -1,3 +1,5 @@
+using Gens.Simulation.Numerics;
+
 namespace Gens.Simulation.Health;
 
 /// <summary>Pure math for §4's Quarantine spread-reduction effect — the mechanical payoff behind both
@@ -26,4 +28,28 @@ public static class QuarantineEffectCalculator
             return 1.0;
         return imperialScale ? 0.75 : 0.35;
     }
+
+    /// <summary>§4.2's own "at a real Contentment... cost" — Phase 14 item 5's closed gap (<see
+    /// cref="SetSettlementQuarantineCommand"/>'s own doc comment named this exact hook as absent). A
+    /// felt, same-month shock applied every month the settlement-wide Quarantine stays active, the same
+    /// "recomputed from its own formula next month regardless" shape
+    /// <see cref="Hazards.DisasterDamageCalculator.ContentmentImpact"/> already established for a Disaster
+    /// Event's own Contentment hit — closing the gates for public health is a real, felt imposition on a
+    /// population, not a one-off. No figure for this exists in the design corpus (§12's own "quarantine
+    /// effectiveness" open item, generalized here to its cost side too); this implementation's own
+    /// invented constant, sized well below <see cref="Hazards.DisasterDamageCalculator.ContentmentImpact"/>'s
+    /// own Catastrophic-tier figure — a standing policy decision reads as a lesser, chronic irritant next
+    /// to a single violent disaster, not an equally sharp shock.</summary>
+    public static Fixed64 ContentmentImpact => Fixed64.FromRaw(-30_000); // -0.03.
+
+    /// <summary>§4.2's own "at a real Commerce cost" — the other half of this item 5's closed gap: an
+    /// active settlement-wide Quarantine measurably restricts how much of a settlement's own production
+    /// actually reaches its market this month (movement restrictions choking off supply reaching the
+    /// square), read by <see cref="Markets.MarketClearingSystem"/> as a multiplier on total supply before
+    /// clearing. This implementation's own invented figure, chosen only so that Quarantine is a real,
+    /// felt trade-off against its own spread-reduction benefit rather than a free lunch, without erasing
+    /// a quarantined settlement's market outright (a besieged settlement still trades in secret, at the
+    /// gate, and in whatever a household already has on hand).</summary>
+    public static double CommerceSupplyMultiplier(bool settlementQuarantineActive) =>
+        settlementQuarantineActive ? 0.6 : 1.0;
 }

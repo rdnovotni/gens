@@ -1197,6 +1197,7 @@ public static class WorldStateMapper
         BuildingsDamaged = disasterEvent.BuildingsDamaged,
         PopulationLost = disasterEvent.PopulationLost,
         PerennialCropSetback = disasterEvent.PerennialCropSetback,
+        ReliefFunded = disasterEvent.ReliefFunded,
     };
 
     private static DisasterEvent FromDisasterEventDto(DisasterEventDto dto) => DisasterEvent.Create(
@@ -1208,7 +1209,8 @@ public static class WorldStateMapper
         dto.TriggeredByCompounding,
         dto.BuildingsDamaged,
         dto.PopulationLost,
-        dto.PerennialCropSetback);
+        dto.PerennialCropSetback,
+        dto.ReliefFunded);
 
     private static DormantVolcanoDto ToDormantVolcanoDto(DormantVolcano volcano) => new()
     {

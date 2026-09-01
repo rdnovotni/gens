@@ -7,9 +7,10 @@ namespace Gens.Simulation.Hazards;
 /// <summary>One settlement's standing record of a fired Disaster Event — §8's <c>DisasterEvent</c> data
 /// model, scoped to the fields this codebase can actually maintain, the same "real record, honestly
 /// narrowed" discipline <c>Health.EpidemicOutbreak</c>'s own doc comment already established. §8's own
-/// <c>affectedPlotIds</c>/<c>livestockLoss</c>/<c>cargoOrVesselLoss</c>/<c>reliefFundedActionRef</c>
-/// fields are not carried here: no Pasture/livestock, vessel/cargo, or Disaster Relief Funded Action
-/// concept exists anywhere in this codebase yet (this namespace's own top-level disclosures) — <see
+/// <c>affectedPlotIds</c>/<c>livestockLoss</c>/<c>cargoOrVesselLoss</c> fields are not carried here: no
+/// Pasture/livestock or vessel/cargo concept exists anywhere in this codebase yet (this namespace's own
+/// top-level disclosures). <c>reliefFundedActionRef</c> is item 5's own <see cref="ReliefFunded"/>
+/// below, honestly narrowed to a bool rather than a stored reference — see
 /// cref="BuildingsDamaged"/> and <see cref="PopulationLost"/> are this item's own real, aggregate
 /// substitute for "which specific plots/buildings," kept as counts rather than ID lists since <see
 /// cref="NaturalDisasterSystem"/> already applies the actual per-building/per-PopGroup mutation
@@ -48,6 +49,14 @@ public sealed record DisasterEvent
     /// condition drop.</summary>
     public bool PerennialCropSetback { get; init; }
 
+    /// <summary>§8's <c>reliefFundedActionRef</c>, honestly narrowed the same way <see
+    /// cref="PerennialCropSetback"/> already is: a bool rather than a stored reference, since <see
+    /// cref="Policies.FundDisasterReliefCommand"/>'s own <see
+    /// cref="Policies.DisasterReliefFundedEvent.TransactionId"/> is already the queryable receipt of
+    /// *which* funded action paid for relief — this field only answers "has this Event already had one."
+    /// Additive (ADR 0011): defaults false for every save predating item 5.</summary>
+    public bool ReliefFunded { get; init; }
+
     public static DisasterEvent Create(
         RuntimeId<DisasterEvent> id,
         RuntimeId<Settlement> settlementId,
@@ -57,7 +66,8 @@ public sealed record DisasterEvent
         bool triggeredByCompounding = false,
         int buildingsDamaged = 0,
         int populationLost = 0,
-        bool perennialCropSetback = false)
+        bool perennialCropSetback = false,
+        bool reliefFunded = false)
     {
         if (buildingsDamaged < 0)
             throw new ArgumentOutOfRangeException(nameof(buildingsDamaged), buildingsDamaged, "Buildings damaged cannot be negative.");
@@ -75,6 +85,7 @@ public sealed record DisasterEvent
             BuildingsDamaged = buildingsDamaged,
             PopulationLost = populationLost,
             PerennialCropSetback = perennialCropSetback,
+            ReliefFunded = reliefFunded,
         };
     }
 }

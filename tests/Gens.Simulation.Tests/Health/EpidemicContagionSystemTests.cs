@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Health;
 using Gens.Simulation.Land;
+using Gens.Simulation.Numerics;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -131,6 +132,96 @@ public sealed class EpidemicContagionSystemTests
         var withoutQuarantine = QuarantineEffectCalculator.SettlementSpreadMultiplier(false, false);
         var withQuarantine = QuarantineEffectCalculator.SettlementSpreadMultiplier(true, false);
         Assert.That(withQuarantine, Is.LessThan(withoutQuarantine));
+    }
+
+    [Test]
+    public void AnActiveSettlementWideQuarantineAppliesAFeltMonthlyContentmentShock()
+    {
+        var state = new WorldState(AntoninePlagueEra.Start.NextMonth());
+        var regionId = state.RegionIds.Issue();
+        var settlementId = state.SettlementIds.Issue();
+        state.Settlements.Add(settlementId, Settlement.Create(settlementId, regionId));
+        var popKey = new PopGroupKey(settlementId, PopGroupType.Operarii);
+        state.PopGroups.Add(popKey, PopGroup.Create(settlementId, PopGroupType.Operarii, 10, contentment: Fixed64.FromInt(1)));
+
+        // A still-active case, so CloseOutbreaksWithNoRemainingCases does not immediately end the
+        // outbreak before this test's own Contentment-cost step runs.
+        var infectedId = state.CharacterIds.Issue();
+        state.Characters.Add(infectedId, CharacterTestFixtures.Minimal(infectedId, location: settlementId));
+        var caseId = state.CharacterHealthConditionIds.Issue();
+        state.CharacterHealthConditions.Add(caseId, CharacterHealthCondition.Create(
+            caseId, infectedId, DiseaseCatalog.Pestilence, HealthConditionCategory.Acute, hasCure: false, severity: 40, state.Date));
+
+        var outbreakId = state.EpidemicOutbreakIds.Issue();
+        state.EpidemicOutbreaks.Add(
+            outbreakId,
+            EpidemicOutbreak.Create(outbreakId, settlementId, DiseaseCatalog.Pestilence, state.Date) with { SettlementQuarantineActive = true });
+
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, 1, 1);
+        var system = new EpidemicContagionSystem(StreamName);
+        system.Tick(state, new MonthlyTickContext(state.Date, streams));
+
+        state.PopGroups.TryGet(popKey, out var updated);
+        Assert.That(updated.Contentment, Is.EqualTo(Fixed64.FromInt(1) + QuarantineEffectCalculator.ContentmentImpact));
+    }
+
+    [Test]
+    public void NoQuarantineLeavesContentmentUntouched()
+    {
+        var state = new WorldState(new GameDate(10));
+        var settlementId = state.SettlementIds.Issue();
+        var popKey = new PopGroupKey(settlementId, PopGroupType.Operarii);
+        state.PopGroups.Add(popKey, PopGroup.Create(settlementId, PopGroupType.Operarii, 10, contentment: Fixed64.FromInt(1)));
+
+        var system = new EpidemicContagionSystem(StreamName);
+        system.Tick(state, new MonthlyTickContext(state.Date, new RandomStreamSet()));
+
+        state.PopGroups.TryGet(popKey, out var updated);
+        Assert.That(updated.Contentment, Is.EqualTo(Fixed64.FromInt(1)));
+    }
+
+    [Test]
+    public void AntoninePlagueOnsetAndWaningEventsFireOnceOnTheirOwnRealMonths()
+    {
+        var onsetState = new WorldState(AntoninePlagueEra.Start);
+        var onsetSystem = new EpidemicContagionSystem(StreamName);
+        var onsetEvents = onsetSystem.Tick(onsetState, new MonthlyTickContext(onsetState.Date, new RandomStreamSet()));
+        Assert.That(onsetEvents.OfType<AntoninePlagueOnsetEvent>().Count(), Is.EqualTo(1));
+        Assert.That(onsetEvents.OfType<AntoninePlagueWaningEvent>(), Is.Empty);
+
+        var earlierState = new WorldState(AntoninePlagueEra.Start.NextMonth());
+        var earlierEvents = new EpidemicContagionSystem(StreamName).Tick(earlierState, new MonthlyTickContext(earlierState.Date, new RandomStreamSet()));
+        Assert.That(earlierEvents.OfType<AntoninePlagueOnsetEvent>(), Is.Empty);
+        Assert.That(earlierEvents.OfType<AntoninePlagueWaningEvent>(), Is.Empty);
+
+        var waningState = new WorldState(AntoninePlagueEra.End.NextMonth());
+        var waningEvents = new EpidemicContagionSystem(StreamName).Tick(waningState, new MonthlyTickContext(waningState.Date, new RandomStreamSet()));
+        Assert.That(waningEvents.OfType<AntoninePlagueWaningEvent>().Count(), Is.EqualTo(1));
+        Assert.That(waningEvents.OfType<AntoninePlagueOnsetEvent>(), Is.Empty);
+    }
+
+    [Test]
+    public void AntoninePlagueEraStampsANewlyIgnitedPestilenceOutbreakAsImperialScale()
+    {
+        var date = AntoninePlagueEra.Start.NextMonth();
+        var state = new WorldState(date);
+        var regionId = state.RegionIds.Issue();
+        var settlementId = state.SettlementIds.Issue();
+        state.Settlements.Add(settlementId, Settlement.Create(settlementId, regionId));
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId, location: settlementId));
+
+        var ignitionThreshold = Threshold(EpidemicSpreadCalculator.AntoninePlagueIgnitionProbability(1.0));
+        var seed = FindSeedForSequentialDraws(v => v < ignitionThreshold);
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, seed, 1);
+
+        var system = new EpidemicContagionSystem(StreamName);
+        system.Tick(state, new MonthlyTickContext(date, streams));
+
+        var outbreak = state.EpidemicOutbreaks.InAscendingOrder().Single(e => e.Value.ConditionId == DiseaseCatalog.Pestilence).Value;
+        Assert.That(outbreak.ImperialScale, Is.True);
     }
 
     private static uint Threshold(double probability) =>

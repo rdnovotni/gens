@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Health;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
@@ -129,6 +130,25 @@ public sealed class MarketClearingSystemTests
             previous = market!.Price;
             state.AdvanceMonth();
         }
+    }
+
+    [Test]
+    public void AnActiveSettlementWideQuarantineReducesClearedSupply()
+    {
+        // 100 grain supply, negligible demand, so ClearedQuantity tracks Supply directly.
+        var (state, settlementId) = BuildScenario(grainSupply: 100, popSize: 0);
+        var outbreakId = state.EpidemicOutbreakIds.Issue();
+        state.EpidemicOutbreaks.Add(
+            outbreakId,
+            EpidemicOutbreak.Create(outbreakId, settlementId, DiseaseCatalog.Pestilence, state.Date) with { SettlementQuarantineActive = true });
+
+        var events = BuildSystem().Tick(state, Context(state));
+
+        var cleared = (MarketClearedEvent)events.Single();
+        var line = cleared.Lines.Single(l => l.GoodId == GrainId);
+        var expectedSupply = (long)Math.Round(100 * QuarantineEffectCalculator.CommerceSupplyMultiplier(true), MidpointRounding.AwayFromZero);
+        Assert.That(line.Supply, Is.EqualTo(expectedSupply));
+        Assert.That(line.Supply, Is.LessThan(100));
     }
 
     [Test]
