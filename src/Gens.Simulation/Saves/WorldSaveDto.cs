@@ -478,6 +478,19 @@ public sealed record WorldSaveDocument
     /// to empty, matching <see cref="CharacterHealthConditions"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(76)]
     public IReadOnlyList<EpidemicOutbreakDto> EpidemicOutbreaks { get; init; } = Array.Empty<EpidemicOutbreakDto>();
+
+    /// <summary>Every fired §5 <see cref="Gens.Simulation.Hazards.DisasterEvent"/> (Phase 14 item 3),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="EpidemicOutbreaks"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(77)]
+    public IReadOnlyList<DisasterEventDto> DisasterEvents { get; init; } = Array.Empty<DisasterEventDto>();
+
+    /// <summary>Every §2.2 <see cref="Gens.Simulation.Hazards.DormantVolcano"/> designation (Phase 14
+    /// item 3), already in ascending-<see cref="Identity.RuntimeId{T}"/> (by Plot ID) order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="DisasterEvents"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(78)]
+    public IReadOnlyList<DormantVolcanoDto> DormantVolcanoes { get; init; } = Array.Empty<DormantVolcanoDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -712,6 +725,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(43)]
     public long EpidemicOutbreakIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-14-item-3 save has no Disaster
+    /// Events. Additive-only per ADR 0011's policy, matching <see cref="EpidemicOutbreakIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(44)]
+    public long DisasterEventIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3133,4 +3152,52 @@ public sealed record EpidemicOutbreakDto
 
     [JsonPropertyOrder(7)]
     public int? ResolvedDateTotalMonths { get; init; }
+}
+
+/// <summary>One fired <see cref="Gens.Simulation.Hazards.DisasterEvent"/> (Phase 14 item 3).</summary>
+public sealed record DisasterEventDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int OccurredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string HazardType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Severity { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool TriggeredByCompounding { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int BuildingsDamaged { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int PopulationLost { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool PerennialCropSetback { get; init; }
+}
+
+/// <summary>One §2.2 <see cref="Gens.Simulation.Hazards.DormantVolcano"/> designation (Phase 14 item
+/// 3).</summary>
+public sealed record DormantVolcanoDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required bool HasErupted { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool PostEruptionFertilityBoostActive { get; init; }
 }

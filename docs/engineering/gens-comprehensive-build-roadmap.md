@@ -1849,7 +1849,7 @@ concrete rule for, not the other two's still-unsized multipliers. Covered by 13 
 `tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, including a save/load round trip with a stable
 deterministic state hash.
 
-### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 2 of 5)
+### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 3 of 5)
 
 **Outcome:** environmental and biological pressure matters without becoming arbitrary save destruction.
 
@@ -1857,7 +1857,7 @@ Construction order:
 
 1. [x] Extend health with conditions, exposure, resistance/immunity, treatment, recovery, mortality attribution, and care capacity.
 2. [x] Implement sanitation, food/water quality, crowding, livestock disease, endemic pressure, outbreaks, and quarantine.
-3. Implement environmental hazard profiles, forecast/knowledge, disaster instances, damage, displacement, recovery, and region/date modifiers.
+3. [x] Implement environmental hazard profiles, forecast/knowledge, disaster instances, damage, displacement, recovery, and region/date modifiers.
 4. Implement wandering population cohorts, routes, needs, fame/visibility, settlement interaction, recruitment, and promotion to named characters.
 5. Integrate hazards with goods, buildings, populations, markets, travel, events, institutions, and reports through shared events and effects.
 
@@ -1996,6 +1996,78 @@ Quarantine's own real Contentment/Commerce cost (§4.2 names it, but neither sys
 settlement-wide penalty" hook yet); and — matching item 1's own closing sentence — Natural Disasters'
 hazard profiles and the Antonine Plague's own Event Chain and cross-system wiring into goods/buildings/
 markets/travel/events/reports, items 3 and 5's own work.
+
+**Item 3 progress:** the eight standing hazards plus Volcanic Eruption's own rare, specially-cased
+ninth (`gens-natural-disasters-design.md` §2) land in a new `src/Gens.Simulation/Hazards/` namespace,
+built on top of an untracked, uncommitted partial pass a prior session left behind after a rate-limit
+interruption — that partial work (`HazardType`, `DisasterSeverity`, `HazardExposureProfile`,
+`HazardExposureCalculator`, `DisasterSeverityCalculator`, `DisasterCompoundingCalculator`,
+`DisasterDamageCalculator`, `DisasterEvent`, `DormantVolcano`, `DesignateDormantVolcanoCommand`) was
+reviewed line by line against this codebase's real conventions and this item's own design input rather
+than trusted blind, and turned out to already match the "sealed-record constructor-validated catalog,
+pure RNG-free calculator with invented-constant disclosures" shape `Health/` established exactly — it
+is kept essentially as authored, with only two additions: `DisasterDamageCalculator.BuildingHitProbability`
+and `.ContentmentImpact` (needed by the monthly System below, absent from the prior pass since no
+System yet called into it) and a `using Gens.Simulation.Identity;` fix in two files that would not
+otherwise have compiled. `HazardQueries` (this item's own realization of §3's "an emergent number...
+readable at any time" framing — the "forecast/knowledge" scope item is this and nothing more, since no
+separate Omen-skew UI concept exists to build against yet, per §6.1's own "unchanged in substance"
+framing naming that as item 5's cross-system wave) and `NaturalDisasterSystem` — the monthly `TickPhase.
+Hazards` tick §5's "disaster instances, damage... region/date modifiers" scope item actually asks
+for — are the real new work: for every settlement and each of the eight standing hazards, it reads
+`HazardExposureProfile`'s live terrain/building/seasonal composition, rolls
+`DisasterSeverityCalculator`'s two-step ignition/severity draw, and applies §5's own real effects —
+`Buildings.BuildingInstance.ApplyDisasterDamage` (a new method this item adds, the necessary mirror
+image of the already-existing `Repair`: `Repair` only ever raises condition, this only ever lowers it,
+floored at `Ruined` rather than throwing past it) for the five structural hazards (Fire, Flood,
+Earthquake, Storm, Landslide) plus a Severe-or-above Frost's own §5.4 perennial-crop-setback proxy,
+gated per-hazard to the real terrain each one actually strikes (Flood to River-adjacent plots, Landslide
+to Hills plots, matching §2's own table); §5.3's Catastrophic-only population loss, applied to real
+`PopGroup.Size` via the same `LegalStatusDistribution.Shrink` proportional-removal
+`GrowthMortalitySystem` already established; and a same-month `PopGroup.Contentment` shock every hazard
+applies regardless of severity or structural kind, disclosed plainly in `ContentmentImpact`'s own doc
+comment as a felt shock rather than a persisted debuff — `Characters.ContentmentSystem` runs earlier in
+the same tick (`EmploymentNeeds` precedes `Hazards`) and recomputes Contentment from its own three-input
+formula next month regardless, and `ContentmentCalculator`'s own doc comment already names "Natural
+Disasters... inputs" as a future adjuster it doesn't yet integrate, so this is that adjuster arriving
+honestly narrower than a full fourth formula input. §3.1's compounding is real, not just modeled in the
+calculator: a Severe-or-Catastrophic Storm rolls a direct, same-month chained Flood on any
+River-adjacent plot via `DisasterCompoundingCalculator.StormToFloodChainProbability`, recorded with
+`DisasterEvent.TriggeredByCompounding = true`. Every fired Event — ordinary or chained, structural or
+not — writes a real, permanent `DisasterEvent` record, the new `WorldState.DisasterEvents` partition
+(keyed by its own new `RuntimeId<DisasterEvent>`, wired through `StateHasher`/`WorldSaveDto`/
+`WorldStateMapper`/`EntityKinds` the same five-file way every prior runtime partition has been) kept
+forever once fired, matching `EpidemicOutbreak`'s identical "resolved or not, kept for the campaign's
+lifetime" convention. `DormantVolcanoes` (keyed directly by `RuntimeId<Plot>`, needing no
+`EntityKinds` entry of its own — the same exemption `SettlementSanitationInvestment` already has) is
+wired through the same four files for `DesignateDormantVolcanoCommand`'s sake, unchanged from the prior
+pass. `HazardExposure` itself gets no stored `WorldState` partition, deliberately: matching
+`Health.EndemicIllnessSystem`'s own private-profile precedent, it stays a pure, computed-on-demand read
+(`HazardExposureProfile.Compute` plus `HazardQueries.CurrentExposure`), never a snapshot that could
+drift from the terrain/building state it's actually read off. Deliberately, honestly deferred, matching
+this namespace's own top-level disclosures throughout: Soil Fertility/Forest Cover/Slope Stability (§4)
+as real player-settable Cultivation/Harvest/Excavation Intensity tracks — no such lever exists anywhere
+in this codebase, so every calculator that would read one reads the closest real terrain proxy instead
+(Forest-terrain Plot share standing in for Forest Cover, disclosed in both `FloodExposure`'s and
+`LandslideExposure`'s own doc comments), the same "honest, disclosed proxy" discipline `DiseaseCatalog`
+already set for Saturnism/Gout; regional Earthquake/Frost baselines, since no `Region` in this codebase
+carries real terrain-bonus data yet; livestock/cargo/vessel loss (§5.3), since no Pasture/livestock,
+vessel, or cargo concept exists anywhere in this codebase yet (`DisasterEvent`'s own doc comment); §6's
+Omen/Relief/borrowing cross-system wiring and Disaster Relief as a Funded Action, both the design
+document's own or item 5's deferred territory; and Volcanic Eruption's own real trigger and §2.2's
+double-edged fertility-boost aftermath, which stays exactly the callerless "a plot can be marked, and
+the mark persists and round-trips" hook the prior pass already built — nothing north of that is real
+yet, honestly, since no map-generation/plot-flagging pass exists to call it. Covered by 33 new tests
+across `tests/Gens.Simulation.Tests/Hazards/` (`HazardExposureCalculatorTests`,
+`DisasterSeverityCalculatorTests`, `DisasterCompoundingCalculatorTests`, `DisasterDamageCalculatorTests`,
+`DesignateDormantVolcanoCommandTests`, `HazardQueriesTests`, `NaturalDisasterSystemTests` — including a
+seed-searched deterministic RNG test each for a plain Earthquake ignition/building-damage roll and a
+Storm-into-Flood compounding chain, the same seed-search technique `Health`'s own contagion tests
+established — and `HazardsSaveRoundTripTests`, a save/load round trip with a stable deterministic state
+hash covering both new partitions). Full suite: 1,371 tests green, `dotnet build`/`dotnet test` in
+Release and `dotnet format --verify-no-changes` all clean on every file this item touched or added (the
+six pre-existing `WHITESPACE` findings in unrelated `Health/` test files predate this item's own branch
+point entirely, confirmed by re-running `dotnet format` against the prior commit).
 
 ### Phase 15 — Add advanced commerce, property, and public investment — ⬜ NOT STARTED
 

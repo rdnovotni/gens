@@ -15,6 +15,7 @@ using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Hazards;
 using Gens.Simulation.Health;
 using Gens.Simulation.History;
 using Gens.Simulation.Identity;
@@ -99,6 +100,7 @@ public static class WorldStateMapper
                 DistantHoldingIds = state.DistantHoldingIds.Peek,
                 CharacterHealthConditionIds = state.CharacterHealthConditionIds.Peek,
                 EpidemicOutbreakIds = state.EpidemicOutbreakIds.Peek,
+                DisasterEventIds = state.DisasterEventIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -241,6 +243,10 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             EpidemicOutbreaks = state.EpidemicOutbreaks.InAscendingOrder()
                 .Select(entry => ToEpidemicOutbreakDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            DisasterEvents = state.DisasterEvents.InAscendingOrder().Select(entry => ToDisasterEventDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            DormantVolcanoes = state.DormantVolcanoes.InAscendingOrder().Select(entry => ToDormantVolcanoDto(entry.Value)).ToArray(),
         };
     }
 
@@ -723,6 +729,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak>(outbreak.Id, outbreak);
             }));
 
+        var disasterEvents = OrderedRegistry<RuntimeId<DisasterEvent>, DisasterEvent>.Restore(
+            dto.DisasterEvents.Select(d =>
+            {
+                var disasterEvent = FromDisasterEventDto(d);
+                return new KeyValuePair<RuntimeId<DisasterEvent>, DisasterEvent>(disasterEvent.Id, disasterEvent);
+            }));
+
+        var dormantVolcanoes = OrderedRegistry<RuntimeId<Plot>, DormantVolcano>.Restore(
+            dto.DormantVolcanoes.Select(v =>
+            {
+                var volcano = FromDormantVolcanoDto(v);
+                return new KeyValuePair<RuntimeId<Plot>, DormantVolcano>(volcano.PlotId, volcano);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -769,6 +789,7 @@ public static class WorldStateMapper
             distantHoldingIds: RuntimeIdCounter<DistantHolding>.Restore(dto.Counters.DistantHoldingIds),
             characterHealthConditionIds: RuntimeIdCounter<CharacterHealthCondition>.Restore(dto.Counters.CharacterHealthConditionIds),
             epidemicOutbreakIds: RuntimeIdCounter<EpidemicOutbreak>.Restore(dto.Counters.EpidemicOutbreakIds),
+            disasterEventIds: RuntimeIdCounter<DisasterEvent>.Restore(dto.Counters.DisasterEventIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -840,6 +861,8 @@ public static class WorldStateMapper
             characterHealthConditions: characterHealthConditions,
             settlementSanitationInvestments: settlementSanitationInvestments,
             epidemicOutbreaks: epidemicOutbreaks,
+            disasterEvents: disasterEvents,
+            dormantVolcanoes: dormantVolcanoes,
             firedHistoricalTimelineEntryIds: firedHistoricalTimelineEntryIds,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
@@ -1135,6 +1158,46 @@ public static class WorldStateMapper
         SettlementQuarantineActive = dto.SettlementQuarantineActive,
         ImperialScale = dto.ImperialScale,
         ResolvedDate = dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null,
+    };
+
+    private static DisasterEventDto ToDisasterEventDto(DisasterEvent disasterEvent) => new()
+    {
+        Id = disasterEvent.Id.ToTaggedString(),
+        SettlementId = disasterEvent.SettlementId.ToTaggedString(),
+        OccurredDateTotalMonths = disasterEvent.OccurredDate.TotalMonths,
+        HazardType = disasterEvent.HazardType.ToString(),
+        Severity = disasterEvent.Severity.ToString(),
+        TriggeredByCompounding = disasterEvent.TriggeredByCompounding,
+        BuildingsDamaged = disasterEvent.BuildingsDamaged,
+        PopulationLost = disasterEvent.PopulationLost,
+        PerennialCropSetback = disasterEvent.PerennialCropSetback,
+    };
+
+    private static DisasterEvent FromDisasterEventDto(DisasterEventDto dto) => DisasterEvent.Create(
+        RuntimeId<DisasterEvent>.Parse(dto.Id),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        new GameDate(dto.OccurredDateTotalMonths),
+        Enum.Parse<HazardType>(dto.HazardType),
+        Enum.Parse<DisasterSeverity>(dto.Severity),
+        dto.TriggeredByCompounding,
+        dto.BuildingsDamaged,
+        dto.PopulationLost,
+        dto.PerennialCropSetback);
+
+    private static DormantVolcanoDto ToDormantVolcanoDto(DormantVolcano volcano) => new()
+    {
+        PlotId = volcano.PlotId.ToTaggedString(),
+        SettlementId = volcano.SettlementId.ToTaggedString(),
+        HasErupted = volcano.HasErupted,
+        PostEruptionFertilityBoostActive = volcano.PostEruptionFertilityBoostActive,
+    };
+
+    private static DormantVolcano FromDormantVolcanoDto(DormantVolcanoDto dto) => new()
+    {
+        PlotId = RuntimeId<Plot>.Parse(dto.PlotId),
+        SettlementId = RuntimeId<Settlement>.Parse(dto.SettlementId),
+        HasErupted = dto.HasErupted,
+        PostEruptionFertilityBoostActive = dto.PostEruptionFertilityBoostActive,
     };
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()

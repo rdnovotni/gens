@@ -69,6 +69,7 @@ public static class StateHasher
         hash = MixLong(hash, state.DistantHoldingIds.Peek);
         hash = MixLong(hash, state.CharacterHealthConditionIds.Peek);
         hash = MixLong(hash, state.EpidemicOutbreakIds.Peek);
+        hash = MixLong(hash, state.DisasterEventIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -695,6 +696,29 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.SettlementQuarantineActive ? 1L : 0L);
             hash = MixLong(hash, entry.Value.ImperialScale ? 1L : 0L);
             hash = MixLong(hash, entry.Value.ResolvedDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.DisasterEvents.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.SettlementId.Value);
+            hash = MixLong(hash, entry.Value.OccurredDate.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.HazardType);
+            hash = MixLong(hash, (long)entry.Value.Severity);
+            hash = MixLong(hash, entry.Value.TriggeredByCompounding ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.BuildingsDamaged);
+            hash = MixLong(hash, entry.Value.PopulationLost);
+            hash = MixLong(hash, entry.Value.PerennialCropSetback ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.DormantVolcanoes.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.SettlementId.Value);
+            hash = MixLong(hash, entry.Value.HasErupted ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.PostEruptionFertilityBoostActive ? 1L : 0L);
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.

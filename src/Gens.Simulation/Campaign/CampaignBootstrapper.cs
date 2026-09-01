@@ -164,6 +164,11 @@ public static class CampaignBootstrapper
     /// the same rule-8 reason.</summary>
     public const string EpidemicContagionStreamName = "health.epidemicContagion";
 
+    /// <summary>The named random stream <see cref="Hazards.NaturalDisasterSystem"/> reserves for its
+    /// monthly ignition/severity/compounding-chain rolls (Phase 14 item 3), kept distinct from every
+    /// other stream here for the same rule-8 reason.</summary>
+    public const string NaturalDisasterStreamName = "hazards.naturalDisaster";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -202,6 +207,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(HealthConditionProgressionStreamName, config.Seed);
         streams.AddDerived(EndemicIllnessStreamName, config.Seed);
         streams.AddDerived(EpidemicContagionStreamName, config.Seed);
+        streams.AddDerived(NaturalDisasterStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();
