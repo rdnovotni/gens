@@ -36,9 +36,11 @@ public static class DisasterCompoundingCalculator
     /// Soil Fertility" framing treating the season itself as the proximate cause.</summary>
     public static int DrySeasonFireExposureBonus(bool drySeasonMonth) => drySeasonMonth ? 15 : 0;
 
-    /// <summary>Also raises Storm Exposure during storm season — §1's "the ancient 'closed sea' season
-    /// existed for exactly this reason," added directly to <see cref="HazardExposureCalculator.StormExposure"/>'s
-    /// own coastal-driven score by the caller.</summary>
+    /// <summary>Raises both Storm and Flood Exposure during storm season — §1's "the ancient 'closed sea'
+    /// season existed for exactly this reason" for Storm, and §2's own Flood row ("rises during Storm
+    /// season (§3.1)") for Flood — added directly to <see cref="HazardExposureCalculator.StormExposure"/>'s
+    /// coastal-driven score and <see cref="HazardExposureCalculator.FloodExposure"/>'s river-adjacent-driven
+    /// score respectively by the caller.</summary>
     public static int StormSeasonExposureBonus(bool stormSeasonMonth) => stormSeasonMonth ? 20 : 0;
 
     /// <summary>§3.1's Storm-into-Flood chaining: the probability a Storm Event that resolved at

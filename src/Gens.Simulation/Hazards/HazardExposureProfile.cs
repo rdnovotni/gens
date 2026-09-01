@@ -66,7 +66,9 @@ public readonly record struct HazardExposureProfile(
     {
         HazardType.Fire => HazardExposureCalculator.FireExposure(
             BuildingDensity, DisasterCompoundingCalculator.DrySeasonFireExposureBonus(DrySeasonMonth)),
-        HazardType.Flood => HazardExposureCalculator.FloodExposure(RiverAdjacentFraction, ForestCoverFraction),
+        HazardType.Flood => Math.Clamp(
+            HazardExposureCalculator.FloodExposure(RiverAdjacentFraction, ForestCoverFraction) +
+            DisasterCompoundingCalculator.StormSeasonExposureBonus(StormSeasonMonth), 0, 100),
         HazardType.Earthquake => HazardExposureCalculator.EarthquakeExposure(),
         HazardType.DroughtFamine => HazardExposureCalculator.DroughtFamineExposure(DrySeasonMonth),
         HazardType.Storm => Math.Clamp(
