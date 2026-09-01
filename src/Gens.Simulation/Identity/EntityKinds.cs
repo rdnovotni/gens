@@ -16,6 +16,7 @@ using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
+using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
@@ -257,6 +258,10 @@ internal static class RuntimeIdTagRegistry
         // WandererEngagement, same "real record as its own tag" convention as DisasterEvent above.
         [typeof(Wanderer)] = "wanderer",
         [typeof(WandererEngagement)] = "wandererengagement",
+        // Phase 15 item 1 — Gens.Simulation.RealEstate.District and PropertyRecord, same "real record
+        // as its own tag" convention as Wanderer/WandererEngagement above.
+        [typeof(District)] = "district",
+        [typeof(PropertyRecord)] = "propertyrecord",
     };
 
     public static string Resolve(Type type) =>

@@ -26,6 +26,7 @@ using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.Policies;
+using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
@@ -107,6 +108,8 @@ public sealed class WorldState
         RuntimeIdCounter<DisasterEvent> disasterEventIds,
         RuntimeIdCounter<Wanderer> wandererIds,
         RuntimeIdCounter<WandererEngagement> wandererEngagementIds,
+        RuntimeIdCounter<District> districtIds,
+        RuntimeIdCounter<PropertyRecord> propertyRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -183,6 +186,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Wanderer>, Wanderer> wanderers,
         OrderedRegistry<RuntimeId<WandererEngagement>, WandererEngagement> wandererEngagements,
         OrderedRegistry<string, GameDate> firedHistoricalTimelineEntryIds,
+        OrderedRegistry<RuntimeId<District>, District> districts,
+        OrderedRegistry<RuntimeId<PropertyRecord>, PropertyRecord> propertyRecords,
+        OrderedRegistry<RuntimeId<Plot>, PlotPropertyExtension> plotPropertyExtensions,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -234,6 +240,8 @@ public sealed class WorldState
         DisasterEventIds = disasterEventIds;
         WandererIds = wandererIds;
         WandererEngagementIds = wandererEngagementIds;
+        DistrictIds = districtIds;
+        PropertyRecordIds = propertyRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -310,6 +318,9 @@ public sealed class WorldState
         Wanderers = wanderers;
         WandererEngagements = wandererEngagements;
         FiredHistoricalTimelineEntryIds = firedHistoricalTimelineEntryIds;
+        Districts = districts;
+        PropertyRecords = propertyRecords;
+        PlotPropertyExtensions = plotPropertyExtensions;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -427,6 +438,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Gens.Simulation.Wanderers.WandererEngagement"/> (Phase 14 item 4).</summary>
     public RuntimeIdCounter<WandererEngagement> WandererEngagementIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.RealEstate.District"/> (Phase 15 item 1).</summary>
+    public RuntimeIdCounter<District> DistrictIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.RealEstate.PropertyRecord"/> (Phase 15 item 1).</summary>
+    public RuntimeIdCounter<PropertyRecord> PropertyRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -885,6 +902,20 @@ public sealed class WorldState
     /// this registry's ordering guarantee could sort on.</summary>
     public OrderedRegistry<string, GameDate> FiredHistoricalTimelineEntryIds { get; } = new();
 
+    /// <summary>Every §4 <see cref="Gens.Simulation.RealEstate.District"/> (Phase 15 item 1), in
+    /// ascending-<see cref="RuntimeId{T}"/> order.</summary>
+    public OrderedRegistry<RuntimeId<District>, District> Districts { get; } = new();
+
+    /// <summary>Every §3 <see cref="Gens.Simulation.RealEstate.PropertyRecord"/> — a Ship or Named
+    /// Holding, the two asset kinds with no Plot of their own (Phase 15 item 1).</summary>
+    public OrderedRegistry<RuntimeId<PropertyRecord>, PropertyRecord> PropertyRecords { get; } = new();
+
+    /// <summary>§3's management-status flag and ownership extension for a player-owned <see
+    /// cref="Plot"/> (Phase 15 item 1) — sparse, matching <see cref="Fame.CharacterFame"/>'s identical
+    /// "present only once touched" convention (see <see
+    /// cref="Gens.Simulation.RealEstate.PlotPropertyResolver.Current"/> for the untouched default).</summary>
+    public OrderedRegistry<RuntimeId<Plot>, PlotPropertyExtension> PlotPropertyExtensions { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -949,6 +980,8 @@ public sealed class WorldState
         ["disasterEventIds"] = DisasterEventIds.Peek,
         ["wandererIds"] = WandererIds.Peek,
         ["wandererEngagementIds"] = WandererEngagementIds.Peek,
+        ["districtIds"] = DistrictIds.Peek,
+        ["propertyRecordIds"] = PropertyRecordIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -1025,6 +1058,9 @@ public sealed class WorldState
         ["wandererEngagements"] = WandererEngagements.Version,
         ["firedHistoricalTimelineEntryIds"] = FiredHistoricalTimelineEntryIds.Version,
         ["edictRecords"] = EdictRecords.Version,
+        ["districts"] = Districts.Version,
+        ["propertyRecords"] = PropertyRecords.Version,
+        ["plotPropertyExtensions"] = PlotPropertyExtensions.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
