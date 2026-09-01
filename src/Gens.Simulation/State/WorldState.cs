@@ -14,6 +14,7 @@ using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Health;
 using Gens.Simulation.History;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
@@ -99,6 +100,7 @@ public sealed class WorldState
         RuntimeIdCounter<LanguageProficiency> languageProficiencyIds,
         RuntimeIdCounter<DivergenceRecord> divergenceRecordIds,
         RuntimeIdCounter<DistantHolding> distantHoldingIds,
+        RuntimeIdCounter<CharacterHealthCondition> characterHealthConditionIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -167,6 +169,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, InterpresAppointment> interpresAppointments,
         OrderedRegistry<RuntimeId<DivergenceRecord>, DivergenceRecord> divergenceRecords,
         OrderedRegistry<RuntimeId<DistantHolding>, DistantHolding> distantHoldings,
+        OrderedRegistry<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition> characterHealthConditions,
         OrderedRegistry<string, GameDate> firedHistoricalTimelineEntryIds,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
@@ -214,6 +217,7 @@ public sealed class WorldState
         LanguageProficiencyIds = languageProficiencyIds;
         DivergenceRecordIds = divergenceRecordIds;
         DistantHoldingIds = distantHoldingIds;
+        CharacterHealthConditionIds = characterHealthConditionIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -282,6 +286,7 @@ public sealed class WorldState
         InterpresAppointments = interpresAppointments;
         DivergenceRecords = divergenceRecords;
         DistantHoldings = distantHoldings;
+        CharacterHealthConditions = characterHealthConditions;
         FiredHistoricalTimelineEntryIds = firedHistoricalTimelineEntryIds;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
@@ -385,6 +390,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Land.DistantHolding"/> (Phase 13 item 7).</summary>
     public RuntimeIdCounter<DistantHolding> DistantHoldingIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Health.CharacterHealthCondition"/> (Phase 14 item 1).</summary>
+    public RuntimeIdCounter<CharacterHealthCondition> CharacterHealthConditionIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -790,6 +798,14 @@ public sealed class WorldState
     /// matching <see cref="TravelTrips"/>'s and <see cref="Letters"/>'s identical convention.</summary>
     public OrderedRegistry<RuntimeId<DistantHolding>, DistantHolding> DistantHoldings { get; } = new();
 
+    /// <summary>Every standing <see cref="Health.CharacterHealthCondition"/> case, active or resolved
+    /// (Phase 14 item 1), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once
+    /// opened rather than removed, matching <see cref="DistantHoldings"/>'s identical "kept for the
+    /// campaign's lifetime" convention — a resolved case (Recovered, with or without granted Immunity,
+    /// or Fatal) is real campaign history <see cref="Health.HealthQueries"/> reads back, not scratch
+    /// state to discard.</summary>
+    public OrderedRegistry<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition> CharacterHealthConditions { get; } = new();
+
     /// <summary>Which <see cref="History.HistoricalTimelineEntryDefinition"/>s (by <see
     /// cref="DefinitionId{T}.Value"/>) <see cref="History.HistoricalTimelineScheduler"/> has already
     /// fired this campaign, mapped to the date each fired — real state, not derivable, so a save/load
@@ -858,6 +874,7 @@ public sealed class WorldState
         ["languageProficiencyIds"] = LanguageProficiencyIds.Peek,
         ["divergenceRecordIds"] = DivergenceRecordIds.Peek,
         ["distantHoldingIds"] = DistantHoldingIds.Peek,
+        ["characterHealthConditionIds"] = CharacterHealthConditionIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -925,6 +942,7 @@ public sealed class WorldState
         ["interpresAppointments"] = InterpresAppointments.Version,
         ["divergenceRecords"] = DivergenceRecords.Version,
         ["distantHoldings"] = DistantHoldings.Version,
+        ["characterHealthConditions"] = CharacterHealthConditions.Version,
         ["firedHistoricalTimelineEntryIds"] = FiredHistoricalTimelineEntryIds.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,

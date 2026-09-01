@@ -15,6 +15,7 @@ using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Health;
 using Gens.Simulation.History;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
@@ -96,6 +97,7 @@ public static class WorldStateMapper
                 LanguageProficiencyIds = state.LanguageProficiencyIds.Peek,
                 DivergenceRecordIds = state.DivergenceRecordIds.Peek,
                 DistantHoldingIds = state.DistantHoldingIds.Peek,
+                CharacterHealthConditionIds = state.CharacterHealthConditionIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -229,6 +231,9 @@ public static class WorldStateMapper
                 .Select(entry => ToFiredHistoricalTimelineEntryDto(entry.Key, entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             DistantHoldings = state.DistantHoldings.InAscendingOrder().Select(entry => ToDistantHoldingDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            CharacterHealthConditions = state.CharacterHealthConditions.InAscendingOrder()
+                .Select(entry => ToCharacterHealthConditionDto(entry.Value)).ToArray(),
         };
     }
 
@@ -690,6 +695,13 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<DistantHolding>, DistantHolding>(holding.Id, holding);
             }));
 
+        var characterHealthConditions = OrderedRegistry<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition>.Restore(
+            dto.CharacterHealthConditions.Select(c =>
+            {
+                var condition = FromCharacterHealthConditionDto(c);
+                return new KeyValuePair<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition>(condition.Id, condition);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -734,6 +746,7 @@ public static class WorldStateMapper
             languageProficiencyIds: RuntimeIdCounter<LanguageProficiency>.Restore(dto.Counters.LanguageProficiencyIds),
             divergenceRecordIds: RuntimeIdCounter<DivergenceRecord>.Restore(dto.Counters.DivergenceRecordIds),
             distantHoldingIds: RuntimeIdCounter<DistantHolding>.Restore(dto.Counters.DistantHoldingIds),
+            characterHealthConditionIds: RuntimeIdCounter<CharacterHealthCondition>.Restore(dto.Counters.CharacterHealthConditionIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -802,6 +815,7 @@ public static class WorldStateMapper
             interpresAppointments: interpresAppointments,
             divergenceRecords: divergenceRecords,
             distantHoldings: distantHoldings,
+            characterHealthConditions: characterHealthConditions,
             firedHistoricalTimelineEntryIds: firedHistoricalTimelineEntryIds,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
@@ -1024,12 +1038,44 @@ public static class WorldStateMapper
         DateTotalMonths = record.Date.TotalMonths,
         Cause = record.Cause.ToString(),
         AgeAtDeath = record.AgeAtDeath,
+        ConditionId = record.ConditionId?.Value,
     };
 
     private static DeathRecord FromDeathRecordDto(DeathRecordDto dto) => new(
         new GameDate(dto.DateTotalMonths),
         Enum.Parse<DeathCause>(dto.Cause),
-        dto.AgeAtDeath);
+        dto.AgeAtDeath,
+        dto.ConditionId is null ? null : new DefinitionId<HealthConditionDefinition>(dto.ConditionId));
+
+    private static CharacterHealthConditionDto ToCharacterHealthConditionDto(CharacterHealthCondition condition) => new()
+    {
+        Id = condition.Id.ToTaggedString(),
+        CharacterId = condition.CharacterId.ToTaggedString(),
+        ConditionId = condition.ConditionId.Value,
+        Category = condition.Category.ToString(),
+        HasCure = condition.HasCure,
+        Severity = condition.Severity,
+        OnsetDateTotalMonths = condition.OnsetDate.TotalMonths,
+        Status = condition.Status.ToString(),
+        TreatedByPhysician = condition.TreatedByPhysician,
+        GrantedImmunity = condition.GrantedImmunity,
+        ResolvedDateTotalMonths = condition.ResolvedDate?.TotalMonths,
+    };
+
+    private static CharacterHealthCondition FromCharacterHealthConditionDto(CharacterHealthConditionDto dto) => new()
+    {
+        Id = RuntimeId<CharacterHealthCondition>.Parse(dto.Id),
+        CharacterId = RuntimeId<Character>.Parse(dto.CharacterId),
+        ConditionId = new DefinitionId<HealthConditionDefinition>(dto.ConditionId),
+        Category = Enum.Parse<HealthConditionCategory>(dto.Category),
+        HasCure = dto.HasCure,
+        Severity = dto.Severity,
+        OnsetDate = new GameDate(dto.OnsetDateTotalMonths),
+        Status = Enum.Parse<CharacterHealthConditionStatus>(dto.Status),
+        TreatedByPhysician = dto.TreatedByPhysician,
+        GrantedImmunity = dto.GrantedImmunity,
+        ResolvedDate = dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null,
+    };
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

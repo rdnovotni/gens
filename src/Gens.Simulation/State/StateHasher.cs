@@ -8,6 +8,7 @@ using Gens.Simulation.Collegia;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
+using Gens.Simulation.Health;
 using Gens.Simulation.History;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
@@ -66,6 +67,7 @@ public static class StateHasher
         hash = MixLong(hash, state.FavorObligationIds.Peek);
         hash = MixLong(hash, state.MagistracyRecordIds.Peek);
         hash = MixLong(hash, state.DistantHoldingIds.Peek);
+        hash = MixLong(hash, state.CharacterHealthConditionIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -658,6 +660,22 @@ public static class StateHasher
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.CharacterHealthConditions.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.CharacterId.Value);
+            hash = MixString(hash, entry.Value.ConditionId.Value);
+            hash = MixLong(hash, (long)entry.Value.Category);
+            hash = MixLong(hash, entry.Value.HasCure ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.Severity);
+            hash = MixLong(hash, entry.Value.OnsetDate.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.Status);
+            hash = MixLong(hash, entry.Value.TreatedByPhysician ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.GrantedImmunity ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.ResolvedDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.InterpresAppointments.InAscendingOrder())
         {
             hash = MixLong(hash, entry.Key.Value);
@@ -917,6 +935,7 @@ public static class StateHasher
         hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.Date.TotalMonths);
         hash = MixLong(hash, character.DeathRecord is null ? -1L : (long)character.DeathRecord.Value.Cause);
         hash = MixLong(hash, character.DeathRecord is null ? -1L : character.DeathRecord.Value.AgeAtDeath);
+        hash = MixString(hash, character.DeathRecord?.ConditionId?.Value ?? string.Empty);
         hash = MixLong(hash, character.Duty is null ? -1L : character.Duty.Value.HouseholdId.Value);
         hash = MixLong(hash, character.Duty is null ? -1L : (long)character.Duty.Value.Slot);
         hash = MixLong(hash, character.Duty is null ? -1L : character.Duty.Value.AssignedDate.TotalMonths);

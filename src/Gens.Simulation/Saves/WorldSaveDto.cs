@@ -458,6 +458,13 @@ public sealed record WorldSaveDocument
     /// to empty, matching <see cref="FiredHistoricalTimelineEntryIds"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(73)]
     public IReadOnlyList<DistantHoldingDto> DistantHoldings { get; init; } = Array.Empty<DistantHoldingDto>();
+
+    /// <summary>Every standing <see cref="Gens.Simulation.Health.CharacterHealthCondition"/> case
+    /// (Phase 14 item 1), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="DistantHoldings"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(74)]
+    public IReadOnlyList<CharacterHealthConditionDto> CharacterHealthConditions { get; init; } = Array.Empty<CharacterHealthConditionDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -680,6 +687,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(41)]
     public long DistantHoldingIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-14-item-1 save has no Character
+    /// Health Conditions. Additive-only per ADR 0011's policy, matching <see cref="DistantHoldingIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(42)]
+    public long CharacterHealthConditionIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1054,6 +1067,12 @@ public sealed record DeathRecordDto
 
     [JsonPropertyOrder(2)]
     public required int AgeAtDeath { get; init; }
+
+    /// <summary>Not <c>required</c>, and null by default: a pre-Phase-14-item-1 death (or a death this
+    /// item's own system didn't attribute) carries no condition attribution. Additive-only per ADR
+    /// 0011's policy.</summary>
+    [JsonPropertyOrder(3)]
+    public string? ConditionId { get; init; }
 }
 
 /// <summary>One <see cref="Characters.CharacterVisualProfile"/> (<c>gens-familia-design.md</c> §2.4 /
@@ -3015,4 +3034,41 @@ public sealed record DistantHoldingDto
 
     [JsonPropertyOrder(7)]
     public required bool MismanagementRiskActive { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Health.CharacterHealthCondition"/> (Phase 14 item 1).</summary>
+public sealed record CharacterHealthConditionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string ConditionId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Category { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool HasCure { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int Severity { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int OnsetDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool TreatedByPhysician { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool GrantedImmunity { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public int? ResolvedDateTotalMonths { get; init; }
 }
