@@ -52,6 +52,16 @@ public sealed record CharacterHealthCondition
     /// null while still Active.</summary>
     public GameDate? ResolvedDate { get; init; }
 
+    /// <summary>Personal Quarantine (§4.1, Phase 14 item 2) — set by <see
+    /// cref="SetPersonalQuarantineCommands"/>, mirroring §11's <c>CharacterInfectionStatus.quarantined</c>
+    /// field directly rather than a separate record. Only meaningful while <see cref="Status"/> is <see
+    /// cref="CharacterHealthConditionStatus.Active"/>: <see cref="EpidemicContagionSystem"/> reads it as
+    /// a spread-reduction multiplier on this case's own contagiousness, and <see
+    /// cref="HealthConditionProgressionCalculator.MonthlyRecoveryProbability"/> reads it as §4.1's own
+    /// "at a real cost to their own recovery odds" penalty — isolation helps everyone else, not the
+    /// isolated Character.</summary>
+    public bool Quarantined { get; init; }
+
     public static CharacterHealthCondition Create(
         RuntimeId<CharacterHealthCondition> id,
         RuntimeId<Character> characterId,

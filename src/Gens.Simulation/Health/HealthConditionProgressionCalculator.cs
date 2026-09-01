@@ -34,14 +34,20 @@ public static class HealthConditionProgressionCalculator
     /// <summary>This month's probability the case resolves into recovery. Acute cases resolve faster
     /// than Chronic ones (§3.3's worsening/recovery/death arc reads as comparatively short compared to
     /// Endemic Illness's standing background drain); a condition with no real cure recovers far more
-    /// slowly even under treatment.</summary>
-    public static double MonthlyRecoveryProbability(HealthConditionCategory category, bool hasCure, bool treated)
+    /// slowly even under treatment. <paramref name="quarantined"/> (Phase 14 item 2, §4.1) applies a
+    /// further, modest penalty — real, but deliberately small: personal Quarantine's whole point is
+    /// protecting everyone else (<see cref="EpidemicSpreadCalculator"/>'s own spread-reduction
+    /// multiplier), not a large recovery cost to the isolated Character.</summary>
+    public static double MonthlyRecoveryProbability(
+        HealthConditionCategory category, bool hasCure, bool treated, bool quarantined = false)
     {
         var basis = category == HealthConditionCategory.Acute ? 0.15 : 0.04;
         if (!hasCure)
             basis *= 0.35;
         if (treated)
             basis += category == HealthConditionCategory.Acute ? 0.15 : 0.06;
+        if (quarantined)
+            basis *= 0.85;
 
         return Math.Clamp(basis, 0.0, 0.9);
     }

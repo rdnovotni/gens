@@ -1,6 +1,7 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Health;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Land;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -49,6 +50,58 @@ public sealed class HealthSaveRoundTripTests
 
             restored.Characters.TryGet(deceasedId, out var restoredDeceased);
             Assert.That(restoredDeceased.DeathRecord!.Value.ConditionId, Is.EqualTo(TestFever));
+
+            Assert.That(StateHasher.Hash(restored), Is.EqualTo(beforeHash));
+        });
+    }
+
+    [Test]
+    public void Item2PartitionsRoundTripThroughTheDtoAndDeterministicHashStaysStable()
+    {
+        var state = new WorldState(new GameDate(20));
+        var regionId = state.RegionIds.Issue();
+        var settlementId = state.SettlementIds.Issue();
+        state.Settlements.Add(settlementId, Settlement.Create(settlementId, regionId));
+        state.SettlementSanitationInvestments.Add(
+            settlementId, SettlementSanitationInvestment.Create(settlementId, SanitationInvestmentTier.Standard));
+
+        var activeOutbreakId = state.EpidemicOutbreakIds.Issue();
+        state.EpidemicOutbreaks.Add(activeOutbreakId, EpidemicOutbreak.Create(
+            activeOutbreakId, settlementId, DiseaseCatalog.Pestilence, new GameDate(15)) with { SettlementQuarantineActive = true });
+
+        var endedOutbreakId = state.EpidemicOutbreakIds.Issue();
+        var ended = EpidemicOutbreak.Create(endedOutbreakId, settlementId, DiseaseCatalog.EntericFever, new GameDate(10))
+            with { Status = EpidemicOutbreakStatus.Ended, ImperialScale = true, ResolvedDate = new GameDate(18) };
+        state.EpidemicOutbreaks.Add(endedOutbreakId, ended);
+
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
+        var caseId = state.CharacterHealthConditionIds.Issue();
+        state.CharacterHealthConditions.Add(caseId, CharacterHealthCondition.Create(
+            caseId, characterId, DiseaseCatalog.Pestilence, HealthConditionCategory.Acute, hasCure: false, severity: 40, new GameDate(15))
+            with { Quarantined = true });
+
+        var beforeHash = StateHasher.Hash(state);
+        var dto = WorldStateMapper.ToDto(state);
+        var restored = WorldStateMapper.ToWorldState(dto);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(SanitationQueries.EffectiveTier(restored, settlementId), Is.EqualTo(SanitationInvestmentTier.Standard));
+            Assert.That(restored.EpidemicOutbreakIds.Peek, Is.EqualTo(state.EpidemicOutbreakIds.Peek));
+            Assert.That(restored.EpidemicOutbreaks.Count, Is.EqualTo(2));
+
+            restored.EpidemicOutbreaks.TryGet(activeOutbreakId, out var restoredActive);
+            Assert.That(restoredActive.Status, Is.EqualTo(EpidemicOutbreakStatus.Active));
+            Assert.That(restoredActive.SettlementQuarantineActive, Is.True);
+
+            restored.EpidemicOutbreaks.TryGet(endedOutbreakId, out var restoredEnded);
+            Assert.That(restoredEnded.Status, Is.EqualTo(EpidemicOutbreakStatus.Ended));
+            Assert.That(restoredEnded.ImperialScale, Is.True);
+            Assert.That(restoredEnded.ResolvedDate, Is.EqualTo(new GameDate(18)));
+
+            restored.CharacterHealthConditions.TryGet(caseId, out var restoredCase);
+            Assert.That(restoredCase.Quarantined, Is.True);
 
             Assert.That(StateHasher.Hash(restored), Is.EqualTo(beforeHash));
         });

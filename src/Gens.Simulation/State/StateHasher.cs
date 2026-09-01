@@ -68,6 +68,7 @@ public static class StateHasher
         hash = MixLong(hash, state.MagistracyRecordIds.Peek);
         hash = MixLong(hash, state.DistantHoldingIds.Peek);
         hash = MixLong(hash, state.CharacterHealthConditionIds.Peek);
+        hash = MixLong(hash, state.EpidemicOutbreakIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -672,6 +673,27 @@ public static class StateHasher
             hash = MixLong(hash, (long)entry.Value.Status);
             hash = MixLong(hash, entry.Value.TreatedByPhysician ? 1L : 0L);
             hash = MixLong(hash, entry.Value.GrantedImmunity ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.ResolvedDate?.TotalMonths ?? -1L);
+            hash = MixLong(hash, entry.Value.Quarantined ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.SettlementSanitationInvestments.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)entry.Value.Tier);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.EpidemicOutbreaks.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.SettlementId.Value);
+            hash = MixString(hash, entry.Value.ConditionId.Value);
+            hash = MixLong(hash, entry.Value.StartDate.TotalMonths);
+            hash = MixLong(hash, (long)entry.Value.Status);
+            hash = MixLong(hash, entry.Value.SettlementQuarantineActive ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.ImperialScale ? 1L : 0L);
             hash = MixLong(hash, entry.Value.ResolvedDate?.TotalMonths ?? -1L);
         }
 

@@ -243,6 +243,9 @@ internal static class RuntimeIdTagRegistry
         // Phase 14 item 1 — Gens.Simulation.Health.CharacterHealthCondition, same "real record as its
         // own tag" convention as DistantHolding above.
         [typeof(CharacterHealthCondition)] = "healthcond",
+        // Phase 14 item 2 — Gens.Simulation.Health.EpidemicOutbreak, same "real record as its own tag"
+        // convention as CharacterHealthCondition above.
+        [typeof(EpidemicOutbreak)] = "epidemicoutbreak",
     };
 
     public static string Resolve(Type type) =>

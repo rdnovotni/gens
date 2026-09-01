@@ -1849,14 +1849,14 @@ concrete rule for, not the other two's still-unsized multipliers. Covered by 13 
 `tests/Gens.Simulation.Tests/Land/DistantHoldingTests.cs`, including a save/load round trip with a stable
 deterministic state hash.
 
-### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 1 of 5)
+### Phase 14 — Add health, disease, disasters, and mobile populations — 🔶 IN PROGRESS (item 2 of 5)
 
 **Outcome:** environmental and biological pressure matters without becoming arbitrary save destruction.
 
 Construction order:
 
 1. [x] Extend health with conditions, exposure, resistance/immunity, treatment, recovery, mortality attribution, and care capacity.
-2. Implement sanitation, food/water quality, crowding, livestock disease, endemic pressure, outbreaks, and quarantine.
+2. [x] Implement sanitation, food/water quality, crowding, livestock disease, endemic pressure, outbreaks, and quarantine.
 3. Implement environmental hazard profiles, forecast/knowledge, disaster instances, damage, displacement, recovery, and region/date modifiers.
 4. Implement wandering population cohorts, routes, needs, fame/visibility, settlement interaction, recruitment, and promotion to named characters.
 5. Integrate hazards with goods, buildings, populations, markets, travel, events, institutions, and reports through shared events and effects.
@@ -1926,6 +1926,76 @@ named for item 2: the seven endemic/four epidemic named diseases themselves, the
 crowding Exposure drivers, contagion spread, quarantine, Sanitation Investment, and livestock disease;
 named for items 3/5: Natural Disasters' hazard profiles and the Antonine Plague's own Event Chain and
 cross-system wiring into goods/buildings/markets/travel/events/reports.
+
+**Item 2 progress:** real content and mechanism for §2's seven endemic diseases and §3's four
+epidemics land on top of item 1's substrate, in 16 new files under `src/Gens.Simulation/Health/` plus
+targeted extensions to three of item 1's own files (`CharacterHealthCondition`,
+`CharacterHealthConditionSystem`, `HealthConditionProgressionCalculator`) and the five-file `WorldState`
+wiring pattern (`WorldState.cs`/`StateHasher.cs`/`WorldSaveDto.cs`/`WorldStateMapper.cs`/`EntityKinds.cs`,
+the last for `RuntimeId<EpidemicOutbreak>`'s tag) applied twice, once per new partition. `DiseaseCatalog`
+authors all eleven named diseases as real `HealthConditionDefinition` content (mirroring
+`Cultures.CultureCatalog`'s shape exactly, as item 1's own catalog already did) plus two small parallel
+tables — `EndemicDiseaseProfile` (driver, social-exclusion flag) and `EpidemicDiseaseProfile` (contact
+vector) — kept separate from `HealthConditionDefinition` itself since neither table's fields apply to
+both layers. `EndemicIllnessSystem` (`TickPhase.Hazards`) rolls all seven diseases against every living
+Character each month, reading real, already-present inputs: `Plot.Terrain` composition for Roman
+Fever (Marsh) and Saturnism's mining driver (Hills, deliberately widened from "Iberian colony
+specifically" since no Region in this codebase carries a reachable arid/Iberian flag yet — disclosed in
+`DiseaseCatalog`'s own doc comment), a living-population-over-plot-capacity crowding proxy for
+Consumption, and a `PopGroup.WealthBand`/`DietTier` check for Gout and Saturnism's wealth driver (the
+closest real proxy to §2's "Lavish consumption tier," since Settlement Demographics has authored no
+tier past `DietTier.Generous`). Ophthalmia and Leprosy are flat, driver-less baselines exactly as §2's
+own table frames Leprosy ("not terrain-driven at all") and as this item honestly discloses for
+Ophthalmia (no queryable arid-region flag exists to drive it). `EpidemicContagionSystem` closes the
+loop item 1's `AfflictCharacterCommand` doc comment named as forthcoming: it ignites new
+`EpidemicOutbreak`s (a new `WorldState` partition, one entry per settlement/disease, kept forever once
+opened like `CharacterHealthConditions` itself), spreads Pestilence/Pox/Camp Fever through real
+Household co-membership (`Character.Household`) — the one contact channel §3.1 names that this
+codebase actually has as a queryable graph; Group Interactions and Travel are deliberately left out,
+disclosed in the system's own doc comment, since `Interactions/` has no generic contact-graph concept
+yet and `Travel/`'s `TravelParty` is a point-to-point trip record, not a standing one — and spreads
+Enteric Fever through a separate, contact-free settlement-wide waterborne roll per §3.2's own "water-
+borne, not contact-borne" distinction. Quarantine (§4) is real and tested on both scales: personal
+Quarantine is a new `Quarantined` field on item 1's own `CharacterHealthCondition` (mirroring §11's
+`CharacterInfectionStatus.quarantined` field directly), reducing both the case's own contagiousness
+(`QuarantineEffectCalculator.PersonalSpreadMultiplier`) and, via a new optional parameter on item 1's
+`HealthConditionProgressionCalculator.MonthlyRecoveryProbability`, its own recovery odds — §4.1's "at a
+real cost to their own recovery odds" made literal; settlement-wide Quarantine is a new
+`SettlementQuarantineActive` flag on `EpidemicOutbreak`, and §4.3's Imperial-scale reduced-effectiveness
+case is a real `ImperialScale` flag on the same record, deliberately left callerless this item (nothing
+yet sets it true) the same "hook now, caller later" discipline item 1 used for `AfflictCharacterCommand`
+itself — `QuarantineEffectCalculator.SettlementSpreadMultiplier` already honors it once the Antonine
+Plague's own Event Chain (items 3/5) sets it. Immunity's real payoff is verified, not rebuilt: the
+Household-spread and waterborne-spread tests both exercise `AfflictCharacterCommand`'s existing
+immune-rejection path end to end through real epidemic recovery. Sanitation Investment (§6) is a real
+`SanitationInvestmentTier` enum (Minimal/Standard/Comprehensive), a new `SettlementSanitationInvestment`
+`WorldState` partition, `SetSanitationInvestmentCommand`, and a real monthly `SanitationInvestmentSystem`
+that draws its tier's cost from the settlement's own real Ledger Treasury account
+(`LedgerAccountKey.ForSettlementTreasury`, mirroring `Religion.FavorCycleSystem`'s identical
+"a real, recurring policy cost posted to the Ledger" shape) — its `ExposureMultiplier` scales every
+Endemic Exposure and Epidemic ignition/spread probability this item computes, satisfying §6's "a
+genuine multiplier on top of whatever infrastructure already exists" even though no Aqueduct/Latrines/
+Bathhouse building exists yet to multiply against, exactly as the task's own scoping note allowed.
+Livestock disease (§8) is investigated and explicitly deferred rather than faked: this item searched
+the codebase for any real Herd/Livestock/Vilicus concept and found none — no livestock/herd building or
+system exists anywhere yet — so Murrain/Scab and their zoonotic crossover have no real inputs to compute
+against and are named here as still fully open, not a partial or stubbed slice, pending whichever future
+item first builds a real livestock/herd system for them to hang off. Every numeric constant across
+`EndemicExposureCalculator`, `EpidemicSpreadCalculator`, and `QuarantineEffectCalculator` is this
+implementation's own invented figure, disclosed exactly like item 1's own calculators, chosen only to
+preserve each named ordering the design doc states (e.g. Imperial-scale Quarantine measurably weaker
+than local Quarantine, higher Sanitation tier strictly cheaper in Exposure and strictly costlier in
+Denarii). Covered by 60 new tests (99 total in `tests/Gens.Simulation.Tests/Health/`, up from item 1's
+39) across 12 new test files plus an extended `HealthSaveRoundTripTests.cs` covering both new
+`WorldState` partitions and the `CharacterHealthCondition.Quarantined` addition in one further
+deterministic state-hash round trip alongside item 1's own. Deliberately out of scope, named for item 2's
+successors: Leprosy's §2 social-exclusion mechanic (marriage-market/relationship-web consequences) is
+authored as a normal chronic disease without that consequence wired, since it depends on Familia's
+matchmaking system exposing no callable hook yet; livestock disease (§8) in full, named above; Settlement
+Quarantine's own real Contentment/Commerce cost (§4.2 names it, but neither system exposes an "apply a
+settlement-wide penalty" hook yet); and — matching item 1's own closing sentence — Natural Disasters'
+hazard profiles and the Antonine Plague's own Event Chain and cross-system wiring into goods/buildings/
+markets/travel/events/reports, items 3 and 5's own work.
 
 ### Phase 15 — Add advanced commerce, property, and public investment — ⬜ NOT STARTED
 

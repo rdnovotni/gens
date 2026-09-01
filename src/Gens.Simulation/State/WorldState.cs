@@ -101,6 +101,7 @@ public sealed class WorldState
         RuntimeIdCounter<DivergenceRecord> divergenceRecordIds,
         RuntimeIdCounter<DistantHolding> distantHoldingIds,
         RuntimeIdCounter<CharacterHealthCondition> characterHealthConditionIds,
+        RuntimeIdCounter<EpidemicOutbreak> epidemicOutbreakIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -170,6 +171,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<DivergenceRecord>, DivergenceRecord> divergenceRecords,
         OrderedRegistry<RuntimeId<DistantHolding>, DistantHolding> distantHoldings,
         OrderedRegistry<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition> characterHealthConditions,
+        OrderedRegistry<RuntimeId<Settlement>, SettlementSanitationInvestment> settlementSanitationInvestments,
+        OrderedRegistry<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak> epidemicOutbreaks,
         OrderedRegistry<string, GameDate> firedHistoricalTimelineEntryIds,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
@@ -218,6 +221,7 @@ public sealed class WorldState
         DivergenceRecordIds = divergenceRecordIds;
         DistantHoldingIds = distantHoldingIds;
         CharacterHealthConditionIds = characterHealthConditionIds;
+        EpidemicOutbreakIds = epidemicOutbreakIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -287,6 +291,8 @@ public sealed class WorldState
         DivergenceRecords = divergenceRecords;
         DistantHoldings = distantHoldings;
         CharacterHealthConditions = characterHealthConditions;
+        SettlementSanitationInvestments = settlementSanitationInvestments;
+        EpidemicOutbreaks = epidemicOutbreaks;
         FiredHistoricalTimelineEntryIds = firedHistoricalTimelineEntryIds;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
@@ -393,6 +399,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Health.CharacterHealthCondition"/> (Phase 14 item 1).</summary>
     public RuntimeIdCounter<CharacterHealthCondition> CharacterHealthConditionIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Health.EpidemicOutbreak"/> (Phase 14 item 2).</summary>
+    public RuntimeIdCounter<EpidemicOutbreak> EpidemicOutbreakIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -806,6 +815,16 @@ public sealed class WorldState
     /// state to discard.</summary>
     public OrderedRegistry<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition> CharacterHealthConditions { get; } = new();
 
+    /// <summary>One settlement's standing §6 Sanitation Investment tier (Phase 14 item 2), keyed
+    /// directly by <see cref="RuntimeId{Settlement}"/> — a settlement missing an entry here reads as
+    /// <see cref="Health.SanitationInvestmentTier.Minimal"/> (<see cref="Health.SanitationQueries.EffectiveTier"/>).</summary>
+    public OrderedRegistry<RuntimeId<Settlement>, SettlementSanitationInvestment> SettlementSanitationInvestments { get; } = new();
+
+    /// <summary>Every standing <see cref="Health.EpidemicOutbreak"/>, active or ended (Phase 14 item
+    /// 2), kept forever once opened — matching <see cref="CharacterHealthConditions"/>'s identical
+    /// "resolved or not, kept for the campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak> EpidemicOutbreaks { get; } = new();
+
     /// <summary>Which <see cref="History.HistoricalTimelineEntryDefinition"/>s (by <see
     /// cref="DefinitionId{T}.Value"/>) <see cref="History.HistoricalTimelineScheduler"/> has already
     /// fired this campaign, mapped to the date each fired — real state, not derivable, so a save/load
@@ -875,6 +894,7 @@ public sealed class WorldState
         ["divergenceRecordIds"] = DivergenceRecordIds.Peek,
         ["distantHoldingIds"] = DistantHoldingIds.Peek,
         ["characterHealthConditionIds"] = CharacterHealthConditionIds.Peek,
+        ["epidemicOutbreakIds"] = EpidemicOutbreakIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -943,6 +963,8 @@ public sealed class WorldState
         ["divergenceRecords"] = DivergenceRecords.Version,
         ["distantHoldings"] = DistantHoldings.Version,
         ["characterHealthConditions"] = CharacterHealthConditions.Version,
+        ["settlementSanitationInvestments"] = SettlementSanitationInvestments.Version,
+        ["epidemicOutbreaks"] = EpidemicOutbreaks.Version,
         ["firedHistoricalTimelineEntryIds"] = FiredHistoricalTimelineEntryIds.Version,
         ["edictRecords"] = EdictRecords.Version,
         ["knowledge"] = Knowledge.Version,
