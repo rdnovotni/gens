@@ -26,7 +26,9 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
+using Gens.Simulation.Numerics;
 using Gens.Simulation.Policies;
+using Gens.Simulation.RealEstate;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -104,6 +106,8 @@ public static class WorldStateMapper
                 DisasterEventIds = state.DisasterEventIds.Peek,
                 WandererIds = state.WandererIds.Peek,
                 WandererEngagementIds = state.WandererEngagementIds.Peek,
+                DistrictIds = state.DistrictIds.Peek,
+                PropertyRecordIds = state.PropertyRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -255,6 +259,13 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             WandererEngagements = state.WandererEngagements.InAscendingOrder()
                 .Select(entry => ToWandererEngagementDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Districts = state.Districts.InAscendingOrder().Select(entry => ToDistrictDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PropertyRecords = state.PropertyRecords.InAscendingOrder().Select(entry => ToPropertyRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PlotPropertyExtensions = state.PlotPropertyExtensions.InAscendingOrder()
+                .Select(entry => ToPlotPropertyExtensionDto(entry.Value)).ToArray(),
         };
     }
 
@@ -765,6 +776,27 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<WandererEngagement>, WandererEngagement>(engagement.Id, engagement);
             }));
 
+        var districts = OrderedRegistry<RuntimeId<District>, District>.Restore(
+            dto.Districts.Select(d =>
+            {
+                var district = FromDistrictDto(d);
+                return new KeyValuePair<RuntimeId<District>, District>(district.Id, district);
+            }));
+
+        var propertyRecords = OrderedRegistry<RuntimeId<PropertyRecord>, PropertyRecord>.Restore(
+            dto.PropertyRecords.Select(p =>
+            {
+                var record = FromPropertyRecordDto(p);
+                return new KeyValuePair<RuntimeId<PropertyRecord>, PropertyRecord>(record.Id, record);
+            }));
+
+        var plotPropertyExtensions = OrderedRegistry<RuntimeId<Plot>, PlotPropertyExtension>.Restore(
+            dto.PlotPropertyExtensions.Select(p =>
+            {
+                var extension = FromPlotPropertyExtensionDto(p);
+                return new KeyValuePair<RuntimeId<Plot>, PlotPropertyExtension>(extension.PlotId, extension);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -814,6 +846,8 @@ public static class WorldStateMapper
             disasterEventIds: RuntimeIdCounter<DisasterEvent>.Restore(dto.Counters.DisasterEventIds),
             wandererIds: RuntimeIdCounter<Wanderer>.Restore(dto.Counters.WandererIds),
             wandererEngagementIds: RuntimeIdCounter<WandererEngagement>.Restore(dto.Counters.WandererEngagementIds),
+            districtIds: RuntimeIdCounter<District>.Restore(dto.Counters.DistrictIds),
+            propertyRecordIds: RuntimeIdCounter<PropertyRecord>.Restore(dto.Counters.PropertyRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -890,6 +924,9 @@ public static class WorldStateMapper
             wanderers: wanderers,
             wandererEngagements: wandererEngagements,
             firedHistoricalTimelineEntryIds: firedHistoricalTimelineEntryIds,
+            districts: districts,
+            propertyRecords: propertyRecords,
+            plotPropertyExtensions: plotPropertyExtensions,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1310,6 +1347,83 @@ public static class WorldStateMapper
         dto.BeneficiaryCharacterId is { } beneficiary ? RuntimeId<Character>.Parse(beneficiary) : null,
         dto.ResultingCharacterId is { } resulting ? RuntimeId<Character>.Parse(resulting) : null,
         dto.ResultingDutySlot is { } slot ? Enum.Parse<DutySlot>(slot) : null);
+
+    private static DistrictDto ToDistrictDto(District district) => new()
+    {
+        Id = district.Id.ToTaggedString(),
+        SettlementId = district.SettlementId.ToTaggedString(),
+        Name = district.Name,
+        PropertyValueRawValue = district.PropertyValue.RawValue,
+        LinkedGazetteerLocationId = district.LinkedGazetteerLocationId?.Value,
+        PreviousSettlementPopulation = district.PreviousSettlementPopulation,
+    };
+
+    private static District FromDistrictDto(DistrictDto dto) => District.Restore(
+        RuntimeId<District>.Parse(dto.Id),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        dto.Name,
+        Fixed64.FromRaw(dto.PropertyValueRawValue),
+        dto.LinkedGazetteerLocationId is { } locationId ? new DefinitionId<GazetteerLocationDefinition>(locationId) : null,
+        dto.PreviousSettlementPopulation);
+
+    private static PropertyRecordDto ToPropertyRecordDto(PropertyRecord record) => new()
+    {
+        Id = record.Id.ToTaggedString(),
+        AssetType = record.AssetType.ToString(),
+        Name = record.Name,
+        OwnerKind = record.Owner.Kind.ToString(),
+        OwnerId = record.Owner.OwnerId,
+        SettlementId = record.SettlementId?.ToTaggedString(),
+        DistrictId = record.DistrictId?.ToTaggedString(),
+        ManagementStatus = record.ManagementStatus.ToString(),
+        OperatorCharacterId = record.OperatorCharacterId?.ToTaggedString(),
+        OperatorIsSkimming = record.OperatorIsSkimming,
+        OperatorTenureMonths = record.OperatorTenureMonths,
+        OperatorBuyoutOffered = record.OperatorBuyoutOffered,
+        LesseeId = record.LesseeId?.ToTaggedString(),
+        ValueRawValue = record.Value.RawValue,
+        Condition = record.Condition.Value,
+    };
+
+    private static PropertyRecord FromPropertyRecordDto(PropertyRecordDto dto) => PropertyRecord.Restore(
+        RuntimeId<PropertyRecord>.Parse(dto.Id),
+        Enum.Parse<PropertyAssetType>(dto.AssetType),
+        dto.Name,
+        new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.OwnerKind), dto.OwnerId),
+        dto.SettlementId is { } settlementId ? RuntimeId<Settlement>.Parse(settlementId) : null,
+        dto.DistrictId is { } districtId ? RuntimeId<District>.Parse(districtId) : null,
+        Enum.Parse<PropertyManagementStatus>(dto.ManagementStatus),
+        dto.OperatorCharacterId is { } operatorId ? RuntimeId<Character>.Parse(operatorId) : null,
+        dto.OperatorIsSkimming,
+        dto.OperatorTenureMonths,
+        dto.OperatorBuyoutOffered,
+        dto.LesseeId is { } lesseeId ? RuntimeId<Household>.Parse(lesseeId) : null,
+        Money.FromMinorUnits(dto.ValueRawValue),
+        new LandCondition(dto.Condition));
+
+    private static PlotPropertyExtensionDto ToPlotPropertyExtensionDto(PlotPropertyExtension extension) => new()
+    {
+        PlotId = extension.PlotId.ToTaggedString(),
+        DistrictId = extension.DistrictId?.ToTaggedString(),
+        ManagementStatus = extension.ManagementStatus.ToString(),
+        OperatorCharacterId = extension.OperatorCharacterId?.ToTaggedString(),
+        OperatorIsSkimming = extension.OperatorIsSkimming,
+        OperatorTenureMonths = extension.OperatorTenureMonths,
+        OperatorBuyoutOffered = extension.OperatorBuyoutOffered,
+        LesseeId = extension.LesseeId?.ToTaggedString(),
+        ValueRawValue = extension.Value.RawValue,
+    };
+
+    private static PlotPropertyExtension FromPlotPropertyExtensionDto(PlotPropertyExtensionDto dto) => PlotPropertyExtension.Restore(
+        RuntimeId<Plot>.Parse(dto.PlotId),
+        dto.DistrictId is { } districtId ? RuntimeId<District>.Parse(districtId) : null,
+        Enum.Parse<PropertyManagementStatus>(dto.ManagementStatus),
+        dto.OperatorCharacterId is { } operatorId ? RuntimeId<Character>.Parse(operatorId) : null,
+        dto.OperatorIsSkimming,
+        dto.OperatorTenureMonths,
+        dto.OperatorBuyoutOffered,
+        dto.LesseeId is { } lesseeId ? RuntimeId<Household>.Parse(lesseeId) : null,
+        Money.FromMinorUnits(dto.ValueRawValue));
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

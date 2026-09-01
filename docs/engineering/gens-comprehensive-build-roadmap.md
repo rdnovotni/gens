@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — ⬜ NOT STARTED
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 1 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -2356,6 +2356,134 @@ Recommended internal order:
 **Exit gate:** every enterprise resolves through the common actor, property, contract, ledger, market, knowledge, and event contracts; no feature creates a parallel economy.
 
 **Primary design inputs:** `gens-land-ownership-real-estate-design.md`, `gens-societates-business-partnerships-design.md`, `gens-merchant-families-design.md`, `gens-notable-businesses-design.md`, `gens-business-competition-design.md`, `gens-public-contracts-competitive-bidding-design.md`, `gens-private-infrastructure-design.md`, `gens-private-ships-shipping-ventures-design.md`, `gens-public-works-euergetism-design.md`, `gens-population-wealth-purchasing-power-design.md`.
+
+**Item 1 progress:** the land/property market lands as a new domain, `src/Gens.Simulation/RealEstate/`
+(`gens-land-ownership-real-estate-design.md` §2-6, §9-11), scoped exactly to this item's own roster —
+§7 Societas (full partnership mechanics, item 2), §8 Publicani tax farming, and everything items 3-9
+own are explicitly untouched, confirmed by direct search to still be unbuilt.
+
+§2's ownership roster lands as `PropertyOwnerRef` (`Kind` + tagged-string `OwnerId`, mirroring <see
+cref="Ledger.LedgerAccountKey"/>'s own "no single `RuntimeId<T>` could name every owner kind" reasoning
+rather than `Land.Plot.OwnerId`'s previously bare, uninterpreted string): all nine owner kinds are
+represented, matching every other Phase 12+ enum's "every real category represented" precedent, but
+only four resolve against a real runtime entity this codebase already tracks — the player's own
+household, a Rival Gens/Collegium (both already share `RuntimeId<Actor>`, Collegia's own existing
+convention), an individual Character, and the settlement itself (Municipal, via `RuntimeId<Settlement>`).
+Temple, the Roman State, a Societas placeholder, and Imperial Patrimonium are real, honestly narrowed:
+no Temple, "the state," or Imperial entity exists anywhere in this codebase to point at, so those four
+resolve to a free-form display name (Temple/Societas) or a fixed, ID-less sentinel (Roman
+State/Imperial Patrimonium) — §3's own "lightweight... sized for narrative and negotiation purposes"
+framing applied to the owner side, not just the asset side. `PropertyOwnerRef.Parse` stays
+backward-compatible with every Plot already carrying a bare `RuntimeId<Household>` tag from
+`AcquirePlotCommand`/`HouseholdEconomyCalculator.TryGetOwningHousehold` (Phase 6/8) — an unrecognized
+kind prefix that matches that legacy `household_` shape parses as `PlayerHousehold` rather than
+throwing, so this item never needed a save migration for `Plot.OwnerId` itself.
+
+§3's management-status flag and ownership pointer land as `PlotPropertyExtension`, a new sparse
+`WorldState` partition keyed by `RuntimeId<Plot>` (untouched Plot = `DirectlyManaged`, no Operator, no
+District — `PlotPropertyResolver.Current`'s own default), matching `Fame.CharacterFame`'s and
+`Land.DistantHolding`'s identical "wrap the existing record in a parallel partition rather than edit
+its schema" convention — `Land.Plot` itself, Estate & Settlement's own file, is never touched. The two
+genuinely new asset types (§3: Ships, Named Holdings) land as `PropertyRecord`, one new partition, with
+`PropertySubjectRef`/`PropertyResolver` giving every downstream command (leasing, audit, buyout,
+transfer) one shared read/write surface across both a Plot-linked property and a `PropertyRecord`
+rather than duplicating each command once per shape.
+
+§4's Districts land as `District` (new partition) plus `EstablishDistrictCommand`, gated on
+`SettlementStage.Vicus`+ per §4's own text, with a soft per-stage cap (`RealEstateCatalog.MaxDistrictsForStage`,
+this item's own invented 1/1/3/5 reading of "a Vicus might have just one; a full City, four or five").
+`DistrictPropertyValueSystem` moves each District's Property Value (a `Fixed64` index around a 1.0
+baseline) toward a freshly computed monthly target, smoothed 10%/month toward that target rather than
+snapping to it (matching `Doctrine.DoctrineResolutionSystem`'s own "nudge toward a target" shape), fed
+by exactly §4's three inputs this codebase already tracks: Settlement Demographics' population trend
+(month-over-month, read against a new `District.PreviousSettlementPopulation` field this item adds
+since no population-history partition exists to read instead) and size-weighted average Contentment;
+Natural Disaster damage (`Hazards.DisasterEvent.BuildingsDamaged`, summed over a 24-month lookback); and
+a region's own Gazetteer Prominence Tier, read through the caller-supplied `Regions.RegionProfileCatalog`
+only when a District's own `LinkedGazetteerLocationId` resolves. §4's fourth named input, a built
+Monument, is honestly **not** wired — Monuments & Legacy Building is Phase 17, confirmed unbuilt by
+direct search, the same gap this item's own doc comments name rather than silently skip.
+
+§5's four acquisition flavors and §9's two sale flavors land as one shared command,
+`TransferPropertyCommand` (`PropertyTransferMethod`: VoluntarySale, ForcedSale, AgerPublicusLease,
+Persuasion, MarketSale) — rule 2's "one command path" applied to what is mechanically the identical
+ownership-transfer-for-a-price mutation read from opposite narrative directions (§5's buyer-initiated
+"I am acquiring this" vs. §9's seller-initiated "I am selling this"), matching `AcquirePlotCommand`'s own
+"pricing and the deeper legal/financial trigger are upstream concerns" scoping for `ForcedSale`
+specifically. `AgerPublicusLease` never changes `PropertyOwnerRef.RomanState` ownership, only a new
+`LesseeId` field (mirroring `Plot.OccupyingHoldingId`'s own "who's using it, independently of
+ownership" shape) — §14's own open question on lease duration/renewal stays open, undecided by this
+item. `Persuasion` spends real Politics & Patronage Influence (`Clientela.InfluenceResolver`) against a
+Temple or Collegium owner specifically, per §5's own text. `MarketSale` (§9's "an abstract buyer... at
+current Value minus a standard friction") does not invent a fictitious "the market" owner: a Plot
+reverts to `OwnerId = null` — Estate & Settlement's own pre-existing "unowned, re-acquirable through
+`AcquirePlotCommand`" state — and a `PropertyRecord` is removed from circulation outright, both real,
+reasoned choices over inventing a tenth `PropertyOwnerKind` nothing else would ever resolve. Every
+transfer settles through the Ledger, routing a non-household/Actor/Settlement owner (Temple, Roman
+State, Societas placeholder, Imperial Patrimonium) through `LedgerAccountKey.Mint`, matching that key's
+own "the explicit, named conservation boundary" role extended to every owner kind this item cannot yet
+track a real balance for.
+
+§6's Leasing & Operators land as `SetPropertyManagementCommand` (the flag itself) and
+`OperatorLifecycleSystem` (the monthly resolution), reusing the Operator's already-tracked Core
+Attributes/Loyalty exactly as directed rather than inventing new Character stats: skim state reuses
+`Stewardship.StewardIncidentCatalog.LoyaltyRiskThreshold` directly, the same threshold
+`Land.DistantHoldingMismanagementRiskSystem` already uses for an identical "is the person running
+things unsupervised a real liability" question; buyout eligibility (§6.1) reads Ambition (Core
+Condition) and Stewardship (Core Attribute), both already-shipped 0-100 Character fields, against a
+minimum-tenure gate literally reading §6.1's own "a decade" as 120 months, and only fires once the
+Operator's own District Property Value has genuinely climbed past a threshold — tying together exactly
+the two conditions §6.1's worked example names, not either alone. `AuditPropertyOperatorCommand` reveals
+the already-resolved ground truth rather than rolling anything itself, and applies §6's one named
+honest-Operator consequence (a real Loyalty penalty) directly. `ResolveOperatorBuyoutCommand` settles an
+accepted offer through `TransferPropertyCommand` itself (VoluntarySale to the Operator's own
+`IndividualCharacter` ownership) rather than a parallel transfer path, then resets management state to
+`DirectlyManaged` — the one real exception to `TransferPropertyCommand`'s own "an ordinary sale
+preserves whatever lease arrangement was already running" default, since a buyout's buyer and former
+Operator are the same Character. §6.1's full worked example (steady/loyal remittance, a skimming
+Operator caught by audit, an honest Operator wrongly audited, and an ambitious Operator's eventual
+buyout) is exercised end to end by this item's own tests, not merely asserted piecewise.
+
+§10's Displacement integration adds no parallel mechanic, per the design doc's own explicit direction:
+`Characters.ContentmentCalculator.ComputeContentment` gains one new optional `rentBurden` parameter
+(defaulting to zero — every pre-existing call site and every already-shipped Phase 7 test is
+untouched), and `Characters.ContentmentSystem` now reads a new `RealEstate.DistrictRentBurdenCalculator`
+for exactly the two lower-tier resident group types §10 names (Operarii, Coloni), against the highest
+Property Value among a settlement's own Districts. Emigration itself needed no code change at all:
+`MigrationCalculator.EmigrationRate` already reads straight off `PopGroup.Contentment`, which this rent
+burden already depresses upstream — the concrete mechanism behind §10's own "feeds directly into
+Settlement Demographics' existing... formula as a new input."
+
+§11's Portfolio Scale & Oversight lands as `AdministrativeBurdenSystem`, with one real, investigated
+judgment call: §11's own offsetting lever, hiring an Overseer or Procurator through Companions & Court
+Positions, does not exist anywhere in this codebase (Phase 17, confirmed unbuilt by direct search — the
+same gap this item's other doc comments already name for Fame/Doctrine's own precedent items). Rather
+than fabricate that system just to complete the formula, this item implements §11's own closing line
+directly instead: a `LeasedOut` property has already engaged this item's one real delegation tool (an
+assigned Operator, §6) and does not count against a household's burden at all; only `DirectlyManaged`
+properties held past a soft per-household threshold cost a real, monthly Ledger expense. §11's
+alternative branch (a management-quality condition decay in place of a cost) is a real, reasoned cut:
+that branch needs a "which specific property decays" allocation rule §11 does not specify, so this item
+implements only the branch it can build without inventing that rule.
+
+Every new partition (`Districts`, `PropertyRecords`, `PlotPropertyExtensions`, plus the `DistrictIds`/
+`PropertyRecordIds` counters) is wired into `WorldState`, `Saves.WorldSaveDto`/`WorldStateMapper`, and
+`State.StateHasher` for full save/load and deterministic-hash coverage — additive-only (ADR 0011), no
+migration needed, since every new save field defaults to empty on an old save exactly like
+`CharacterFames`' own precedent. Covered in `tests/Gens.Simulation.Tests/RealEstate/RealEstateTests.cs`
+(27 tests): every `PropertyOwnerKind`, District establishment and its cap/stage gates, the District
+Property Value trend actually reacting to Contentment and disaster damage and respecting its floor,
+every `TransferPropertyCommand` method (including the Persuasion Influence-insufficiency rejection and
+the ager publicus lessee-without-ownership-change case), the full §6.1 worked example, Administrative
+Burden's threshold and its Leased-Out exemption, the Contentment/Emigration displacement integration
+(a rent-exposed group's Contentment measurably depressed relative to an unexposed control group,
+`MigrationCalculator.EmigrationRate` reacting to the resulting lower Contentment), and a save/load
+round trip with the deterministic state hash staying stable across every new partition. `dotnet build`/
+`dotnet test`/`dotnet format --verify-no-changes` all pass in the Release configuration CI actually runs
+(1484/1484 tests); a pre-existing, unrelated Debug-configuration-only failure in
+`SuccessionDynastyExitGateTests` (`succession.handoff` under-declaring its own write set) was directly
+confirmed via `git stash` to predate this item and is left untouched, per this item's own "don't touch
+other phases' content" scope.
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 

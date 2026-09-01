@@ -15,12 +15,28 @@ public static class ContentmentCalculator
     /// inputs are deliberately not modeled here — this document supplies the number those future
     /// systems will adjust, per §6.2's own "this document supplies the number, not the political
     /// consequences" framing.</summary>
-    public static Fixed64 ComputeContentment(Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction)
+    public static Fixed64 ComputeContentment(Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction) =>
+        ComputeContentment(employmentRatio, housingSatisfaction, needsSatisfaction, rentBurden: Fixed64.Zero);
+
+    /// <summary>Phase 15 item 1's overload (<c>gens-land-ownership-real-estate-design.md</c> §10): the
+    /// same three-way average above, with <paramref name="rentBurden"/> — <see
+    /// cref="RealEstate.DistrictRentBurdenCalculator.ComputeRentBurden"/>'s own read of a lower-tier
+    /// resident pop group's District Property Value exposure — subtracted afterward and floored at
+    /// zero. §10's own explicit framing ("this document adds no new tracked displacement mechanic...
+    /// feeds directly into Settlement Demographics' existing Contentment... formula as a new input")
+    /// is why this is an added term on the existing formula rather than a parallel calculation: a pop
+    /// group this item never touches (every group outside a Districted settlement, or a group <see
+    /// cref="Characters.ContentmentSystem"/> never flags as rent-exposed) always passes <see
+    /// cref="Fixed64.Zero"/> here and reads identically to before this item shipped.</summary>
+    public static Fixed64 ComputeContentment(
+        Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction, Fixed64 rentBurden)
     {
         var cappedEmployment = Min(employmentRatio, Fixed64.One);
         var cappedHousing = Min(housingSatisfaction, Fixed64.One);
         var sum = cappedEmployment + cappedHousing + needsSatisfaction;
-        return Fixed64.Divide(sum, Fixed64.FromInt(3));
+        var baseline = Fixed64.Divide(sum, Fixed64.FromInt(3));
+        var withBurden = baseline - rentBurden;
+        return withBurden < Fixed64.Zero ? Fixed64.Zero : withBurden;
     }
 
     /// <summary>§7.3's overcrowding cross-reference: a group whose housing capacity has fallen short

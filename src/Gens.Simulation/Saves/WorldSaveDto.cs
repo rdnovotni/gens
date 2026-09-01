@@ -503,6 +503,26 @@ public sealed record WorldSaveDocument
     /// defaults to empty, matching <see cref="Wanderers"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(80)]
     public IReadOnlyList<WandererEngagementDto> WandererEngagements { get; init; } = Array.Empty<WandererEngagementDto>();
+
+    /// <summary>Every §4 <see cref="Gens.Simulation.RealEstate.District"/> (Phase 15 item 1), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="WandererEngagements"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(81)]
+    public IReadOnlyList<DistrictDto> Districts { get; init; } = Array.Empty<DistrictDto>();
+
+    /// <summary>Every §3 <see cref="Gens.Simulation.RealEstate.PropertyRecord"/> — a Ship or Named
+    /// Holding (Phase 15 item 1), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="Districts"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(82)]
+    public IReadOnlyList<PropertyRecordDto> PropertyRecords { get; init; } = Array.Empty<PropertyRecordDto>();
+
+    /// <summary>Every player-owned Plot's §3 management-status/ownership extension (Phase 15 item 1),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> (by Plot ID) order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="PropertyRecords"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(83)]
+    public IReadOnlyList<PlotPropertyExtensionDto> PlotPropertyExtensions { get; init; } = Array.Empty<PlotPropertyExtensionDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -755,6 +775,18 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(46)]
     public long WandererEngagementIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-1 save has no Districts.
+    /// Additive-only per ADR 0011's policy, matching <see cref="WandererEngagementIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(47)]
+    public long DistrictIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-1 save has no Property
+    /// Records. Additive-only per ADR 0011's policy, matching <see cref="DistrictIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(48)]
+    public long PropertyRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3342,4 +3374,108 @@ public sealed record DormantVolcanoDto
 
     [JsonPropertyOrder(3)]
     public required bool PostEruptionFertilityBoostActive { get; init; }
+}
+
+/// <summary>One §4 <see cref="Gens.Simulation.RealEstate.District"/> (Phase 15 item 1).</summary>
+public sealed record DistrictDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required long PropertyValueRawValue { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? LinkedGazetteerLocationId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int PreviousSettlementPopulation { get; init; }
+}
+
+/// <summary>One §3 <see cref="Gens.Simulation.RealEstate.PropertyRecord"/> — a Ship or Named Holding
+/// (Phase 15 item 1).</summary>
+public sealed record PropertyRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string AssetType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string OwnerKind { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? OwnerId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? SettlementId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? DistrictId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required string ManagementStatus { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? OperatorCharacterId { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool OperatorIsSkimming { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int OperatorTenureMonths { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required bool OperatorBuyoutOffered { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public string? LesseeId { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required long ValueRawValue { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required int Condition { get; init; }
+}
+
+/// <summary>One Plot's §3 management-status/ownership extension (Phase 15 item 1) — <see
+/// cref="Gens.Simulation.RealEstate.PlotPropertyExtension"/>.</summary>
+public sealed record PlotPropertyExtensionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? DistrictId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string ManagementStatus { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? OperatorCharacterId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool OperatorIsSkimming { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int OperatorTenureMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool OperatorBuyoutOffered { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? LesseeId { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required long ValueRawValue { get; init; }
 }

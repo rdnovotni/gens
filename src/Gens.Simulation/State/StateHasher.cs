@@ -16,6 +16,7 @@ using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
+using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Stewardship;
@@ -800,6 +801,54 @@ public static class StateHasher
         {
             hash = MixString(hash, entry.Key);
             hash = MixLong(hash, entry.Value.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.Districts.InAscendingOrder())
+        {
+            var district = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, district.SettlementId.Value);
+            hash = MixString(hash, district.Name);
+            hash = MixLong(hash, district.PropertyValue.RawValue);
+            hash = MixString(hash, district.LinkedGazetteerLocationId?.Value ?? string.Empty);
+            hash = MixLong(hash, district.PreviousSettlementPopulation);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.PropertyRecords.InAscendingOrder())
+        {
+            var record = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)record.AssetType);
+            hash = MixString(hash, record.Name);
+            hash = MixLong(hash, (long)record.Owner.Kind);
+            hash = MixString(hash, record.Owner.OwnerId ?? string.Empty);
+            hash = MixLong(hash, record.SettlementId?.Value ?? -1L);
+            hash = MixLong(hash, record.DistrictId?.Value ?? -1L);
+            hash = MixLong(hash, (long)record.ManagementStatus);
+            hash = MixLong(hash, record.OperatorCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, record.OperatorIsSkimming ? 1L : 0L);
+            hash = MixLong(hash, record.OperatorTenureMonths);
+            hash = MixLong(hash, record.OperatorBuyoutOffered ? 1L : 0L);
+            hash = MixLong(hash, record.LesseeId?.Value ?? -1L);
+            hash = MixLong(hash, record.Value.RawValue);
+            hash = MixLong(hash, record.Condition.Value);
+        }
+
+        // Already ascending-RuntimeId (by Plot ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.PlotPropertyExtensions.InAscendingOrder())
+        {
+            var extension = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, extension.DistrictId?.Value ?? -1L);
+            hash = MixLong(hash, (long)extension.ManagementStatus);
+            hash = MixLong(hash, extension.OperatorCharacterId?.Value ?? -1L);
+            hash = MixLong(hash, extension.OperatorIsSkimming ? 1L : 0L);
+            hash = MixLong(hash, extension.OperatorTenureMonths);
+            hash = MixLong(hash, extension.OperatorBuyoutOffered ? 1L : 0L);
+            hash = MixLong(hash, extension.LesseeId?.Value ?? -1L);
+            hash = MixLong(hash, extension.Value.RawValue);
         }
 
         return hash;
