@@ -68,12 +68,15 @@ public sealed record ProcuratorAppointedEvent(
 }
 
 /// <summary>Validate/mutate pipelines for the two Distant Holding commands (ADR 0006). Built per <see
-/// cref="DistanceTierCatalog"/>, matching <see cref="Travel.BeginTravelCommands.BuildPipeline"/>'s
-/// identical "caller-loaded content, not embedded in the save-state graph" shape.</summary>
+/// cref="RegionProfileCatalog"/>/<see cref="DistanceTierCatalog"/>, matching <see
+/// cref="Travel.BeginTravelCommands.BuildPipeline"/>'s identical "caller-loaded content, not embedded in
+/// the save-state graph" shape.</summary>
 public static class DistantHoldingCommands
 {
     public static readonly ValidationErrorCode HoldingNotFound = new("land.distantHolding.acquire.holdingNotFound");
     public static readonly ValidationErrorCode HoldingNotOwnedByHousehold = new("land.distantHolding.acquire.holdingNotOwnedByHousehold");
+    public static readonly ValidationErrorCode HomeRegionNotFound = new("land.distantHolding.acquire.homeRegionNotFound");
+    public static readonly ValidationErrorCode HoldingRegionNotFound = new("land.distantHolding.acquire.holdingRegionNotFound");
     public static readonly ValidationErrorCode NotActuallyDistant = new("land.distantHolding.acquire.notActuallyDistant");
     public static readonly ValidationErrorCode AlreadyRegistered = new("land.distantHolding.acquire.alreadyRegistered");
 
@@ -83,13 +86,16 @@ public static class DistantHoldingCommands
     public static readonly ValidationErrorCode CandidateNotHouseholdMember = new("land.distantHolding.appointProcurator.candidateNotHouseholdMember");
     public static readonly ValidationErrorCode HouseholdAlreadyHasActiveAssignment = new("land.distantHolding.appointProcurator.householdAlreadyHasActiveAssignment");
 
-    public static CommandPipeline<WorldState, AcquireDistantHoldingCommand> BuildAcquirePipeline(DistanceTierCatalog distanceTiers)
+    public static CommandPipeline<WorldState, AcquireDistantHoldingCommand> BuildAcquirePipeline(
+        RegionProfileCatalog regions, DistanceTierCatalog distanceTiers)
     {
+        if (regions is null)
+            throw new ArgumentNullException(nameof(regions));
         if (distanceTiers is null)
             throw new ArgumentNullException(nameof(distanceTiers));
 
         return new CommandPipeline<WorldState, AcquireDistantHoldingCommand>(
-            validate: Validate,
+            validate: (state, command) => Validate(state, command, regions),
             mutate: (state, command) => Mutate(state, command, distanceTiers),
             issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
     }
@@ -97,12 +103,27 @@ public static class DistantHoldingCommands
     public static readonly CommandPipeline<WorldState, AppointProcuratorCommand> AppointProcuratorPipeline = new(
         validate: ValidateAppointProcurator, mutate: MutateAppointProcurator, issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
 
-    private static ValidationErrorCode? Validate(WorldState state, AcquireDistantHoldingCommand command)
+    /// <summary>Rejects a fabricated or stale region pair before it can ever reach persisted campaign
+    /// state: both <see cref="AcquireDistantHoldingCommand.HomeRegionId"/> and <see
+    /// cref="AcquireDistantHoldingCommand.HoldingRegionId"/> must name a real, catalog-registered <see
+    /// cref="RegionProfileDefinition"/>. This does not (yet) go further and verify <c>HoldingRegionId</c>
+    /// actually is the acquired <see cref="Holding"/>'s own settlement's region, or that
+    /// <c>HomeRegionId</c> actually is <see cref="AcquireDistantHoldingCommand.HouseholdId"/>'s real home
+    /// region — nothing in this codebase yet links a runtime <see cref="Settlement"/> back to its content
+    /// <see cref="RegionProfileDefinition"/>, or tracks a household's own home region as state at all (the
+    /// same gap <see cref="Travel.BeginTravelCommand.HomeRegionId"/> already leaves as a bare,
+    /// caller-supplied parameter). Closing that fully is a real, larger seam for whichever future item
+    /// builds that linkage, not this one.</summary>
+    private static ValidationErrorCode? Validate(WorldState state, AcquireDistantHoldingCommand command, RegionProfileCatalog regions)
     {
         if (!state.Holdings.TryGet(command.HoldingId, out var holding))
             return HoldingNotFound;
         if (holding!.OwnerId != command.HouseholdId.ToTaggedString())
             return HoldingNotOwnedByHousehold;
+        if (!regions.TryGet(command.HomeRegionId, out _))
+            return HomeRegionNotFound;
+        if (!regions.TryGet(command.HoldingRegionId, out _))
+            return HoldingRegionNotFound;
         if (command.HomeRegionId.Equals(command.HoldingRegionId))
             return NotActuallyDistant;
         if (state.DistantHoldings.InAscendingOrder().Any(entry => entry.Value.HoldingId == command.HoldingId))

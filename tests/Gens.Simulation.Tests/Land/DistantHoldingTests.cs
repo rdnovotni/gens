@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.Policies;
 using Gens.Simulation.Random;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Saves;
@@ -55,7 +56,7 @@ public sealed class DistantHoldingTests
     public void AcquireRegistersADistantHoldingWithTheResolvedDistanceTier()
     {
         var (state, householdId, holdingId) = OneHouseholdWithAHolding();
-        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildDistanceTierCatalog());
+        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildRegionCatalog(), TravelTestFixtures.BuildDistanceTierCatalog());
 
         var result = pipeline.Execute(state, MakeAcquireCommand(state, householdId, TravelTestFixtures.FarRegionId, holdingId));
 
@@ -74,7 +75,7 @@ public sealed class DistantHoldingTests
     {
         var (state, _, holdingId) = OneHouseholdWithAHolding();
         var otherHouseholdId = state.HouseholdIds.Issue();
-        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildDistanceTierCatalog());
+        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildRegionCatalog(), TravelTestFixtures.BuildDistanceTierCatalog());
 
         var result = pipeline.Execute(
             state, MakeAcquireCommand(state, otherHouseholdId, TravelTestFixtures.FarRegionId, holdingId));
@@ -90,7 +91,7 @@ public sealed class DistantHoldingTests
     public void AcquireRejectsAHoldingInTheHouseholdsOwnHomeRegion()
     {
         var (state, householdId, holdingId) = OneHouseholdWithAHolding();
-        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildDistanceTierCatalog());
+        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildRegionCatalog(), TravelTestFixtures.BuildDistanceTierCatalog());
 
         var result = pipeline.Execute(
             state, MakeAcquireCommand(state, householdId, TravelTestFixtures.HomeRegionId, holdingId));
@@ -103,10 +104,26 @@ public sealed class DistantHoldingTests
     }
 
     [Test]
+    public void AcquireRejectsAFabricatedHoldingRegionId()
+    {
+        var (state, householdId, holdingId) = OneHouseholdWithAHolding();
+        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildRegionCatalog(), TravelTestFixtures.BuildDistanceTierCatalog());
+        var bogusRegionId = new DefinitionId<RegionProfileDefinition>("not-a-real-region");
+
+        var result = pipeline.Execute(state, MakeAcquireCommand(state, householdId, bogusRegionId, holdingId));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(result.Accepted, Is.False);
+            Assert.That(result.Error, Is.EqualTo(DistantHoldingCommands.HoldingRegionNotFound));
+        });
+    }
+
+    [Test]
     public void AcquireRejectsARegisteringTheSameHoldingTwice()
     {
         var (state, householdId, holdingId) = OneHouseholdWithAHolding();
-        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildDistanceTierCatalog());
+        var pipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildRegionCatalog(), TravelTestFixtures.BuildDistanceTierCatalog());
         pipeline.Execute(state, MakeAcquireCommand(state, householdId, TravelTestFixtures.FarRegionId, holdingId));
 
         var result = pipeline.Execute(state, MakeAcquireCommand(state, householdId, TravelTestFixtures.FarRegionId, holdingId));
@@ -204,9 +221,11 @@ public sealed class DistantHoldingTests
     [Test]
     public void TickVacatesTheProcuratorAndFlagsRiskOnceTheyDie()
     {
-        var (state, _, distantHoldingId, characterId) = OneDistantHoldingWithACandidate();
+        var (state, householdId, distantHoldingId, characterId) = OneDistantHoldingWithACandidate();
         DistantHoldingCommands.AppointProcuratorPipeline.Execute(
             state, new AppointProcuratorCommand(state.CommandIds.Issue(), "player", state.Date, null, distantHoldingId, characterId));
+        var backingAssignmentId = state.StewardshipAssignments.InAscendingOrder().Select(entry => entry.Value)
+            .Single(a => a.HouseholdId == householdId && a.Context == StewardshipContext.SecondSettlementProcurator).AssignmentId;
 
         state.Characters.TryGet(characterId, out var character);
         state.Characters.Remove(characterId);
@@ -215,10 +234,66 @@ public sealed class DistantHoldingTests
         new DistantHoldingMismanagementRiskSystem().Tick(state, new MonthlyTickContext(state.Date, new RandomStreamSet()));
 
         state.DistantHoldings.TryGet(distantHoldingId, out var stored);
+        state.StewardshipAssignments.TryGet(backingAssignmentId, out var backingAssignment);
         Assert.Multiple(() =>
         {
             Assert.That(stored!.ProcuratorCharacterId, Is.Null);
             Assert.That(stored.MismanagementRiskActive, Is.True);
+            Assert.That(backingAssignment!.IsActive, Is.False);
+        });
+    }
+
+    [Test]
+    public void TickEndingADeadProcuratorsAssignmentUnblocksAReplacementAppointment()
+    {
+        var (state, householdId, distantHoldingId, characterId) = OneDistantHoldingWithACandidate();
+        DistantHoldingCommands.AppointProcuratorPipeline.Execute(
+            state, new AppointProcuratorCommand(state.CommandIds.Issue(), "player", state.Date, null, distantHoldingId, characterId));
+
+        state.Characters.TryGet(characterId, out var character);
+        state.Characters.Remove(characterId);
+        state.Characters.Add(characterId, character! with { DeathRecord = new DeathRecord(state.Date, DeathCause.Unspecified, ageAtDeath: 40) });
+        new DistantHoldingMismanagementRiskSystem().Tick(state, new MonthlyTickContext(state.Date, new RandomStreamSet()));
+
+        var replacementId = state.CharacterIds.Issue();
+        state.Characters.Add(replacementId, CharacterTestFixtures.Minimal(
+            replacementId, household: householdId, condition: new Condition(80, 0, 90, 20, 50)));
+
+        var result = DistantHoldingCommands.AppointProcuratorPipeline.Execute(
+            state, new AppointProcuratorCommand(state.CommandIds.Issue(), "player", state.Date, null, distantHoldingId, replacementId));
+
+        Assert.That(result.Accepted, Is.True);
+    }
+
+    [Test]
+    public void TickRunsBeforeStewardAutonomousDecisionSoADeadProcuratorNeverActsThatSameMonth()
+    {
+        var (state, householdId, distantHoldingId, characterId) = OneDistantHoldingWithACandidate();
+        DistantHoldingCommands.AppointProcuratorPipeline.Execute(
+            state, new AppointProcuratorCommand(state.CommandIds.Issue(), "player", state.Date, null, distantHoldingId, characterId));
+        var backingAssignmentId = state.StewardshipAssignments.InAscendingOrder().Select(entry => entry.Value)
+            .Single(a => a.HouseholdId == householdId && a.Context == StewardshipContext.SecondSettlementProcurator).AssignmentId;
+
+        state.Characters.TryGet(characterId, out var character);
+        state.Characters.Remove(characterId);
+        state.Characters.Add(characterId, character! with { DeathRecord = new DeathRecord(state.Date, DeathCause.Unspecified, ageAtDeath: 40) });
+
+        var homeSettlementId = state.SettlementIds.Issue();
+        var simulation = new MonthlySimulation<WorldState>(new IMonthlySystem<WorldState>[]
+        {
+            new DistantHoldingMismanagementRiskSystem(),
+            new StewardAutonomousDecisionSystem(PolicyActionDefinitions.BuildCatalog(), _ => homeSettlementId),
+        });
+
+        simulation.Tick(state, state.Date, new RandomStreamSet());
+
+        Assert.Multiple(() =>
+        {
+            // If StewardAutonomousDecisionSystem had run first, it would have logged a decision for
+            // this still-formally-active assignment before this system got a chance to end it.
+            Assert.That(state.AutonomousDecisionLogs.InAscendingOrder().Any(entry => entry.Value.AssignmentId == backingAssignmentId), Is.False);
+            state.StewardshipAssignments.TryGet(backingAssignmentId, out var backingAssignment);
+            Assert.That(backingAssignment!.IsActive, Is.False);
         });
     }
 
@@ -226,7 +301,7 @@ public sealed class DistantHoldingTests
     public void TickNeverFlagsRiskForAnUnstaffedNearHolding()
     {
         var (state, householdId, holdingId) = OneHouseholdWithAHolding();
-        var acquirePipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildDistanceTierCatalog());
+        var acquirePipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildRegionCatalog(), TravelTestFixtures.BuildDistanceTierCatalog());
         var acquireResult = acquirePipeline.Execute(
             state, MakeAcquireCommand(state, householdId, TravelTestFixtures.NearRegionId, holdingId));
         var distantHoldingId = ((DistantHoldingAcquiredEvent)acquireResult.Events[0]).DistantHoldingId;
@@ -281,7 +356,7 @@ public sealed class DistantHoldingTests
         OneDistantHoldingWithACandidate()
     {
         var (state, householdId, holdingId) = OneHouseholdWithAHolding();
-        var acquirePipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildDistanceTierCatalog());
+        var acquirePipeline = DistantHoldingCommands.BuildAcquirePipeline(TravelTestFixtures.BuildRegionCatalog(), TravelTestFixtures.BuildDistanceTierCatalog());
         var acquireResult = acquirePipeline.Execute(
             state, MakeAcquireCommand(state, householdId, TravelTestFixtures.FarRegionId, holdingId));
         var distantHoldingId = ((DistantHoldingAcquiredEvent)acquireResult.Events[0]).DistantHoldingId;

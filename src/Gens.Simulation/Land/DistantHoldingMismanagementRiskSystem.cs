@@ -17,10 +17,15 @@ namespace Gens.Simulation.Land;
 /// <list type="number">
 /// <item>If a Procurator is on record but their backing <see
 /// cref="StewardshipContext.SecondSettlementProcurator"/> <see cref="StewardshipAssignment"/> is no
-/// longer active (they died, or the household's graver need — a Regency, per <see
-/// cref="Succession.RegencySystem"/>'s own supersede precedent — ended it) the holding reverts to
-/// unstaffed rather than keeping a stale pointer to an appointee who no longer actually holds the
-/// role.</item>
+/// longer active (the household's graver need — a Regency, per <see
+/// cref="Succession.RegencySystem"/>'s own supersede precedent — already ended it) the holding reverts
+/// to unstaffed rather than keeping a stale pointer to an appointee who no longer actually holds the
+/// role. If instead the assignment is still formally active but the Procurator themself has died, this
+/// system ends that assignment itself, through <see cref="StewardshipCommands.EndPipeline"/> exactly
+/// like <see cref="Succession.RegencySystem"/>'s own identical "supersede via the real command, don't
+/// just drop the pointer" pattern — leaving it active would both block
+/// <see cref="AppointProcuratorCommand"/>'s "household already has an active assignment" check forever
+/// and let <see cref="StewardAutonomousDecisionSystem"/> keep acting for a dead appointee.</item>
 /// <item>Recompute <see cref="DistantHolding.MismanagementRiskActive"/> per §7.2/§12: true exactly when
 /// the holding is <see cref="DistanceTier.Far"/> and either unstaffed or the current Procurator's <see
 /// cref="Characters.Condition.Loyalty"/> has fallen below <see
@@ -41,14 +46,40 @@ public sealed class DistantHoldingMismanagementRiskSystem : IMonthlySystem<World
     public string Id => "land.distantHoldingMismanagementRisk";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "distantHoldings", "stewardshipAssignments", "characters" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "distantHoldings" };
-    public IReadOnlyCollection<string> Prerequisites { get; } = new[] { "succession.regency" };
+
+    // "stewardshipAssignments", "returnReports", "returnReportIds", "eventIds", "commandIds", and
+    // "commandSequence" cover every partition StewardshipCommands.EndPipeline's own mutate handler can
+    // touch when this system ends a dead Procurator's backing assignment — mirrors RegencySystem.Writes's
+    // own doc comment for why ADR 0005's declared write-set must name these, not just "distantHoldings".
+    public IReadOnlyCollection<string> Writes { get; } = new[]
+    {
+        "distantHoldings", "stewardshipAssignments", "returnReports", "returnReportIds", "eventIds",
+        "commandIds", "commandSequence",
+    };
+
+    // Deliberately no prerequisites (an automated review finding this pass fixed) — same-phase
+    // stewardship.autonomousDecision has none either, and MonthlySimulation's own tie-break (ADR 0004/
+    // 0005: alphabetically smallest ready system id first) then guarantees "land.distant..." always
+    // resolves strictly before "stewardship.autonomousDecision" runs each month, since neither depends
+    // on the other. That ordering matters: leaving a dependency on succession.regency here (this item's
+    // original choice) let stewardship.autonomousDecision — itself prerequisite-free — get picked first
+    // every tick, so a Procurator who died this same month could still submit an action and roll an
+    // incident through StewardAutonomousDecisionSystem before this system ever got a chance to end
+    // their stale assignment. Running unconditionally early instead costs nothing this system's own
+    // logic needs: it reads only distantHoldings/stewardshipAssignments/characters and re-derives
+    // everything itself rather than assuming RegencySystem (succession.regency) already ran — if a
+    // Regency supersedes a Procurator assignment later in the same tick, this system simply sees the
+    // stale ProcuratorCharacterId for one extra month (corrected the next), a narrower, pre-existing
+    // race already inherent to RegencySystem's own identical ordering relative to
+    // stewardship.autonomousDecision, not one this system introduces or need fix.
+    public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
     {
         if (state is null)
             throw new ArgumentNullException(nameof(state));
 
+        var events = new List<IDomainEvent>();
         var holdings = state.DistantHoldings.InAscendingOrder().ToArray();
 
         foreach (var (id, holding) in holdings)
@@ -56,16 +87,28 @@ public sealed class DistantHoldingMismanagementRiskSystem : IMonthlySystem<World
             RuntimeId<Character>? procuratorId = null;
             Character? procurator = null;
 
-            if (holding.ProcuratorCharacterId is { } candidateId &&
-                state.Characters.TryGet(candidateId, out var candidate) &&
-                candidate.IsAlive &&
-                state.StewardshipAssignments.InAscendingOrder().Any(entry =>
-                    entry.Value.HouseholdId == holding.HouseholdId && entry.Value.IsActive &&
-                    entry.Value.Context == StewardshipContext.SecondSettlementProcurator &&
-                    entry.Value.AppointeeCharacterId == candidateId))
+            if (holding.ProcuratorCharacterId is { } candidateId)
             {
-                procuratorId = candidateId;
-                procurator = candidate;
+                var backingAssignment = state.StewardshipAssignments.InAscendingOrder()
+                    .Select(entry => entry.Value)
+                    .FirstOrDefault(a => a.HouseholdId == holding.HouseholdId && a.IsActive &&
+                        a.Context == StewardshipContext.SecondSettlementProcurator && a.AppointeeCharacterId == candidateId);
+
+                var candidateAlive = state.Characters.TryGet(candidateId, out var candidate) && candidate.IsAlive;
+
+                if (backingAssignment is not null && !candidateAlive)
+                {
+                    var endCommand = new EndStewardshipAssignmentCommand(
+                        state.CommandIds.Issue(), "system", context.Date, null, backingAssignment.AssignmentId);
+                    var endResult = StewardshipCommands.EndPipeline.Execute(state, endCommand);
+                    if (endResult.Accepted)
+                        events.AddRange(endResult.Events);
+                }
+                else if (backingAssignment is not null)
+                {
+                    procuratorId = candidateId;
+                    procurator = candidate;
+                }
             }
 
             var riskActive = EvaluateRisk(holding.DistanceTier, procurator);
@@ -81,7 +124,7 @@ public sealed class DistantHoldingMismanagementRiskSystem : IMonthlySystem<World
             });
         }
 
-        return Array.Empty<IDomainEvent>();
+        return events;
     }
 
     /// <summary>§7.2/§12's mismanagement-risk rule, shared with <see
