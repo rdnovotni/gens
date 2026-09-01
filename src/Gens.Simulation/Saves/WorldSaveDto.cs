@@ -465,6 +465,19 @@ public sealed record WorldSaveDocument
     /// reasoning.</summary>
     [JsonPropertyOrder(74)]
     public IReadOnlyList<CharacterHealthConditionDto> CharacterHealthConditions { get; init; } = Array.Empty<CharacterHealthConditionDto>();
+
+    /// <summary>Every settlement's standing §6 Sanitation Investment tier (Phase 14 item 2), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="CharacterHealthConditions"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(75)]
+    public IReadOnlyList<SettlementSanitationInvestmentDto> SettlementSanitationInvestments { get; init; } =
+        Array.Empty<SettlementSanitationInvestmentDto>();
+
+    /// <summary>Every standing <see cref="Gens.Simulation.Health.EpidemicOutbreak"/> (Phase 14 item 2),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="CharacterHealthConditions"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(76)]
+    public IReadOnlyList<EpidemicOutbreakDto> EpidemicOutbreaks { get; init; } = Array.Empty<EpidemicOutbreakDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -693,6 +706,12 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(42)]
     public long CharacterHealthConditionIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-14-item-2 save has no Epidemic
+    /// Outbreaks. Additive-only per ADR 0011's policy, matching <see cref="CharacterHealthConditionIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(43)]
+    public long EpidemicOutbreakIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3070,5 +3089,48 @@ public sealed record CharacterHealthConditionDto
     public required bool GrantedImmunity { get; init; }
 
     [JsonPropertyOrder(10)]
+    public int? ResolvedDateTotalMonths { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to <c>false</c>: a pre-Phase-14-item-2 save has no
+    /// Personal Quarantine state. Additive-only per ADR 0011's policy.</summary>
+    [JsonPropertyOrder(11)]
+    public bool Quarantined { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Health.SettlementSanitationInvestment"/> (Phase 14 item 2).</summary>
+public sealed record SettlementSanitationInvestmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Tier { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Health.EpidemicOutbreak"/> (Phase 14 item 2).</summary>
+public sealed record EpidemicOutbreakDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string ConditionId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int StartDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool SettlementQuarantineActive { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool ImperialScale { get; init; }
+
+    [JsonPropertyOrder(7)]
     public int? ResolvedDateTotalMonths { get; init; }
 }

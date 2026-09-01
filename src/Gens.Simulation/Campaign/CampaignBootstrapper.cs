@@ -154,6 +154,16 @@ public static class CampaignBootstrapper
     /// here for the same rule-8 reason.</summary>
     public const string HealthConditionProgressionStreamName = "health.conditionProgression";
 
+    /// <summary>The named random stream <see cref="Health.EndemicIllnessSystem"/> reserves for its
+    /// monthly Exposure rolls (Phase 14 item 2), kept distinct from every other stream here for the
+    /// same rule-8 reason.</summary>
+    public const string EndemicIllnessStreamName = "health.endemicIllness";
+
+    /// <summary>The named random stream <see cref="Health.EpidemicContagionSystem"/> reserves for its
+    /// monthly ignition/spread rolls (Phase 14 item 2), kept distinct from every other stream here for
+    /// the same rule-8 reason.</summary>
+    public const string EpidemicContagionStreamName = "health.epidemicContagion";
+
     public static BootstrappedCampaign Bootstrap(CampaignConfig config)
     {
         if (config is null)
@@ -190,6 +200,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(CrimeDetentionEscapeAttemptStreamName, config.Seed);
         streams.AddDerived(CorrespondenceRiskStreamName, config.Seed);
         streams.AddDerived(HealthConditionProgressionStreamName, config.Seed);
+        streams.AddDerived(EndemicIllnessStreamName, config.Seed);
+        streams.AddDerived(EpidemicContagionStreamName, config.Seed);
 
         var regionId = state.RegionIds.Issue();
         var settlementId = state.SettlementIds.Issue();

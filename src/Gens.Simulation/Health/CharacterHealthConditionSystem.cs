@@ -88,7 +88,7 @@ public sealed class CharacterHealthConditionSystem : IMonthlySystem<WorldState>
             }
 
             var recoveryProbability = HealthConditionProgressionCalculator.MonthlyRecoveryProbability(
-                current.Category, current.HasCure, treated);
+                current.Category, current.HasCure, treated, current.Quarantined);
             var recoveryThreshold = (uint)Math.Clamp(recoveryProbability * RollPrecision, 0, RollPrecision);
             var recoveryRoll = context.RandomStreams.NextUInt(_progressionStreamName, RollPrecision);
 

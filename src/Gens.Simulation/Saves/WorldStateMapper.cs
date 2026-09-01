@@ -98,6 +98,7 @@ public static class WorldStateMapper
                 DivergenceRecordIds = state.DivergenceRecordIds.Peek,
                 DistantHoldingIds = state.DistantHoldingIds.Peek,
                 CharacterHealthConditionIds = state.CharacterHealthConditionIds.Peek,
+                EpidemicOutbreakIds = state.EpidemicOutbreakIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -234,6 +235,12 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterHealthConditions = state.CharacterHealthConditions.InAscendingOrder()
                 .Select(entry => ToCharacterHealthConditionDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            SettlementSanitationInvestments = state.SettlementSanitationInvestments.InAscendingOrder()
+                .Select(entry => ToSettlementSanitationInvestmentDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            EpidemicOutbreaks = state.EpidemicOutbreaks.InAscendingOrder()
+                .Select(entry => ToEpidemicOutbreakDto(entry.Value)).ToArray(),
         };
     }
 
@@ -702,6 +709,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<CharacterHealthCondition>, CharacterHealthCondition>(condition.Id, condition);
             }));
 
+        var settlementSanitationInvestments = OrderedRegistry<RuntimeId<Settlement>, SettlementSanitationInvestment>.Restore(
+            dto.SettlementSanitationInvestments.Select(s =>
+            {
+                var investment = FromSettlementSanitationInvestmentDto(s);
+                return new KeyValuePair<RuntimeId<Settlement>, SettlementSanitationInvestment>(investment.SettlementId, investment);
+            }));
+
+        var epidemicOutbreaks = OrderedRegistry<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak>.Restore(
+            dto.EpidemicOutbreaks.Select(o =>
+            {
+                var outbreak = FromEpidemicOutbreakDto(o);
+                return new KeyValuePair<RuntimeId<EpidemicOutbreak>, EpidemicOutbreak>(outbreak.Id, outbreak);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -747,6 +768,7 @@ public static class WorldStateMapper
             divergenceRecordIds: RuntimeIdCounter<DivergenceRecord>.Restore(dto.Counters.DivergenceRecordIds),
             distantHoldingIds: RuntimeIdCounter<DistantHolding>.Restore(dto.Counters.DistantHoldingIds),
             characterHealthConditionIds: RuntimeIdCounter<CharacterHealthCondition>.Restore(dto.Counters.CharacterHealthConditionIds),
+            epidemicOutbreakIds: RuntimeIdCounter<EpidemicOutbreak>.Restore(dto.Counters.EpidemicOutbreakIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -816,6 +838,8 @@ public static class WorldStateMapper
             divergenceRecords: divergenceRecords,
             distantHoldings: distantHoldings,
             characterHealthConditions: characterHealthConditions,
+            settlementSanitationInvestments: settlementSanitationInvestments,
+            epidemicOutbreaks: epidemicOutbreaks,
             firedHistoricalTimelineEntryIds: firedHistoricalTimelineEntryIds,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
@@ -1060,6 +1084,7 @@ public static class WorldStateMapper
         TreatedByPhysician = condition.TreatedByPhysician,
         GrantedImmunity = condition.GrantedImmunity,
         ResolvedDateTotalMonths = condition.ResolvedDate?.TotalMonths,
+        Quarantined = condition.Quarantined,
     };
 
     private static CharacterHealthCondition FromCharacterHealthConditionDto(CharacterHealthConditionDto dto) => new()
@@ -1074,6 +1099,41 @@ public static class WorldStateMapper
         Status = Enum.Parse<CharacterHealthConditionStatus>(dto.Status),
         TreatedByPhysician = dto.TreatedByPhysician,
         GrantedImmunity = dto.GrantedImmunity,
+        ResolvedDate = dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null,
+        Quarantined = dto.Quarantined,
+    };
+
+    private static SettlementSanitationInvestmentDto ToSettlementSanitationInvestmentDto(SettlementSanitationInvestment investment) => new()
+    {
+        SettlementId = investment.SettlementId.ToTaggedString(),
+        Tier = investment.Tier.ToString(),
+    };
+
+    private static SettlementSanitationInvestment FromSettlementSanitationInvestmentDto(SettlementSanitationInvestmentDto dto) =>
+        SettlementSanitationInvestment.Create(
+            RuntimeId<Settlement>.Parse(dto.SettlementId), Enum.Parse<SanitationInvestmentTier>(dto.Tier));
+
+    private static EpidemicOutbreakDto ToEpidemicOutbreakDto(EpidemicOutbreak outbreak) => new()
+    {
+        Id = outbreak.Id.ToTaggedString(),
+        SettlementId = outbreak.SettlementId.ToTaggedString(),
+        ConditionId = outbreak.ConditionId.Value,
+        StartDateTotalMonths = outbreak.StartDate.TotalMonths,
+        Status = outbreak.Status.ToString(),
+        SettlementQuarantineActive = outbreak.SettlementQuarantineActive,
+        ImperialScale = outbreak.ImperialScale,
+        ResolvedDateTotalMonths = outbreak.ResolvedDate?.TotalMonths,
+    };
+
+    private static EpidemicOutbreak FromEpidemicOutbreakDto(EpidemicOutbreakDto dto) => new()
+    {
+        Id = RuntimeId<EpidemicOutbreak>.Parse(dto.Id),
+        SettlementId = RuntimeId<Settlement>.Parse(dto.SettlementId),
+        ConditionId = new DefinitionId<HealthConditionDefinition>(dto.ConditionId),
+        StartDate = new GameDate(dto.StartDateTotalMonths),
+        Status = Enum.Parse<EpidemicOutbreakStatus>(dto.Status),
+        SettlementQuarantineActive = dto.SettlementQuarantineActive,
+        ImperialScale = dto.ImperialScale,
         ResolvedDate = dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null,
     };
 
