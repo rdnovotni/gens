@@ -51,7 +51,8 @@ public sealed class SetSettlementQuarantineCommandTests
         state.Settlements.Add(settlementId, Settlement.Create(settlementId, regionId));
         var outbreakId = state.EpidemicOutbreakIds.Issue();
         var ended = EpidemicOutbreak.Create(outbreakId, settlementId, DiseaseCatalog.Pestilence, new GameDate(9))
-            with { Status = EpidemicOutbreakStatus.Ended, ResolvedDate = new GameDate(10) };
+            with
+        { Status = EpidemicOutbreakStatus.Ended, ResolvedDate = new GameDate(10) };
         state.EpidemicOutbreaks.Add(outbreakId, ended);
 
         var command = new SetSettlementQuarantineCommand(state.CommandIds.Issue(), "player", new GameDate(10), null, outbreakId, true);
