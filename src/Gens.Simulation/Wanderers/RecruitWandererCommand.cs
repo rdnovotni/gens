@@ -134,6 +134,20 @@ public static class RecruitWandererCommands
         var profile = typeCatalog.Get(wanderer!.Type);
         var events = new List<IDomainEvent>();
 
+        // Every fallible step — the random-stream draws below throw KeyNotFoundException for an unknown
+        // RandomStreamName — runs before the Ledger is touched, so a bad stream name never leaves a
+        // half-applied recruitment fee (debited from the household, credited to the sink, transaction
+        // appended) with no Character or Engagement to show for it.
+        //
+        // Same fixed draw order PromoteToNamedCommands.Mutate uses for the fields it still needs to
+        // roll — visual profile, then attributes/skills, then condition. Name/sex/birth date are not
+        // re-rolled: they are replayed off the Wanderer record (see this type's own doc comment).
+        var visual = CharacterVisualProfileGenerator.Generate(randomStreams, command.RandomStreamName);
+        var (attributes, skills) = CharacterBackfillGenerator.RollAttributesAndSkills(randomStreams, command.RandomStreamName);
+        var condition = CharacterBackfillGenerator.RollCondition(randomStreams, command.RandomStreamName);
+
+        var dutySlot = ResolveDutySlot(state, command.HouseholdId, profile, skills);
+
         if (profile.RecruitFee != Money.Zero)
         {
             events.Add(LedgerService.Post(
@@ -145,15 +159,6 @@ public static class RecruitWandererCommands
                 },
                 reference: $"wanderers:recruit:{command.WandererId.ToTaggedString()}:{command.SubmittedDate.TotalMonths}"));
         }
-
-        // Same fixed draw order PromoteToNamedCommands.Mutate uses for the fields it still needs to
-        // roll — visual profile, then attributes/skills, then condition. Name/sex/birth date are not
-        // re-rolled: they are replayed off the Wanderer record (see this type's own doc comment).
-        var visual = CharacterVisualProfileGenerator.Generate(randomStreams, command.RandomStreamName);
-        var (attributes, skills) = CharacterBackfillGenerator.RollAttributesAndSkills(randomStreams, command.RandomStreamName);
-        var condition = CharacterBackfillGenerator.RollCondition(randomStreams, command.RandomStreamName);
-
-        var dutySlot = ResolveDutySlot(state, command.HouseholdId, profile, skills);
 
         var characterId = state.CharacterIds.Issue();
         var character = Character.Create(

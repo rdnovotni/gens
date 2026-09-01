@@ -84,4 +84,23 @@ public static class WandererFameCalculator
 
     /// <summary>Whether <paramref name="fame"/> makes this Wanderer a real object of §7 competition.</summary>
     public static bool IsCompetitionVisible(int fame) => fame >= CompetitionVisibilityThreshold;
+
+    /// <summary>Scales a Host benefit (§6) by the Wanderer's own current Fame, so "a high-Fame Wanderer
+    /// is a genuinely more valuable Host... target" (§4) is real rather than only true after the fact.
+    /// Linear from half the base amount at Fame 0 to one and a half times it at Fame 100 — an obscure
+    /// Wanderer still delivers something, an eminent one delivers noticeably more, and a mid-Fame
+    /// Wanderer (50, this namespace's own fixture default and <see cref="InstantiateWandererCommands"/>'
+    /// own starting-band midpoint) reproduces the base amount exactly. This implementation's own invented
+    /// figure, disclosed exactly like every other constant in this type (§11's "All numeric sizing").
+    /// Never below 1, so a positive base amount can never scale away to nothing.</summary>
+    public static int ScaleByFame(int baseAmount, int fame)
+    {
+        if (baseAmount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(baseAmount), baseAmount, "A Host benefit's base amount must be positive.");
+        if (fame is < 0 or > 100)
+            throw new ArgumentOutOfRangeException(nameof(fame), fame, "Fame must be within [0, 100].");
+
+        var scaled = (int)Math.Round(baseAmount * (0.5 + (fame / 100.0)), MidpointRounding.AwayFromZero);
+        return Math.Max(1, scaled);
+    }
 }

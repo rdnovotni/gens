@@ -174,6 +174,66 @@ public sealed class HostWandererCommandTests
     }
 
     [Test]
+    public void AHigherFameWandererDeliversAMoreValuableHostBenefit()
+    {
+        var lowState = new WorldState(Now);
+        var lowHouseholdId = lowState.HouseholdIds.Issue();
+        var lowWanderer = WandererTestFixtures.AddWanderer(lowState, WandererType.PhilosopherRhetorician, fame: 10);
+        var lowResult = HostWandererCommands.CreatePipeline(WandererTestFixtures.TypeCatalog)
+            .Execute(lowState, Command(lowState, lowWanderer.Id, lowHouseholdId));
+
+        var highState = new WorldState(Now);
+        var highHouseholdId = highState.HouseholdIds.Issue();
+        var highWanderer = WandererTestFixtures.AddWanderer(highState, WandererType.PhilosopherRhetorician, fame: 90);
+        var highResult = HostWandererCommands.CreatePipeline(WandererTestFixtures.TypeCatalog)
+            .Execute(highState, Command(highState, highWanderer.Id, highHouseholdId));
+
+        var lowGain = DignitasResolver.Current(lowState, lowHouseholdId);
+        var highGain = DignitasResolver.Current(highState, highHouseholdId);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(lowGain, Is.LessThan(highGain),
+                "§4: a high-Fame Wanderer must be a genuinely more valuable Host target than an obscure one.");
+
+            // The persisted engagement and emitted event must agree with the household's actual
+            // Dignitas change, not the fixed per-type base amount.
+            var lowEngagement = lowState.WandererEngagements.InAscendingOrder().Single().Value;
+            var highEngagement = highState.WandererEngagements.InAscendingOrder().Single().Value;
+            Assert.That(lowEngagement.DignitasGained, Is.EqualTo(lowGain));
+            Assert.That(highEngagement.DignitasGained, Is.EqualTo(highGain));
+            Assert.That(lowResult.Events.OfType<WandererHostedEvent>().Single().DignitasGained, Is.EqualTo(lowGain));
+            Assert.That(highResult.Events.OfType<WandererHostedEvent>().Single().DignitasGained, Is.EqualTo(highGain));
+        });
+    }
+
+    [Test]
+    public void AHigherFameWandererPhysicianRestoresMoreHealth()
+    {
+        var lowState = new WorldState(Now);
+        var lowHouseholdId = lowState.HouseholdIds.Issue();
+        var lowPatientId = lowState.CharacterIds.Issue();
+        lowState.Characters.Add(lowPatientId, CharacterTestFixtures.Minimal(
+            lowPatientId, household: lowHouseholdId, condition: new Condition(40, 10, 50, 50, 50)));
+        var lowWanderer = WandererTestFixtures.AddWanderer(lowState, WandererType.Physician, fame: 10);
+        HostWandererCommands.CreatePipeline(WandererTestFixtures.TypeCatalog)
+            .Execute(lowState, Command(lowState, lowWanderer.Id, lowHouseholdId, lowPatientId));
+
+        var highState = new WorldState(Now);
+        var highHouseholdId = highState.HouseholdIds.Issue();
+        var highPatientId = highState.CharacterIds.Issue();
+        highState.Characters.Add(highPatientId, CharacterTestFixtures.Minimal(
+            highPatientId, household: highHouseholdId, condition: new Condition(40, 10, 50, 50, 50)));
+        var highWanderer = WandererTestFixtures.AddWanderer(highState, WandererType.Physician, fame: 90);
+        HostWandererCommands.CreatePipeline(WandererTestFixtures.TypeCatalog)
+            .Execute(highState, Command(highState, highWanderer.Id, highHouseholdId, highPatientId));
+
+        lowState.Characters.TryGet(lowPatientId, out var lowPatient);
+        highState.Characters.TryGet(highPatientId, out var highPatient);
+        Assert.That(lowPatient!.Condition.Health, Is.LessThan(highPatient!.Condition.Health));
+    }
+
+    [Test]
     public void TheCommittingHouseholdMayHostTheSameWandererAgain()
     {
         var state = new WorldState(Now);
