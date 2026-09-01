@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.Numerics;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -42,11 +43,12 @@ public sealed class EpidemicContagionSystem : IMonthlySystem<WorldState>
     public TickPhase Phase => TickPhase.Hazards;
     public IReadOnlyCollection<string> Reads { get; } = new[]
     {
-        "settlements", "characters", "characterHealthConditions", "epidemicOutbreaks", "settlementSanitationInvestments",
+        "settlements", "characters", "characterHealthConditions", "epidemicOutbreaks", "settlementSanitationInvestments", "popGroups",
     };
     public IReadOnlyCollection<string> Writes { get; } = new[]
     {
         "characterHealthConditions", "characterHealthConditionIds", "epidemicOutbreaks", "epidemicOutbreakIds", "eventIds", "commandIds",
+        "popGroups",
     };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
@@ -57,7 +59,9 @@ public sealed class EpidemicContagionSystem : IMonthlySystem<WorldState>
 
         var events = new List<IDomainEvent>();
 
+        EmitAntoninePlagueChainMarkers(state, context, events);
         CloseOutbreaksWithNoRemainingCases(state, context, events);
+        ApplySettlementQuarantineContentmentCost(state, context);
 
         foreach (var settlementEntry in state.Settlements.InAscendingOrder())
         {
@@ -117,6 +121,51 @@ public sealed class EpidemicContagionSystem : IMonthlySystem<WorldState>
         }
     }
 
+    /// <summary>Item 5's real Antonine Plague Event Chain markers (<see cref="AntoninePlagueEra"/>'s own
+    /// doc comment): a single <see cref="AntoninePlagueOnsetEvent"/> the exact month <see
+    /// cref="AntoninePlagueEra.Start"/> arrives, and a single <see cref="AntoninePlagueWaningEvent"/> the
+    /// month after <see cref="AntoninePlagueEra.End"/> — each fires exactly once per campaign since
+    /// <see cref="WorldState.Date"/> only ever equals either boundary on one real tick.</summary>
+    private static void EmitAntoninePlagueChainMarkers(WorldState state, MonthlyTickContext context, List<IDomainEvent> events)
+    {
+        if (context.Date == AntoninePlagueEra.Start)
+            events.Add(new AntoninePlagueOnsetEvent(state.EventIds.Issue(), context.Date));
+        else if (context.Date == AntoninePlagueEra.End.NextMonth())
+            events.Add(new AntoninePlagueWaningEvent(state.EventIds.Issue(), context.Date));
+    }
+
+    /// <summary>§4.2's real Contentment cost, closing <see cref="SetSettlementQuarantineCommand"/>'s own
+    /// disclosed gap: every PopGroup at a settlement currently under an active <see
+    /// cref="HealthQueries.IsSettlementUnderQuarantine"/> Settlement-Wide Quarantine takes <see
+    /// cref="QuarantineEffectCalculator.ContentmentImpact"/>'s felt shock this month, the same
+    /// "same-month shock, not a persisted debuff" shape <c>Hazards.NaturalDisasterSystem</c>'s own
+    /// Contentment hit already established — <see cref="Characters.ContentmentSystem"/> recomputes from
+    /// its own formula next month regardless, so a settlement that lifts Quarantine simply stops taking
+    /// the hit rather than needing any decay/recovery mechanism here.</summary>
+    private static void ApplySettlementQuarantineContentmentCost(WorldState state, MonthlyTickContext context)
+    {
+        foreach (var settlementEntry in state.Settlements.InAscendingOrder())
+        {
+            var settlementId = settlementEntry.Key;
+            if (!HealthQueries.IsSettlementUnderQuarantine(state, settlementId))
+                continue;
+
+            foreach (var entry in state.PopGroups.InAscendingOrder().ToArray())
+            {
+                if (entry.Key.SettlementId != settlementId)
+                    continue;
+
+                var group = entry.Value;
+                var newContentment = group.Contentment + QuarantineEffectCalculator.ContentmentImpact;
+                if (newContentment < Fixed64.Zero)
+                    newContentment = Fixed64.Zero;
+
+                state.PopGroups.Remove(entry.Key);
+                state.PopGroups.Add(entry.Key, group with { Contentment = newContentment });
+            }
+        }
+    }
+
     private static EpidemicOutbreak? FindActiveOutbreak(
         WorldState state, RuntimeId<Settlement> settlementId, DefinitionId<HealthConditionDefinition> conditionId)
     {
@@ -135,7 +184,10 @@ public sealed class EpidemicContagionSystem : IMonthlySystem<WorldState>
         DefinitionId<HealthConditionDefinition> conditionId, double sanitationMultiplier,
         Character[] residents, List<IDomainEvent> events)
     {
-        var ignitionProbability = EpidemicSpreadCalculator.MonthlyIgnitionProbability(sanitationMultiplier);
+        var antoninePlagueElevated = conditionId == DiseaseCatalog.Pestilence && AntoninePlagueEra.IsActive(context.Date);
+        var ignitionProbability = antoninePlagueElevated
+            ? EpidemicSpreadCalculator.AntoninePlagueIgnitionProbability(sanitationMultiplier)
+            : EpidemicSpreadCalculator.MonthlyIgnitionProbability(sanitationMultiplier);
         var threshold = (uint)Math.Clamp(ignitionProbability * RollPrecision, 0, RollPrecision);
         var roll = context.RandomStreams.NextUInt(_streamName, RollPrecision);
         if (roll >= threshold)
@@ -151,7 +203,8 @@ public sealed class EpidemicContagionSystem : IMonthlySystem<WorldState>
             return;
 
         var outbreakId = state.EpidemicOutbreakIds.Issue();
-        state.EpidemicOutbreaks.Add(outbreakId, EpidemicOutbreak.Create(outbreakId, settlementId, conditionId, context.Date));
+        state.EpidemicOutbreaks.Add(
+            outbreakId, EpidemicOutbreak.Create(outbreakId, settlementId, conditionId, context.Date, antoninePlagueElevated));
         events.Add(new EpidemicOutbreakIgnitedEvent(state.EventIds.Issue(), context.Date, settlementId, outbreakId, conditionId));
 
         var command = new AfflictCharacterCommand(
@@ -285,6 +338,35 @@ public sealed record EpidemicOutbreakEndedEvent(
     public string Type => "health.epidemicOutbreakEnded";
     public int SchemaVersion => 1;
     public IReadOnlyList<string> SubjectIds => new[] { SettlementId.ToTaggedString() };
+    public Visibility Visibility => Visibility.Public;
+    public string? CausationId => null;
+}
+
+/// <summary>Emitted exactly once, the month <see cref="AntoninePlagueEra.Start"/> arrives — §9's own real
+/// Event Chain onset marker, Imperial in scope since it names no single settlement.</summary>
+public sealed record AntoninePlagueOnsetEvent(
+    RuntimeId<DomainEventEntity> EventId,
+    GameDate OccurredDate) : IDomainEvent
+{
+    public string Type => "health.antoninePlagueOnset";
+    public int SchemaVersion => 1;
+    public IReadOnlyList<string> SubjectIds => Array.Empty<string>();
+    public Visibility Visibility => Visibility.Public;
+    public string? CausationId => null;
+}
+
+/// <summary>Emitted exactly once, the month after <see cref="AntoninePlagueEra.End"/> — §9's own real
+/// Event Chain waning marker; no already-open outbreak is force-closed by this (an active case still
+/// resolves through its own real recovery/fatality roll), it only ends the Empire-wide ignition
+/// elevation and the <see cref="EpidemicOutbreak.ImperialScale"/> stamp for any newly-ignited Pestilence
+/// outbreak from this month on.</summary>
+public sealed record AntoninePlagueWaningEvent(
+    RuntimeId<DomainEventEntity> EventId,
+    GameDate OccurredDate) : IDomainEvent
+{
+    public string Type => "health.antoninePlagueWaning";
+    public int SchemaVersion => 1;
+    public IReadOnlyList<string> SubjectIds => Array.Empty<string>();
     public Visibility Visibility => Visibility.Public;
     public string? CausationId => null;
 }

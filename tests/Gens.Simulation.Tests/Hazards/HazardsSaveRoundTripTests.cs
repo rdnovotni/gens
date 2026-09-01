@@ -22,7 +22,8 @@ public sealed class HazardsSaveRoundTripTests
         var ordinaryEventId = state.DisasterEventIds.Issue();
         state.DisasterEvents.Add(ordinaryEventId, DisasterEvent.Create(
             ordinaryEventId, settlementId, new GameDate(15), HazardType.Fire, DisasterSeverity.Severe,
-            triggeredByCompounding: false, buildingsDamaged: 2, populationLost: 0, perennialCropSetback: false));
+            triggeredByCompounding: false, buildingsDamaged: 2, populationLost: 0, perennialCropSetback: false,
+            reliefFunded: true));
 
         var chainedFloodId = state.DisasterEventIds.Issue();
         state.DisasterEvents.Add(chainedFloodId, DisasterEvent.Create(
@@ -48,6 +49,9 @@ public sealed class HazardsSaveRoundTripTests
         {
             Assert.That(restored.DisasterEventIds.Peek, Is.EqualTo(state.DisasterEventIds.Peek));
             Assert.That(restored.DisasterEvents.Count, Is.EqualTo(3));
+
+            restored.DisasterEvents.TryGet(ordinaryEventId, out var restoredOrdinary);
+            Assert.That(restoredOrdinary.ReliefFunded, Is.True);
 
             restored.DisasterEvents.TryGet(catastrophicFrostId, out var restoredFrost);
             Assert.That(restoredFrost.Severity, Is.EqualTo(DisasterSeverity.Catastrophic));

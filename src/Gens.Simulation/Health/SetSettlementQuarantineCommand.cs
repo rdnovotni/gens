@@ -7,14 +7,14 @@ namespace Gens.Simulation.Health;
 
 /// <summary>§4.2 Settlement-Wide Quarantine — toggles <see
 /// cref="EpidemicOutbreak.SettlementQuarantineActive"/> on one standing outbreak. Only meaningful
-/// against an <see cref="EpidemicOutbreakStatus.Active"/> outbreak; §4.2's own "at a real Contentment
-/// and Commerce cost" is named but not mechanically charged here — Settlement Demographics'
-/// Contentment and Markets' Commerce are both real systems, but neither exposes a callable "apply a
-/// settlement-wide penalty for this reason" hook yet, so this item declares the toggle and its real
-/// spread-reduction effect (<see cref="QuarantineEffectCalculator.SettlementSpreadMultiplier"/>) and
-/// leaves the Contentment/Commerce cost as a disclosed gap for whichever future item wires hazards into
-/// those systems (Phase 14 item 5's own "goods, buildings, populations, markets" integration
-/// wave).</summary>
+/// against an <see cref="EpidemicOutbreakStatus.Active"/> outbreak. §4.2's own "at a real Contentment
+/// and Commerce cost" was item 2's own disclosed gap and is real as of Phase 14 item 5: <see
+/// cref="HealthQueries.IsSettlementUnderQuarantine"/> is the shared read both costs hang off —
+/// <see cref="EpidemicContagionSystem"/>'s own monthly felt Contentment shock (<see
+/// cref="QuarantineEffectCalculator.ContentmentImpact"/>) and <see
+/// cref="Markets.MarketClearingSystem"/>'s own supply-side Commerce multiplier (<see
+/// cref="QuarantineEffectCalculator.CommerceSupplyMultiplier"/>) — alongside the spread-reduction effect
+/// this item already delivered (<see cref="QuarantineEffectCalculator.SettlementSpreadMultiplier"/>).</summary>
 public sealed record SetSettlementQuarantineCommand(
     RuntimeId<Command> CommandId,
     string ActorId,

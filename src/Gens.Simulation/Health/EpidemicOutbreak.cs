@@ -14,11 +14,12 @@ namespace Gens.Simulation.Health;
 /// cref="SettlementQuarantineActive"/> is §4.2's settlement-wide Quarantine toggle, folded into this
 /// record rather than a separate partition since it is only ever meaningful against a specific standing
 /// outbreak. <see cref="ImperialScale"/> is §4.3's "quarantine is meaningfully less effective... during
-/// a genuine Empire-wide event" flag — an explicit, callerless hook exactly like item 1's own
-/// <c>AfflictCharacterCommand</c>: nothing in this item ever sets it true (the Antonine Plague's own
-/// Event Chain trigger is item 3/5's job per §9/§10), but <see
-/// cref="QuarantineEffectCalculator.SettlementSpreadMultiplier"/> already honors it once something
-/// does.</summary>
+/// a genuine Empire-wide event" flag — item 2 built it as an explicit, callerless hook exactly like
+/// item 1's own <c>AfflictCharacterCommand</c>, and item 5's <see cref="AntoninePlagueEra"/> is the real
+/// caller now: <see cref="EpidemicContagionSystem"/> stamps it true on any Pestilence outbreak it ignites
+/// while <see cref="AntoninePlagueEra.IsActive"/> holds, and <see
+/// cref="QuarantineEffectCalculator.SettlementSpreadMultiplier"/> honors it exactly as already
+/// written.</summary>
 public sealed record EpidemicOutbreak
 {
     public required RuntimeId<EpidemicOutbreak> Id { get; init; }
@@ -34,7 +35,8 @@ public sealed record EpidemicOutbreak
         RuntimeId<EpidemicOutbreak> id,
         RuntimeId<Settlement> settlementId,
         DefinitionId<HealthConditionDefinition> conditionId,
-        GameDate startDate) =>
+        GameDate startDate,
+        bool imperialScale = false) =>
         new()
         {
             Id = id,
@@ -42,5 +44,6 @@ public sealed record EpidemicOutbreak
             ConditionId = conditionId,
             StartDate = startDate,
             Status = EpidemicOutbreakStatus.Active,
+            ImperialScale = imperialScale,
         };
 }

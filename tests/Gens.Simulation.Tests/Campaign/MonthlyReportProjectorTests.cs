@@ -1,6 +1,8 @@
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Events;
+using Gens.Simulation.Hazards;
+using Gens.Simulation.Health;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Time;
@@ -10,6 +12,39 @@ namespace Gens.Simulation.Tests.Campaign;
 
 public sealed class MonthlyReportProjectorTests
 {
+    [Test]
+    public void ASevereOrCatastrophicDisasterEventReportsAsHighButAMinorOneReadsAsOrdinary()
+    {
+        var date = new GameDate(3);
+        var settlementId = new RuntimeIdCounter<Settlement>().Issue();
+        var disasterEventIds = new RuntimeIdCounter<DisasterEvent>();
+        var eventIds = new RuntimeIdCounter<DomainEventEntity>();
+
+        var catastrophic = new DisasterEventOccurredEvent(
+            eventIds.Issue(), date, settlementId, disasterEventIds.Issue(), HazardType.Fire, DisasterSeverity.Catastrophic, false);
+        var minor = new DisasterEventOccurredEvent(
+            eventIds.Issue(), date, settlementId, disasterEventIds.Issue(), HazardType.Fire, DisasterSeverity.Minor, false);
+
+        var report = MonthlyReportProjector.Project(date, new IDomainEvent[] { catastrophic, minor });
+
+        Assert.That(report.Entries[0].Importance, Is.EqualTo(ReportImportance.High));
+        Assert.That(report.Entries[1].Importance, Is.EqualTo(ReportImportance.Medium));
+    }
+
+    [Test]
+    public void AnEpidemicOutbreakIgnitionReportsAsHigh()
+    {
+        var date = new GameDate(3);
+        var settlementId = new RuntimeIdCounter<Settlement>().Issue();
+        var ignited = new EpidemicOutbreakIgnitedEvent(
+            new RuntimeIdCounter<DomainEventEntity>().Issue(), date, settlementId,
+            new RuntimeIdCounter<EpidemicOutbreak>().Issue(), DiseaseCatalog.Pestilence);
+
+        var report = MonthlyReportProjector.Project(date, new IDomainEvent[] { ignited });
+
+        Assert.That(report.Entries.Single().Importance, Is.EqualTo(ReportImportance.High));
+    }
+
     [Test]
     public void ProjectsEventEnvelopeFieldsIntoReportEntries()
     {

@@ -1,5 +1,6 @@
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Land;
 using Gens.Simulation.State;
 
 namespace Gens.Simulation.Health;
@@ -62,5 +63,26 @@ public static class HealthQueries
         foreach (var entry in state.CharacterHealthConditions.InAscendingOrder())
             if (entry.Value.CharacterId == characterId && entry.Value.Status == CharacterHealthConditionStatus.Active)
                 yield return entry.Value;
+    }
+
+    /// <summary>True while <paramref name="settlementId"/> has at least one <see
+    /// cref="EpidemicOutbreakStatus.Active"/> outbreak with <see
+    /// cref="EpidemicOutbreak.SettlementQuarantineActive"/> set — §4.2's real, cross-system read Phase 14
+    /// item 5 wires into <see cref="Markets.MarketClearingSystem"/>'s Commerce cost and <see
+    /// cref="EpidemicContagionSystem"/>'s own Contentment cost, closing the gap <see
+    /// cref="SetSettlementQuarantineCommand"/>'s own doc comment named.</summary>
+    public static bool IsSettlementUnderQuarantine(WorldState state, RuntimeId<Settlement> settlementId)
+    {
+        if (state is null)
+            throw new ArgumentNullException(nameof(state));
+
+        foreach (var entry in state.EpidemicOutbreaks.InAscendingOrder())
+        {
+            if (entry.Value.Status == EpidemicOutbreakStatus.Active &&
+                entry.Value.SettlementId == settlementId && entry.Value.SettlementQuarantineActive)
+                return true;
+        }
+
+        return false;
     }
 }

@@ -117,6 +117,54 @@ public sealed class NaturalDisasterSystemTests
         Assert.That(storedFlood.TriggeredByCompounding, Is.True);
     }
 
+    [Test]
+    public void AnElevatedExposureThatDoesNotIgniteStillEmitsAWarning()
+    {
+        // Two buildings sharing one Plot of capacity 1 (density = 2.0): Fire Exposure =
+        // Clamp(round(55 * 2.0)) = 100, well above the elevated-Exposure warning threshold, with no dry
+        // season/river/coast/hills terrain in play so every other hazard stays at its own low baseline.
+        var state = new WorldState(NonSeasonalDate);
+        var regionId = state.RegionIds.Issue();
+        var settlementId = state.SettlementIds.Issue();
+        state.Settlements.Add(settlementId, Settlement.Create(settlementId, regionId));
+        var plotId = state.PlotIds.Issue();
+        state.Plots.Add(plotId, Plot.Create(plotId, settlementId, TerrainType.FertilePlain, capacity: 1));
+
+        var buildingDefinition = new BuildingDefinition(new DefinitionId<Building>("test-building"), BuildingTier.Tier1, 1, 1);
+        var firstBuildingId = state.BuildingIds.Issue();
+        state.Buildings.Add(firstBuildingId, new BuildingInstance(firstBuildingId, plotId, buildingDefinition));
+        var secondBuildingId = state.BuildingIds.Issue();
+        state.Buildings.Add(secondBuildingId, new BuildingInstance(secondBuildingId, plotId, buildingDefinition));
+
+        const int fireExposure = 100;
+        const int earthquakeExposure = 12;
+        const int droughtFamineExposure = 14;
+        const int blightInfestationExposure = 18;
+        const int frostExposure = 16;
+        Assert.That(HazardWarningCalculator.IsElevated(fireExposure), Is.True);
+
+        var seed = FindSeedForSequentialDraws(
+            v => v >= Threshold(DisasterSeverityCalculator.MonthlyIgnitionProbability(fireExposure)), // Fire: do not ignite.
+            _ => true, // Flood: Exposure 0, never ignites regardless of the draw.
+            v => v >= Threshold(DisasterSeverityCalculator.MonthlyIgnitionProbability(earthquakeExposure)), // Earthquake: do not ignite.
+            v => v >= Threshold(DisasterSeverityCalculator.MonthlyIgnitionProbability(droughtFamineExposure)), // Drought/Famine: do not ignite.
+            _ => true, // Storm: Exposure 0, never ignites regardless of the draw.
+            _ => true, // Landslide: Exposure 0, never ignites regardless of the draw.
+            v => v >= Threshold(DisasterSeverityCalculator.MonthlyIgnitionProbability(blightInfestationExposure)), // Blight: do not ignite.
+            v => v >= Threshold(DisasterSeverityCalculator.MonthlyIgnitionProbability(frostExposure))); // Frost: do not ignite.
+
+        var streams = new RandomStreamSet();
+        streams.Add(StreamName, seed, 1);
+
+        var system = new NaturalDisasterSystem(StreamName);
+        var events = system.Tick(state, new MonthlyTickContext(NonSeasonalDate, streams));
+
+        Assert.That(events.OfType<DisasterEventOccurredEvent>(), Is.Empty);
+        var warning = events.OfType<HazardElevatedExposureWarningEvent>().Single(e => e.HazardType == HazardType.Fire);
+        Assert.That(warning.ExposureScore, Is.EqualTo(fireExposure));
+        Assert.That(warning.SettlementId, Is.EqualTo(settlementId));
+    }
+
     private static uint Threshold(double probability) =>
         (uint)Math.Clamp(probability * DisasterSeverityCalculator.RollPrecision, 0, DisasterSeverityCalculator.RollPrecision);
 

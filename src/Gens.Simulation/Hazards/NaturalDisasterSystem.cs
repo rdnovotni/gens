@@ -32,7 +32,15 @@ namespace Gens.Simulation.Hazards;
 /// own deferred territory); Religion's Omen skew (§6.1) and any other cross-system wiring beyond what
 /// this item's own construction-order line names — Phase 14 item 5's own "goods, buildings, populations
 /// ... events" integration wave, not this item's; and Volcanic Eruption's own real trigger (§2.2), which
-/// stays the callerless hook <see cref="DesignateDormantVolcanoCommand"/> already established.</para></summary>
+/// stays the callerless hook <see cref="DesignateDormantVolcanoCommand"/> already established.</para>
+///
+/// <para>Item 5's own real "warnings where appropriate" (this Phase's own exit-gate language): a settlement
+/// whose <see cref="HazardWarningCalculator.IsElevated"/> Exposure did not actually ignite this month still
+/// gets a <see cref="HazardElevatedExposureWarningEvent"/> — the live <see
+/// cref="HazardExposureProfile.ExposureFor"/> reading <see cref="HazardQueries"/>'s own doc comment already
+/// named as its "forecast/knowledge" realization, now surfaced as a real domain event that <see
+/// cref="Campaign.MonthlyReportProjector"/>'s existing generic event-projection already carries into the
+/// Monthly Report with no further wiring needed.</para></summary>
 public sealed class NaturalDisasterSystem : IMonthlySystem<WorldState>
 {
     /// <summary>The eight standing hazards this system rolls every month, in the same top-to-bottom
@@ -89,7 +97,11 @@ public sealed class NaturalDisasterSystem : IMonthlySystem<WorldState>
                 var ignitionThreshold = (uint)Math.Clamp(ignitionProbability * RollPrecision, 0, RollPrecision);
                 var ignitionRoll = context.RandomStreams.NextUInt(_streamName, RollPrecision);
                 if (ignitionRoll >= ignitionThreshold)
+                {
+                    if (HazardWarningCalculator.IsElevated(exposure))
+                        events.Add(new HazardElevatedExposureWarningEvent(state.EventIds.Issue(), context.Date, settlementId, hazardType, exposure));
                     continue;
+                }
 
                 var severityRoll = context.RandomStreams.NextUInt(_streamName, RollPrecision);
                 var severity = DisasterSeverityCalculator.RollSeverity(exposure, severityRoll);
@@ -257,6 +269,24 @@ public sealed record DisasterEventOccurredEvent(
     bool TriggeredByCompounding) : IDomainEvent
 {
     public string Type => "hazards.disasterEventOccurred";
+    public int SchemaVersion => 1;
+    public IReadOnlyList<string> SubjectIds => new[] { SettlementId.ToTaggedString() };
+    public Visibility Visibility => Visibility.Public;
+    public string? CausationId => null;
+}
+
+/// <summary>Emitted whenever <see cref="NaturalDisasterSystem"/> finds a settlement's live Exposure for
+/// one hazard <see cref="HazardWarningCalculator.IsElevated"/> in a month no Event actually fired for
+/// that hazard — a real, felt "the signs point this way" warning, distinct from the Event that would
+/// follow if the risk actually lands.</summary>
+public sealed record HazardElevatedExposureWarningEvent(
+    RuntimeId<DomainEventEntity> EventId,
+    GameDate OccurredDate,
+    RuntimeId<Settlement> SettlementId,
+    HazardType HazardType,
+    int ExposureScore) : IDomainEvent
+{
+    public string Type => "hazards.elevatedExposureWarning";
     public int SchemaVersion => 1;
     public IReadOnlyList<string> SubjectIds => new[] { SettlementId.ToTaggedString() };
     public Visibility Visibility => Visibility.Public;
