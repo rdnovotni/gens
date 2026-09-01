@@ -68,8 +68,24 @@ public sealed class CharacterHealthConditionSystem : IMonthlySystem<WorldState>
             if (!state.CharacterHealthConditions.TryGet(condition.Id, out var current) ||
                 current.Status != CharacterHealthConditionStatus.Active)
                 continue;
-            if (!state.Characters.TryGet(current.CharacterId, out var character) || !character.IsAlive)
+            if (!state.Characters.TryGet(current.CharacterId, out var character))
                 continue;
+
+            // The owning Character may already be dead — from a different condition of theirs
+            // processed earlier this same tick, or any other cause — leaving this case orphaned. Resolve
+            // it here rather than leaving it Active forever: an Active case on a dead Character would
+            // otherwise keep surfacing in HealthQueries.ActiveConditionsFor and keep consuming the
+            // (now-irrelevant) Household's treatment capacity on every future tick.
+            if (!character.IsAlive)
+            {
+                state.CharacterHealthConditions.Remove(current.Id);
+                state.CharacterHealthConditions.Add(current.Id, current with
+                {
+                    Status = CharacterHealthConditionStatus.Fatal,
+                    ResolvedDate = context.Date,
+                });
+                continue;
+            }
 
             var treated = treatedIds.Contains(current.Id);
 

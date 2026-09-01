@@ -121,6 +121,40 @@ public sealed class CharacterHealthConditionSystemTests
     }
 
     [Test]
+    public void ASecondConditionOnTheSameCharacterIsResolvedRatherThanLeftActiveWhenTheFirstKillsThem()
+    {
+        var state = new WorldState(new GameDate(10));
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(
+            characterId, condition: new Condition(5, 0, 50, 20, 50)));
+        // Issued first, so processed first (ascending onset order) — this is the one whose fatal roll
+        // actually kills the Character.
+        var fatalCaseId = AddCondition(state, characterId, HealthConditionCategory.Acute, hasCure: false, severity: 100);
+        // Issued second, so processed after the Character is already dead — this is the orphaned case
+        // the fix resolves instead of leaving Active forever.
+        var orphanedCaseId = AddCondition(state, characterId, HealthConditionCategory.Chronic, hasCure: true, severity: 10);
+
+        var drain = HealthConditionProgressionCalculator.MonthlyHealthDrain(HealthConditionCategory.Acute, 100, treated: false);
+        var newHealth = Math.Max(1, 5 - drain);
+        var recoveryThreshold = Threshold(HealthConditionProgressionCalculator.MonthlyRecoveryProbability(
+            HealthConditionCategory.Acute, hasCure: false, treated: false));
+        var fatalityThreshold = Threshold(HealthConditionProgressionCalculator.MonthlyFatalityProbability(
+            HealthConditionCategory.Acute, 100, newHealth, treated: false));
+        var streams = StreamsWithDraws(v => v >= recoveryThreshold, v => v < fatalityThreshold);
+
+        var system = new CharacterHealthConditionSystem(ProgressionStreamName);
+        system.Tick(state, new MonthlyTickContext(new GameDate(10), streams));
+
+        state.CharacterHealthConditions.TryGet(fatalCaseId, out var fatalCase);
+        state.CharacterHealthConditions.TryGet(orphanedCaseId, out var orphanedCase);
+
+        Assert.That(fatalCase.Status, Is.EqualTo(CharacterHealthConditionStatus.Fatal));
+        Assert.That(orphanedCase.Status, Is.Not.EqualTo(CharacterHealthConditionStatus.Active));
+        Assert.That(orphanedCase.ResolvedDate, Is.EqualTo(new GameDate(10)));
+        Assert.That(HealthQueries.HasActiveCondition(state, characterId, orphanedCase.ConditionId), Is.False);
+    }
+
+    [Test]
     public void TreatmentGoesToTheEarliestOnsetCaseWhenHouseholdCapacityIsLimited()
     {
         var state = new WorldState(new GameDate(10));

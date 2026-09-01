@@ -12,6 +12,11 @@ public sealed class AfflictCharacterCommandTests
 {
     private static readonly DefinitionId<HealthConditionDefinition> TestFever = new("test-fever");
 
+    private static readonly HealthConditionCatalog Catalog = new(new[]
+    {
+        new HealthConditionDefinition(TestFever, "Test Fever", HealthConditionCategory.Acute, hasCure: false),
+    });
+
     [Test]
     public void ValidAfflictionIsRecordedAndEmitsAnEvent()
     {
@@ -20,18 +25,36 @@ public sealed class AfflictCharacterCommandTests
         state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
 
         var command = new AfflictCharacterCommand(
-            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId,
-            TestFever, HealthConditionCategory.Acute, false, 40);
-        var result = AfflictCharacterCommands.Pipeline.Execute(state, command);
+            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId, TestFever, 40);
+        var result = AfflictCharacterCommands.BuildPipeline(Catalog).Execute(state, command);
 
         Assert.That(result.Accepted, Is.True);
         var applied = (CharacterAfflictedEvent)result.Events.Single();
         Assert.That(applied.Severity, Is.EqualTo(40));
+        Assert.That(applied.Category, Is.EqualTo(HealthConditionCategory.Acute));
 
         var condition = state.CharacterHealthConditions.InAscendingOrder().Single().Value;
         Assert.That(condition.CharacterId, Is.EqualTo(characterId));
         Assert.That(condition.ConditionId, Is.EqualTo(TestFever));
+        Assert.That(condition.Category, Is.EqualTo(HealthConditionCategory.Acute));
+        Assert.That(condition.HasCure, Is.False);
         Assert.That(condition.Status, Is.EqualTo(CharacterHealthConditionStatus.Active));
+    }
+
+    [Test]
+    public void ValidationRejectsAnUnknownCondition()
+    {
+        var state = new WorldState(new GameDate(10));
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
+
+        var command = new AfflictCharacterCommand(
+            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId,
+            new DefinitionId<HealthConditionDefinition>("unregistered"), 40);
+        var result = AfflictCharacterCommands.BuildPipeline(Catalog).Execute(state, command);
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(AfflictCharacterCommands.UnknownCondition));
     }
 
     [Test]
@@ -41,8 +64,8 @@ public sealed class AfflictCharacterCommandTests
 
         var command = new AfflictCharacterCommand(
             state.CommandIds.Issue(), "player", new GameDate(10), null,
-            new RuntimeIdCounter<Character>().Issue(), TestFever, HealthConditionCategory.Acute, false, 40);
-        var result = AfflictCharacterCommands.Pipeline.Execute(state, command);
+            new RuntimeIdCounter<Character>().Issue(), TestFever, 40);
+        var result = AfflictCharacterCommands.BuildPipeline(Catalog).Execute(state, command);
 
         Assert.That(result.Accepted, Is.False);
         Assert.That(result.Error, Is.EqualTo(AfflictCharacterCommands.CharacterNotFound));
@@ -57,9 +80,8 @@ public sealed class AfflictCharacterCommandTests
             characterId, deathRecord: new DeathRecord(new GameDate(5), DeathCause.OldAge, 70)));
 
         var command = new AfflictCharacterCommand(
-            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId,
-            TestFever, HealthConditionCategory.Acute, false, 40);
-        var result = AfflictCharacterCommands.Pipeline.Execute(state, command);
+            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId, TestFever, 40);
+        var result = AfflictCharacterCommands.BuildPipeline(Catalog).Execute(state, command);
 
         Assert.That(result.Accepted, Is.False);
         Assert.That(result.Error, Is.EqualTo(AfflictCharacterCommands.CharacterDeceased));
@@ -74,9 +96,8 @@ public sealed class AfflictCharacterCommandTests
         state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
 
         var command = new AfflictCharacterCommand(
-            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId,
-            TestFever, HealthConditionCategory.Acute, false, severity);
-        var result = AfflictCharacterCommands.Pipeline.Execute(state, command);
+            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId, TestFever, severity);
+        var result = AfflictCharacterCommands.BuildPipeline(Catalog).Execute(state, command);
 
         Assert.That(result.Accepted, Is.False);
         Assert.That(result.Error, Is.EqualTo(AfflictCharacterCommands.InvalidSeverity));
@@ -88,13 +109,12 @@ public sealed class AfflictCharacterCommandTests
         var state = new WorldState(new GameDate(10));
         var characterId = state.CharacterIds.Issue();
         state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
-        AfflictCharacterCommands.Pipeline.Execute(state, new AfflictCharacterCommand(
-            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId,
-            TestFever, HealthConditionCategory.Acute, false, 40));
+        var pipeline = AfflictCharacterCommands.BuildPipeline(Catalog);
+        pipeline.Execute(state, new AfflictCharacterCommand(
+            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId, TestFever, 40));
 
-        var result = AfflictCharacterCommands.Pipeline.Execute(state, new AfflictCharacterCommand(
-            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId,
-            TestFever, HealthConditionCategory.Acute, false, 60));
+        var result = pipeline.Execute(state, new AfflictCharacterCommand(
+            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId, TestFever, 60));
 
         Assert.That(result.Accepted, Is.False);
         Assert.That(result.Error, Is.EqualTo(AfflictCharacterCommands.AlreadyActive));
@@ -121,9 +141,8 @@ public sealed class AfflictCharacterCommandTests
             ResolvedDate = new GameDate(3),
         });
 
-        var result = AfflictCharacterCommands.Pipeline.Execute(state, new AfflictCharacterCommand(
-            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId,
-            TestFever, HealthConditionCategory.Acute, false, 40));
+        var result = AfflictCharacterCommands.BuildPipeline(Catalog).Execute(state, new AfflictCharacterCommand(
+            state.CommandIds.Issue(), "player", new GameDate(10), null, characterId, TestFever, 40));
 
         Assert.That(result.Accepted, Is.False);
         Assert.That(result.Error, Is.EqualTo(AfflictCharacterCommands.CharacterImmune));
