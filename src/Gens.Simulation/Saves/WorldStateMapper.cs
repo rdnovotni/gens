@@ -26,6 +26,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
+using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Policies;
 using Gens.Simulation.RealEstate;
@@ -273,6 +274,12 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ActioProSocioLinks = state.ActioProSocioLinks.InAscendingOrder()
                 .Select(entry => ToActioProSocioLinkDto(entry.Value)).ToArray(),
+            // Already ascending (owner tag) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            MerchantHouseArchetypes = state.MerchantHouseArchetypes.InAscendingOrder()
+                .Select(entry => ToMerchantHouseArchetypeDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            SenateEntryInvestmentLogs = state.SenateEntryInvestmentLogs.InAscendingOrder()
+                .Select(entry => ToSenateEntryInvestmentLogDto(entry.Value)).ToArray(),
         };
     }
 
@@ -818,6 +825,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<LegalCase>, ActioProSocioLink>(link.CaseId, link);
             }));
 
+        var merchantHouseArchetypes = OrderedRegistry<string, MerchantHouseArchetype>.Restore(
+            dto.MerchantHouseArchetypes.Select(m =>
+            {
+                var archetype = FromMerchantHouseArchetypeDto(m);
+                return new KeyValuePair<string, MerchantHouseArchetype>(archetype.Owner.ToTaggedOwnerId(), archetype);
+            }));
+
+        var senateEntryInvestmentLogs = OrderedRegistry<RuntimeId<Household>, SenateEntryInvestmentLog>.Restore(
+            dto.SenateEntryInvestmentLogs.Select(l =>
+            {
+                var log = FromSenateEntryInvestmentLogDto(l);
+                return new KeyValuePair<RuntimeId<Household>, SenateEntryInvestmentLog>(log.HouseholdId, log);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -951,6 +972,8 @@ public static class WorldStateMapper
             plotPropertyExtensions: plotPropertyExtensions,
             societates: societates,
             actioProSocioLinks: actioProSocioLinks,
+            merchantHouseArchetypes: merchantHouseArchetypes,
+            senateEntryInvestmentLogs: senateEntryInvestmentLogs,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1505,6 +1528,41 @@ public static class WorldStateMapper
         RuntimeId<LegalCase>.Parse(dto.CaseId),
         RuntimeId<Societas>.Parse(dto.SocietasId),
         Enum.Parse<PartnerDisputeType>(dto.DisputeType));
+
+    private static MerchantHouseArchetypeDto ToMerchantHouseArchetypeDto(MerchantHouseArchetype archetype) => new()
+    {
+        OwnerKind = archetype.Owner.Kind.ToString(),
+        OwnerId = archetype.Owner.OwnerId,
+        MerchantType = archetype.MerchantType.ToString(),
+        WholesaleOrRetailTier = archetype.WholesaleOrRetailTier.ToString(),
+    };
+
+    private static MerchantHouseArchetype FromMerchantHouseArchetypeDto(MerchantHouseArchetypeDto dto) => new(
+        new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.OwnerKind), dto.OwnerId),
+        Enum.Parse<MerchantHouseType>(dto.MerchantType),
+        Enum.Parse<TradeScaleTier>(dto.WholesaleOrRetailTier));
+
+    private static DignitasInvestmentActionDto ToDignitasInvestmentActionDto(DignitasInvestmentAction action) => new()
+    {
+        ActionType = action.ActionType.ToString(),
+        DignitasEffect = action.DignitasEffect,
+        DateTotalMonths = action.Date.TotalMonths,
+    };
+
+    private static DignitasInvestmentAction FromDignitasInvestmentActionDto(DignitasInvestmentActionDto dto) => new(
+        Enum.Parse<DignitasInvestmentActionType>(dto.ActionType),
+        dto.DignitasEffect,
+        new GameDate(dto.DateTotalMonths));
+
+    private static SenateEntryInvestmentLogDto ToSenateEntryInvestmentLogDto(SenateEntryInvestmentLog log) => new()
+    {
+        HouseholdId = log.HouseholdId.ToTaggedString(),
+        Actions = log.Actions.Select(ToDignitasInvestmentActionDto).ToArray(),
+    };
+
+    private static SenateEntryInvestmentLog FromSenateEntryInvestmentLogDto(SenateEntryInvestmentLogDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.Actions.Select(FromDignitasInvestmentActionDto).ToArray());
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

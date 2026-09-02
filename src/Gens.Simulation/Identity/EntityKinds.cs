@@ -268,6 +268,10 @@ internal static class RuntimeIdTagRegistry
         // by RuntimeId<LegalCase> (the already-issued case ID), not by its own RuntimeId, matching
         // DynasticEpithet's identical exemption above.
         [typeof(Societas)] = "societas",
+        // Phase 15 item 3 needs no entry at all: Gens.Simulation.MerchantFamilies.MerchantHouseArchetype
+        // is keyed by a plain owner-tag string (the same exemption FiredHistoricalTimelineEntryIds
+        // already has above), and Gens.Simulation.MerchantFamilies.SenateEntryInvestmentLog is keyed by
+        // the already-registered RuntimeId<Household>, not by a RuntimeId of its own.
     };
 
     public static string Resolve(Type type) =>

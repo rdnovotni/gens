@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 2 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 3 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -2613,6 +2613,100 @@ the Ambition-based dispute-risk query, and a save/load round trip with the deter
 staying stable across every new partition. `dotnet build`/`dotnet test`/`dotnet format --verify-no-
 changes` all pass (1503/1503 tests, `dotnet run --project tools/Gens.ContentCompiler -- validate content`
 unaffected since this item adds no new content).
+
+**Item 3 progress:** Merchant Families &amp; the Equestrian Order lands as a new domain,
+`src/Gens.Simulation/MerchantFamilies/` (`gens-merchant-families-design.md`), the social and political
+layer this document's own §1 explicitly places above item 1's land market and item 2's Societates
+partnerships without touching either mechanic itself — "this document doesn't touch trade mechanics
+themselves... what this document adds is the social and political layer sitting above all of that."
+
+§2's Equestrian Order lands as `EquestrianStatus`/`EquestrianStatusQuery` — deliberately **computed, not
+stored**, per §10's own explicit open question ("this document treats it as computed rather than
+separately stored"): every one of §9's four data-model fields (`qualifiesByNetWorth`,
+`holdsAngusticlavus`, `eligibleForEquestrianOffices`, `publicaniEligible`) reads directly off the same
+Net Worth comparison, since §2 names no further distinguishing criterion for any of the four privileges
+beyond clearing the identical wealth gate — the same "not a redundant always-same field" judgment call
+item 2's own `SocietasPartner` doc comment already made for unlimited liability, applied here to four
+fields collapsing to one underlying read instead of one field being omitted outright. The query reads a
+`PropertyOwnerRef.PlayerHousehold`'s own `Economy.NetWorth.Total` or a Noteworthy-tier
+`PropertyOwnerRef.RivalGens`'s own `Actors.LivingWorldActorNetWorth.Figure` — honestly declining to
+qualify a Background-tier Rival House (no exact figure exists for one, only a coarse
+`HouseholdWealthBand`, per that record's own doc comment) or any other owner kind (no tracked Net Worth
+exists for an Individual Character, Temple, Collegium, etc. anywhere in this codebase), the same "only
+some owner kinds resolve against a real, checkable figure" narrowing item 2's own
+`PartnerSkimmingRiskSystem` already established. §2's Publicani eligibility is read the identical way
+rather than gated against a real Publicanus Contract, since none exists anywhere in this codebase (Land
+Ownership &amp; Real Estate §8, confirmed unbuilt by direct search, the same gap item 1 and item 2 both
+already named).
+
+§4's five real merchant archetypes and §3's Cicero wholesale/retail distinction land as
+`MerchantHouseType` and `TradeScaleTier`; §7/§9's `MerchantHouseArchetype` itself — "a formal Merchant
+House archetype for Rival Houses' own Background/Notable framework" — reuses item 1's own
+`PropertyOwnerRef` directly rather than a narrower reference type, since §7's own text and §8's own
+cross-integration (Policies &amp; Edicts' player-facing Domus Mercatoria Household Doctrine, itself
+keyed by `RuntimeId<Household>`, per `Doctrine.HouseholdDoctrineType`) together name both a Rival House's
+own `Actors.LivingWorldActor` and the player's own household as real targets, not Rival Houses alone —
+the identical `PropertyOwnerRef` reuse item 2's own `Societas.Partners` already established for "any
+owner kind this codebase already has a tagged reference for." `DesignateMerchantHouseCommand` restricts
+that owner to exactly those two kinds (`PropertyOwnerKind.PlayerHousehold`/`RivalGens`), rejecting an
+unresolvable Rival House actor outright. §9's own `wealthVolatilityTier: "high"` sketch field is
+deliberately **not** a field on `MerchantHouseArchetype` at all — §7's own text names it as the fixed,
+defining trait of every Merchant House, with no further per-instance variation described anywhere in the
+document, so this item documents it as a fact of what the record *means* rather than repeat an
+always-`"high"` string on every instance, the same omission judgment item 2 already made for
+`SocietasPartner`'s own unlimited liability. §7's own "exact mechanical trigger for a merchant house's
+own sudden collapse" (§10's own open question) is left genuinely open — this item names the three real
+existing systems that volatility already lives in (Piracy &amp; Banditry, Insolvency, a failed Societas)
+but builds no combined probability model across them, since none is specified.
+
+§6's merchant-specific *novus homo* path lands as `SenateEntryProgressQuery` and
+`RecordDignitasInvestmentActionCommand`: the Net Worth and Dignitas gates themselves are computed live
+off `Economy.NetWorth` and `Reputation.DignitasResolver` (the identical "computed, not stored" reasoning
+extended from §2 to §6's own two gates, so neither can ever go stale relative to the figures they
+actually gate on), while §6's three named investment moves (funding Games &amp; Spectacle or a Public
+Works Funded Action, a strategic marriage, holding a local magistracy) land as a real, persisted,
+append-only `SenateEntryInvestmentLog` — the one genuinely stateful part of §9's `SenateEntryProgress`
+sketch, since no live computation could reconstruct a household's own investment history after the fact.
+`RecordDignitasInvestmentActionCommand` applies each move's real Dignitas award through the existing
+`AdjustDignitasCommand`'s own established path (`DignitasResolver.Apply`, rule 2's "one command path")
+rather than a parallel Dignitas-adjustment mechanism, and does not itself re-validate that the underlying
+Games funding, marriage, or magistracy actually happened first — those are each a real, separate command
+elsewhere in this codebase, the identical "reveal/record, don't re-validate the upstream trigger" scoping
+item 1's own `TransferPropertyCommand` already gives a `ForcedSale`'s own upstream legal trigger. This
+piece is deliberately narrowed to the player's own household only, matching `Reputation.
+HouseholdReputation`'s own precedent exactly: a Rival House's Dignitas lives on `Actors.
+LivingWorldActor.Dignitas` instead, and no command anywhere in this codebase adjusts that field directly
+(only `RivalHouseCreationService`'s own creation-time seed and `BackgroundHouseDriftSystem`'s own
+periodic drift ever write it) — building a second, parallel Dignitas-adjustment path for a Rival House's
+own *novus homo* story is a real, named scope cut rather than an oversight.
+
+Every new partition (`MerchantHouseArchetypes`, sparse and keyed by a `PropertyOwnerRef`'s own tagged
+owner string per `FiredHistoricalTimelineEntryIds`' identical "key by a tag this `OrderedRegistry` can
+order on" convention; `SenateEntryInvestmentLogs`, sparse and keyed by the already-registered
+`RuntimeId<Household>`) needs no new `RuntimeIdCounter` or `EntityKinds` tag entry at all — both key
+types are already registered elsewhere in this codebase — and is wired into `WorldState`, `Saves.
+WorldSaveDto`/`WorldStateMapper`, and `State.StateHasher` for full save/load and deterministic-hash
+coverage, additive-only (ADR 0011) exactly like item 1 and item 2's own new partitions. **Explicitly not
+built, after real investigation rather than assumption:** §2's reserved public seating and the
+angusticlavus's own Villa/Games display are real, concrete cross-integration points this document names,
+but Games &amp; Spectacle and Villa's own display layers are outside this item's own domain-layer scope
+(this item builds the underlying `EquestrianStatus` those UI layers would read, not the UI layers
+themselves); §5's Familia sex-based-restriction interaction with §6's Senate path, §2's multiple-
+simultaneous-equestrian-offices question, and §7's own collapse-trigger probability model are all §10's
+own explicitly named open questions, left open here rather than guessed at. Covered in
+`tests/Gens.Simulation.Tests/MerchantFamilies/MerchantFamiliesTests.cs` (15 tests): §2's Equestrian
+Order query for a qualifying and a non-qualifying player household, a household with no Net Worth
+assessment at all, a Noteworthy Rival Gens' own tracked Net Worth figure (both qualifying and not), a
+Background-tier Rival House's own honest non-qualification, and an owner kind with no tracked Net Worth
+at all; §4/§7's Merchant House designation for a player household and a Noteworthy Rival Gens, the
+unresolvable-Rival-House and invalid-owner-kind rejections, and re-designation replacing an existing
+archetype; §6's Senate entry gates reacting live to Net Worth and Dignitas independently, the two
+Dignitas-investment-action commands' real Dignitas award and log append (with the unrecognized-action-
+type rejection); and a save/load round trip with the deterministic state hash staying stable across both
+new partitions. `dotnet build`/`dotnet test`/`dotnet format --verify-no-changes` all pass (1526/1526
+tests: 1518/1518 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`), and `dotnet run
+--project tools/Gens.ContentCompiler -- validate content` is unaffected since this item adds no new
+content.
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 
