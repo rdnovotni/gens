@@ -1,4 +1,5 @@
 using Gens.Simulation.Commands;
+using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Scandal;
@@ -68,6 +69,7 @@ public static class FormCartelCommands
     public static readonly ValidationErrorCode DuplicateParticipant = new("businessCompetition.formCartel.duplicateParticipant");
     public static readonly ValidationErrorCode ParticipantNotFound = new("businessCompetition.formCartel.participantNotFound");
     public static readonly ValidationErrorCode ParticipantNotTracked = new("businessCompetition.formCartel.participantNotTracked");
+    public static readonly ValidationErrorCode NotSameTrade = new("businessCompetition.formCartel.notSameTrade");
 
     public static readonly CommandPipeline<WorldState, FormCartelCommand> Pipeline = new(
         validate: Validate, mutate: Mutate, issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
@@ -79,12 +81,21 @@ public static class FormCartelCommands
         if (command.ParticipantBusinessIds.Distinct().Count() != command.ParticipantBusinessIds.Count)
             return DuplicateParticipant;
 
+        // §4's own "two or more Notable Businesses in the same trade" — unlike Collegium membership,
+        // which that same sentence names as only "often but not always" true, sharing a trade is a real
+        // precondition: both PriceFixing and MarketSharingByDistrict are meaningless across unrelated goods.
+        DefinitionId<Good>? sharedGoodId = null;
         foreach (var businessId in command.ParticipantBusinessIds)
         {
             if (!state.NotableBusinesses.TryGet(businessId, out var business))
                 return ParticipantNotFound;
             if (business!.Status != NotableBusinessStatus.Tracked)
                 return ParticipantNotTracked;
+            if (business.OutputGoodId is null)
+                return NotSameTrade;
+            sharedGoodId ??= business.OutputGoodId;
+            if (business.OutputGoodId != sharedGoodId)
+                return NotSameTrade;
         }
 
         return null;

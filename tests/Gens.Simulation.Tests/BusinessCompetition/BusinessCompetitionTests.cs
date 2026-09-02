@@ -87,8 +87,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "Aggressor");
         var (ownerB, _) = HouseholdWithHead(state, "Target");
-        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         MakeMainCompetitors(state, a, b);
 
         var first = EscalateCompetitiveRungCommands.Pipeline.Execute(
@@ -135,8 +136,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "Aggressor");
         var (ownerB, _) = HouseholdWithHead(state, "Target");
-        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         MakeMainCompetitors(state, a, b);
         EscalateCompetitiveRungCommands.Pipeline.Execute(state, new EscalateCompetitiveRungCommand(state.CommandIds.Issue(), "player", new GameDate(3), null, a, b));
         EscalateCompetitiveRungCommands.Pipeline.Execute(state, new EscalateCompetitiveRungCommand(state.CommandIds.Issue(), "player", new GameDate(4), null, a, b));
@@ -183,8 +185,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "Aggressor");
         var (ownerB, headB) = HouseholdWithHead(state, "Target");
-        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         MakeMainCompetitors(state, a, b);
         EscalateCompetitiveRungCommands.Pipeline.Execute(state, new EscalateCompetitiveRungCommand(state.CommandIds.Issue(), "player", new GameDate(3), null, a, b));
         EscalateCompetitiveRungCommands.Pipeline.Execute(state, new EscalateCompetitiveRungCommand(state.CommandIds.Issue(), "player", new GameDate(4), null, a, b));
@@ -203,8 +206,9 @@ public sealed class BusinessCompetitionTests
         var (state, settlementId, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "Aggressor");
         var (ownerB, _) = HouseholdWithHead(state, "Target");
-        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         MakeMainCompetitors(state, a, b);
         EscalateCompetitiveRungCommands.Pipeline.Execute(state, new EscalateCompetitiveRungCommand(state.CommandIds.Issue(), "player", new GameDate(3), null, a, b));
         EscalateCompetitiveRungCommands.Pipeline.Execute(state, new EscalateCompetitiveRungCommand(state.CommandIds.Issue(), "player", new GameDate(4), null, a, b));
@@ -239,12 +243,13 @@ public sealed class BusinessCompetitionTests
             PropertyRecord.Create(
                 propertyRecordId, PropertyAssetType.NamedHolding, "Gaius' Bakery Holding",
                 PropertyOwnerRef.ForPlayerHousehold(ownerB), Money.FromDenarii(500), settlementId, districtId));
-        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
         var result = PromoteNotableBusinessCommands.Pipeline.Execute(
             state, new PromoteNotableBusinessCommand(
                 state.CommandIds.Issue(), "player", new GameDate(1), null, "Bakery of Gaius",
                 PropertyOwnerRef.ForPlayerHousehold(ownerB), NotableBusinessTrigger.DirectPlayerTransaction,
-                OutputGoodId: null, LinkedPropertyRecordId: propertyRecordId, DistrictId: districtId));
+                OutputGoodId: breadId, LinkedPropertyRecordId: propertyRecordId, DistrictId: districtId));
         var b = ((NotableBusinessPromotedEvent)result.Events[0]).BusinessId;
         MakeMainCompetitors(state, a, b);
         EscalateCompetitiveRungCommands.Pipeline.Execute(state, new EscalateCompetitiveRungCommand(state.CommandIds.Issue(), "player", new GameDate(3), null, a, b));
@@ -279,8 +284,9 @@ public sealed class BusinessCompetitionTests
         CollegiumMembershipCommands.JoinPipeline.Execute(state, new JoinCollegiumCommand(state.CommandIds.Issue(), "player", new GameDate(0), null, collegiumId, ownerA));
         CollegiumMembershipCommands.JoinPipeline.Execute(state, new JoinCollegiumCommand(state.CommandIds.Issue(), "player", new GameDate(0), null, collegiumId, ownerB));
 
-        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         MakeMainCompetitors(state, a, b);
         var dignitasBefore = DignitasResolver.Current(state, ownerA);
 
@@ -305,8 +311,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "Aggressor");
         var (ownerB, _) = HouseholdWithHead(state, "Target");
-        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of Marcus", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of Gaius", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         MakeMainCompetitors(state, a, b);
         var dignitasBefore = DignitasResolver.Current(state, ownerA);
 
@@ -351,8 +358,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "A");
         var (ownerB, _) = HouseholdWithHead(state, "B");
-        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
 
         var result = FormCartelCommands.Pipeline.Execute(
             state, new FormCartelCommand(state.CommandIds.Issue(), "player", new GameDate(2), null, new[] { a, b }, CartelAgreementType.PriceFixing));
@@ -373,8 +381,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "Greedy", greedy: true);
         var (ownerB, _) = HouseholdWithHead(state, "Honest");
-        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         MakeMainCompetitors(state, a, b);
         var formResult = FormCartelCommands.Pipeline.Execute(
             state, new FormCartelCommand(state.CommandIds.Issue(), "player", new GameDate(2), null, new[] { a, b }, CartelAgreementType.PriceFixing));
@@ -398,8 +407,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, _) = HouseholdWithHead(state, "Honest1", ambition: 10);
         var (ownerB, _) = HouseholdWithHead(state, "Honest2", ambition: 10);
-        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         var formResult = FormCartelCommands.Pipeline.Execute(
             state, new FormCartelCommand(state.CommandIds.Issue(), "player", new GameDate(2), null, new[] { a, b }, CartelAgreementType.PriceFixing));
         var cartelId = ((CartelFormedEvent)formResult.Events[0]).CartelId;
@@ -416,8 +426,9 @@ public sealed class BusinessCompetitionTests
         var (state, _, districtId) = OneSettlementWithDistrict();
         var (ownerA, headA) = HouseholdWithHead(state, "A");
         var (ownerB, _) = HouseholdWithHead(state, "B");
-        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId);
-        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId);
+        var breadId = new DefinitionId<Good>("bread");
+        var a = PromotedBusiness(state, "Bakery of A", PropertyOwnerRef.ForPlayerHousehold(ownerA), districtId, breadId);
+        var b = PromotedBusiness(state, "Bakery of B", PropertyOwnerRef.ForPlayerHousehold(ownerB), districtId, breadId);
         var formResult = FormCartelCommands.Pipeline.Execute(
             state, new FormCartelCommand(state.CommandIds.Issue(), "player", new GameDate(2), null, new[] { a, b }, CartelAgreementType.PriceFixing));
         var cartelId = ((CartelFormedEvent)formResult.Events[0]).CartelId;

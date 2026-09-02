@@ -132,6 +132,7 @@ public static class EscalateCompetitiveRungCommands
     public static readonly ValidationErrorCode AggressorNotFound = new("businessCompetition.escalate.aggressorNotFound");
     public static readonly ValidationErrorCode TargetNotFound = new("businessCompetition.escalate.targetNotFound");
     public static readonly ValidationErrorCode NotMainCompetitors = new("businessCompetition.escalate.notMainCompetitors");
+    public static readonly ValidationErrorCode NotSameTrade = new("businessCompetition.escalate.notSameTrade");
     public static readonly ValidationErrorCode AlreadyAtCeiling = new("businessCompetition.escalate.alreadyAtCeiling");
     public static readonly ValidationErrorCode WrongAggressor = new("businessCompetition.escalate.wrongAggressor");
 
@@ -146,6 +147,12 @@ public static class EscalateCompetitiveRungCommands
             return TargetNotFound;
         if (aggressor!.MainCompetitorBusinessId != command.TargetBusinessId || target!.MainCompetitorBusinessId != command.AggressorBusinessId)
             return NotMainCompetitors;
+        // §2's own "cuts prices... to draw customers away from a named competitor" only makes economic
+        // sense between two businesses trading the same good — a mismatched or untracked OutputGoodId
+        // pair would let the price nudge (which moves only the aggressor's own good market) and the
+        // eventual Forced Consolidation trigger fire against an economically unrelated rival.
+        if (aggressor.OutputGoodId is null || aggressor.OutputGoodId != target!.OutputGoodId)
+            return NotSameTrade;
 
         if (state.CompetitiveEscalations.TryGet(command.AggressorBusinessId, out var existing))
         {
@@ -497,6 +504,16 @@ public static class ResolveForcedConsolidationCommands
         state.NotableBusinesses.TryGet(loserId, out var loserLatest);
         state.NotableBusinesses.Remove(loserId);
         state.NotableBusinesses.Add(loserId, loserLatest! with { Status = NotableBusinessStatus.Demoted, MainCompetitorBusinessId = null });
+
+        // Matches MergeNotableBusinessesCommand's own "clear the survivor's own now-stale pointer at
+        // the absorbed business" precedent — the winner's own Main Competitor pointer would otherwise
+        // keep referencing the now-demoted loser.
+        state.NotableBusinesses.TryGet(command.WinnerBusinessId, out var winnerLatest);
+        if (winnerLatest!.MainCompetitorBusinessId == loserId)
+        {
+            state.NotableBusinesses.Remove(command.WinnerBusinessId);
+            state.NotableBusinesses.Add(command.WinnerBusinessId, winnerLatest with { MainCompetitorBusinessId = null });
+        }
 
         state.CompetitiveEscalations.Remove(command.WinnerBusinessId);
 

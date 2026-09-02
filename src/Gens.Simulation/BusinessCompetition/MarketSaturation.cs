@@ -88,6 +88,15 @@ public static class MarketSaturationSystem
             counts[key] = counts.TryGetValue(key, out var existing) ? existing + 1 : 1;
         }
 
+        // A (settlement, good) key with a stale reading but no currently-Tracked business left in that
+        // trade (the last one demoted, moved, or respecialized) must be cleared rather than left behind
+        // reporting a nonzero business count and saturation level forever.
+        foreach (var staleKey in state.MarketCapacityReadings.InAscendingOrder().Select(entry => entry.Key).ToArray())
+        {
+            if (!counts.ContainsKey(staleKey))
+                state.MarketCapacityReadings.Remove(staleKey);
+        }
+
         foreach (var (key, count) in counts.OrderBy(pair => pair.Key))
         {
             var employmentRatio = state.PopGroups.TryGet(new PopGroupKey(key.SettlementId, PopGroupType.Opifices), out var popGroup)
