@@ -1,5 +1,6 @@
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
+using Gens.Simulation.BusinessCompetition;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
@@ -115,6 +116,7 @@ public sealed class WorldState
         RuntimeIdCounter<PropertyRecord> propertyRecordIds,
         RuntimeIdCounter<Societas> societasIds,
         RuntimeIdCounter<NotableBusiness> notableBusinessIds,
+        RuntimeIdCounter<CartelAgreement> cartelAgreementIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -201,6 +203,10 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusiness> notableBusinesses,
         OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessRivalryLog> notableBusinessRivalryLogs,
         OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessGovernmentContract> notableBusinessGovernmentContracts,
+        OrderedRegistry<RuntimeId<NotableBusiness>, CompetitiveEscalation> competitiveEscalations,
+        OrderedRegistry<RuntimeId<CartelAgreement>, CartelAgreement> cartelAgreements,
+        OrderedRegistry<RuntimeId<NotableBusiness>, GrainHoardingRecord> grainHoardingRecords,
+        OrderedRegistry<MarketGoodKey, MarketCapacityReading> marketCapacityReadings,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -256,6 +262,7 @@ public sealed class WorldState
         PropertyRecordIds = propertyRecordIds;
         SocietasIds = societasIds;
         NotableBusinessIds = notableBusinessIds;
+        CartelAgreementIds = cartelAgreementIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -342,6 +349,10 @@ public sealed class WorldState
         NotableBusinesses = notableBusinesses;
         NotableBusinessRivalryLogs = notableBusinessRivalryLogs;
         NotableBusinessGovernmentContracts = notableBusinessGovernmentContracts;
+        CompetitiveEscalations = competitiveEscalations;
+        CartelAgreements = cartelAgreements;
+        GrainHoardingRecords = grainHoardingRecords;
+        MarketCapacityReadings = marketCapacityReadings;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -472,6 +483,12 @@ public sealed class WorldState
     /// <summary>Issues IDs for <see cref="Gens.Simulation.NotableBusinesses.NotableBusiness"/> (Phase 15
     /// item 4).</summary>
     public RuntimeIdCounter<NotableBusiness> NotableBusinessIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.BusinessCompetition.CartelAgreement"/> (Phase 15
+    /// item 5) — the one new entity kind this item needs a fresh counter for; see that record's own doc
+    /// comment for why <see cref="CompetitiveEscalation"/> and <see cref="GrainHoardingRecord"/> need
+    /// none.</summary>
+    public RuntimeIdCounter<CartelAgreement> CartelAgreementIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -995,6 +1012,28 @@ public sealed class WorldState
     /// redundant <c>activeGovernmentContractId</c> field.</summary>
     public OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessGovernmentContract> NotableBusinessGovernmentContracts { get; } = new();
 
+    /// <summary>Every aggressor business's own real, running §2 <see
+    /// cref="Gens.Simulation.BusinessCompetition.CompetitiveEscalation"/> (Phase 15 item 5), sparse and
+    /// keyed by the already-registered <see cref="RuntimeId{NotableBusiness}"/>, matching <see
+    /// cref="NotableBusinessGovernmentContracts"/>'s identical "present only once touched" convention.</summary>
+    public OrderedRegistry<RuntimeId<NotableBusiness>, CompetitiveEscalation> CompetitiveEscalations { get; } = new();
+
+    /// <summary>Every §4/§10 <see cref="Gens.Simulation.BusinessCompetition.CartelAgreement"/> (Phase 15
+    /// item 5), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<CartelAgreement>, CartelAgreement> CartelAgreements { get; } = new();
+
+    /// <summary>Every grain-trading business's own §5/§10 <see
+    /// cref="Gens.Simulation.BusinessCompetition.GrainHoardingRecord"/> (Phase 15 item 5), sparse and
+    /// keyed by the already-registered <see cref="RuntimeId{NotableBusiness}"/>, matching <see
+    /// cref="CompetitiveEscalations"/>'s identical "present only once touched" convention.</summary>
+    public OrderedRegistry<RuntimeId<NotableBusiness>, GrainHoardingRecord> GrainHoardingRecords { get; } = new();
+
+    /// <summary>Every §6/§9 <see cref="Gens.Simulation.BusinessCompetition.MarketCapacityReading"/> (Phase
+    /// 15 item 5), keyed by <see cref="MarketGoodKey"/> — reused directly from <see
+    /// cref="SettlementMarket"/>'s own identical (settlement, good) key shape rather than a second key
+    /// type for the same pairing.</summary>
+    public OrderedRegistry<MarketGoodKey, MarketCapacityReading> MarketCapacityReadings { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1148,6 +1187,10 @@ public sealed class WorldState
         ["notableBusinesses"] = NotableBusinesses.Version,
         ["notableBusinessRivalryLogs"] = NotableBusinessRivalryLogs.Version,
         ["notableBusinessGovernmentContracts"] = NotableBusinessGovernmentContracts.Version,
+        ["competitiveEscalations"] = CompetitiveEscalations.Version,
+        ["cartelAgreements"] = CartelAgreements.Version,
+        ["grainHoardingRecords"] = GrainHoardingRecords.Version,
+        ["marketCapacityReadings"] = MarketCapacityReadings.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

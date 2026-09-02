@@ -34,6 +34,17 @@ public enum PunishableOffenseSource
     MilitaryCapture,
     PiracyCapture,
     Fabricated,
+
+    /// <summary>Phase 15 item 5's own real, reachable addition
+    /// (<c>gens-business-competition-design.md</c> §5): "a real, live Crime &amp; Punishment exposure...
+    /// rather than an ordinary civil Market Dynamics outcome" for a grain-trading Notable Business
+    /// deliberately withholding stock during a genuine shortage — Rome's own single most politically
+    /// volatile form of market manipulation, per that document's own framing. See <see
+    /// cref="BusinessCompetition.GrainHoardingResolutionSystem"/>, the one real caller. Purely additive,
+    /// matching <see cref="Fabricated"/>'s own "the source is real, the mechanism that mints it is what's
+    /// new" precedent: nothing in this file's already-shipped pipeline switches on <see
+    /// cref="PunishableOffenseSource"/> at all.</summary>
+    GrainHoarding,
 }
 
 /// <summary>§7's tiered sentencing catalog needs to know how serious an offense actually was before a
