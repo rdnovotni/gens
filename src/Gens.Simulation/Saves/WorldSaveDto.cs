@@ -549,6 +549,29 @@ public sealed record WorldSaveDocument
     /// defaults to empty, matching <see cref="MerchantHouseArchetypes"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(87)]
     public IReadOnlyList<SenateEntryInvestmentLogDto> SenateEntryInvestmentLogs { get; init; } = Array.Empty<SenateEntryInvestmentLogDto>();
+
+    /// <summary>Every §2/§10 <see cref="Gens.Simulation.NotableBusinesses.NotableBusiness"/> (Phase 15
+    /// item 4), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="SenateEntryInvestmentLogs"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(88)]
+    public IReadOnlyList<NotableBusinessDto> NotableBusinesses { get; init; } = Array.Empty<NotableBusinessDto>();
+
+    /// <summary>Every initiating business's own §5/§10 <see
+    /// cref="Gens.Simulation.NotableBusinesses.NotableBusinessRivalryLog"/> (Phase 15 item 4), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> (by initiating business ID) order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="NotableBusinesses"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(89)]
+    public IReadOnlyList<NotableBusinessRivalryLogDto> NotableBusinessRivalryLogs { get; init; } = Array.Empty<NotableBusinessRivalryLogDto>();
+
+    /// <summary>Every business's own §7 <see
+    /// cref="Gens.Simulation.NotableBusinesses.NotableBusinessGovernmentContract"/> (Phase 15 item 4),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> (by business ID) order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="NotableBusinessRivalryLogs"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(90)]
+    public IReadOnlyList<NotableBusinessGovernmentContractDto> NotableBusinessGovernmentContracts { get; init; } =
+        Array.Empty<NotableBusinessGovernmentContractDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -819,6 +842,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(49)]
     public long SocietasIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-4 save has no Notable
+    /// Businesses. Additive-only per ADR 0011's policy, matching <see cref="SocietasIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(50)]
+    public long NotableBusinessIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3621,4 +3650,113 @@ public sealed record SenateEntryInvestmentLogDto
 
     [JsonPropertyOrder(1)]
     public required IReadOnlyList<DignitasInvestmentActionDto> Actions { get; init; }
+}
+
+/// <summary>One §6 <see cref="Gens.Simulation.NotableBusinesses.NotableBusinessSupplierRef"/> (Phase 15
+/// item 4).</summary>
+public sealed record NotableBusinessSupplierRefDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Kind { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string RefId { get; init; }
+}
+
+/// <summary>One §2/§10 <see cref="Gens.Simulation.NotableBusinesses.NotableBusiness"/> (Phase 15
+/// item 4).</summary>
+public sealed record NotableBusinessDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string OwnerKind { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? OwnerId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string SampledOrTriggeredBy { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int LastRelevantContactDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int Reputation { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? OutputGoodId { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? LinkedPropertyRecordId { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? DistrictId { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public string? MainCompetitorBusinessId { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public NotableBusinessSupplierRefDto? MainSupplier { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required bool SupplierDisruptionApplied { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required bool IsSpecialized { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public string? SpecializedGoodId { get; init; }
+}
+
+/// <summary>One §5/§10 <see cref="Gens.Simulation.NotableBusinesses.BusinessRivalryLogEntry"/> (Phase 15
+/// item 4).</summary>
+public sealed record BusinessRivalryLogEntryDto
+{
+    [JsonPropertyOrder(0)]
+    public required string TargetBusinessId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ActionType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int ReputationEffect { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int DateTotalMonths { get; init; }
+}
+
+/// <summary>One initiating business's own §5/§10 <see
+/// cref="Gens.Simulation.NotableBusinesses.NotableBusinessRivalryLog"/> (Phase 15 item 4).</summary>
+public sealed record NotableBusinessRivalryLogDto
+{
+    [JsonPropertyOrder(0)]
+    public required string InitiatingBusinessId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required IReadOnlyList<BusinessRivalryLogEntryDto> Entries { get; init; }
+}
+
+/// <summary>One business's own §7 <see
+/// cref="Gens.Simulation.NotableBusinesses.NotableBusinessGovernmentContract"/> (Phase 15 item 4).</summary>
+public sealed record NotableBusinessGovernmentContractDto
+{
+    [JsonPropertyOrder(0)]
+    public required string BusinessId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required long MonthlyStipendRawValue { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int StartDateTotalMonths { get; init; }
 }

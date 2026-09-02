@@ -26,6 +26,7 @@ using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
+using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Policies;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
@@ -113,6 +114,7 @@ public sealed class WorldState
         RuntimeIdCounter<District> districtIds,
         RuntimeIdCounter<PropertyRecord> propertyRecordIds,
         RuntimeIdCounter<Societas> societasIds,
+        RuntimeIdCounter<NotableBusiness> notableBusinessIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -196,6 +198,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<LegalCase>, ActioProSocioLink> actioProSocioLinks,
         OrderedRegistry<string, MerchantHouseArchetype> merchantHouseArchetypes,
         OrderedRegistry<RuntimeId<Household>, SenateEntryInvestmentLog> senateEntryInvestmentLogs,
+        OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusiness> notableBusinesses,
+        OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessRivalryLog> notableBusinessRivalryLogs,
+        OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessGovernmentContract> notableBusinessGovernmentContracts,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -250,6 +255,7 @@ public sealed class WorldState
         DistrictIds = districtIds;
         PropertyRecordIds = propertyRecordIds;
         SocietasIds = societasIds;
+        NotableBusinessIds = notableBusinessIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -333,6 +339,9 @@ public sealed class WorldState
         ActioProSocioLinks = actioProSocioLinks;
         MerchantHouseArchetypes = merchantHouseArchetypes;
         SenateEntryInvestmentLogs = senateEntryInvestmentLogs;
+        NotableBusinesses = notableBusinesses;
+        NotableBusinessRivalryLogs = notableBusinessRivalryLogs;
+        NotableBusinessGovernmentContracts = notableBusinessGovernmentContracts;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -459,6 +468,10 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Gens.Simulation.Societates.Societas"/> (Phase 15 item 2).</summary>
     public RuntimeIdCounter<Societas> SocietasIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.NotableBusinesses.NotableBusiness"/> (Phase 15
+    /// item 4).</summary>
+    public RuntimeIdCounter<NotableBusiness> NotableBusinessIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -965,6 +978,23 @@ public sealed class WorldState
     /// partition is player-household-only.</summary>
     public OrderedRegistry<RuntimeId<Household>, SenateEntryInvestmentLog> SenateEntryInvestmentLogs { get; } = new();
 
+    /// <summary>Every §2/§10 <see cref="Gens.Simulation.NotableBusinesses.NotableBusiness"/> (Phase 15
+    /// item 4), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusiness> NotableBusinesses { get; } = new();
+
+    /// <summary>Every initiating business's own §5/§10 <see
+    /// cref="Gens.Simulation.NotableBusinesses.NotableBusinessRivalryLog"/> (Phase 15 item 4), sparse and
+    /// keyed by the already-registered <see cref="RuntimeId{NotableBusiness}"/>, matching <see
+    /// cref="SenateEntryInvestmentLogs"/>'s identical "present only once touched" convention.</summary>
+    public OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessRivalryLog> NotableBusinessRivalryLogs { get; } = new();
+
+    /// <summary>Every business's own §7 <see
+    /// cref="Gens.Simulation.NotableBusinesses.NotableBusinessGovernmentContract"/> (Phase 15 item 4),
+    /// sparse and keyed by the already-registered <see cref="RuntimeId{NotableBusiness}"/> — at most one
+    /// active contract per business, per that record's own doc comment on why this item omits a
+    /// redundant <c>activeGovernmentContractId</c> field.</summary>
+    public OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessGovernmentContract> NotableBusinessGovernmentContracts { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1115,6 +1145,9 @@ public sealed class WorldState
         ["actioProSocioLinks"] = ActioProSocioLinks.Version,
         ["merchantHouseArchetypes"] = MerchantHouseArchetypes.Version,
         ["senateEntryInvestmentLogs"] = SenateEntryInvestmentLogs.Version,
+        ["notableBusinesses"] = NotableBusinesses.Version,
+        ["notableBusinessRivalryLogs"] = NotableBusinessRivalryLogs.Version,
+        ["notableBusinessGovernmentContracts"] = NotableBusinessGovernmentContracts.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

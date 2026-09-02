@@ -17,6 +17,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
+using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
@@ -906,6 +907,51 @@ public static class StateHasher
                 hash = MixLong(hash, action.DignitasEffect);
                 hash = MixLong(hash, action.Date.TotalMonths);
             }
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.NotableBusinesses.InAscendingOrder())
+        {
+            var business = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, business.Name);
+            hash = MixLong(hash, (long)business.Owner.Kind);
+            hash = MixString(hash, business.Owner.OwnerId ?? string.Empty);
+            hash = MixLong(hash, (long)business.SampledOrTriggeredBy);
+            hash = MixLong(hash, (long)business.Status);
+            hash = MixLong(hash, business.LastRelevantContactDate.TotalMonths);
+            hash = MixLong(hash, business.Reputation);
+            hash = MixString(hash, business.OutputGoodId?.Value ?? string.Empty);
+            hash = MixLong(hash, business.LinkedPropertyRecordId?.Value ?? -1L);
+            hash = MixLong(hash, business.DistrictId?.Value ?? -1L);
+            hash = MixLong(hash, business.MainCompetitorBusinessId?.Value ?? -1L);
+            hash = MixLong(hash, business.MainSupplier?.Kind is { } supplierKind ? (long)supplierKind : -1L);
+            hash = MixString(hash, business.MainSupplier?.RefId ?? string.Empty);
+            hash = MixLong(hash, business.SupplierDisruptionApplied ? 1L : 0L);
+            hash = MixLong(hash, business.IsSpecialized ? 1L : 0L);
+            hash = MixString(hash, business.SpecializedGoodId?.Value ?? string.Empty);
+        }
+
+        // Already ascending-RuntimeId (by initiating business ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.NotableBusinessRivalryLogs.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            foreach (var logEntry in entry.Value.Entries)
+            {
+                hash = MixLong(hash, logEntry.TargetBusinessId.Value);
+                hash = MixLong(hash, (long)logEntry.ActionType);
+                hash = MixLong(hash, logEntry.ReputationEffect);
+                hash = MixLong(hash, logEntry.Date.TotalMonths);
+            }
+        }
+
+        // Already ascending-RuntimeId (by business ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.NotableBusinessGovernmentContracts.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.SettlementId.Value);
+            hash = MixLong(hash, entry.Value.MonthlyStipend.RawValue);
+            hash = MixLong(hash, entry.Value.StartDate.TotalMonths);
         }
 
         return hash;

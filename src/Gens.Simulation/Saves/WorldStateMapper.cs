@@ -27,6 +27,7 @@ using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
+using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Policies;
 using Gens.Simulation.RealEstate;
@@ -111,6 +112,7 @@ public static class WorldStateMapper
                 DistrictIds = state.DistrictIds.Peek,
                 PropertyRecordIds = state.PropertyRecordIds.Peek,
                 SocietasIds = state.SocietasIds.Peek,
+                NotableBusinessIds = state.NotableBusinessIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -280,6 +282,14 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             SenateEntryInvestmentLogs = state.SenateEntryInvestmentLogs.InAscendingOrder()
                 .Select(entry => ToSenateEntryInvestmentLogDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            NotableBusinesses = state.NotableBusinesses.InAscendingOrder().Select(entry => ToNotableBusinessDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            NotableBusinessRivalryLogs = state.NotableBusinessRivalryLogs.InAscendingOrder()
+                .Select(entry => ToNotableBusinessRivalryLogDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            NotableBusinessGovernmentContracts = state.NotableBusinessGovernmentContracts.InAscendingOrder()
+                .Select(entry => ToNotableBusinessGovernmentContractDto(entry.Value)).ToArray(),
         };
     }
 
@@ -839,6 +849,27 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Household>, SenateEntryInvestmentLog>(log.HouseholdId, log);
             }));
 
+        var notableBusinesses = OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusiness>.Restore(
+            dto.NotableBusinesses.Select(b =>
+            {
+                var business = FromNotableBusinessDto(b);
+                return new KeyValuePair<RuntimeId<NotableBusiness>, NotableBusiness>(business.Id, business);
+            }));
+
+        var notableBusinessRivalryLogs = OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessRivalryLog>.Restore(
+            dto.NotableBusinessRivalryLogs.Select(l =>
+            {
+                var log = FromNotableBusinessRivalryLogDto(l);
+                return new KeyValuePair<RuntimeId<NotableBusiness>, NotableBusinessRivalryLog>(log.InitiatingBusinessId, log);
+            }));
+
+        var notableBusinessGovernmentContracts = OrderedRegistry<RuntimeId<NotableBusiness>, NotableBusinessGovernmentContract>.Restore(
+            dto.NotableBusinessGovernmentContracts.Select(c =>
+            {
+                var contract = FromNotableBusinessGovernmentContractDto(c);
+                return new KeyValuePair<RuntimeId<NotableBusiness>, NotableBusinessGovernmentContract>(contract.BusinessId, contract);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -891,6 +922,7 @@ public static class WorldStateMapper
             districtIds: RuntimeIdCounter<District>.Restore(dto.Counters.DistrictIds),
             propertyRecordIds: RuntimeIdCounter<PropertyRecord>.Restore(dto.Counters.PropertyRecordIds),
             societasIds: RuntimeIdCounter<Societas>.Restore(dto.Counters.SocietasIds),
+            notableBusinessIds: RuntimeIdCounter<NotableBusiness>.Restore(dto.Counters.NotableBusinessIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -974,6 +1006,9 @@ public static class WorldStateMapper
             actioProSocioLinks: actioProSocioLinks,
             merchantHouseArchetypes: merchantHouseArchetypes,
             senateEntryInvestmentLogs: senateEntryInvestmentLogs,
+            notableBusinesses: notableBusinesses,
+            notableBusinessRivalryLogs: notableBusinessRivalryLogs,
+            notableBusinessGovernmentContracts: notableBusinessGovernmentContracts,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1563,6 +1598,90 @@ public static class WorldStateMapper
     private static SenateEntryInvestmentLog FromSenateEntryInvestmentLogDto(SenateEntryInvestmentLogDto dto) => new(
         RuntimeId<Household>.Parse(dto.HouseholdId),
         dto.Actions.Select(FromDignitasInvestmentActionDto).ToArray());
+
+    private static NotableBusinessSupplierRefDto ToSupplierRefDto(NotableBusinessSupplierRef supplier) => new()
+    {
+        Kind = supplier.Kind.ToString(),
+        RefId = supplier.RefId,
+    };
+
+    private static NotableBusinessSupplierRef FromSupplierRefDto(NotableBusinessSupplierRefDto dto) =>
+        new(Enum.Parse<NotableBusinessSupplierKind>(dto.Kind), dto.RefId);
+
+    private static NotableBusinessDto ToNotableBusinessDto(NotableBusiness business) => new()
+    {
+        Id = business.Id.ToTaggedString(),
+        Name = business.Name,
+        OwnerKind = business.Owner.Kind.ToString(),
+        OwnerId = business.Owner.OwnerId,
+        SampledOrTriggeredBy = business.SampledOrTriggeredBy.ToString(),
+        Status = business.Status.ToString(),
+        LastRelevantContactDateTotalMonths = business.LastRelevantContactDate.TotalMonths,
+        Reputation = business.Reputation,
+        OutputGoodId = business.OutputGoodId?.Value,
+        LinkedPropertyRecordId = business.LinkedPropertyRecordId?.ToTaggedString(),
+        DistrictId = business.DistrictId?.ToTaggedString(),
+        MainCompetitorBusinessId = business.MainCompetitorBusinessId?.ToTaggedString(),
+        MainSupplier = business.MainSupplier is { } supplier ? ToSupplierRefDto(supplier) : null,
+        SupplierDisruptionApplied = business.SupplierDisruptionApplied,
+        IsSpecialized = business.IsSpecialized,
+        SpecializedGoodId = business.SpecializedGoodId?.Value,
+    };
+
+    private static NotableBusiness FromNotableBusinessDto(NotableBusinessDto dto) => NotableBusiness.Restore(
+        RuntimeId<NotableBusiness>.Parse(dto.Id),
+        dto.Name,
+        new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.OwnerKind), dto.OwnerId),
+        Enum.Parse<NotableBusinessTrigger>(dto.SampledOrTriggeredBy),
+        Enum.Parse<NotableBusinessStatus>(dto.Status),
+        new GameDate(dto.LastRelevantContactDateTotalMonths),
+        dto.Reputation,
+        dto.OutputGoodId is { } outputGoodId ? new DefinitionId<Good>(outputGoodId) : null,
+        dto.LinkedPropertyRecordId is { } propertyRecordId ? RuntimeId<PropertyRecord>.Parse(propertyRecordId) : null,
+        dto.DistrictId is { } districtId ? RuntimeId<District>.Parse(districtId) : null,
+        dto.MainCompetitorBusinessId is { } competitorId ? RuntimeId<NotableBusiness>.Parse(competitorId) : null,
+        dto.MainSupplier is { } supplierDto ? FromSupplierRefDto(supplierDto) : null,
+        dto.SupplierDisruptionApplied,
+        dto.IsSpecialized,
+        dto.SpecializedGoodId is { } specializedGoodId ? new DefinitionId<Good>(specializedGoodId) : null);
+
+    private static BusinessRivalryLogEntryDto ToBusinessRivalryLogEntryDto(BusinessRivalryLogEntry entry) => new()
+    {
+        TargetBusinessId = entry.TargetBusinessId.ToTaggedString(),
+        ActionType = entry.ActionType.ToString(),
+        ReputationEffect = entry.ReputationEffect,
+        DateTotalMonths = entry.Date.TotalMonths,
+    };
+
+    private static BusinessRivalryLogEntry FromBusinessRivalryLogEntryDto(BusinessRivalryLogEntryDto dto) => new(
+        RuntimeId<NotableBusiness>.Parse(dto.TargetBusinessId),
+        Enum.Parse<BusinessRivalryActionType>(dto.ActionType),
+        dto.ReputationEffect,
+        new GameDate(dto.DateTotalMonths));
+
+    private static NotableBusinessRivalryLogDto ToNotableBusinessRivalryLogDto(NotableBusinessRivalryLog log) => new()
+    {
+        InitiatingBusinessId = log.InitiatingBusinessId.ToTaggedString(),
+        Entries = log.Entries.Select(ToBusinessRivalryLogEntryDto).ToArray(),
+    };
+
+    private static NotableBusinessRivalryLog FromNotableBusinessRivalryLogDto(NotableBusinessRivalryLogDto dto) => new(
+        RuntimeId<NotableBusiness>.Parse(dto.InitiatingBusinessId),
+        dto.Entries.Select(FromBusinessRivalryLogEntryDto).ToArray());
+
+    private static NotableBusinessGovernmentContractDto ToNotableBusinessGovernmentContractDto(NotableBusinessGovernmentContract contract) => new()
+    {
+        BusinessId = contract.BusinessId.ToTaggedString(),
+        SettlementId = contract.SettlementId.ToTaggedString(),
+        MonthlyStipendRawValue = contract.MonthlyStipend.RawValue,
+        StartDateTotalMonths = contract.StartDate.TotalMonths,
+    };
+
+    private static NotableBusinessGovernmentContract FromNotableBusinessGovernmentContractDto(NotableBusinessGovernmentContractDto dto) => new(
+        RuntimeId<NotableBusiness>.Parse(dto.BusinessId),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        Money.FromMinorUnits(dto.MonthlyStipendRawValue),
+        new GameDate(dto.StartDateTotalMonths));
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

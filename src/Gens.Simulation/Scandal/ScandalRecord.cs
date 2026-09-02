@@ -43,6 +43,19 @@ public enum ScandalSourceType
     /// <see cref="ScandalSeverity"/> drives its Dignitas penalty), so appending this value changes no
     /// existing behavior.</summary>
     EdictBacklash,
+
+    /// <summary>Phase 15 item 4's own real, reachable addition (<c>gens-notable-businesses-design.md</c>
+    /// §4/§9): "a genuine business-specific Scandal — a new source this document adds to that system's
+    /// own existing sourceType list" — a matter implicating a <see
+    /// cref="NotableBusinesses.NotableBusiness"/>'s own conduct (adulterated goods, price gouging,
+    /// cheating a supplier) rather than its owner's own personal conduct. See <see
+    /// cref="NotableBusinesses.RecordBusinessScandalCommand"/>, which always suppresses the ordinary
+    /// personal Dignitas penalty and Trait grant for this source (§4's own "distinct from the owner's
+    /// own personal standing"), applying the real consequence to the business's own Reputation instead.
+    /// Purely additive, matching <see cref="EdictBacklash"/>'s own identical reasoning: nothing in this
+    /// file's already-shipped, already-tested pipeline switches on <see cref="ScandalSourceType"/> at
+    /// all.</summary>
+    BusinessMisconduct,
 }
 
 /// <summary>§6's severity ladder. <see cref="NotaCensoriaEligible"/> is kept for schema completeness
