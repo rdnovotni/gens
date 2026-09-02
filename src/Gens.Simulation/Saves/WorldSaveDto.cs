@@ -523,6 +523,19 @@ public sealed record WorldSaveDocument
     /// reasoning.</summary>
     [JsonPropertyOrder(83)]
     public IReadOnlyList<PlotPropertyExtensionDto> PlotPropertyExtensions { get; init; } = Array.Empty<PlotPropertyExtensionDto>();
+
+    /// <summary>Every §10 <see cref="Gens.Simulation.Societates.Societas"/> (Phase 15 item 2), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="PlotPropertyExtensions"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(84)]
+    public IReadOnlyList<SocietasDto> Societates { get; init; } = Array.Empty<SocietasDto>();
+
+    /// <summary>Every §6 <see cref="Gens.Simulation.Societates.ActioProSocioLink"/> (Phase 15 item 2),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> (by Legal Case ID) order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="Societates"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(85)]
+    public IReadOnlyList<ActioProSocioLinkDto> ActioProSocioLinks { get; init; } = Array.Empty<ActioProSocioLinkDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -787,6 +800,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(48)]
     public long PropertyRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-2 save has no Societates.
+    /// Additive-only per ADR 0011's policy, matching <see cref="PropertyRecordIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(49)]
+    public long SocietasIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3478,4 +3497,73 @@ public sealed record PlotPropertyExtensionDto
 
     [JsonPropertyOrder(8)]
     public required long ValueRawValue { get; init; }
+}
+
+/// <summary>One §10 <see cref="Gens.Simulation.Societates.SocietasPartner"/> (Phase 15 item 2).</summary>
+public sealed record SocietasPartnerDto
+{
+    [JsonPropertyOrder(0)]
+    public required string OwnerKind { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? OwnerId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required long ShareFractionRawValue { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool IsSuspectedSkimming { get; init; }
+}
+
+/// <summary>One §10 <see cref="Gens.Simulation.Societates.Societas"/> (Phase 15 item 2).</summary>
+public sealed record SocietasDto
+{
+    [JsonPropertyOrder(0)]
+    public required string Id { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string PartnershipType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string GovernanceModel { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string DurationOrPurpose { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? DesignatedPartnerOwnerKind { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? DesignatedPartnerOwnerId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required IReadOnlyList<SocietasPartnerDto> Partners { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? LinkedPropertySubjectKind { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? LinkedPropertySubjectId { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool IsActive { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? DissolutionTrigger { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public int? DissolvedDateTotalMonths { get; init; }
+}
+
+/// <summary>One §6 <see cref="Gens.Simulation.Societates.ActioProSocioLink"/> (Phase 15 item 2).</summary>
+public sealed record ActioProSocioLinkDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CaseId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SocietasId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string DisputeType { get; init; }
 }

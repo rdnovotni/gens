@@ -30,6 +30,7 @@ using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
+using Gens.Simulation.Societates;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
@@ -110,6 +111,7 @@ public sealed class WorldState
         RuntimeIdCounter<WandererEngagement> wandererEngagementIds,
         RuntimeIdCounter<District> districtIds,
         RuntimeIdCounter<PropertyRecord> propertyRecordIds,
+        RuntimeIdCounter<Societas> societasIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -189,6 +191,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<District>, District> districts,
         OrderedRegistry<RuntimeId<PropertyRecord>, PropertyRecord> propertyRecords,
         OrderedRegistry<RuntimeId<Plot>, PlotPropertyExtension> plotPropertyExtensions,
+        OrderedRegistry<RuntimeId<Societas>, Societas> societates,
+        OrderedRegistry<RuntimeId<LegalCase>, ActioProSocioLink> actioProSocioLinks,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -242,6 +246,7 @@ public sealed class WorldState
         WandererEngagementIds = wandererEngagementIds;
         DistrictIds = districtIds;
         PropertyRecordIds = propertyRecordIds;
+        SocietasIds = societasIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -321,6 +326,8 @@ public sealed class WorldState
         Districts = districts;
         PropertyRecords = propertyRecords;
         PlotPropertyExtensions = plotPropertyExtensions;
+        Societates = societates;
+        ActioProSocioLinks = actioProSocioLinks;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -444,6 +451,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Gens.Simulation.RealEstate.PropertyRecord"/> (Phase 15 item 1).</summary>
     public RuntimeIdCounter<PropertyRecord> PropertyRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.Societates.Societas"/> (Phase 15 item 2).</summary>
+    public RuntimeIdCounter<Societas> SocietasIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -916,6 +926,19 @@ public sealed class WorldState
     /// cref="Gens.Simulation.RealEstate.PlotPropertyResolver.Current"/> for the untouched default).</summary>
     public OrderedRegistry<RuntimeId<Plot>, PlotPropertyExtension> PlotPropertyExtensions { get; } = new();
 
+    /// <summary>Every §10 <see cref="Gens.Simulation.Societates.Societas"/> (Phase 15 item 2), in
+    /// ascending-<see cref="RuntimeId{T}"/> order. Kept forever once formed, dissolved or not, matching
+    /// <see cref="LegalCases"/>'s and <see cref="ScandalRecords"/>'s identical "kept for the campaign's
+    /// lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<Societas>, Societas> Societates { get; } = new();
+
+    /// <summary>§6's <see cref="Gens.Simulation.Societates.ActioProSocioLink"/> — which Societas and
+    /// dispute type a <see cref="LegalCase"/> is actually about (Phase 15 item 2), sparse and keyed by
+    /// that already-issued case's own <see cref="RuntimeId{T}"/>, matching <see
+    /// cref="PlotPropertyExtensions"/>'s identical "wrap the existing record in a parallel partition"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<LegalCase>, ActioProSocioLink> ActioProSocioLinks { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -982,6 +1005,7 @@ public sealed class WorldState
         ["wandererEngagementIds"] = WandererEngagementIds.Peek,
         ["districtIds"] = DistrictIds.Peek,
         ["propertyRecordIds"] = PropertyRecordIds.Peek,
+        ["societasIds"] = SocietasIds.Peek,
         ["regions"] = Regions.Version,
         ["settlements"] = Settlements.Version,
         ["plots"] = Plots.Version,
@@ -1061,6 +1085,8 @@ public sealed class WorldState
         ["districts"] = Districts.Version,
         ["propertyRecords"] = PropertyRecords.Version,
         ["plotPropertyExtensions"] = PlotPropertyExtensions.Version,
+        ["societates"] = Societates.Version,
+        ["actioProSocioLinks"] = ActioProSocioLinks.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
