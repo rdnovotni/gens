@@ -29,6 +29,7 @@ using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Policies;
+using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -117,6 +118,10 @@ public sealed class WorldState
         RuntimeIdCounter<Societas> societasIds,
         RuntimeIdCounter<NotableBusiness> notableBusinessIds,
         RuntimeIdCounter<CartelAgreement> cartelAgreementIds,
+        RuntimeIdCounter<PublicContract> publicContractIds,
+        RuntimeIdCounter<ContractBid> contractBidIds,
+        RuntimeIdCounter<LustrumEvent> lustrumEventIds,
+        RuntimeIdCounter<ContractFraudRecord> contractFraudRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -207,6 +212,11 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<CartelAgreement>, CartelAgreement> cartelAgreements,
         OrderedRegistry<RuntimeId<NotableBusiness>, GrainHoardingRecord> grainHoardingRecords,
         OrderedRegistry<MarketGoodKey, MarketCapacityReading> marketCapacityReadings,
+        OrderedRegistry<RuntimeId<PublicContract>, PublicContract> publicContracts,
+        OrderedRegistry<RuntimeId<ContractBid>, ContractBid> contractBids,
+        OrderedRegistry<RuntimeId<LustrumEvent>, LustrumEvent> lustrumEvents,
+        OrderedRegistry<RuntimeId<ContractFraudRecord>, ContractFraudRecord> publicContractFraudRecords,
+        OrderedRegistry<RuntimeId<LegalCase>, ContractFraudLegalLink> contractFraudLegalLinks,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -263,6 +273,10 @@ public sealed class WorldState
         SocietasIds = societasIds;
         NotableBusinessIds = notableBusinessIds;
         CartelAgreementIds = cartelAgreementIds;
+        PublicContractIds = publicContractIds;
+        ContractBidIds = contractBidIds;
+        LustrumEventIds = lustrumEventIds;
+        ContractFraudRecordIds = contractFraudRecordIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -353,6 +367,11 @@ public sealed class WorldState
         CartelAgreements = cartelAgreements;
         GrainHoardingRecords = grainHoardingRecords;
         MarketCapacityReadings = marketCapacityReadings;
+        PublicContracts = publicContracts;
+        ContractBids = contractBids;
+        LustrumEvents = lustrumEvents;
+        PublicContractFraudRecords = publicContractFraudRecords;
+        ContractFraudLegalLinks = contractFraudLegalLinks;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -489,6 +508,15 @@ public sealed class WorldState
     /// comment for why <see cref="CompetitiveEscalation"/> and <see cref="GrainHoardingRecord"/> need
     /// none.</summary>
     public RuntimeIdCounter<CartelAgreement> CartelAgreementIds { get; } = new();
+
+    /// <summary>Phase 15 item 6's four new runtime-entity kinds — <see
+    /// cref="PublicContract"/>, <see cref="ContractBid"/>, <see cref="LustrumEvent"/>, and <see
+    /// cref="ContractFraudRecord"/> — each needing a real identity of its own (matching <see
+    /// cref="CartelAgreementIds"/>'s identical "genuinely its own entity" precedent).</summary>
+    public RuntimeIdCounter<PublicContract> PublicContractIds { get; } = new();
+    public RuntimeIdCounter<ContractBid> ContractBidIds { get; } = new();
+    public RuntimeIdCounter<LustrumEvent> LustrumEventIds { get; } = new();
+    public RuntimeIdCounter<ContractFraudRecord> ContractFraudRecordIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -1034,6 +1062,29 @@ public sealed class WorldState
     /// type for the same pairing.</summary>
     public OrderedRegistry<MarketGoodKey, MarketCapacityReading> MarketCapacityReadings { get; } = new();
 
+    /// <summary>Every §8 <see cref="Gens.Simulation.PublicContracts.PublicContract"/> (Phase 15 item
+    /// 6), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<PublicContract>, PublicContract> PublicContracts { get; } = new();
+
+    /// <summary>Every §5/§8 <see cref="Gens.Simulation.PublicContracts.ContractBid"/> (Phase 15 item 6),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<ContractBid>, ContractBid> ContractBids { get; } = new();
+
+    /// <summary>Every fired §3/§8 <see cref="Gens.Simulation.PublicContracts.LustrumEvent"/> (Phase 15
+    /// item 6), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — kept forever, matching <see
+    /// cref="Magistracies.MagistracyRecord"/>'s identical "a full campaign log, not just live
+    /// state" convention.</summary>
+    public OrderedRegistry<RuntimeId<LustrumEvent>, LustrumEvent> LustrumEvents { get; } = new();
+
+    /// <summary>Every discovered §6.2/§8 <see cref="Gens.Simulation.PublicContracts.ContractFraudRecord"/>
+    /// (Phase 15 item 6), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<ContractFraudRecord>, ContractFraudRecord> PublicContractFraudRecords { get; } = new();
+
+    /// <summary>Which <see cref="Gens.Simulation.PublicContracts.ContractFraudRecord"/> a given §6.2
+    /// repetundae <see cref="LegalCase.CaseId"/> is actually about (Phase 15 item 6), sparse and keyed by
+    /// that already-issued case ID, matching <see cref="ActioProSocioLinks"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<LegalCase>, ContractFraudLegalLink> ContractFraudLegalLinks { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1191,6 +1242,11 @@ public sealed class WorldState
         ["cartelAgreements"] = CartelAgreements.Version,
         ["grainHoardingRecords"] = GrainHoardingRecords.Version,
         ["marketCapacityReadings"] = MarketCapacityReadings.Version,
+        ["publicContracts"] = PublicContracts.Version,
+        ["contractBids"] = ContractBids.Version,
+        ["lustrumEvents"] = LustrumEvents.Version,
+        ["publicContractFraudRecords"] = PublicContractFraudRecords.Version,
+        ["contractFraudLegalLinks"] = ContractFraudLegalLinks.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

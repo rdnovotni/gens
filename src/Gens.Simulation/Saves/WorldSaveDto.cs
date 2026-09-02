@@ -600,6 +600,38 @@ public sealed record WorldSaveDocument
     /// reasoning.</summary>
     [JsonPropertyOrder(94)]
     public IReadOnlyList<MarketCapacityReadingDto> MarketCapacityReadings { get; init; } = Array.Empty<MarketCapacityReadingDto>();
+
+    /// <summary>Every §8 <see cref="Gens.Simulation.PublicContracts.PublicContract"/> (Phase 15 item 6),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="MarketCapacityReadings"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(95)]
+    public IReadOnlyList<PublicContractDto> PublicContracts { get; init; } = Array.Empty<PublicContractDto>();
+
+    /// <summary>Every §5/§8 <see cref="Gens.Simulation.PublicContracts.ContractBid"/> (Phase 15 item 6),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="PublicContracts"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(96)]
+    public IReadOnlyList<ContractBidDto> ContractBids { get; init; } = Array.Empty<ContractBidDto>();
+
+    /// <summary>Every fired §3/§8 <see cref="Gens.Simulation.PublicContracts.LustrumEvent"/> (Phase 15
+    /// item 6), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="ContractBids"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(97)]
+    public IReadOnlyList<LustrumEventDto> LustrumEvents { get; init; } = Array.Empty<LustrumEventDto>();
+
+    /// <summary>Every discovered §6.2/§8 <see cref="Gens.Simulation.PublicContracts.ContractFraudRecord"/>
+    /// (Phase 15 item 6), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="LustrumEvents"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(98)]
+    public IReadOnlyList<ContractFraudRecordDto> PublicContractFraudRecords { get; init; } = Array.Empty<ContractFraudRecordDto>();
+
+    /// <summary>Every §6.2 <see cref="Gens.Simulation.PublicContracts.ContractFraudLegalLink"/> (Phase 15
+    /// item 6), already in ascending-<see cref="Identity.RuntimeId{T}"/> (by case ID) order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="PublicContractFraudRecords"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(99)]
+    public IReadOnlyList<ContractFraudLegalLinkDto> ContractFraudLegalLinks { get; init; } = Array.Empty<ContractFraudLegalLinkDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -882,6 +914,21 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(51)]
     public long CartelAgreementIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-6 save has no Public
+    /// Contracts. Additive-only per ADR 0011's policy, matching <see cref="CartelAgreementIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(52)]
+    public long PublicContractIds { get; init; }
+
+    [JsonPropertyOrder(53)]
+    public long ContractBidIds { get; init; }
+
+    [JsonPropertyOrder(54)]
+    public long LustrumEventIds { get; init; }
+
+    [JsonPropertyOrder(55)]
+    public long ContractFraudRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3873,4 +3920,135 @@ public sealed record MarketCapacityReadingDto
 
     [JsonPropertyOrder(4)]
     public required string SaturationLevel { get; init; }
+}
+
+/// <summary>One §8 <see cref="Gens.Simulation.PublicContracts.PublicContract"/> (Phase 15 item 6).</summary>
+public sealed record PublicContractDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ContractId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Type { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? CurrentHolder { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required long ContractValueRawValue { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int OpenedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public int? AwardedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool AwardedViaLustrum { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required bool IsCuttingCorners { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required bool FraudDiscovered { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required int FraudDiscoveryRisk { get; init; }
+}
+
+/// <summary>One §5/§8 <see cref="Gens.Simulation.PublicContracts.ContractBid"/> (Phase 15 item 6).</summary>
+public sealed record ContractBidDto
+{
+    [JsonPropertyOrder(0)]
+    public required string BidId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ContractId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Bidder { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required long PriceOfferedRawValue { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int ReliabilityScore { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int InfluenceSpent { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool BribeAttempted { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required long BribeAmountRawValue { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string Outcome { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required int SubmittedDateTotalMonths { get; init; }
+}
+
+/// <summary>One fired §3/§8 <see cref="Gens.Simulation.PublicContracts.LustrumEvent"/> (Phase 15 item
+/// 6).</summary>
+public sealed record LustrumEventDto
+{
+    [JsonPropertyOrder(0)]
+    public required string LustrumId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required IReadOnlyList<string> HouseholdsReassessed { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required IReadOnlyList<string> ContractsReopenedForBid { get; init; }
+}
+
+/// <summary>One discovered §6.2/§8 <see cref="Gens.Simulation.PublicContracts.ContractFraudRecord"/>
+/// (Phase 15 item 6).</summary>
+public sealed record ContractFraudRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string RecordId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ContractId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Holder { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int DiscoveredDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? LegalCaseId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? LegalOutcome { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool DisqualifiedFromBidding { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public int? DisqualifiedUntilDateTotalMonths { get; init; }
+}
+
+/// <summary>One §6.2 <see cref="Gens.Simulation.PublicContracts.ContractFraudLegalLink"/> (Phase 15
+/// item 6).</summary>
+public sealed record ContractFraudLegalLinkDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CaseId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string FraudRecordId { get; init; }
 }

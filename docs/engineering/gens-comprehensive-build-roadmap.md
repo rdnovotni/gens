@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 5 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 6 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -2966,6 +2966,146 @@ fetch was blocked by the outbound egress policy against `builds.dotnet.microsoft
 own SDK came from `apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned `10.0.100` via its
 own `rollForward: latestPatch` against the installed `10.0.111`. `dotnet run --project
 tools/Gens.ContentCompiler -- validate content` is unaffected since this item adds no new content.
+
+**Item 6 progress:** Public Contracts &amp; Competitive Bidding lands as a new domain,
+`src/Gens.Simulation/PublicContracts/` (`gens-public-contracts-competitive-bidding-design.md`), the
+document that builds "the actual competitive process by which a contract is won in the first place"
+once, shared across §4's three contract types, rather than three separate bidding systems — per §1's own
+explicit scope. Confirmed by direct search before writing anything: Land Ownership &amp; Real Estate §8's
+own Publicanus Contract/Collection Intensity concept was never built (Phase 15 item 1's own progress note
+already found this, and Business Competition's Scandal writeup independently confirms it again), so this
+item's own `PublicContractType.Publicani` is not "recap only" the way §4.1 frames it — it is scored and
+awarded exactly like the other two real types, with no Collection Intensity dial or corruption-exposure
+setting of its own to plug into, an honest correction of the parent task's own "already built" framing
+rather than a silently narrower build. The Censor (§2) extends `Gens.Simulation.Magistracies` directly
+rather than standing up a parallel ladder, per this item's own instruction: `MagistracyOffice.Censor` is
+a purely additive enum value, gated on `MagistracyResolver.HasEverHeldOffice` (a new lifetime-history
+query, distinct from `ActiveRecord`'s "currently holds" check) finding a Duumvir record for that
+candidate, and `MagistracyTermSystem` grants it a monthly Dignitas trickle (`MagistracyCatalog.
+CensorMonthlyDignitas`, ranked above Duumvir's per §2's "sits above Duumvir in real historical
+prestige") while explicitly excluding it from that system's own fixed-annual-term renewal check — a
+Censor's term ends only when `PublicContracts.LustrumSystem` concludes the Lustrum that elected them,
+matching §2/§3's "duration = the census itself."
+
+§2's paired election lands as `ElectCensorsCommand`, a real, documented scope simplification against
+`HoldContestedElectionCommand`/`PairDuumvirsCommand`'s own two-step contest-then-pair Duumvirate
+precedent: both seats fill in one atomic command from caller-supplied candidates rather than two
+independently contested elections, since no rival-candidate generation exists for this office (§9's own
+open "Rival House bid AI depth" question) and this item does not invent one — matching
+`HoldContestedElectionCommand`'s own established "the caller supplies an already-resolved candidate"
+doc-comment precedent, applied here to skip the contest machinery entirely rather than force it onto a
+still-open generation gap. It reuses `PairDuumvirsCommand`'s own directed `BondTag.CoMagistrate` bond
+exactly.
+
+§3's Lustrum lands as `LustrumSystem.Tick` (a static, unwired `Tick(state, date)` helper, matching
+`GrainHoardingResolutionSystem`'s and every other Phase 15 item 5 system's identical convention — no
+central `IMonthlySystem` pipeline registry exists anywhere in this codebase for any Phase 15 system to
+join), firing exactly every 60 months (`PublicContractsCatalog.LustrumIntervalMonths`, §3's own real,
+non-negotiated historical figure). Rather than inventing a second Net Worth computation, it snapshots
+Economy &amp; Finance's own `InsolvencySystem`, which already recomputes every tracked household's
+`NetWorth` every month — the Lustrum's real contribution is the periodic, formal `LustrumEvent` record of
+that already-real figure, not a redundant reassessment mechanism. It reopens every `Awarded`
+`PublicContract` for bidding regardless of the holder's own performance (§3's own explicit "whether or
+not its current holder is performing well") and ends every active Censor term, honestly leaving re-
+election itself to a caller's own follow-up `ElectCensorsCommand` rather than auto-generating a
+candidate. `OpenPublicContractCommand` is the separate ad hoc half (§3's "urgent need... a sudden
+campaign's supply crisis"), gated on Locatio Censoria (an active Censor at the settlement) — no Military
+&amp; Combat or Natural Disaster hook actually calls it yet (Phase 16 is unbuilt), matching §9's own open
+"ad hoc contract frequency" question, left exactly that open.
+
+§5's bidding process lands as `ContractBidderRef` (a `PropertyOwnerRef`-shaped Kind+string tag extended
+with the two real Phase 15 entities that document never tracked — `NotableBusiness` and the real,
+Phase-15-item-2 `Societas`, not that enum's own pre-existing narrative-only placeholder), `ContractBid`,
+and `SubmitContractBidCommand`/`AwardPublicContractCommand`. §5's five named bidder categories collapse
+honestly to four real `ContractBidderKind` values: this codebase tracks exactly two real household-like
+entities (the player's own household and a Rival Gens `LivingWorldActor`, per `MerchantFamilies.
+EquestrianStatusQuery`'s own identical finding), so "the player's own household," "a Merchant
+Family/Equestrian household," and "a generated Rival House competitor" are the same two real
+`ContractBidderKind` values read through whichever of §5's framings applies, not three separate kinds.
+Price converts to score via `PublicContractsCatalog.PriceScoreDivisorDenarii` (this item's own invented
+rate, per §9); Reliability reads `NotableBusiness.Reputation` directly for a business, Dignitas
+(`DignitasResolver`/`LivingWorldActor.Dignitas`) for a household-like bidder, and a Societas's own
+average partner Dignitas (no per-bid past-performance log exists — an honest, named scope cut, §9's own
+"all numeric sizing... unsized" covering this too); Influence reads `ContractBid.InfluenceSpent` plus a
+bribe's own weight, reusing `LegalCatalog.BriberyWeightPerTenDenarii`'s exact conversion rather than a
+second bribe-value formula, and both Influence and a bribe require the bidder to actually resolve to a
+real household (`ContractBidderResolver.TryResolveHousehold`) — a bare Rival House cannot spend either,
+the same honest narrowing `NotableBusinessOwnerResolver.TryResolveHousehold`'s own PlayerHousehold-only
+precedent already established. `AwardPublicContractCommand` applies §5's own "not purely mechanical"
+skew directly and deterministically: a Faction-alignment bonus (reusing `MagistracyCatalog.
+FactionAlignmentBonus`'s exact magnitude) when the awarding Censor and a bidder's resolved Character
+share a `PoliticalFaction`, a Clientela bonus when they already carry a directed `BondTag.Patron`/`Client`
+bond, and — where the Censor carries `SocietatesCatalog.GreedyTraitId` (reused directly as this item's
+own corruptibility tell, matching `BusinessCompetitionCatalog.GreedyTraitId`'s identical cross-domain
+reuse) — a favoritism bonus toward whichever bidder offered the single largest bribe. §5.1's "a losing
+bidder... has a real, standing motive to investigate" is left exactly the honest "flag is real, nothing
+yet sets it true automatically" shape this codebase uses elsewhere: `ContractBid.Outcome.Lost` is a real,
+queryable fact a future investigation trigger could read, but nothing in this item auto-fires one.
+
+§6's contract fraud lands as `DeclareCuttingCornersCommand`/`EndCuttingCornersCommand` and
+`ContractFraudDiscoverySystem.Tick`. §6.1's own "resolves exactly like any other concealed action in
+this project's shared Scheme engine (Characters §10)" does not literally hold: the actual engine lives in
+`Gens.Simulation.Interactions` (not `Characters`, confirmed by direct search) and `Interactions.Scheme`
+is a Character-vs-Character wrapper requiring both a real initiator and target Character — a contract
+holder can be a household, a Notable Business, or a Societas, and "the state" is not a Character either,
+so no real initiator/target pair exists to construct one from. This item mirrors that engine's own
+progress/discovery-race shape directly with its own record instead (a real, monthly quiet margin gain —
+`PublicContractsCatalog.CuttingCornersMonthlyMarginGainFraction` of the contract's own awarded value,
+posted Settlement Treasury → holder — and a 0-100 Discovery risk climbing
+`FraudDiscoveryRiskGainPerMonth` until it crosses `FraudDiscoveryRiskThreshold`), matching
+`GrainHoardingRecord`'s own identical "reuse the shape, not force a mismatched type" precedent for the
+same kind of gap. Discovery mints a real `ContractFraudRecord`.
+
+§6.2's repetundae prosecution lands as a genuine, new `LegalCaseType.Repetundae` value in
+`Gens.Simulation.Legal` (extending that existing domain directly, not a parallel case system), confirmed
+by direct search to be the first real, mechanical repetundae case anywhere in this codebase — Sicily's
+own Verres precedent (`gens-starting-regions-sicily-design.md` §15.3) is narrative "closed history"
+content, not code, so this item is not literally reusing an existing case type but building the first
+one the design doc's own precedent language points at. `FileRepetundaeCaseCommand` wraps
+`FileLawsuitCommands.CreatePipeline` at `LegalCaseDepth.Major` exactly like
+`Societates.FileActioProSocioCommand`'s own identical wrapper precedent, linked via a new sparse
+`ContractFraudLegalLink` partition; `Repetundae` joins `RollVerdict`'s capital-shaped set alongside
+Criminal/Political. `RepetundaeResolutionHook`, called from `LegalCaseRuling.Apply` exactly when this
+case type is ruled (matching `ActioProSocioResolutionHook`'s own identical "additive, gated call for one
+case flavor" shape), applies §6.2's real
+consequences on conviction only: restitution (`PublicContractsCatalog.RestitutionFraction` of the
+contract's own awarded value, Ledger-posted defendant → a system sink), the contract reclaimed back to
+`OpenForBidding` if the convicted household still held it, and disqualification from future bidding for
+`PublicContractsCatalog.DisqualificationMonths` — §9's own explicitly unsized duration, this item's own
+concrete reading anchored to one full Lustrum cycle rather than an arbitrary second number. Only a
+holder that resolves to a real household is prosecutable at all (`ContractBidderResolver.
+TryResolveHousehold`'s own narrowing again) — a discovered fraud against a bare Rival House still carries
+§6.1's own real financial exposure, honestly, just not this formal §6.2 path; `FileRepetundaeCaseCommands.
+HolderNotProsecutable` names that gap directly rather than fabricating a household to sue. §9's own
+"whether a disqualified bidder can ever petition for reinstatement... left open" stays exactly that open
+— no reinstatement command exists; a disqualification simply expires once `ContractBidderResolver.
+IsDisqualified` reads past its own `DisqualifiedUntilDate`.
+
+Every new partition (`PublicContracts`, `ContractBids`, `LustrumEvents`, `PublicContractFraudRecords`,
+`ContractFraudLegalLinks`, plus the four new `RuntimeIdCounter`s their real runtime-entity kinds need —
+`PublicContract`, `ContractBid`, `LustrumEvent`, and `ContractFraudRecord` each register a real
+`RuntimeIdTagRegistry` entry, matching `CartelAgreement`'s own identical "real record as its own tag"
+convention) is wired into `WorldState`, `Saves.WorldSaveDto`/`WorldStateMapper`, and `State.StateHasher`
+for full save/load and deterministic-hash coverage, additive-only (ADR 0011) exactly like every prior
+Phase 15 item's own new partitions. Covered in
+`tests/Gens.Simulation.Tests/PublicContracts/PublicContractsTests.cs` (17 tests): the Censor eligibility
+gate and its paired election/bond, the term system's real trickle-without-renewal, ad hoc contract
+opening's Censor gate, bid submission across all four bidder kinds (including the Influence/bribe
+household-narrowing rejection), award scoring (a clean Reliability-driven win, and a corrupt Censor's
+real, deterministic favoritism toward the largest briber), the Lustrum's real 60-month-only firing,
+contract reopening, and Censor-term-ending, the cutting-corners discovery race's real quiet margin gain
+and eventual discovery, a repetundae filing's real household-only precondition, both a Convicted verdict's
+full restitution/disqualification/contract-reclaim consequence and an Acquitted verdict's real absence of
+one (both searched across a bounded seed range for the genuine weighted-random outcome, matching Legal
+&amp; Court's own `APoliticalConvictionStripsTheDefendantsOfficeAndCollectsTheFine` precedent), and a
+save/load round trip exercising every new partition with the deterministic state hash staying stable.
+
+`dotnet build`/`dotnet test`/`dotnet format --verify-no-changes` all pass in the Release configuration
+(1584/1584 tests: 1576/1576 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`); this
+sandbox again started with no .NET SDK installed, resolved the same way item 5's own progress note
+describes (`apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned `10.0.100` via
+`rollForward: latestPatch`). `dotnet run --project tools/Gens.ContentCompiler -- validate content` is
+unaffected since this item adds no new content.
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 

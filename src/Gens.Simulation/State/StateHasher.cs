@@ -19,6 +19,7 @@ using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.NotableBusinesses;
+using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
@@ -998,6 +999,73 @@ public static class StateHasher
             hash = MixLong(hash, reading.CurrentBusinessCount);
             hash = MixLong(hash, reading.EmploymentRatioDerived.RawValue);
             hash = MixLong(hash, (long)reading.SaturationLevel);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 6.
+        foreach (var entry in state.PublicContracts.InAscendingOrder())
+        {
+            var contract = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)contract.Type);
+            hash = MixLong(hash, contract.SettlementId.Value);
+            hash = MixLong(hash, (long)contract.Status);
+            hash = MixString(hash, contract.CurrentHolder?.ToTaggedString() ?? string.Empty);
+            hash = MixLong(hash, contract.ContractValue.RawValue);
+            hash = MixLong(hash, contract.OpenedDate.TotalMonths);
+            hash = MixLong(hash, contract.AwardedDate?.TotalMonths ?? -1L);
+            hash = MixLong(hash, contract.AwardedViaLustrum ? 1L : 0L);
+            hash = MixLong(hash, contract.IsCuttingCorners ? 1L : 0L);
+            hash = MixLong(hash, contract.FraudDiscovered ? 1L : 0L);
+            hash = MixLong(hash, contract.FraudDiscoveryRisk);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 6.
+        foreach (var entry in state.ContractBids.InAscendingOrder())
+        {
+            var bid = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, bid.ContractId.Value);
+            hash = MixString(hash, bid.Bidder.ToTaggedString());
+            hash = MixLong(hash, bid.PriceOffered.RawValue);
+            hash = MixLong(hash, bid.ReliabilityScore);
+            hash = MixLong(hash, bid.InfluenceSpent);
+            hash = MixLong(hash, bid.BribeAttempted ? 1L : 0L);
+            hash = MixLong(hash, bid.BribeAmount.RawValue);
+            hash = MixLong(hash, (long)bid.Outcome);
+            hash = MixLong(hash, bid.SubmittedDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 6.
+        foreach (var entry in state.LustrumEvents.InAscendingOrder())
+        {
+            var lustrum = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, lustrum.Month.TotalMonths);
+            foreach (var householdId in lustrum.HouseholdsReassessed)
+                hash = MixLong(hash, householdId.Value);
+            foreach (var contractId in lustrum.ContractsReopenedForBid)
+                hash = MixLong(hash, contractId.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 6.
+        foreach (var entry in state.PublicContractFraudRecords.InAscendingOrder())
+        {
+            var record = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, record.ContractId.Value);
+            hash = MixString(hash, record.Holder.ToTaggedString());
+            hash = MixLong(hash, record.DiscoveredDate.TotalMonths);
+            hash = MixLong(hash, record.LegalCaseId?.Value ?? -1L);
+            hash = MixString(hash, record.LegalOutcome?.ToString() ?? string.Empty);
+            hash = MixLong(hash, record.DisqualifiedFromBidding ? 1L : 0L);
+            hash = MixLong(hash, record.DisqualifiedUntilDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId (by case ID) order (ADR 0004) via OrderedRegistry. Phase 15 item 6.
+        foreach (var entry in state.ContractFraudLegalLinks.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.FraudRecordId.Value);
         }
 
         return hash;
