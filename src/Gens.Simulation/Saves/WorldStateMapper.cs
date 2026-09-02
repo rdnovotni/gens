@@ -31,6 +31,7 @@ using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Policies;
+using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
@@ -115,6 +116,10 @@ public static class WorldStateMapper
                 SocietasIds = state.SocietasIds.Peek,
                 NotableBusinessIds = state.NotableBusinessIds.Peek,
                 CartelAgreementIds = state.CartelAgreementIds.Peek,
+                PublicContractIds = state.PublicContractIds.Peek,
+                ContractBidIds = state.ContractBidIds.Peek,
+                LustrumEventIds = state.LustrumEventIds.Peek,
+                ContractFraudRecordIds = state.ContractFraudRecordIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -303,6 +308,18 @@ public static class WorldStateMapper
             // Already ascending-MarketGoodKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
             MarketCapacityReadings = state.MarketCapacityReadings.InAscendingOrder()
                 .Select(entry => ToMarketCapacityReadingDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PublicContracts = state.PublicContracts.InAscendingOrder().Select(entry => ToPublicContractDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ContractBids = state.ContractBids.InAscendingOrder().Select(entry => ToContractBidDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            LustrumEvents = state.LustrumEvents.InAscendingOrder().Select(entry => ToLustrumEventDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PublicContractFraudRecords = state.PublicContractFraudRecords.InAscendingOrder()
+                .Select(entry => ToContractFraudRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId (by case ID) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ContractFraudLegalLinks = state.ContractFraudLegalLinks.InAscendingOrder()
+                .Select(entry => ToContractFraudLegalLinkDto(entry.Value)).ToArray(),
         };
     }
 
@@ -911,6 +928,41 @@ public static class WorldStateMapper
                 return new KeyValuePair<MarketGoodKey, MarketCapacityReading>(new MarketGoodKey(reading.SettlementId, reading.GoodId), reading);
             }));
 
+        var publicContracts = OrderedRegistry<RuntimeId<PublicContract>, PublicContract>.Restore(
+            dto.PublicContracts.Select(c =>
+            {
+                var contract = FromPublicContractDto(c);
+                return new KeyValuePair<RuntimeId<PublicContract>, PublicContract>(contract.ContractId, contract);
+            }));
+
+        var contractBids = OrderedRegistry<RuntimeId<ContractBid>, ContractBid>.Restore(
+            dto.ContractBids.Select(b =>
+            {
+                var bid = FromContractBidDto(b);
+                return new KeyValuePair<RuntimeId<ContractBid>, ContractBid>(bid.BidId, bid);
+            }));
+
+        var lustrumEvents = OrderedRegistry<RuntimeId<LustrumEvent>, LustrumEvent>.Restore(
+            dto.LustrumEvents.Select(l =>
+            {
+                var lustrum = FromLustrumEventDto(l);
+                return new KeyValuePair<RuntimeId<LustrumEvent>, LustrumEvent>(lustrum.LustrumId, lustrum);
+            }));
+
+        var publicContractFraudRecords = OrderedRegistry<RuntimeId<ContractFraudRecord>, ContractFraudRecord>.Restore(
+            dto.PublicContractFraudRecords.Select(r =>
+            {
+                var record = FromContractFraudRecordDto(r);
+                return new KeyValuePair<RuntimeId<ContractFraudRecord>, ContractFraudRecord>(record.RecordId, record);
+            }));
+
+        var contractFraudLegalLinks = OrderedRegistry<RuntimeId<LegalCase>, ContractFraudLegalLink>.Restore(
+            dto.ContractFraudLegalLinks.Select(l =>
+            {
+                var link = FromContractFraudLegalLinkDto(l);
+                return new KeyValuePair<RuntimeId<LegalCase>, ContractFraudLegalLink>(link.CaseId, link);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -965,6 +1017,10 @@ public static class WorldStateMapper
             societasIds: RuntimeIdCounter<Societas>.Restore(dto.Counters.SocietasIds),
             notableBusinessIds: RuntimeIdCounter<NotableBusiness>.Restore(dto.Counters.NotableBusinessIds),
             cartelAgreementIds: RuntimeIdCounter<CartelAgreement>.Restore(dto.Counters.CartelAgreementIds),
+            publicContractIds: RuntimeIdCounter<PublicContract>.Restore(dto.Counters.PublicContractIds),
+            contractBidIds: RuntimeIdCounter<ContractBid>.Restore(dto.Counters.ContractBidIds),
+            lustrumEventIds: RuntimeIdCounter<LustrumEvent>.Restore(dto.Counters.LustrumEventIds),
+            contractFraudRecordIds: RuntimeIdCounter<ContractFraudRecord>.Restore(dto.Counters.ContractFraudRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1055,6 +1111,11 @@ public static class WorldStateMapper
             cartelAgreements: cartelAgreements,
             grainHoardingRecords: grainHoardingRecords,
             marketCapacityReadings: marketCapacityReadings,
+            publicContracts: publicContracts,
+            contractBids: contractBids,
+            lustrumEvents: lustrumEvents,
+            publicContractFraudRecords: publicContractFraudRecords,
+            contractFraudLegalLinks: contractFraudLegalLinks,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1792,6 +1853,108 @@ public static class WorldStateMapper
         dto.CurrentBusinessCount,
         Fixed64.FromRaw(dto.EmploymentRatioDerivedRaw),
         Enum.Parse<MarketSaturationLevel>(dto.SaturationLevel));
+
+    private static PublicContractDto ToPublicContractDto(PublicContract contract) => new()
+    {
+        ContractId = contract.ContractId.ToTaggedString(),
+        Type = contract.Type.ToString(),
+        SettlementId = contract.SettlementId.ToTaggedString(),
+        Status = contract.Status.ToString(),
+        CurrentHolder = contract.CurrentHolder?.ToTaggedString(),
+        ContractValueRawValue = contract.ContractValue.RawValue,
+        OpenedDateTotalMonths = contract.OpenedDate.TotalMonths,
+        AwardedDateTotalMonths = contract.AwardedDate?.TotalMonths,
+        AwardedViaLustrum = contract.AwardedViaLustrum,
+        IsCuttingCorners = contract.IsCuttingCorners,
+        FraudDiscovered = contract.FraudDiscovered,
+        FraudDiscoveryRisk = contract.FraudDiscoveryRisk,
+    };
+
+    private static PublicContract FromPublicContractDto(PublicContractDto dto) => new(
+        RuntimeId<PublicContract>.Parse(dto.ContractId),
+        Enum.Parse<PublicContractType>(dto.Type),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        Enum.Parse<PublicContractStatus>(dto.Status),
+        dto.CurrentHolder is { } holder ? ContractBidderRef.Parse(holder) : null,
+        Money.FromMinorUnits(dto.ContractValueRawValue),
+        new GameDate(dto.OpenedDateTotalMonths),
+        dto.AwardedDateTotalMonths is { } awarded ? new GameDate(awarded) : null,
+        dto.AwardedViaLustrum,
+        dto.IsCuttingCorners,
+        dto.FraudDiscovered,
+        dto.FraudDiscoveryRisk);
+
+    private static ContractBidDto ToContractBidDto(ContractBid bid) => new()
+    {
+        BidId = bid.BidId.ToTaggedString(),
+        ContractId = bid.ContractId.ToTaggedString(),
+        Bidder = bid.Bidder.ToTaggedString(),
+        PriceOfferedRawValue = bid.PriceOffered.RawValue,
+        ReliabilityScore = bid.ReliabilityScore,
+        InfluenceSpent = bid.InfluenceSpent,
+        BribeAttempted = bid.BribeAttempted,
+        BribeAmountRawValue = bid.BribeAmount.RawValue,
+        Outcome = bid.Outcome.ToString(),
+        SubmittedDateTotalMonths = bid.SubmittedDate.TotalMonths,
+    };
+
+    private static ContractBid FromContractBidDto(ContractBidDto dto) => new(
+        RuntimeId<ContractBid>.Parse(dto.BidId),
+        RuntimeId<PublicContract>.Parse(dto.ContractId),
+        ContractBidderRef.Parse(dto.Bidder),
+        Money.FromMinorUnits(dto.PriceOfferedRawValue),
+        dto.ReliabilityScore,
+        dto.InfluenceSpent,
+        dto.BribeAttempted,
+        Money.FromMinorUnits(dto.BribeAmountRawValue),
+        Enum.Parse<ContractBidOutcome>(dto.Outcome),
+        new GameDate(dto.SubmittedDateTotalMonths));
+
+    private static LustrumEventDto ToLustrumEventDto(LustrumEvent lustrum) => new()
+    {
+        LustrumId = lustrum.LustrumId.ToTaggedString(),
+        MonthTotalMonths = lustrum.Month.TotalMonths,
+        HouseholdsReassessed = lustrum.HouseholdsReassessed.Select(id => id.ToTaggedString()).ToArray(),
+        ContractsReopenedForBid = lustrum.ContractsReopenedForBid.Select(id => id.ToTaggedString()).ToArray(),
+    };
+
+    private static LustrumEvent FromLustrumEventDto(LustrumEventDto dto) => new(
+        RuntimeId<LustrumEvent>.Parse(dto.LustrumId),
+        new GameDate(dto.MonthTotalMonths),
+        dto.HouseholdsReassessed.Select(RuntimeId<Household>.Parse).ToArray(),
+        dto.ContractsReopenedForBid.Select(RuntimeId<PublicContract>.Parse).ToArray());
+
+    private static ContractFraudRecordDto ToContractFraudRecordDto(ContractFraudRecord record) => new()
+    {
+        RecordId = record.RecordId.ToTaggedString(),
+        ContractId = record.ContractId.ToTaggedString(),
+        Holder = record.Holder.ToTaggedString(),
+        DiscoveredDateTotalMonths = record.DiscoveredDate.TotalMonths,
+        LegalCaseId = record.LegalCaseId?.ToTaggedString(),
+        LegalOutcome = record.LegalOutcome?.ToString(),
+        DisqualifiedFromBidding = record.DisqualifiedFromBidding,
+        DisqualifiedUntilDateTotalMonths = record.DisqualifiedUntilDate?.TotalMonths,
+    };
+
+    private static ContractFraudRecord FromContractFraudRecordDto(ContractFraudRecordDto dto) => new(
+        RuntimeId<ContractFraudRecord>.Parse(dto.RecordId),
+        RuntimeId<PublicContract>.Parse(dto.ContractId),
+        ContractBidderRef.Parse(dto.Holder),
+        new GameDate(dto.DiscoveredDateTotalMonths),
+        dto.LegalCaseId is { } caseId ? RuntimeId<LegalCase>.Parse(caseId) : null,
+        dto.LegalOutcome is { } outcome ? Enum.Parse<LegalCaseVerdict>(outcome) : null,
+        dto.DisqualifiedFromBidding,
+        dto.DisqualifiedUntilDateTotalMonths is { } until ? new GameDate(until) : null);
+
+    private static ContractFraudLegalLinkDto ToContractFraudLegalLinkDto(ContractFraudLegalLink link) => new()
+    {
+        CaseId = link.CaseId.ToTaggedString(),
+        FraudRecordId = link.FraudRecordId.ToTaggedString(),
+    };
+
+    private static ContractFraudLegalLink FromContractFraudLegalLinkDto(ContractFraudLegalLinkDto dto) => new(
+        RuntimeId<LegalCase>.Parse(dto.CaseId),
+        RuntimeId<ContractFraudRecord>.Parse(dto.FraudRecordId));
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

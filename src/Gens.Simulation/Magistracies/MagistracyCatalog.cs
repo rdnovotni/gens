@@ -28,6 +28,12 @@ public static class MagistracyCatalog
     public const int QuaestorLocalMonthlyDignitas = 2;
     public const int DuumvirMonthlyDignitas = 4;
 
+    /// <summary>Phase 15 item 6's own reading of §2's "sits above Duumvir in real historical
+    /// prestige" — the capstone office's monthly trickle exceeds <see cref="DuumvirMonthlyDignitas"/>,
+    /// this item's own invented figure per every other value in this table's identical unsized
+    /// convention.</summary>
+    public const int CensorMonthlyDignitas = 6;
+
     /// <summary>Dignitas swing from <see cref="AedileFundingChoice"/> (§5.2: "a real choice... and a
     /// real consequence — a Dignitas/Contentment boost if funded well, a modest Dignitas cost if
     /// skipped"). The Contentment half of that sentence is out of this item's scope — see <see

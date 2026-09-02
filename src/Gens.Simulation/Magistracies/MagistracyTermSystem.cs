@@ -109,6 +109,7 @@ public sealed class MagistracyTermSystem : IMonthlySystem<WorldState>
                     MagistracyOffice.Aedile => MagistracyCatalog.AedileMonthlyDignitas,
                     MagistracyOffice.QuaestorLocal => MagistracyCatalog.QuaestorLocalMonthlyDignitas,
                     MagistracyOffice.Duumvir => MagistracyCatalog.DuumvirMonthlyDignitas,
+                    MagistracyOffice.Censor => MagistracyCatalog.CensorMonthlyDignitas,
                     _ => 0,
                 };
                 var trickleCommand = new AdjustDignitasCommand(
@@ -117,6 +118,13 @@ public sealed class MagistracyTermSystem : IMonthlySystem<WorldState>
                 var trickleResult = AdjustDignitasCommands.Pipeline.Execute(state, trickleCommand);
                 events.AddRange(trickleResult.Events);
             }
+
+            // Phase 15 item 6: the Censorship's own term is the census itself (§3's Lustrum), not
+            // §5.7's ordinary annual cycle — Gens.Simulation.PublicContracts.LustrumSystem ends an
+            // active Censor's term directly when the Lustrum concludes, so this office is deliberately
+            // excluded from the fixed-length renewal check below.
+            if (record.Office == MagistracyOffice.Censor)
+                continue;
 
             var monthsHeld = context.Date.TotalMonths - record.TermStartDate.TotalMonths;
             if (monthsHeld > 0 && monthsHeld % MagistracyCatalog.TermLengthMonths == 0)

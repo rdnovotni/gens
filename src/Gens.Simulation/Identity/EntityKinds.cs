@@ -18,6 +18,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.NotableBusinesses;
+using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -287,6 +288,15 @@ internal static class RuntimeIdTagRegistry
         // MarketCapacityReading needs no entry either: it is keyed by MarketGoodKey, not by its own
         // RuntimeId, matching HouseholdDoctrineState's identical exemption.
         [typeof(CartelAgreement)] = "cartelagreement",
+        // Phase 15 item 6 — Gens.Simulation.PublicContracts's own four new runtime-entity kinds, each a
+        // "real record as its own tag" per that same convention: PublicContract, ContractBid,
+        // LustrumEvent, and ContractFraudRecord. ContractFraudLegalLink needs no entry: it is keyed by
+        // the already-registered RuntimeId<LegalCase>, not by a RuntimeId of its own, matching
+        // ActioProSocioLink's identical exemption.
+        [typeof(PublicContract)] = "publiccontract",
+        [typeof(ContractBid)] = "contractbid",
+        [typeof(LustrumEvent)] = "lustrumevent",
+        [typeof(ContractFraudRecord)] = "contractfraudrecord",
     };
 
     public static string Resolve(Type type) =>

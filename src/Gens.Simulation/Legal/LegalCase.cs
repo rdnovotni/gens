@@ -42,6 +42,22 @@ public enum LegalCaseType
     /// instead of one inline field, since a Societas dispute needs two extra pieces of data an inline
     /// bool can't carry).</summary>
     PartnershipDispute,
+
+    /// <summary>§6.2's repetundae (extortion/corruption) case type (Phase 15 item 6;
+    /// <c>gens-public-contracts-competitive-bidding-design.md</c> §6.2) — "extending the same
+    /// repetundae... case type Sicily's own Verres precedent already established for a different
+    /// office." That precedent (<c>gens-starting-regions-sicily-design.md</c> §15.3) is narrative
+    /// content, not code — no <c>LegalCaseType.Repetundae</c> or comparable value existed anywhere in
+    /// this codebase before this item, confirmed by direct search; this is the first real, mechanical
+    /// repetundae case, brought against an ordinary <see cref="PublicContracts.PublicContract"/> holder
+    /// caught cutting corners (<see cref="PublicContracts.ContractFraudRecord"/>) rather than only a
+    /// provincial governor. Which contract/fraud record a given case is actually about lives in a
+    /// separate, sparse <see cref="PublicContracts.ContractFraudLegalLink"/> partition keyed by this
+    /// case's own ID, matching <see cref="PartnershipDispute"/>'s own identical "a whole partition
+    /// instead of editing this record's shape" convention. Capital-shaped, per <see
+    /// cref="LegalCaseResolver.RollVerdict"/> — repetundae was historically a real, serious criminal
+    /// charge, not an ordinary civil dispute.</summary>
+    Repetundae,
 }
 
 /// <summary>§4 vs §5: a Quick case resolves in the single <see cref="FileLawsuitCommand"/> submission
@@ -216,7 +232,7 @@ public static class LegalCaseResolver
         var margin = plaintiffScore - defendantScore;
 
         var roll = (int)randomStreams.NextUInt(streamName, 100);
-        var isCapital = legalCase.CaseType is LegalCaseType.Criminal or LegalCaseType.Political;
+        var isCapital = legalCase.CaseType is LegalCaseType.Criminal or LegalCaseType.Political or LegalCaseType.Repetundae;
 
         if (roll < LegalCatalog.DismissalChancePercent)
             return (LegalCaseVerdict.Dismissed, null);

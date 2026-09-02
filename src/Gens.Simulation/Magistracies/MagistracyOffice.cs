@@ -30,6 +30,21 @@ public enum MagistracyOffice
     /// cref="PairDuumvirsCommand"/>), the ladder's largest passive Dignitas, and the Mint's
     /// "political milestone" gate (unwired — see that command's own doc comment).</summary>
     Duumvir,
+
+    /// <summary>Phase 15 item 6's capstone addition (<c>gens-public-contracts-competitive-bidding-
+    /// design.md</c> §2): "the Censorship sits above Duumvir in real historical prestige... a genuine
+    /// capstone office, gated on having already held Duumvir at least once, extending Politics &amp;
+    /// Patronage's own ladder rather than replacing any rung on it." Paired exactly like <see
+    /// cref="Duumvir"/> (see <see cref="PublicContracts.ElectCensorsCommand"/>), but its term is the
+    /// census itself rather than <see cref="MagistracyCatalog.TermLengthMonths"/>'s ordinary annual
+    /// cycle — <see cref="MagistracyTermSystem"/> excludes this office from that renewal check, and a
+    /// Censor's term instead ends only when <see cref="PublicContracts.LustrumSystem"/> concludes the
+    /// Lustrum that elected them (§3). Holds §2's two named powers — Locatio Censoria (opening/awarding
+    /// every <see cref="PublicContracts.PublicContract"/>) and the Census itself (the Lustrum's Net
+    /// Worth reassessment) — both built in <c>Gens.Simulation.PublicContracts</c> rather than here, per
+    /// this file's own "every real category represented" precedent for an office whose actual mechanism
+    /// lives in the phase/item that gives it real teeth.</summary>
+    Censor,
 }
 
 /// <summary>Why a <see cref="MagistracyRecord"/>'s term ended before its next anniversary renewal

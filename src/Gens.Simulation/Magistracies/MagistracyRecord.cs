@@ -109,4 +109,17 @@ public static class MagistracyResolver
 
         return count;
     }
+
+    /// <summary>Phase 15 item 6's Censor eligibility gate (<c>gens-public-contracts-competitive-
+    /// bidding-design.md</c> §2: "gated on having already held Duumvir at least once") — unlike <see
+    /// cref="ActiveRecord"/>, this checks the full history (active <i>or</i> ended, any settlement), since
+    /// §2's own "at least once" is a lifetime achievement, not a currently-held seat. Matches this
+    /// resolver's own linear-scan convention.</summary>
+    public static bool HasEverHeldOffice(WorldState state, RuntimeId<Character> holderId, MagistracyOffice office)
+    {
+        foreach (var entry in state.MagistracyRecords.InAscendingOrder())
+            if (entry.Value.Office == office && entry.Value.HolderId == holderId)
+                return true;
+        return false;
+    }
 }
