@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 3 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 4 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -2707,6 +2707,130 @@ new partitions. `dotnet build`/`dotnet test`/`dotnet format --verify-no-changes`
 tests: 1518/1518 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`), and `dotnet run
 --project tools/Gens.ContentCompiler -- validate content` is unaffected since this item adds no new
 content.
+
+**Item 4 progress:** Notable Businesses lands as a new domain, `src/Gens.Simulation/NotableBusinesses/`
+(`gens-notable-businesses-design.md`), realizing §1's own framing directly: "capital, employees,
+ownership, debt, and government contracts are not new concepts" — this item reuses item 1's own
+`PropertyOwnerRef`, `PropertyRecord`, and `District`, Economy &amp; Finance's `InsolvencyState`, Reputation's
+`DignitasResolver`, Scandal's `RecordScandalCommand`, Clientela's `InfluenceResolver`, and Interactions'
+`InitiateSchemeCommand` throughout, building only §4's Reputation, §5's Named Competition, §6's Named
+Suppliers, and §8's four genuinely new Business Lifecycle behaviors, per §1's own "what this document
+actually adds" list.
+
+§2's Notable Business Record and §10's data model land as `NotableBusiness` (`NotableBusiness.cs`), one
+new `RuntimeIdCounter<NotableBusiness>`/`WorldState.NotableBusinesses` partition (the "real record as
+its own tag" `EntityKinds` convention District/PropertyRecord/Societas already established). §2's own
+"Owner: a Notable Household head or full Character" cannot be built as literally specified — no `Notable
+Households` domain exists anywhere in this codebase, confirmed by direct search (only its own design doc
+does; the roadmap's own Phase 12/13 notes already name this same gap twice, at "Notable Households,
+unbuilt"). `NotableBusiness.Owner` therefore reuses `PropertyOwnerRef` directly (matching
+`MerchantHouseArchetype`'s own identical reuse), restricted to `PlayerHousehold`, `RivalGens`, and
+`IndividualCharacter`; a new `NotableBusinessOwnerResolver` resolves a household-kind owner down to a
+real Character through the already-tracked `HouseholdHeadship`/`LivingWorldActor.HeadCharacterId` — the
+real, existing stand-in for "a household head" this codebase actually has. §10's own
+`activeGovernmentContractId` field is deliberately omitted from the record itself (presence in a new
+sparse `NotableBusinessGovernmentContracts` partition instead), the same "not a redundant pointer field"
+judgment item 1's own `PlotPropertyExtension` and item 3's own `wealthVolatilityTier` omission already
+made. `DistrictId` is this item's own invented addition beyond §10's bare sketch, needed to give §8's
+Move a real "where the business currently sits" pointer to update.
+
+§3's Sampling &amp; Promotion lands as `PromoteNotableBusinessCommand` and `NotableBusinessTieringService`
+(`NotableBusinessSampling.cs`), mirroring `Actors.LivingWorldActorTieringService`'s identical
+Tracked/Demoted promotion-and-quiet-period-demotion shape byte-for-byte — the same pattern §3's own text
+names directly ("the identical pattern Rival Houses, Notable Households, and Wandering Populations have
+each already established"), reusing `LivingWorldActorTieringCatalog.DemotionQuietPeriodMonths` verbatim
+rather than re-deriving a second two-year figure. Every real trigger §3/§9 name
+(`sampledOrTriggeredBy`: `AmbientSample`, `OwnerAlreadyNotable`, `GovernmentContract`,
+`LegalOrScandalCase`, `DirectPlayerTransaction`) is represented; `GrantGovernmentContractCommand` itself
+calls `NotableBusinessTieringService.RecordContactAndPromote`, the one real, wired trigger this item
+exercises end to end.
+
+§4's Business Reputation lands as `AdjustBusinessReputationCommand` (`BusinessReputation.cs`, rule 2's
+"one command path"), a 0-100 field on `NotableBusiness` itself per §10's own sketch, clamped rather than
+open-ended like Dignitas since §4 frames it as a fixed scale. §9's Scandal cross-integration lands as a
+genuine new `ScandalSourceType.BusinessMisconduct` value (`Scandal/ScandalRecord.cs`, purely additive,
+matching that enum's own `EdictBacklash` precedent) and `RecordBusinessScandalCommand`, which always
+suppresses `RecordScandalCommand`'s ordinary personal Dignitas penalty and Trait grant — the concrete
+mechanism behind §4's own "distinct from the owner's own personal standing" — applying the real
+consequence to Business Reputation instead; the Scandal-record half only fires for a `PlayerHousehold`
+owner, since `RecordScandalCommand` is itself household-scoped.
+
+§5's Named Competition lands as `SetMainCompetitorCommand` and `RecordBusinessRivalryActionCommand`
+(`NamedCompetition.cs`), gated on both businesses having already named each other as their own Main
+Competitor (§5.1's "the same underlying... named rivalry" read as a felt, mutual relationship). All four
+named action types (`PriceUndercut`, `WorkerPoach`, `Sabotage`, `DamagingRumor`) apply a real, catalog-sized
+Reputation hit to the target — §5's own guaranteed "his own Reputation and income both take a real, felt
+hit" — and this item does **not** itself move `Markets.SettlementMarket` prices or any Opifices pop-group
+headcount for `PriceUndercut`/`WorkerPoach`: that mechanism is this phase's own later item 5 ("Business
+competition, price wars... lawful/unlawful responses"), named as a real, verified scope cut rather than a
+silent gap, and §11's own open question already keeps employee headcount a derived figure rather than
+individually tracked. For `Sabotage`/`DamagingRumor`, §5's own "an actual Coercive Interaction... deployed
+specifically against a business rival" is realized by reusing `Interactions.InitiateSchemeCommand`
+(`SchemeType.Coercive`) between the two rivals' own resolved owner Characters — the one real Coercive
+Interaction mechanism that exists; the concrete "Spread a Damaging Rumor" Interaction §5 names by name
+is confirmed, by direct search, to not exist anywhere in `Gens.Simulation.Interactions` (only a named row
+in `gens-characters-design.md` §9.4's own table — `Scandal.ScandalSourceType.DeliberateRumor`'s own doc
+comment already names this identical gap). The Scheme-initiation step is deliberately best-effort: an
+unresolvable owner or an already-in-progress Scheme never fails this command, since the Reputation hit is
+the one guaranteed consequence.
+
+§6's Named Suppliers lands as `SetMainSupplierCommand` and a new `NotableBusinessSupplierRef` tagged
+reference (Household/Character/PropertyRecord/Wanderer — every real supplier shape §6 names, including
+the Wandering Merchant), plus `SupplierDisruptionSystem` (`NamedSuppliers.cs`), which penalizes Reputation
+exactly once per disruption bout when a Household-kind supplier's own `InsolvencyState` reaches
+`Insolvent`/`Ruined` — the one real, checkable half of §6's "bad harvest, bankruptcy, or a Piracy &amp;
+Banditry loss" this codebase can actually drive a monthly tick from. A supplier's "bad harvest" has no
+real signal anywhere in Resources &amp; Goods to read, and Piracy &amp; Banditry is confirmed unbuilt
+(Phase 16) by direct search — both are honestly left unwired rather than approximated with a stand-in.
+
+§7's Government Contracts lands as `NotableBusinessGovernmentContract`, `GrantGovernmentContractCommand`,
+`EndGovernmentContractCommand`, and the monthly `GovernmentContractPaymentSystem`
+(`GovernmentContracts.cs`), a lighter municipal-scale extension of item 1's own Publicanus-Contract
+framing rather than a parallel system, per §7's own text. §7's own two named concrete destinations —
+Settlement Demographics' Grain Dole and Policies &amp; Edicts' Grain Dole Funded Action — are both
+confirmed unbuilt anywhere in this codebase by direct search (no "grain dole" concept exists in
+`Gens.Simulation.Characters` or `Gens.Simulation.Policies`), so this item does not literally tie a
+contract to either; it builds the real, standing municipal relationship itself as the building block a
+future item can point at once either exists. Monthly payment resolves a business owner's own real Ledger
+account (`Household`/`Actor`, matching `TransferPropertyCommand`'s own "route an owner kind this item
+cannot yet track a real balance for through the Mint" precedent for `IndividualCharacter`).
+
+§8's ten named Business Lifecycle behaviors land as documented reuse for the six already-real ones
+(Expand/Go bankrupt/Change owners/Form partnerships/Raise-lower prices/Compete for contracts — each
+named in `BusinessLifecycle.cs`'s own doc comment against the real existing command it already is) and
+four genuinely new commands for the rest: `MergeNotableBusinessesCommand` (demotes the absorbed business,
+averages Reputation — this item's own reasoned, unsized blend per §11), `SpecializeNotableBusinessCommand`
+(narrows `OutputGoodId`, grants a real Reputation bump — "reduced resilience" falls out for free from
+`SupplierDisruptionSystem` already reading the narrower single-good dependency), `MoveNotableBusinessCommand`
+(updates `DistrictId`, posts a real one-time Ledger cost to Mint), and `LobbyGovernmentCommand` (spends
+real Influence via `Clientela.InfluenceResolver` for a `PlayerHousehold` owner, or a direct Ledger payment
+for `PlayerHousehold`/`RivalGens`, to grant or renew a Government Contract). §8's own second named Lobby
+use — petitioning against a Sumptuary/trade regulation — is a real, verified scope cut: Policies &amp;
+Edicts' `EdictRecord` catalog has no Sumptuary/trade-regulation entries to petition against without
+authoring new content this item's own scope does not call for. §8's own **Inherit** is likewise left
+genuinely unbuilt rather than substituted: it is named as Notable Households' own inheritance logic, and
+that domain does not exist.
+
+Every new partition (`NotableBusinesses`, keyed by its own fresh `RuntimeId<NotableBusiness>`;
+`NotableBusinessRivalryLogs` and `NotableBusinessGovernmentContracts`, both sparse and keyed by that
+same already-registered ID, matching `SenateEntryInvestmentLogs`' identical "present only once touched"
+convention) is wired into `WorldState`, `Saves.WorldSaveDto`/`WorldStateMapper`, and `State.StateHasher`
+for full save/load and deterministic-hash coverage, additive-only (ADR 0011) exactly like items 1-3's own
+new partitions. Covered in `tests/Gens.Simulation.Tests/NotableBusinesses/NotableBusinessesTests.cs` (20
+tests): §3's promotion (including the invalid-owner-kind and empty-name rejections) and the
+quiet-period-demotion/re-promotion cycle; §4's Reputation clamping, the Demoted-business rejection, and
+the business-Scandal integration's real Reputation penalty alongside a suppressed personal Dignitas
+penalty; §5's mutual-Main-Competitor gate, the real Reputation hit, and the Sabotage-triggered Coercive
+Scheme; §6's unresolvable-supplier rejection and the Supplier Disruption System's exactly-once penalty
+across two consecutive monthly ticks; §7's re-promotion-on-grant, the monthly Ledger payment, and the
+failed-delivery-only Reputation penalty on contract end; §8's Merge (averaged Reputation, absorbed-business
+demotion), Specialize (narrowed Output plus Reputation bonus), Move (District update plus Ledger cost),
+and Lobby (direct-payment contract grant); and a save/load round trip exercising every new field
+(District, Main Competitor, Main Supplier, an active Government Contract) with the deterministic state
+hash staying stable across all three new partitions. `dotnet build`/`dotnet test`/`dotnet format
+--verify-no-changes` all pass (1546/1546 tests: 1538/1538 in `Gens.Simulation.Tests`, 8/8 in
+`Gens.ContentCompiler.Tests`), and `dotnet run --project tools/Gens.ContentCompiler -- validate content`
+is unaffected since this item adds no new content.
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 

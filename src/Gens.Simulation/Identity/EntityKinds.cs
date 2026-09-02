@@ -16,6 +16,7 @@ using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
+using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -272,6 +273,12 @@ internal static class RuntimeIdTagRegistry
         // is keyed by a plain owner-tag string (the same exemption FiredHistoricalTimelineEntryIds
         // already has above), and Gens.Simulation.MerchantFamilies.SenateEntryInvestmentLog is keyed by
         // the already-registered RuntimeId<Household>, not by a RuntimeId of its own.
+        // Phase 15 item 4 — Gens.Simulation.NotableBusinesses.NotableBusiness, same "real record as its
+        // own tag" convention as Societas above. NotableBusinessRivalryLog and
+        // NotableBusinessGovernmentContract need no entry: both are keyed by the already-registered
+        // RuntimeId<NotableBusiness>, not by a RuntimeId of their own, matching SenateEntryInvestmentLog's
+        // identical exemption.
+        [typeof(NotableBusiness)] = "notablebusiness",
     };
 
     public static string Resolve(Type type) =>
