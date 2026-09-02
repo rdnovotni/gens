@@ -536,6 +536,19 @@ public sealed record WorldSaveDocument
     /// reasoning.</summary>
     [JsonPropertyOrder(85)]
     public IReadOnlyList<ActioProSocioLinkDto> ActioProSocioLinks { get; init; } = Array.Empty<ActioProSocioLinkDto>();
+
+    /// <summary>Every §7/§9 <see cref="Gens.Simulation.MerchantFamilies.MerchantHouseArchetype"/> (Phase
+    /// 15 item 3), already in ascending (owner tag) order. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="ActioProSocioLinks"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(86)]
+    public IReadOnlyList<MerchantHouseArchetypeDto> MerchantHouseArchetypes { get; init; } = Array.Empty<MerchantHouseArchetypeDto>();
+
+    /// <summary>Every player household's §6/§9 <see
+    /// cref="Gens.Simulation.MerchantFamilies.SenateEntryInvestmentLog"/> (Phase 15 item 3), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> (by Household ID) order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="MerchantHouseArchetypes"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(87)]
+    public IReadOnlyList<SenateEntryInvestmentLogDto> SenateEntryInvestmentLogs { get; init; } = Array.Empty<SenateEntryInvestmentLogDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -3566,4 +3579,46 @@ public sealed record ActioProSocioLinkDto
 
     [JsonPropertyOrder(2)]
     public required string DisputeType { get; init; }
+}
+
+/// <summary>One §7/§9 <see cref="Gens.Simulation.MerchantFamilies.MerchantHouseArchetype"/> (Phase 15
+/// item 3).</summary>
+public sealed record MerchantHouseArchetypeDto
+{
+    [JsonPropertyOrder(0)]
+    public required string OwnerKind { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public string? OwnerId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string MerchantType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string WholesaleOrRetailTier { get; init; }
+}
+
+/// <summary>One §6/§9 <see cref="Gens.Simulation.MerchantFamilies.DignitasInvestmentAction"/> (Phase 15
+/// item 3).</summary>
+public sealed record DignitasInvestmentActionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ActionType { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int DignitasEffect { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int DateTotalMonths { get; init; }
+}
+
+/// <summary>One player household's §6/§9 <see
+/// cref="Gens.Simulation.MerchantFamilies.SenateEntryInvestmentLog"/> (Phase 15 item 3).</summary>
+public sealed record SenateEntryInvestmentLogDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required IReadOnlyList<DignitasInvestmentActionDto> Actions { get; init; }
 }

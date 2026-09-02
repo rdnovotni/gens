@@ -25,6 +25,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
+using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.Policies;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
@@ -193,6 +194,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Plot>, PlotPropertyExtension> plotPropertyExtensions,
         OrderedRegistry<RuntimeId<Societas>, Societas> societates,
         OrderedRegistry<RuntimeId<LegalCase>, ActioProSocioLink> actioProSocioLinks,
+        OrderedRegistry<string, MerchantHouseArchetype> merchantHouseArchetypes,
+        OrderedRegistry<RuntimeId<Household>, SenateEntryInvestmentLog> senateEntryInvestmentLogs,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -328,6 +331,8 @@ public sealed class WorldState
         PlotPropertyExtensions = plotPropertyExtensions;
         Societates = societates;
         ActioProSocioLinks = actioProSocioLinks;
+        MerchantHouseArchetypes = merchantHouseArchetypes;
+        SenateEntryInvestmentLogs = senateEntryInvestmentLogs;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -939,6 +944,27 @@ public sealed class WorldState
     /// convention.</summary>
     public OrderedRegistry<RuntimeId<LegalCase>, ActioProSocioLink> ActioProSocioLinks { get; } = new();
 
+    /// <summary>Every §7/§9 <see cref="Gens.Simulation.MerchantFamilies.MerchantHouseArchetype"/> (Phase
+    /// 15 item 3), sparse and keyed by its owner's own <see
+    /// cref="Gens.Simulation.RealEstate.PropertyOwnerRef.ToTaggedOwnerId"/> string — a plain <see
+    /// cref="string"/> key rather than a <see cref="RuntimeId{T}"/>, matching <see
+    /// cref="FiredHistoricalTimelineEntryIds"/>'s identical "key by a tag this <see
+    /// cref="OrderedRegistry{TId,TEntity}"/> can order on" convention, since <see
+    /// cref="Gens.Simulation.RealEstate.PropertyOwnerRef"/> itself implements no <see
+    /// cref="IComparable{T}"/> this registry's ordering guarantee could sort on (the same reason <see
+    /// cref="FiredHistoricalTimelineEntryIds"/> keys by string rather than by <see
+    /// cref="Gens.Simulation.History.HistoricalTimelineEntryDefinition"/>'s own <see
+    /// cref="DefinitionId{T}"/>).</summary>
+    public OrderedRegistry<string, MerchantHouseArchetype> MerchantHouseArchetypes { get; } = new();
+
+    /// <summary>Every player household's §6/§9 <see
+    /// cref="Gens.Simulation.MerchantFamilies.SenateEntryInvestmentLog"/> (Phase 15 item 3), sparse and
+    /// keyed by <see cref="RuntimeId{Household}"/>, matching <see
+    /// cref="HouseholdReputations"/>'s identical "present only once touched" convention — see <see
+    /// cref="Gens.Simulation.MerchantFamilies.SenateEntryInvestmentLog"/>'s own doc comment for why this
+    /// partition is player-household-only.</summary>
+    public OrderedRegistry<RuntimeId<Household>, SenateEntryInvestmentLog> SenateEntryInvestmentLogs { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1087,6 +1113,8 @@ public sealed class WorldState
         ["plotPropertyExtensions"] = PlotPropertyExtensions.Version,
         ["societates"] = Societates.Version,
         ["actioProSocioLinks"] = ActioProSocioLinks.Version,
+        ["merchantHouseArchetypes"] = MerchantHouseArchetypes.Version,
+        ["senateEntryInvestmentLogs"] = SenateEntryInvestmentLogs.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

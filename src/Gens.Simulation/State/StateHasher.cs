@@ -16,6 +16,7 @@ using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
+using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
@@ -882,6 +883,29 @@ public static class StateHasher
             hash = MixLong(hash, entry.Key.Value);
             hash = MixLong(hash, entry.Value.SocietasId.Value);
             hash = MixLong(hash, (long)entry.Value.DisputeType);
+        }
+
+        // Already ascending (owner tag) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.MerchantHouseArchetypes.InAscendingOrder())
+        {
+            var archetype = entry.Value;
+            hash = MixString(hash, entry.Key);
+            hash = MixLong(hash, (long)archetype.Owner.Kind);
+            hash = MixString(hash, archetype.Owner.OwnerId ?? string.Empty);
+            hash = MixLong(hash, (long)archetype.MerchantType);
+            hash = MixLong(hash, (long)archetype.WholesaleOrRetailTier);
+        }
+
+        // Already ascending-RuntimeId (by Household ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.SenateEntryInvestmentLogs.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            foreach (var action in entry.Value.Actions)
+            {
+                hash = MixLong(hash, (long)action.ActionType);
+                hash = MixLong(hash, action.DignitasEffect);
+                hash = MixLong(hash, action.Date.TotalMonths);
+            }
         }
 
         return hash;
