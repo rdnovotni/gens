@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 4 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 5 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -2831,6 +2831,141 @@ hash staying stable across all three new partitions. `dotnet build`/`dotnet test
 --verify-no-changes` all pass (1546/1546 tests: 1538/1538 in `Gens.Simulation.Tests`, 8/8 in
 `Gens.ContentCompiler.Tests`), and `dotnet run --project tools/Gens.ContentCompiler -- validate content`
 is unaffected since this item adds no new content.
+
+**Item 5 progress:** Business Competition, Price Wars &amp; Economic Competition lands as a new domain,
+`src/Gens.Simulation/BusinessCompetition/` (`gens-business-competition-design.md`), the document that
+"formalize[s]" Notable Businesses' own §5 worked example into a real four-rung ladder and gives Collegia
+&amp; Guilds' cooperative pole and Notable Businesses' competitive pole the genuine structural tension §1
+names directly — this item reuses item 4's own `NotableBusiness`/`MainCompetitorBusinessId`/
+`RecordBusinessRivalryActionCommand`, Collegia's `CollegiumDetails.MemberHouseholdIds`, Economy &amp;
+Finance's `InsolvencyState`, Land Ownership &amp; Real Estate's `TransferPropertyCommand`
+(`PropertyTransferMethod.ForcedSale`), Societates' `SocietatesCatalog.GreedyTraitId`/
+`EarlyExitAmbitionThreshold`, Scandal's `RecordScandalCommand`, and Crime &amp; Punishment's
+`RecordPunishableOffenseCommand` throughout, per §8's own cross-integration list, building only §2's real
+escalation resolution, §3's breaking-ranks fold-in, §4's cartel mechanic, §5's grain-hoarding severity
+path, §6's saturation reading, and §7's spoils-of-victory command — no parallel economy, matching this
+phase's own exit gate.
+
+§2's four-rung ladder lands as `CompetitiveEscalation`, sparse and keyed by the aggressor's own
+already-registered `RuntimeId&lt;NotableBusiness&gt;` rather than a fresh ID of its own — §9's own
+`escalationId` sketch is unneeded since nothing ever addresses one escalation independently of "the
+aggressor's own current ladder position," the identical "present only once touched, keyed by an
+already-registered ID" convention `NotableBusinessGovernmentContract` already established.
+`EscalateCompetitiveRungCommand` steps Ordinary Rivalry -&gt; Price War -&gt; Predatory Pricing only,
+gated on the identical mutual-Main-Competitor check §5's own `RecordBusinessRivalryActionCommand` already
+uses; rung 4 (Forced Consolidation) is reachable only automatically, mirroring `DissolveSocietasCommand`'s
+own `Fraud`-trigger-gated-to-`"system"` precedent. `CompetitiveEscalationSystem.Tick` — a static
+`Tick(state, date)` helper matching `SupplierDisruptionSystem`'s own established "not wired into the
+central `IMonthlySystem` pipeline" convention this phase's own item 4 already set — applies §2's own
+"cuts prices... to draw customers away" as a real, small downward nudge to the aggressor's own
+settlement-market price (clamped against `MarketPriceBoundConfig.Default`'s own 15%/month bound so this
+never itself produces an invariant-violating swing, deliberately layered on top of whatever
+`Markets.MarketClearingSystem` already cleared that month rather than replacing its own authority over
+supply/demand-derived pricing — this item is the one Phase 15 item actually allowed to move
+`SettlementMarket.Price`, per item 4's own explicit deferral), posts §2 rung 3's own real monthly Ledger
+drain at Predatory Pricing, and auto-detects rung 4 by checking the target's own `InsolvencyState` —
+honestly narrowed to a `PlayerHousehold`-owned target only, since `InsolvencyState` is itself
+household-scoped (no Insolvency tracking exists for a Rival Gens Actor or a bare Character anywhere in
+this codebase). `ResolveForcedConsolidationCommand` realizes §7's spoils of victory once rung 4 is
+reached: a best-effort `TransferPropertyCommand` (`ForcedSale`) moves the loser's own linked Property
+Record to the winner (only where one exists — most ordinary businesses run out of an untracked Plot, per
+that field's own doc comment), and the winner's real Reputation gain and the loser's demotion (matching
+`MergeNotableBusinessesCommand`'s own "absorbed business is demoted, not deleted" precedent) always land
+regardless.
+
+§3's Breaking Ranks is folded directly into `EscalateCompetitiveRungCommand` rather than a separate
+command, since §3's own tension is intrinsic to the act of escalating against a fellow Collegium member,
+not a distinct trigger: `CompetitiveEscalationResolver.AreWithinSameCollegium` checks both businesses'
+owners for shared membership on any `CollegiumDetails.MemberHouseholdIds` roster, and a real step against
+a guild-mate applies a real, cumulative Dignitas penalty to the aggressor's own household
+(`AdjustDignitasCommand`) and a real Opinion penalty tagged `BondTag.Rival` between the two owners'
+Characters (`RecordInteractionCommand`) — §3's own two real, always-reachable consequences. §3's own
+further "organized collective response mirroring the collegium's own darker political-disruption
+capacity" is a real, verified scope cut: `RecordCollegiumOrganizedDisruptionCommand` is the one real
+mechanism that shape of consequence could reuse, but its own validation requires the acting household to
+already sponsor the collegium (§4's patron relationship of that document), which nothing guarantees holds
+for a breaking-ranks offender's own guild — fabricating that precondition just to force the reuse was
+rejected in favor of naming the gap directly.
+
+§4's cartels land as `CartelAgreement`, the one genuinely new `RuntimeId&lt;T&gt;` entity kind this item
+needs (N-ary participants, unlike `CompetitiveEscalation`'s naturally two-party shape), plus
+`FormCartelCommand`, `CartelDefectionRiskSystem.Tick` (another static, unwired `Tick(state, date)`
+matching this item's own established convention), and `DiscoverCartelCommand`. Defection risk reuses
+Societates' own Ambition/Greed reasoning directly — `SocietatesCatalog.GreedyTraitId`/
+`EarlyExitAmbitionThreshold`, matching that item's own cross-domain reuse of Real Estate's Loyalty
+threshold — rather than a second, redundant temptation model; the first tempted participant (ascending
+order, deterministic per ADR 0004) defects, and where the defector and another participant already happen
+to be each other's Main Competitor, this system fires one real `RecordBusinessRivalryActionCommand`
+(`PriceUndercut`) — reusing §5's own rivalry mechanism directly for "exactly the kind of betrayal §3
+already describes, now aimed at co-conspirators" rather than inventing a second Reputation mover for the
+identical shape of act. §10's own open question — "whether a cartel's own discovery should route through
+the Scandal system directly... this document assumes yes but doesn't formally amend that list itself" —
+is resolved by actually amending it: `ScandalSourceType.CartelDiscovery` is a real, new, purely additive
+source (matching `BusinessMisconduct`/`EdictBacklash`'s own precedent), and — unlike a Business Misconduct
+Scandal — `DiscoverCartelCommand` does *not* suppress the ordinary personal Dignitas penalty/Trait grant,
+since a discovered price-fixing conspiracy implicates the participating owner's own personal conduct
+directly, not merely the business's; every participant also takes a real Business Reputation hit.
+
+§5's grain hoarding lands as `GrainHoardingRecord`, `DeclareGrainHoardingCommand`/
+`EndGrainHoardingCommand`, and `GrainHoardingResolutionSystem.Tick`. "A grain-trading Notable Business" is
+read literally as a business whose own `OutputGoodId` is `NeedsConsumptionCalculator.ConsumptionGood` —
+Resources &amp; Goods' own single modeled needs-basket good, already the real stand-in Settlement
+Demographics' own Cura Annonae/Grain Dole language anchors on — rather than a second, parallel "is this
+grain" flag. §5's own "genuine shortage" reads as `SettlementMarket.UnsatisfiedDemand &gt; 0` at the
+business's own resolved settlement, the one real, checkable shortage signal this codebase tracks (no
+separate Grain Dole/Cura Annonae shortage flag exists anywhere, confirmed unbuilt, matching item 4's own
+identical finding for the same gap). The first month hoarding coincides with a real shortage triggers §5's
+mob violence — a real, one-time Ledger property-damage loss against the owner's own tracked account, since
+no `Notable Households` domain exists to carry a dedicated household-consequence field instead, the same
+narrowing item 4 already made — a real Business Reputation penalty, and a real, live `PunishableOffense`
+against the owner's own resolved Character via `RecordPunishableOffenseCommand` with a genuine new,
+purely additive `PunishableOffenseSource.GrainHoarding` value at `OffenseSeverity.Capital` — §5's own
+"this project's own single most severe form of economic misconduct" read as this codebase's own most
+severe offense tier. §10's own open question on how the mob violence itself actually resolves ("likely
+reading through Crime &amp; Punishment's own Justice Spectrum... but not explicitly stated") is left
+exactly that unresolved — this item builds the real, triggered fact and its real, immediate
+financial/legal consequences, not a further extralegal-violence resolution mechanic §5 never specifies.
+
+§6's market saturation lands as `MarketCapacityReading`, keyed by `Markets.MarketGoodKey` directly (reused
+rather than a second (settlement, trade) key for the identical pairing that key shape already covers), and
+`MarketSaturationSystem.Tick`, which counts each settlement's own Tracked businesses per Output good and
+reads the settlement's own Opifices `PopGroup.EmploymentRatio` — §6's own named "pop-group sizing" — into
+a qualitative `MarketSaturationLevel` via this item's own invented business-count thresholds. This item
+builds only the real, computed reading itself: §6's own further claim that a crowded, flat-population
+settlement "raise[s] the odds that §2's own escalation ladder actually gets triggered" describes a
+decision an autonomous NPC business layer would make by reading this reading, and no such autonomous
+"should I escalate" decision loop exists anywhere in this codebase for Notable Businesses to plug into —
+matching `PartnerDisputeRiskQuery`'s own "a real, computed primitive with no autonomous caller yet"
+precedent — so nothing in this item auto-fires `EscalateCompetitiveRungCommand` from a saturation reading.
+§6's own population-growth-trend refinement is a real, named scope cut: `District.PreviousSettlementPopulation`
+tracks population per District, not per Settlement, and a settlement can carry several Districts, so
+deriving one settlement-wide growth trend from it would need an allocation rule §6 does not specify.
+
+Every new partition (`CompetitiveEscalations`, `CartelAgreements`, `GrainHoardingRecords`,
+`MarketCapacityReadings`, plus the one new `CartelAgreementIds` counter — `CompetitiveEscalation` and
+`GrainHoardingRecord` need none, both keyed by an already-registered `RuntimeId&lt;NotableBusiness&gt;`)
+is wired into `WorldState`, `Saves.WorldSaveDto`/`WorldStateMapper`, and `State.StateHasher` for full
+save/load and deterministic-hash coverage, additive-only (ADR 0011) exactly like every prior Phase 15
+item's own new partitions. Covered in
+`tests/Gens.Simulation.Tests/BusinessCompetition/BusinessCompetitionTests.cs` (21 tests): §2's full ladder
+end to end (Price War through Predatory Pricing, the ceiling rejection, de-escalation back down and
+record removal, the real market-price nudge, Insolvency-driven auto-advance to Forced Consolidation, and
+Forced Consolidation's own Reputation/demotion/property-transfer resolution), §3's real Dignitas/Opinion
+penalty for a fellow-Collegium rivalry contrasted against an outside rival's own real absence of that
+penalty, §4's cartel formation validation, a tempted participant's real defection and rivalry action
+against an untempted control cartel, and cartel discovery's real Reputation/Dignitas/Scandal consequences,
+§5's non-grain-business rejection, the mob-violence/Punishable-Offense trigger during a real shortage
+contrasted against no-shortage inaction, and the end-hoarding lifecycle, §6's saturation reading across a
+one-business and a four-business settlement and the low-Employment-Ratio-forces-Saturated case, and a
+save/load round trip exercising every new partition with the deterministic state hash staying stable.
+
+`dotnet build`/`dotnet test`/`dotnet format --verify-no-changes` all pass in the Release configuration
+(1567/1567 tests: 1559/1559 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`); this
+sandbox started with no .NET SDK installed and no direct path to one (an initial `dotnet-install.sh`
+fetch was blocked by the outbound egress policy against `builds.dotnet.microsoft.com`), so this item's
+own SDK came from `apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned `10.0.100` via its
+own `rollForward: latestPatch` against the installed `10.0.111`. `dotnet run --project
+tools/Gens.ContentCompiler -- validate content` is unaffected since this item adds no new content.
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 

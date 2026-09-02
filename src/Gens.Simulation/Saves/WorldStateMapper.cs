@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
+using Gens.Simulation.BusinessCompetition;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
@@ -113,6 +114,7 @@ public static class WorldStateMapper
                 PropertyRecordIds = state.PropertyRecordIds.Peek,
                 SocietasIds = state.SocietasIds.Peek,
                 NotableBusinessIds = state.NotableBusinessIds.Peek,
+                CartelAgreementIds = state.CartelAgreementIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -290,6 +292,17 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             NotableBusinessGovernmentContracts = state.NotableBusinessGovernmentContracts.InAscendingOrder()
                 .Select(entry => ToNotableBusinessGovernmentContractDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            CompetitiveEscalations = state.CompetitiveEscalations.InAscendingOrder()
+                .Select(entry => ToCompetitiveEscalationDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            CartelAgreements = state.CartelAgreements.InAscendingOrder().Select(entry => ToCartelAgreementDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            GrainHoardingRecords = state.GrainHoardingRecords.InAscendingOrder()
+                .Select(entry => ToGrainHoardingRecordDto(entry.Value)).ToArray(),
+            // Already ascending-MarketGoodKey order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            MarketCapacityReadings = state.MarketCapacityReadings.InAscendingOrder()
+                .Select(entry => ToMarketCapacityReadingDto(entry.Value)).ToArray(),
         };
     }
 
@@ -870,6 +883,34 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<NotableBusiness>, NotableBusinessGovernmentContract>(contract.BusinessId, contract);
             }));
 
+        var competitiveEscalations = OrderedRegistry<RuntimeId<NotableBusiness>, CompetitiveEscalation>.Restore(
+            dto.CompetitiveEscalations.Select(e =>
+            {
+                var escalation = FromCompetitiveEscalationDto(e);
+                return new KeyValuePair<RuntimeId<NotableBusiness>, CompetitiveEscalation>(escalation.BusinessAId, escalation);
+            }));
+
+        var cartelAgreements = OrderedRegistry<RuntimeId<CartelAgreement>, CartelAgreement>.Restore(
+            dto.CartelAgreements.Select(c =>
+            {
+                var cartel = FromCartelAgreementDto(c);
+                return new KeyValuePair<RuntimeId<CartelAgreement>, CartelAgreement>(cartel.CartelId, cartel);
+            }));
+
+        var grainHoardingRecords = OrderedRegistry<RuntimeId<NotableBusiness>, GrainHoardingRecord>.Restore(
+            dto.GrainHoardingRecords.Select(g =>
+            {
+                var record = FromGrainHoardingRecordDto(g);
+                return new KeyValuePair<RuntimeId<NotableBusiness>, GrainHoardingRecord>(record.BusinessId, record);
+            }));
+
+        var marketCapacityReadings = OrderedRegistry<MarketGoodKey, MarketCapacityReading>.Restore(
+            dto.MarketCapacityReadings.Select(m =>
+            {
+                var reading = FromMarketCapacityReadingDto(m);
+                return new KeyValuePair<MarketGoodKey, MarketCapacityReading>(new MarketGoodKey(reading.SettlementId, reading.GoodId), reading);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -923,6 +964,7 @@ public static class WorldStateMapper
             propertyRecordIds: RuntimeIdCounter<PropertyRecord>.Restore(dto.Counters.PropertyRecordIds),
             societasIds: RuntimeIdCounter<Societas>.Restore(dto.Counters.SocietasIds),
             notableBusinessIds: RuntimeIdCounter<NotableBusiness>.Restore(dto.Counters.NotableBusinessIds),
+            cartelAgreementIds: RuntimeIdCounter<CartelAgreement>.Restore(dto.Counters.CartelAgreementIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1009,6 +1051,10 @@ public static class WorldStateMapper
             notableBusinesses: notableBusinesses,
             notableBusinessRivalryLogs: notableBusinessRivalryLogs,
             notableBusinessGovernmentContracts: notableBusinessGovernmentContracts,
+            competitiveEscalations: competitiveEscalations,
+            cartelAgreements: cartelAgreements,
+            grainHoardingRecords: grainHoardingRecords,
+            marketCapacityReadings: marketCapacityReadings,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1682,6 +1728,70 @@ public static class WorldStateMapper
         RuntimeId<Settlement>.Parse(dto.SettlementId),
         Money.FromMinorUnits(dto.MonthlyStipendRawValue),
         new GameDate(dto.StartDateTotalMonths));
+
+    private static CompetitiveEscalationDto ToCompetitiveEscalationDto(CompetitiveEscalation escalation) => new()
+    {
+        BusinessAId = escalation.BusinessAId.ToTaggedString(),
+        BusinessBId = escalation.BusinessBId.ToTaggedString(),
+        CurrentRung = escalation.CurrentRung.ToString(),
+        IsWithinSameCollegium = escalation.IsWithinSameCollegium,
+        CollegiumDignitasImpact = escalation.CollegiumDignitasImpact,
+    };
+
+    private static CompetitiveEscalation FromCompetitiveEscalationDto(CompetitiveEscalationDto dto) => new(
+        RuntimeId<NotableBusiness>.Parse(dto.BusinessAId),
+        RuntimeId<NotableBusiness>.Parse(dto.BusinessBId),
+        Enum.Parse<CompetitiveEscalationRung>(dto.CurrentRung),
+        dto.IsWithinSameCollegium,
+        dto.CollegiumDignitasImpact);
+
+    private static CartelAgreementDto ToCartelAgreementDto(CartelAgreement cartel) => new()
+    {
+        CartelId = cartel.CartelId.ToTaggedString(),
+        ParticipantBusinessIds = cartel.ParticipantBusinessIds.Select(id => id.ToTaggedString()).ToArray(),
+        AgreementType = cartel.AgreementType.ToString(),
+        IsDiscovered = cartel.IsDiscovered,
+        BreakingParticipantId = cartel.BreakingParticipantId?.ToTaggedString(),
+    };
+
+    private static CartelAgreement FromCartelAgreementDto(CartelAgreementDto dto) => new(
+        RuntimeId<CartelAgreement>.Parse(dto.CartelId),
+        dto.ParticipantBusinessIds.Select(RuntimeId<NotableBusiness>.Parse).ToArray(),
+        Enum.Parse<CartelAgreementType>(dto.AgreementType),
+        dto.IsDiscovered,
+        dto.BreakingParticipantId is { } breakingId ? RuntimeId<NotableBusiness>.Parse(breakingId) : null);
+
+    private static GrainHoardingRecordDto ToGrainHoardingRecordDto(GrainHoardingRecord record) => new()
+    {
+        BusinessId = record.BusinessId.ToTaggedString(),
+        IsActivelyHoarding = record.IsActivelyHoarding,
+        DuringActiveShortage = record.DuringActiveShortage,
+        MobViolenceTriggered = record.MobViolenceTriggered,
+        PunishableOffenseGenerated = record.PunishableOffenseGenerated,
+    };
+
+    private static GrainHoardingRecord FromGrainHoardingRecordDto(GrainHoardingRecordDto dto) => new(
+        RuntimeId<NotableBusiness>.Parse(dto.BusinessId),
+        dto.IsActivelyHoarding,
+        dto.DuringActiveShortage,
+        dto.MobViolenceTriggered,
+        dto.PunishableOffenseGenerated);
+
+    private static MarketCapacityReadingDto ToMarketCapacityReadingDto(MarketCapacityReading reading) => new()
+    {
+        SettlementId = reading.SettlementId.ToTaggedString(),
+        GoodId = reading.GoodId.Value,
+        CurrentBusinessCount = reading.CurrentBusinessCount,
+        EmploymentRatioDerivedRaw = reading.EmploymentRatioDerived.RawValue,
+        SaturationLevel = reading.SaturationLevel.ToString(),
+    };
+
+    private static MarketCapacityReading FromMarketCapacityReadingDto(MarketCapacityReadingDto dto) => new(
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        new DefinitionId<Good>(dto.GoodId),
+        dto.CurrentBusinessCount,
+        Fixed64.FromRaw(dto.EmploymentRatioDerivedRaw),
+        Enum.Parse<MarketSaturationLevel>(dto.SaturationLevel));
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

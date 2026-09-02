@@ -56,6 +56,18 @@ public enum ScandalSourceType
     /// file's already-shipped, already-tested pipeline switches on <see cref="ScandalSourceType"/> at
     /// all.</summary>
     BusinessMisconduct,
+
+    /// <summary>Phase 15 item 5's own real, reachable addition (<c>gens-business-competition-design.md</c>
+    /// §4/§10): "whether a cartel's own discovery should route through the Scandal system directly... this
+    /// document assumes yes but doesn't formally amend that list itself" — this item resolves that open
+    /// question by actually amending it. Unlike <see cref="BusinessMisconduct"/>, a discovered
+    /// price-fixing conspiracy implicates the participating owner's own personal conduct directly (a
+    /// household head conspiring against the market), so <see cref="BusinessCompetition.DiscoverCartelCommand"/>
+    /// does <b>not</b> suppress the ordinary personal Dignitas penalty/Trait grant the way a Business
+    /// Misconduct Scandal does. Purely additive, matching <see cref="BusinessMisconduct"/>'s own identical
+    /// reasoning: nothing in this file's already-shipped, already-tested pipeline switches on <see
+    /// cref="ScandalSourceType"/> at all.</summary>
+    CartelDiscovery,
 }
 
 /// <summary>§6's severity ladder. <see cref="NotaCensoriaEligible"/> is kept for schema completeness

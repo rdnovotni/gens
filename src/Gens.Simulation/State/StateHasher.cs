@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
+using Gens.Simulation.BusinessCompetition;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
@@ -952,6 +953,51 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.SettlementId.Value);
             hash = MixLong(hash, entry.Value.MonthlyStipend.RawValue);
             hash = MixLong(hash, entry.Value.StartDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId (by aggressor business ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.CompetitiveEscalations.InAscendingOrder())
+        {
+            var escalation = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, escalation.BusinessBId.Value);
+            hash = MixLong(hash, (long)escalation.CurrentRung);
+            hash = MixLong(hash, escalation.IsWithinSameCollegium ? 1L : 0L);
+            hash = MixLong(hash, escalation.CollegiumDignitasImpact);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.CartelAgreements.InAscendingOrder())
+        {
+            var cartel = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            foreach (var participantId in cartel.ParticipantBusinessIds)
+                hash = MixLong(hash, participantId.Value);
+            hash = MixLong(hash, (long)cartel.AgreementType);
+            hash = MixLong(hash, cartel.IsDiscovered ? 1L : 0L);
+            hash = MixLong(hash, cartel.BreakingParticipantId?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId (by business ID) order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.GrainHoardingRecords.InAscendingOrder())
+        {
+            var record = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, record.IsActivelyHoarding ? 1L : 0L);
+            hash = MixLong(hash, record.DuringActiveShortage ? 1L : 0L);
+            hash = MixLong(hash, record.MobViolenceTriggered ? 1L : 0L);
+            hash = MixLong(hash, record.PunishableOffenseGenerated ? 1L : 0L);
+        }
+
+        // Already ascending-MarketGoodKey order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.MarketCapacityReadings.InAscendingOrder())
+        {
+            var reading = entry.Value;
+            hash = MixLong(hash, entry.Key.SettlementId.Value);
+            hash = MixString(hash, entry.Key.GoodId.Value);
+            hash = MixLong(hash, reading.CurrentBusinessCount);
+            hash = MixLong(hash, reading.EmploymentRatioDerived.RawValue);
+            hash = MixLong(hash, (long)reading.SaturationLevel);
         }
 
         return hash;

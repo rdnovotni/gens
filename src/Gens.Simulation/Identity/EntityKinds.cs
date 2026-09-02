@@ -1,3 +1,4 @@
+using Gens.Simulation.BusinessCompetition;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Correspondence;
@@ -279,6 +280,13 @@ internal static class RuntimeIdTagRegistry
         // RuntimeId<NotableBusiness>, not by a RuntimeId of their own, matching SenateEntryInvestmentLog's
         // identical exemption.
         [typeof(NotableBusiness)] = "notablebusiness",
+        // Phase 15 item 5 — Gens.Simulation.BusinessCompetition.CartelAgreement, same "real record as its
+        // own tag" convention as NotableBusiness above. CompetitiveEscalation and GrainHoardingRecord need
+        // no entry: both are keyed by the already-registered RuntimeId<NotableBusiness>, not by a
+        // RuntimeId of their own, matching SenateEntryInvestmentLog's identical exemption.
+        // MarketCapacityReading needs no entry either: it is keyed by MarketGoodKey, not by its own
+        // RuntimeId, matching HouseholdDoctrineState's identical exemption.
+        [typeof(CartelAgreement)] = "cartelagreement",
     };
 
     public static string Resolve(Type type) =>

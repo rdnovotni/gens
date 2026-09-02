@@ -572,6 +572,34 @@ public sealed record WorldSaveDocument
     [JsonPropertyOrder(90)]
     public IReadOnlyList<NotableBusinessGovernmentContractDto> NotableBusinessGovernmentContracts { get; init; } =
         Array.Empty<NotableBusinessGovernmentContractDto>();
+
+    /// <summary>Every aggressor business's own §2/§10 <see
+    /// cref="Gens.Simulation.BusinessCompetition.CompetitiveEscalation"/> (Phase 15 item 5), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> (by aggressor business ID) order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="NotableBusinessGovernmentContracts"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(91)]
+    public IReadOnlyList<CompetitiveEscalationDto> CompetitiveEscalations { get; init; } = Array.Empty<CompetitiveEscalationDto>();
+
+    /// <summary>Every §4/§10 <see cref="Gens.Simulation.BusinessCompetition.CartelAgreement"/> (Phase 15
+    /// item 5), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="CompetitiveEscalations"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(92)]
+    public IReadOnlyList<CartelAgreementDto> CartelAgreements { get; init; } = Array.Empty<CartelAgreementDto>();
+
+    /// <summary>Every grain-trading business's own §5/§10 <see
+    /// cref="Gens.Simulation.BusinessCompetition.GrainHoardingRecord"/> (Phase 15 item 5), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> (by business ID) order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="CartelAgreements"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(93)]
+    public IReadOnlyList<GrainHoardingRecordDto> GrainHoardingRecords { get; init; } = Array.Empty<GrainHoardingRecordDto>();
+
+    /// <summary>Every §6/§10 <see cref="Gens.Simulation.BusinessCompetition.MarketCapacityReading"/>
+    /// (Phase 15 item 5), already in ascending-<see cref="Markets.MarketGoodKey"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="GrainHoardingRecords"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(94)]
+    public IReadOnlyList<MarketCapacityReadingDto> MarketCapacityReadings { get; init; } = Array.Empty<MarketCapacityReadingDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -848,6 +876,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(50)]
     public long NotableBusinessIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-5 save has no Cartel
+    /// Agreements. Additive-only per ADR 0011's policy, matching <see cref="NotableBusinessIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(51)]
+    public long CartelAgreementIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -3759,4 +3793,84 @@ public sealed record NotableBusinessGovernmentContractDto
 
     [JsonPropertyOrder(3)]
     public required int StartDateTotalMonths { get; init; }
+}
+
+/// <summary>One aggressor business's own §2/§10 <see
+/// cref="Gens.Simulation.BusinessCompetition.CompetitiveEscalation"/> (Phase 15 item 5).</summary>
+public sealed record CompetitiveEscalationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string BusinessAId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string BusinessBId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string CurrentRung { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool IsWithinSameCollegium { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int CollegiumDignitasImpact { get; init; }
+}
+
+/// <summary>One §4/§10 <see cref="Gens.Simulation.BusinessCompetition.CartelAgreement"/> (Phase 15
+/// item 5).</summary>
+public sealed record CartelAgreementDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CartelId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required IReadOnlyList<string> ParticipantBusinessIds { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string AgreementType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool IsDiscovered { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? BreakingParticipantId { get; init; }
+}
+
+/// <summary>One grain-trading business's own §5/§10 <see
+/// cref="Gens.Simulation.BusinessCompetition.GrainHoardingRecord"/> (Phase 15 item 5).</summary>
+public sealed record GrainHoardingRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string BusinessId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required bool IsActivelyHoarding { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required bool DuringActiveShortage { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool MobViolenceTriggered { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool PunishableOffenseGenerated { get; init; }
+}
+
+/// <summary>One §6/§10 <see cref="Gens.Simulation.BusinessCompetition.MarketCapacityReading"/> (Phase 15
+/// item 5).</summary>
+public sealed record MarketCapacityReadingDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string GoodId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int CurrentBusinessCount { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required long EmploymentRatioDerivedRaw { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string SaturationLevel { get; init; }
 }
