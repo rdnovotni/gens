@@ -90,6 +90,7 @@ public static class StartLandReclamationCommands
     public static readonly ValidationErrorCode NotMarshTerrain = new("privateInfrastructure.startLandReclamation.notMarshTerrain");
     public static readonly ValidationErrorCode NotOwned = new("privateInfrastructure.startLandReclamation.notOwned");
     public static readonly ValidationErrorCode AlreadyInProgress = new("privateInfrastructure.startLandReclamation.alreadyInProgress");
+    public static readonly ValidationErrorCode AlreadyResolved = new("privateInfrastructure.startLandReclamation.alreadyResolved");
 
     public static readonly CommandPipeline<WorldState, StartLandReclamationCommand> Pipeline = new(
         validate: Validate, mutate: Mutate, issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
@@ -102,9 +103,15 @@ public static class StartLandReclamationCommands
             return NotMarshTerrain;
         if (plot.OwnerId is null)
             return NotOwned;
-        if (state.LandReclamationProjects.TryGet(command.PlotId, out var existing) &&
-            existing!.Status == LandReclamationStatus.InProgress)
-            return AlreadyInProgress;
+        if (state.LandReclamationProjects.TryGet(command.PlotId, out var existing))
+        {
+            // §5.1's own "a Partial result is real and permanent" — a CompletedPartial record must
+            // block a restart exactly like an InProgress one does, per direct review finding: without
+            // this, a Partial outcome (which leaves Terrain at Marsh, so NotMarshTerrain never catches
+            // it) could be repeatedly re-rolled toward Full, contradicting §11's own "this item builds
+            // no continuation path past a resolved outcome."
+            return existing!.Status == LandReclamationStatus.InProgress ? AlreadyInProgress : AlreadyResolved;
+        }
 
         return null;
     }

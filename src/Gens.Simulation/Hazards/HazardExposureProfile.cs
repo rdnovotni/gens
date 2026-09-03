@@ -1,6 +1,7 @@
 using Gens.Simulation.Buildings;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
+using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -49,13 +50,40 @@ public readonly record struct HazardExposureProfile(
         var buildingDensity = totalCapacity <= 0 ? 0.0 : buildingCount / totalCapacity;
 
         // Phase 15 item 7's own real, live §3/§3.1 extension: the settlement's own share of Plots
-        // carrying a Private Infrastructure Irrigation Canal or Well/Cistern, fed straight into
-        // DroughtFamineExposure below (see that calculator's own doc comment). A pre-item-7 save (or
-        // any settlement with no such structures) reads exactly 0.0, preserving every prior reading.
-        var irrigatedPlotIds = state.IrrigationCanals.InAscendingOrder().Select(entry => entry.Key)
-            .Concat(state.WellOrCisterns.InAscendingOrder().Select(entry => entry.Key))
-            .ToHashSet();
-        var irrigatedFraction = totalPlots == 0 ? 0.0 : plots.Count(p => irrigatedPlotIds.Contains(p.Id)) / (double)totalPlots;
+        // carrying a still-operational Private Infrastructure Irrigation Canal or Well/Cistern, fed
+        // straight into DroughtFamineExposure below (see that calculator's own doc comment). A
+        // pre-item-7 save (or any settlement with no such structures) reads exactly 0.0, preserving
+        // every prior reading.
+        //
+        // Per direct review finding, this can't simply be a boolean "does this Plot have any
+        // irrigation" fraction: DroughtFamineExposure multiplies IrrigatedFraction straight against
+        // IrrigationCanalDroughtExposureReduction (the Canal's own, largest reduction), so a flat
+        // coverage fraction would credit a Well or Cistern with the Canal's full 40% reduction instead
+        // of its own lower 18%/26% figure, and would keep crediting a structure whose condition has
+        // lapsed below MinimumOperationalCondition. Each Plot instead contributes its own operational
+        // structure's reduction as a fraction of the Canal's own reduction — 1.0 for an operational
+        // Canal, a smaller ratio for an operational Well/Cistern, 0.0 for a lapsed or absent one — so
+        // the averaged result, once re-multiplied by the Canal's reduction below, reproduces each
+        // Plot's real, type-specific, condition-gated contribution.
+        var canalMaxReduction = (double)PrivateInfrastructureCatalog.IrrigationCanalDroughtExposureReduction.RawValue;
+        var irrigationWeight = 0.0;
+        foreach (var plot in plots)
+        {
+            if (state.IrrigationCanals.TryGet(plot.Id, out var canal) &&
+                InfrastructureConditionResolver.IsOperational(state, canal!.ConditionKey))
+            {
+                irrigationWeight += 1.0;
+            }
+            else if (state.WellOrCisterns.TryGet(plot.Id, out var wellOrCistern) &&
+                InfrastructureConditionResolver.IsOperational(state, wellOrCistern!.ConditionKey))
+            {
+                var reduction = wellOrCistern.Type == WellOrCisternType.Well
+                    ? PrivateInfrastructureCatalog.WellDroughtExposureReduction
+                    : PrivateInfrastructureCatalog.CisternDroughtExposureReduction;
+                irrigationWeight += reduction.RawValue / canalMaxReduction;
+            }
+        }
+        var irrigatedFraction = totalPlots == 0 ? 0.0 : irrigationWeight / totalPlots;
 
         return new HazardExposureProfile(
             buildingDensity, riverAdjacentFraction, forestCoverFraction, coastalFraction, hillsFraction,

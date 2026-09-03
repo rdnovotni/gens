@@ -33,8 +33,14 @@ public static class RoadClusterQuery
         if (state is null)
             throw new ArgumentNullException(nameof(state));
 
+        // §8's neglect reading applied to connectivity itself, per direct review finding: a Paved Road
+        // segment whose own condition has lapsed below MinimumOperationalCondition no longer knits its
+        // two Plots into a cluster — a household paying no upkeep on a failed road loses both the
+        // Connected Estate bonus that road was carrying and any Trade-Proximity reach that only crossed
+        // it, rather than continuing to benefit from a road that no longer functions.
         var edges = state.PavedRoadConnections.InAscendingOrder()
-            .Where(entry => entry.Value.HouseholdId == householdId)
+            .Where(entry => entry.Value.HouseholdId == householdId &&
+                InfrastructureConditionResolver.IsOperational(state, entry.Value.ConditionKey))
             .Select(entry => entry.Value)
             .ToArray();
         if (edges.Length == 0)
