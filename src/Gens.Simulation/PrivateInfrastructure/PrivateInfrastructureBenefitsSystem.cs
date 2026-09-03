@@ -73,7 +73,7 @@ public static class PrivateInfrastructureBenefitsSystem
             var ownedPlotIds = RoadClusterQuery.OwnedPlotIds(state, householdId);
 
             ApplyTradeProximity(state, date, householdId, ownedPlotIds, clusters, events);
-            ApplyConnectedEstateBonus(state, date, householdId, clusters, events);
+            ApplyConnectedEstateBonus(state, date, householdId, ownedPlotIds, clusters, events);
             ApplyUnifiedEstateMilestone(state, date, householdId, clusters, events);
         }
 
@@ -134,15 +134,20 @@ public static class PrivateInfrastructureBenefitsSystem
     }
 
     private static void ApplyConnectedEstateBonus(
-        WorldState state, GameDate date, RuntimeId<Household> householdId, IReadOnlyList<RoadClusterView> clusters,
-        List<IDomainEvent> events)
+        WorldState state, GameDate date, RuntimeId<Household> householdId, HashSet<RuntimeId<Plot>> ownedPlotIds,
+        IReadOnlyList<RoadClusterView> clusters, List<IDomainEvent> events)
     {
         foreach (var cluster in clusters)
         {
             if (!cluster.ConnectedEstateBonusActive)
                 continue;
 
-            var plotIdSet = cluster.PlotIds.ToHashSet();
+            // Per direct review finding: a cluster's own Plot list is drawn from the connections that
+            // originally built it, which can outlive a later TransferPropertyCommand on one endpoint.
+            // Restrict the counted buildings to the household's own current holdings so a sold Plot's
+            // buildings stop paying the seller and the buyer isn't billed for their own Plot's bonus
+            // under the seller's name.
+            var plotIdSet = cluster.PlotIds.Where(ownedPlotIds.Contains).ToHashSet();
             var buildingCount = state.Buildings.InAscendingOrder().Count(entry => plotIdSet.Contains(entry.Value.PlotId));
             if (buildingCount == 0)
                 continue;
