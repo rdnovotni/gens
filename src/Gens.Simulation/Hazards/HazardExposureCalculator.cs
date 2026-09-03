@@ -56,7 +56,23 @@ public static class HazardExposureCalculator
     /// region-and-fertility-agnostic baseline, elevated during the same dry season <see
     /// cref="DisasterCompoundingCalculator.IsDrySeasonMonth"/> flags for <see cref="FireExposure"/>'s
     /// own compounding bonus, since a Mediterranean dry season is drought season by definition (§1).</summary>
-    public static int DroughtFamineExposure(bool drySeasonMonth) => Clamp(drySeasonMonth ? 30 : 14);
+    /// <summary><paramref name="irrigatedFraction"/> is Phase 15 item 7's own real, live extension
+    /// (<c>gens-private-infrastructure-design.md</c> §3/§3.1) — the settlement's own share of Plots
+    /// carrying an Irrigation Canal or Well/Cistern, read by <see cref="HazardExposureProfile.Compute"/>
+    /// and passed straight through here. Defaults to 0.0 so every pre-item-7 caller and test is
+    /// untouched (matching <c>Characters.ContentmentCalculator.ComputeContentment</c>'s own "gains one
+    /// new optional parameter... every pre-existing call site... untouched" precedent); at full
+    /// settlement coverage it cuts the baseline by <see
+    /// cref="PrivateInfrastructure.PrivateInfrastructureCatalog.IrrigationCanalDroughtExposureReduction"/>'s
+    /// own 40% figure, scaled linearly by how much of the settlement is actually irrigated.</summary>
+    public static int DroughtFamineExposure(bool drySeasonMonth, double irrigatedFraction = 0.0)
+    {
+        var baseline = drySeasonMonth ? 30 : 14;
+        var maxReduction = PrivateInfrastructure.PrivateInfrastructureCatalog.IrrigationCanalDroughtExposureReduction.RawValue /
+            (double)Numerics.Fixed64.ScaleFactor;
+        var reductionFraction = Math.Clamp(irrigatedFraction, 0.0, 1.0) * maxReduction;
+        return Clamp((int)Math.Round(baseline * (1.0 - reductionFraction)));
+    }
 
     /// <summary>§2's coastal/port-reliance driver. <paramref name="coastalFraction"/> is the
     /// settlement's own Coast-terrain/Coastline-feature <see cref="Land.Plot"/> share (0-1) — the real

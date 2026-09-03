@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 6 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 7 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -3104,6 +3104,155 @@ save/load round trip exercising every new partition with the deterministic state
 (1584/1584 tests: 1576/1576 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`); this
 sandbox again started with no .NET SDK installed, resolved the same way item 5's own progress note
 describes (`apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned `10.0.100` via
+`rollForward: latestPatch`). `dotnet run --project tools/Gens.ContentCompiler -- validate content` is
+unaffected since this item adds no new content.
+
+**Item 7 progress:** Private Infrastructure lands as a new domain,
+`src/Gens.Simulation/PrivateInfrastructure/` (`gens-private-infrastructure-design.md`), the document that
+finally resolves Estate &amp; Settlement's own long-deferred Infrastructure stub — "a formalized
+irrigation bonus, formalized road/river/coast trade-proximity bonuses, [and] building-to-building
+adjacency bonuses... were all considered during this polish pass and set aside." This item attaches every
+new structure the same way `RealEstate.PlotPropertyExtension` attaches its own leasing/District state:
+sparse new `WorldState` partitions keyed by the already-issued `RuntimeId&lt;Plot&gt;` a structure was
+built on wherever one Plot can carry at most one of a kind, with a real, own `RuntimeId` for the two
+structure kinds that genuinely need one (`PavedRoadConnection`, `PrivateBridge` — both connect two
+Plots, so neither has a single natural Plot key) — `Land.Plot` itself is never touched beyond the two
+existing fields (`Terrain`, `Features`) this item's own commands already had real precedent for mutating
+(§9's own "Property Value... a direct input," realized by bumping `RealEstate.PlotPropertyExtension.Value`
+through `PlotPropertyResolver` directly, matching that item's own established remove-then-re-add
+convention).
+
+§2's Paved Road lands as `PavedRoadConnection`/`BuildPavedRoadConnectionCommand`, and §4's Road Cluster as
+`RoadClusterQuery` — a pure union-find over one household's own connections, matching
+`MerchantFamilies.EquestrianStatusQuery`'s own "computed, not stored" precedent rather than a
+redundantly-maintained cluster record that could drift from its own edges. A real, investigated
+narrowing named directly in `PavedRoadConnection`'s own doc comment: `Land.Plot` carries no spatial
+coordinate or adjacency graph anywhere in this codebase for any purpose today, confirmed by direct
+search, so §2's "connecting two adjacent Plots" is not validated geometrically — this item validates the
+one real, checkable fact instead (same settlement, same household), matching
+`HoldContestedElectionCommand`'s own "the caller supplies an already-resolved fact this item cannot
+itself generate" precedent applied to spatial adjacency rather than a rival candidate. §2.1's
+trade-proximity bonus and §4's Connected Estate bonus both land in `PrivateInfrastructureBenefitsSystem`
+as a real, monthly Ledger income line (§9's own honest finding: `Economy.StandingContract.
+TradeRouteInvestment` is a one-off commitment stub with no live "Trade Route effectiveness" figure
+anywhere in this codebase to multiply instead, so this item posts real income as its own concrete
+realization rather than modifying a number that does not exist). §4.1's Unified Estate milestone fires
+exactly once per household (`UnifiedEstateMilestones`, a sparse per-household achieved-date partition)
+and gains a real `ChronicleProjector` case, matching that projector's own "every system that already
+flagged something as Chronicle-worthy... is the actual generation source" convention rather than a
+direct, out-of-band `ChronicleEntries` write.
+
+§3's Irrigation Canal and §3.1's Well/Cistern land as `IrrigationCanal`/`WellOrCistern` plus their Build
+commands, gated per §3's own source rule — River-adjacent, or (§11's own honest reading of "a private
+branch off the settlement's own civic Aqueduct") `SettlementStage.City`, the one real proxy this codebase
+has for "this settlement's own Aqueduct exists," since no standalone Aqueduct entity exists anywhere in
+this codebase (`Land.SettlementStage`'s own doc comment is the only place one is named at all). §3's own
+real, live hazard hook — Drought/Famine severity reduction — is a genuine extension of `Hazards.
+HazardExposureCalculator.DroughtFamineExposure` and `Hazards.HazardExposureProfile.Compute` (a new
+optional `irrigatedFraction` parameter/field, defaulting to 0.0 so every pre-item-7 caller and test is
+untouched, matching `Characters.ContentmentCalculator.ComputeContentment`'s own identical "gains one new
+optional parameter" precedent) rather than a second, parallel Exposure system. §3's own "Soil Fertility
+recovery" half is honestly **not** wired to anything live: no Soil Fertility track exists anywhere in this
+codebase (`Hazards.HazardExposureCalculator`'s own top-level disclosure, the same gap `Hazards.
+DormantVolcano`'s post-eruption fertility boost already names) — this item carries the figure on the
+record as a documented reading of §3's own text for whichever future item builds that track, rather than
+fabricating a consumer for it.
+
+§5's Land Reclamation lands as `LandReclamationProject`/`StartLandReclamationCommand`/
+`LandReclamationResolutionSystem`, gated on `TerrainType.Marsh` — `Land.TerrainType` carries no separate
+"Poor-land" value alongside Marsh, an honest narrowing of §5's own "Marsh/Poor-land" framing named
+directly in that record's own doc comment. §5.1's own "a real chance of landing as only a Partial
+Reclamation" lands as this item's own invented 25%-Full/75%-Partial weighted roll
+(`PrivateInfrastructureCatalog.FullReclamationProbability`), resolved once per project after a real
+24-month, Labor-and-denarii-consuming duration, using a real `Random.RandomStreamSet` draw exactly like
+`PublicContracts.FileRepetundaeCaseCommand`'s own precedent for a Phase 15 mutation needing genuine
+randomness (an unpaid month simply does not advance `MonthsInvested`, a forgiving stall rather than a
+hard failure). A Full result converts the Plot's own `TerrainType` to `FertilePlain` outright and awards
+real Dignitas through `Reputation.AdjustDignitasCommand`'s own established path, plus a real
+`ChronicleProjector` case (§5.1: "worth real Dignitas and a Chronicle entry when it lands"); a Partial
+result only raises `Land.LandCondition` to a floor, carrying neither. §11's own open question — whether
+continued investment after a Partial result can ever push toward Full — is left exactly that open; this
+item builds no continuation path past a resolved outcome, the same "name the gap, don't fabricate the
+unspecified branch" discipline `Societates.DissolveSocietasCommand`'s own `ProfitDistributionDisagreement`
+scope cut already established.
+
+§6's private Bridge lands as `PrivateBridge`/`BuildPrivateBridgeCommand`, gated on at least one endpoint
+Plot being River-terrain or River-adjacent (the same honest "no geometric adjacency graph exists" scope
+cut as §2's Paved Road, applied to "opposite riverbanks" instead). §7's Boundary Wall/Fence lands as
+`BoundaryInfrastructure`/`BuildBoundaryInfrastructureCommand`, with `ConfinementBacking` read live at
+build time off `Characters.RegimenResolver`'s own household-default `FreedomsTier` (Confined or
+Restricted both count, per that axis's own two non-`FreeMovement` tiers) — a real, working tie to Labor
+&amp; Slavery's Regimen, not a cosmetic flag. §7.1's Frontier Security Posture tie-in is honestly **not**
+wired: `Gens.Simulation.Policies` carries only the Rites Budget (Phase 9 item 2's own scope), confirmed by
+direct search — no Frontier Security Posture/Fortify-Patrol-Minimal-Garrison dial exists anywhere in this
+codebase — so `BoundaryInfrastructure.PairedWithFortifyPosture` is a real, always-`false` field until that
+Policies &amp; Edicts item is built, named directly in that record's own doc comment rather than faked.
+§7's own rustling-risk reduction is the identical honest gap: Piracy &amp; Banditry is Phase 16, confirmed
+unbuilt by direct search, so `RustlingRiskReduction` is a real, documented, queryable fact with no live
+raid roll to consume it yet — matching `Societates.PartnerDisputeRiskQuery`'s own "the primitive ships,
+the caller doesn't exist yet" precedent.
+
+§8's Maintenance &amp; Disaster Vulnerability lands as `InfrastructureCondition`/
+`InfrastructureConditionResolver` (a real 0-100 scale, matching `Land.LandCondition`'s own identical
+range, per §8's own "reads the same scale as... Plot condition field"), `InfrastructureUpkeepSystem`
+(a real monthly Ledger expense per structure, matching `RealEstate.AdministrativeBurdenSystem`'s own
+exact shape — an unpaid month costs a real, fixed condition-point loss instead), and
+`RepairInfrastructureCommand` (§8's "recoverable through the same Repair action," a real, funded
+restoration mirroring `Buildings.BuildingInstance.Repair`'s own shape as a command rather than a mutating
+method, since this namespace's records are immutable). Disaster vulnerability lands as
+`InfrastructureDisasterVulnerabilitySystem`, called with the same tick's own `Hazards.
+DisasterEventOccurredEvent`s `Hazards.NaturalDisasterSystem.Tick` already produced — this item never
+re-rolls ignition or severity, only reuses `Hazards.DisasterDamageCalculator.BuildingHitProbability`/
+`BuildingConditionStepsLost` directly for a real, independent per-structure hit roll, the concrete answer
+to §11's own open "disaster reroll granularity" question: every structure on an eligible Plot gets its own
+roll the same tick its settlement's Event fires, gated by this item's own reasoned
+structure-type-to-hazard-type table (a Flood or Storm can wash out a Paved Road or stress a Bridge, an
+Earthquake drops a Bridge or Canal, a Landslide or Storm damages a Boundary Wall — Drought/Famine, Blight
+&amp; Infestation, and Frost touch none of them, taking §11's own named "Drought... no obvious mechanism
+for damaging a Boundary Wall" example literally and extending it to every structure this item tracks).
+
+Every new partition (`PavedRoadConnections`, `IrrigationCanals`, `WellOrCisterns`,
+`LandReclamationProjects`, `PrivateBridges`, `BoundaryInfrastructures`, `InfrastructureConditions`,
+`UnifiedEstateMilestones`, plus the `PavedRoadConnectionIds`/`PrivateBridgeIds` counters) is wired into
+`WorldState`, `Saves.WorldSaveDto`/`WorldStateMapper`, and `State.StateHasher` for full save/load and
+deterministic-hash coverage, additive-only (ADR 0011), exactly like every prior Phase 15 item's own new
+partitions — `PavedRoadConnection` and `PrivateBridge` each register a real `Identity.
+RuntimeIdTagRegistry` entry, matching `CartelAgreement`'s own "real record as its own tag" convention;
+`IrrigationCanal`, `WellOrCistern`, `LandReclamationProject`, and `BoundaryInfrastructure` need none,
+keyed by the already-registered `RuntimeId&lt;Plot&gt;` instead. Covered in `tests/Gens.Simulation.Tests/
+PrivateInfrastructure/PrivateInfrastructureTests.cs` (27 tests): Paved Road construction and its
+ownership/funding/duplicate-connection rejections, the trade-proximity bonus for both a directly
+river-adjacent Plot and one reached only through a paved connection (and its absence for an isolated
+Plot), the Road Cluster threshold actually gating the Connected Estate bonus at three Plots but not two,
+the bonus's own real building-scaled Ledger payment, the Unified Estate milestone firing exactly once and
+projecting into the Dynasty Chronicle, Irrigation Canal construction gated on River-adjacency versus a
+City-stage Aqueduct branch, Well/Cistern construction needing neither, the real, live Drought/Famine
+Exposure reduction an irrigated Plot produces, Land Reclamation's Marsh-only gate, its full-duration
+resolution landing a real (not `InProgress`) outcome, a bounded-seed search finding both a Partial and a
+Full result along with Full's real Dignitas award and Chronicle projection, private Bridge construction's
+river-crossing gate, Boundary Infrastructure's live Confinement Backing read (true under a Confined
+Regimen, false under Free Movement) and its honest always-`false` Fortify-posture field, upkeep's real
+paid-Ledger-expense/unpaid-condition-decay branches, a funded Repair actually restoring condition, a
+bounded-seed search confirming a Catastrophic Flood can eventually damage a Paved Road while a Drought
+never touches a Boundary Wall (an ineligible hazard type), and a save/load round trip exercising every new
+partition with the deterministic state hash staying stable.
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than assumption:**
+Policies &amp; Edicts' Frontier Security Posture (§7.1) and Piracy &amp; Banditry's raid/rustling-risk
+system (§7) are both confirmed unbuilt by direct search — this item's own `PairedWithFortifyPosture` and
+`RustlingRiskReduction` fields are real and queryable but have no live setting or roll to pair against yet,
+named directly rather than faked. Soil Fertility (§3) is the same kind of gap, already named by `Hazards.
+DormantVolcano`'s own precedent. §11's own "whether a single Canal/Well can serve multiple Plots" is
+resolved as one-structure-per-Plot, the simpler, more conservative reading this item can build without
+inventing a multi-Plot service-area concept with no precedent anywhere else in this codebase. Land
+Reclamation's own continuation-after-Partial question, the Road Cluster threshold's own tuning for a very
+large estate, and cross-settlement visibility of a household's own infrastructure investment are all left
+exactly as open as §11 itself leaves them.
+
+`dotnet build`/`dotnet test`/`dotnet format --verify-no-changes` all pass in the Release configuration
+(1611/1611 tests: 1603/1603 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`); this
+sandbox again started with no .NET SDK installed, resolved the same way item 6's own progress note
+describes (`apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned SDK version via
 `rollForward: latestPatch`). `dotnet run --project tools/Gens.ContentCompiler -- validate content` is
 unaffected since this item adds no new content.
 

@@ -21,7 +21,8 @@ public readonly record struct HazardExposureProfile(
     double CoastalFraction,
     double HillsFraction,
     bool DrySeasonMonth,
-    bool StormSeasonMonth)
+    bool StormSeasonMonth,
+    double IrrigatedFraction = 0.0)
 {
     public static HazardExposureProfile Compute(WorldState state, RuntimeId<Settlement> settlementId, GameDate date)
     {
@@ -47,9 +48,19 @@ public readonly record struct HazardExposureProfile(
         var buildingCount = state.Buildings.InAscendingOrder().Count(entry => plotIds.Contains(entry.Value.PlotId));
         var buildingDensity = totalCapacity <= 0 ? 0.0 : buildingCount / totalCapacity;
 
+        // Phase 15 item 7's own real, live §3/§3.1 extension: the settlement's own share of Plots
+        // carrying a Private Infrastructure Irrigation Canal or Well/Cistern, fed straight into
+        // DroughtFamineExposure below (see that calculator's own doc comment). A pre-item-7 save (or
+        // any settlement with no such structures) reads exactly 0.0, preserving every prior reading.
+        var irrigatedPlotIds = state.IrrigationCanals.InAscendingOrder().Select(entry => entry.Key)
+            .Concat(state.WellOrCisterns.InAscendingOrder().Select(entry => entry.Key))
+            .ToHashSet();
+        var irrigatedFraction = totalPlots == 0 ? 0.0 : plots.Count(p => irrigatedPlotIds.Contains(p.Id)) / (double)totalPlots;
+
         return new HazardExposureProfile(
             buildingDensity, riverAdjacentFraction, forestCoverFraction, coastalFraction, hillsFraction,
-            DisasterCompoundingCalculator.IsDrySeasonMonth(date), DisasterCompoundingCalculator.IsStormSeasonMonth(date));
+            DisasterCompoundingCalculator.IsDrySeasonMonth(date), DisasterCompoundingCalculator.IsStormSeasonMonth(date),
+            irrigatedFraction);
     }
 
     /// <summary>This settlement's live Exposure score for one standing hazard (<see
@@ -70,7 +81,7 @@ public readonly record struct HazardExposureProfile(
             HazardExposureCalculator.FloodExposure(RiverAdjacentFraction, ForestCoverFraction) +
             DisasterCompoundingCalculator.StormSeasonExposureBonus(StormSeasonMonth), 0, 100),
         HazardType.Earthquake => HazardExposureCalculator.EarthquakeExposure(),
-        HazardType.DroughtFamine => HazardExposureCalculator.DroughtFamineExposure(DrySeasonMonth),
+        HazardType.DroughtFamine => HazardExposureCalculator.DroughtFamineExposure(DrySeasonMonth, IrrigatedFraction),
         HazardType.Storm => Math.Clamp(
             HazardExposureCalculator.StormExposure(CoastalFraction) +
             DisasterCompoundingCalculator.StormSeasonExposureBonus(StormSeasonMonth), 0, 100),

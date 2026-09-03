@@ -462,6 +462,35 @@ public static class ChronicleProjector
                 diverged.EventId.ToTaggedString(),
                 diverged.TriggeringHouseholdId),
 
+            // Phase 15 item 7 (§4.1 of gens-private-infrastructure-design.md): "a genuine, visible
+            // achievement worth more than its own Connected Estate bonus alone — a real, Dynasty
+            // Chronicle-eligible milestone." Fires at most once per household, matching <see
+            // cref="PrivateInfrastructure.PrivateInfrastructureBenefitsSystem"/>'s own "fire exactly
+            // once" guard.
+            PrivateInfrastructure.UnifiedEstateAchievedEvent unified => new ChronicleEntryDraft(
+                unified.OccurredDate,
+                ChronicleCategory.WealthAndBuilding,
+                ChronicleTier.Major,
+                "A Paved Road network at last joins every Plot the household holds into one unified estate.",
+                Array.Empty<RuntimeId<Character>>(),
+                unified.Type,
+                unified.EventId.ToTaggedString(),
+                unified.HouseholdId),
+
+            // Only a Full Reclamation is Chronicle-worthy (§5.1: "a genuine, rare achievement worth real
+            // Dignitas and a Chronicle entry when it lands") — a Partial result is real and permanent but
+            // carries neither, matching that section's own explicit contrast.
+            PrivateInfrastructure.LandReclamationCompletedEvent { Outcome: PrivateInfrastructure.LandReclamationOutcome.FullReclamation } reclaimed
+                when HouseholdOfPlot(state, reclaimed.PlotId) is { } reclaimingHousehold => new ChronicleEntryDraft(
+                reclaimed.OccurredDate,
+                ChronicleCategory.WealthAndBuilding,
+                ChronicleTier.Major,
+                "Years of drainage and labor finally reclaim a marsh Plot as genuine, fertile farmland.",
+                Array.Empty<RuntimeId<Character>>(),
+                reclaimed.Type,
+                reclaimed.EventId.ToTaggedString(),
+                reclaimingHousehold),
+
             _ => null,
         };
 
@@ -477,4 +506,26 @@ public static class ChronicleProjector
 
     private static RuntimeId<Household>? HouseholdOf(WorldState state, RuntimeId<Character> characterId) =>
         state.Characters.TryGet(characterId, out var character) ? character.Household : null;
+
+    /// <summary>Resolves a Plot's own owning household, for the one Phase 15 item 7 event
+    /// (<see cref="PrivateInfrastructure.LandReclamationCompletedEvent"/>) that names a Plot rather than
+    /// a Character or household directly — mirrors <see
+    /// cref="RealEstate.PropertyOwnerRef"/>'s own parse/narrow-to-PlayerHousehold shape every other
+    /// Private Infrastructure command already uses.</summary>
+    private static RuntimeId<Household>? HouseholdOfPlot(WorldState state, RuntimeId<Land.Plot> plotId)
+    {
+        if (!state.Plots.TryGet(plotId, out var plot) || plot!.OwnerId is null)
+            return null;
+        try
+        {
+            var owner = RealEstate.PropertyOwnerRef.Parse(plot.OwnerId);
+            return owner.Kind == RealEstate.PropertyOwnerKind.PlayerHousehold && owner.OwnerId is { } ownerId
+                ? RuntimeId<Household>.Parse(ownerId)
+                : null;
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
 }
