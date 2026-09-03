@@ -172,6 +172,18 @@ public static class ShippingCatalog
     public const int RepairConditionRestored = 40;
     public static readonly Money RepairCostPerConditionPoint = Money.FromDenarii(2);
 
+    /// <summary>§7's "a poorly-maintained, aging Ship carries a real, elevated Voyage Event risk" — this
+    /// item's own invented linear reading of <see cref="Land.LandCondition"/>'s 0-100 scale against
+    /// <see cref="ShipVoyageRiskSystem"/>'s own Storm hit probability: a pristine (100) hull rolls
+    /// unmodified, a wrecked (0) hull rolls at double the baseline risk, and every point of condition
+    /// lost in between scales that penalty proportionally — deterministic, integer-based Fixed64 math,
+    /// matching this item's own "no floats for outcomes" convention.</summary>
+    public static Fixed64 ConditionRiskMultiplier(int condition)
+    {
+        var clamped = Math.Clamp(condition, 0, 100);
+        return Fixed64.FromRaw(Fixed64.One.RawValue + ((100 - clamped) * (Fixed64.One.RawValue / 100)));
+    }
+
     // --- §8 Loss, §9 Reputation ---
 
     /// <summary>§9's "lucky ship" reputation — this item's own invented threshold: enough consecutive

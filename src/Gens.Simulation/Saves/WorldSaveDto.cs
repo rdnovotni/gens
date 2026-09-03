@@ -705,6 +705,15 @@ public sealed record WorldSaveDocument
     /// to empty, matching <see cref="ShipFrontingArrangements"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(111)]
     public IReadOnlyList<VoyageEventDto> VoyageEvents { get; init; } = Array.Empty<VoyageEventDto>();
+
+    /// <summary>§4's Flagship-designation Dignitas-award dates, keyed by household (Phase 15 item 8) —
+    /// present means that household has already received <see
+    /// cref="Gens.Simulation.Shipping.ShippingCatalog.FlagshipDesignationDignitasAward"/> once, matching
+    /// <see cref="UnifiedEstateMilestones"/>'s identical "sparse, present-means-achieved" shape. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="VoyageEvents"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(112)]
+    public IReadOnlyList<FlagshipDesignationAwardDto> FlagshipDesignationAwards { get; init; } = Array.Empty<FlagshipDesignationAwardDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -4441,4 +4450,16 @@ public sealed record VoyageEventDto
 
     [JsonPropertyOrder(4)]
     public required string Outcome { get; init; }
+}
+
+/// <summary>One household's §4 Flagship-designation Dignitas-award date (Phase 15 item 8) — present means
+/// that household has already received the one-time award once, matching <see
+/// cref="UnifiedEstateMilestoneDto"/>'s identical shape.</summary>
+public sealed record FlagshipDesignationAwardDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int AwardedDateTotalMonths { get; init; }
 }

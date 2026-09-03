@@ -353,6 +353,10 @@ public static class WorldStateMapper
             ShipFrontingArrangements = state.ShipFrontingArrangements.InAscendingOrder()
                 .Select(entry => ToShipFrontingArrangementDto(entry.Value)).ToArray(),
             VoyageEvents = state.VoyageEvents.InAscendingOrder().Select(entry => ToVoyageEventDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            FlagshipDesignationAwards = state.FlagshipDesignationAwards.InAscendingOrder()
+                .Select(entry => new FlagshipDesignationAwardDto { HouseholdId = entry.Key.ToTaggedString(), AwardedDateTotalMonths = entry.Value.TotalMonths })
+                .ToArray(),
         };
     }
 
@@ -1078,6 +1082,11 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<Shipping.VoyageEvent>, Shipping.VoyageEvent>(voyageEvent.Id, voyageEvent);
             }));
 
+        var flagshipDesignationAwards = OrderedRegistry<RuntimeId<Household>, GameDate>.Restore(
+            dto.FlagshipDesignationAwards.Select(a =>
+                new KeyValuePair<RuntimeId<Household>, GameDate>(
+                    RuntimeId<Household>.Parse(a.HouseholdId), new GameDate(a.AwardedDateTotalMonths))));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -1248,6 +1257,7 @@ public static class WorldStateMapper
             shipCommissionProjects: shipCommissionProjects,
             shipFrontingArrangements: shipFrontingArrangements,
             voyageEvents: voyageEvents,
+            flagshipDesignationAwards: flagshipDesignationAwards,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }

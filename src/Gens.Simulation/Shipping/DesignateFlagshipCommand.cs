@@ -88,10 +88,19 @@ public static class DesignateFlagshipCommands
                 command.CommandId.ToTaggedString()),
         };
 
-        events.AddRange(AdjustDignitasCommands.Pipeline.Execute(
-            state, new AdjustDignitasCommand(
-                state.CommandIds.Issue(), "system", command.SubmittedDate, command.CommandId.ToTaggedString(), command.HouseholdId,
-                ShippingCatalog.FlagshipDesignationDignitasAward, "designated a new Flagship")).Events);
+        // §4's Dignitas award is a real, one-time achievement per household — matching <see
+        // cref="WorldState.UnifiedEstateMilestones"/>'s own identical "sparse, present-means-achieved,
+        // fire exactly once" guard — rather than a repeatable grant a household could farm by simply
+        // alternating the title between two owned Ships.
+        if (!state.FlagshipDesignationAwards.TryGet(command.HouseholdId, out _))
+        {
+            state.FlagshipDesignationAwards.Add(command.HouseholdId, command.SubmittedDate);
+
+            events.AddRange(AdjustDignitasCommands.Pipeline.Execute(
+                state, new AdjustDignitasCommand(
+                    state.CommandIds.Issue(), "system", command.SubmittedDate, command.CommandId.ToTaggedString(), command.HouseholdId,
+                    ShippingCatalog.FlagshipDesignationDignitasAward, "designated a new Flagship")).Events);
+        }
 
         return events.ToArray();
     }

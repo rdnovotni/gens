@@ -1221,6 +1221,13 @@ public static class StateHasher
             hash = MixLong(hash, (long)voyageEvent.Outcome);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 8.
+        foreach (var entry in state.FlagshipDesignationAwards.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.TotalMonths);
+        }
+
         return hash;
     }
 

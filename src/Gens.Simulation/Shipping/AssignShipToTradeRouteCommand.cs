@@ -50,6 +50,7 @@ public static class AssignShipToTradeRouteCommands
     public static readonly ValidationErrorCode TradeRouteNotFound = new("shipping.assignShipToTradeRoute.tradeRouteNotFound");
     public static readonly ValidationErrorCode NotATradeRouteContract = new("shipping.assignShipToTradeRoute.notATradeRouteContract");
     public static readonly ValidationErrorCode TradeRouteNotOwned = new("shipping.assignShipToTradeRoute.tradeRouteNotOwned");
+    public static readonly ValidationErrorCode TradeRouteNotActive = new("shipping.assignShipToTradeRoute.tradeRouteNotActive");
 
     public static readonly CommandPipeline<WorldState, AssignShipToTradeRouteCommand> Pipeline = new(
         validate: Validate, mutate: Mutate, issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
@@ -70,6 +71,8 @@ public static class AssignShipToTradeRouteCommands
             return NotATradeRouteContract;
         if (route.HouseholdId != command.HouseholdId)
             return TradeRouteNotOwned;
+        if (route.Status != StandingContractStatus.Active)
+            return TradeRouteNotActive;
 
         return null;
     }

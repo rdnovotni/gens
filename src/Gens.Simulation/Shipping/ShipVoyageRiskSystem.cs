@@ -70,7 +70,8 @@ public static class ShipVoyageRiskSystem
             var qualifyingShips = state.MerchantShips.InAscendingOrder()
                 .Select(entry => entry.Value)
                 .Where(ship => ship.Status == ShipStatus.Active
-                    && ship.AssignedTradeRouteId is not null
+                    && ship.AssignedTradeRouteId is { } tradeRouteId
+                    && IsActiveTradeRoute(state, tradeRouteId)
                     && ship.HomeSettlementId == disaster.SettlementId
                     && (ship.IsFlagship || ship.FenusNauticumRecordId is not null))
                 .ToArray();
@@ -82,6 +83,15 @@ public static class ShipVoyageRiskSystem
         return events;
     }
 
+    /// <summary>§6.1's own qualification stays honest once a route ends: an <see
+    /// cref="AssignShipToTradeRouteCommands"/> assignment made while the route was still <see
+    /// cref="StandingContractStatus.Active"/> does not itself keep generating Voyage Events once that
+    /// route reaches <see cref="StandingContractStatus.Ended"/> — matching that command's own
+    /// assignment-time gate rather than only checking <see cref="MerchantShip.AssignedTradeRouteId"/>'s
+    /// mere presence.</summary>
+    private static bool IsActiveTradeRoute(WorldState state, RuntimeId<Economy.StandingContract> tradeRouteId) =>
+        state.StandingContracts.TryGet(tradeRouteId, out var route) && route!.Status == StandingContractStatus.Active;
+
     private static void ResolveVoyage(
         WorldState state, GameDate date, DisasterEventOccurredEvent disaster, MerchantShip ship, RandomStreamSet randomStreams,
         List<IDomainEvent> events)
@@ -91,6 +101,7 @@ public static class ShipVoyageRiskSystem
         var baseProbability = Fixed64.FromRaw((long)(DisasterDamageCalculator.BuildingHitProbability(disaster.Severity) * Fixed64.ScaleFactor));
         var probability = baseProbability;
         probability = Fixed64.Multiply(probability, ShippingCatalog.StormResistanceMultiplier(ship.VesselClass));
+        probability = Fixed64.Multiply(probability, ShippingCatalog.ConditionRiskMultiplier(ship.Condition.Value));
         if (ship.BlessedLaunch)
             probability = Fixed64.Multiply(probability, ShippingCatalog.BlessedLaunchRiskMultiplier);
         if (ship.ReputationTier == ShipReputationTier.LuckyShip)

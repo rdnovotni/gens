@@ -236,6 +236,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<ShipCommissionProject>, ShipCommissionProject> shipCommissionProjects,
         OrderedRegistry<RuntimeId<MerchantShip>, FrontingArrangement> shipFrontingArrangements,
         OrderedRegistry<RuntimeId<VoyageEvent>, VoyageEvent> voyageEvents,
+        OrderedRegistry<RuntimeId<Household>, GameDate> flagshipDesignationAwards,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -408,6 +409,7 @@ public sealed class WorldState
         ShipCommissionProjects = shipCommissionProjects;
         ShipFrontingArrangements = shipFrontingArrangements;
         VoyageEvents = voyageEvents;
+        FlagshipDesignationAwards = flagshipDesignationAwards;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -1190,6 +1192,13 @@ public sealed class WorldState
     /// <summary>Every resolved §6.2 <see cref="Gens.Simulation.Shipping.VoyageEvent"/> (Phase 15 item 8),
     /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
     public OrderedRegistry<RuntimeId<VoyageEvent>, VoyageEvent> VoyageEvents { get; } = new();
+
+    /// <summary>§4's Flagship-designation Dignitas-award dates (Phase 15 item 8), sparse and keyed by
+    /// household; present means that household has already received <see
+    /// cref="Gens.Simulation.Shipping.ShippingCatalog.FlagshipDesignationDignitasAward"/> once, matching
+    /// <see cref="UnifiedEstateMilestones"/>'s own identical "sparse, present-means-achieved, fire
+    /// exactly once" guard.</summary>
+    public OrderedRegistry<RuntimeId<Household>, GameDate> FlagshipDesignationAwards { get; } = new();
 
     public KnowledgeState Knowledge { get; } = new();
 

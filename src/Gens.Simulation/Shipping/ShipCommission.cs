@@ -1,3 +1,4 @@
+using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
@@ -186,7 +187,11 @@ public static class CommissionShipCommands
     public static readonly ValidationErrorCode SocietasRequired = new("shipping.commissionShip.societasRequired");
     public static readonly ValidationErrorCode SocietasNotFound = new("shipping.commissionShip.societasNotFound");
     public static readonly ValidationErrorCode SocietasNotActive = new("shipping.commissionShip.societasNotActive");
+    public static readonly ValidationErrorCode HouseholdNotPartner = new("shipping.commissionShip.householdNotPartner");
     public static readonly ValidationErrorCode FrontingReferenceRequired = new("shipping.commissionShip.frontingReferenceRequired");
+    public static readonly ValidationErrorCode FrontingKindNotSupported = new("shipping.commissionShip.frontingKindNotSupported");
+    public static readonly ValidationErrorCode FrontingCharacterNotFound = new("shipping.commissionShip.frontingCharacterNotFound");
+    public static readonly ValidationErrorCode FrontingSocietasNotFound = new("shipping.commissionShip.frontingSocietasNotFound");
     public static readonly ValidationErrorCode NoPatronDeityForConsecratedLaunch = new("shipping.commissionShip.noPatronDeityForConsecratedLaunch");
 
     public static readonly CommandPipeline<WorldState, CommissionShipCommand> Pipeline = new(
@@ -212,10 +217,41 @@ public static class CommissionShipCommands
                 return SocietasNotFound;
             if (!societas!.IsActive)
                 return SocietasNotActive;
+            if (!SocietasResolver.IsPartner(societas!, PropertyOwnerRef.ForPlayerHousehold(command.HouseholdId)))
+                return HouseholdNotPartner;
         }
-        else if (command.OwnershipMode == ShipOwnershipMode.Fronted && command.FrontingPersonOrSocietasId is null)
+        else if (command.OwnershipMode == ShipOwnershipMode.Fronted)
         {
-            return FrontingReferenceRequired;
+            if (command.FrontingPersonOrSocietasId is not { } frontingRef)
+                return FrontingReferenceRequired;
+
+            // §5's own text names exactly two real fronts — "a freedman Operator or a Societas the
+            // senator quietly controls" — so every other PropertyOwnerKind (RomanState, Municipal,
+            // PlayerHousehold, a nonexistent individual, etc.) is rejected here rather than silently
+            // accepted the way an unvalidated PropertyOwnerRef? would otherwise let through.
+            if (frontingRef.Kind == PropertyOwnerKind.IndividualCharacter)
+            {
+                if (frontingRef.OwnerId is null || !state.Characters.TryGet(RuntimeId<Character>.Parse(frontingRef.OwnerId), out var character)
+                    || !character!.IsAlive)
+                {
+                    return FrontingCharacterNotFound;
+                }
+            }
+            else if (frontingRef.Kind == PropertyOwnerKind.Societas)
+            {
+                // §5's own Societas front is <see cref="PropertyOwnerRef.ForSocietasPlaceholder"/> — a
+                // free-form, narrative-only display name (<see cref="FrontingArrangement"/>'s own doc
+                // comment: "deliberately not... a real, resolvable Societas link"), not the real,
+                // registry-backed Societas §7's ownership mode above checks. There is no real record to
+                // resolve this kind against, so the one real thing left to validate is that a display
+                // name was actually supplied.
+                if (string.IsNullOrWhiteSpace(frontingRef.OwnerId))
+                    return FrontingSocietasNotFound;
+            }
+            else
+            {
+                return FrontingKindNotSupported;
+            }
         }
 
         if (command.ConsecratedLaunchRequested && !HouseholdReligionResolver.HasChosenPatron(state, command.HouseholdId))

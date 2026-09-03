@@ -7,6 +7,7 @@ using Gens.Simulation.Hazards;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Numerics;
 using Gens.Simulation.Random;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
@@ -169,6 +170,93 @@ public sealed class ShippingTests
     }
 
     [Test]
+    public void CommissionShipRejectsASocietasTheCommissioningHouseholdIsNotAPartnerOf()
+    {
+        var (state, settlementId) = MaritimeSettlement();
+        var (householdId, _) = HouseholdWithHead(state);
+        var (otherHouseholdId, _) = HouseholdWithHead(state);
+        var (thirdHouseholdId, _) = HouseholdWithHead(state);
+        Fund(state, householdId, Money.FromDenarii(5000));
+
+        var formResult = FormSocietasCommands.Pipeline.Execute(
+            state, new FormSocietasCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null,
+                PartnershipType.UnusRei, SocietasGovernanceModel.EqualPartners, "A shipping venture between others",
+                new[]
+                {
+                    new SocietasPartner(PropertyOwnerRef.ForPlayerHousehold(otherHouseholdId), Fixed64.FromRaw(500_000)),
+                    new SocietasPartner(PropertyOwnerRef.ForPlayerHousehold(thirdHouseholdId), Fixed64.FromRaw(500_000)),
+                }));
+        Assert.That(formResult.Accepted, Is.True, $"Rejected: {formResult.Error}");
+        var societasId = formResult.Events.OfType<SocietasFormedEvent>().Single().SocietasId;
+
+        var result = CommissionShipCommands.Pipeline.Execute(
+            state, new CommissionShipCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, settlementId, "The Fortuna",
+                ShipVesselClass.Corbita, GoodQuality.Common, "plain", false, ShipOwnershipMode.Societas, societasId));
+
+        Assert.That(result.Accepted, Is.False, "Any household could otherwise name an unrelated active Societas as owner.");
+        Assert.That(result.Error, Is.EqualTo(CommissionShipCommands.HouseholdNotPartner));
+    }
+
+    [Test]
+    public void CommissionShipAcceptsASocietasTheCommissioningHouseholdIsAPartnerOf()
+    {
+        var (state, settlementId) = MaritimeSettlement();
+        var (householdId, _) = HouseholdWithHead(state);
+        var (otherHouseholdId, _) = HouseholdWithHead(state);
+        Fund(state, householdId, Money.FromDenarii(5000));
+
+        var formResult = FormSocietasCommands.Pipeline.Execute(
+            state, new FormSocietasCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null,
+                PartnershipType.UnusRei, SocietasGovernanceModel.EqualPartners, "A shared shipping venture",
+                new[]
+                {
+                    new SocietasPartner(PropertyOwnerRef.ForPlayerHousehold(householdId), Fixed64.FromRaw(500_000)),
+                    new SocietasPartner(PropertyOwnerRef.ForPlayerHousehold(otherHouseholdId), Fixed64.FromRaw(500_000)),
+                }));
+        Assert.That(formResult.Accepted, Is.True, $"Rejected: {formResult.Error}");
+        var societasId = formResult.Events.OfType<SocietasFormedEvent>().Single().SocietasId;
+
+        var result = CommissionShipCommands.Pipeline.Execute(
+            state, new CommissionShipCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, settlementId, "The Fortuna",
+                ShipVesselClass.Corbita, GoodQuality.Common, "plain", false, ShipOwnershipMode.Societas, societasId));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+    }
+
+    [Test]
+    public void CommissionShipRejectsAFrontingKindOutsideAFreedmanCharacterOrASocietas()
+    {
+        var (state, settlementId) = MaritimeSettlement();
+        var (householdId, _) = HouseholdWithHead(state);
+        Fund(state, householdId, Money.FromDenarii(5000));
+
+        var romanState = CommissionShipCommands.Pipeline.Execute(
+            state, new CommissionShipCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, settlementId, "The Fortuna",
+                ShipVesselClass.Corbita, GoodQuality.Common, "plain", false, ShipOwnershipMode.Fronted,
+                FrontingPersonOrSocietasId: PropertyOwnerRef.RomanState));
+        Assert.That(romanState.Error, Is.EqualTo(CommissionShipCommands.FrontingKindNotSupported));
+
+        var playerHousehold = CommissionShipCommands.Pipeline.Execute(
+            state, new CommissionShipCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, settlementId, "The Fortuna",
+                ShipVesselClass.Corbita, GoodQuality.Common, "plain", false, ShipOwnershipMode.Fronted,
+                FrontingPersonOrSocietasId: PropertyOwnerRef.ForPlayerHousehold(householdId)));
+        Assert.That(playerHousehold.Error, Is.EqualTo(CommissionShipCommands.FrontingKindNotSupported));
+
+        var nonexistentCharacter = CommissionShipCommands.Pipeline.Execute(
+            state, new CommissionShipCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, settlementId, "The Fortuna",
+                ShipVesselClass.Corbita, GoodQuality.Common, "plain", false, ShipOwnershipMode.Fronted,
+                FrontingPersonOrSocietasId: PropertyOwnerRef.ForIndividualCharacter(state.CharacterIds.Issue())));
+        Assert.That(nonexistentCharacter.Error, Is.EqualTo(CommissionShipCommands.FrontingCharacterNotFound));
+    }
+
+    [Test]
     public void ShipCommissionResolutionAdvancesOnlyWhenPaidAndCreatesTheShipOnCompletion()
     {
         var (state, settlementId) = MaritimeSettlement();
@@ -251,7 +339,7 @@ public sealed class ShippingTests
     // ---- §4 Flagship --------------------------------------------------------------------------
 
     [Test]
-    public void DesignateFlagshipUnsetsThePreviousFlagshipAndAwardsDignitas()
+    public void DesignateFlagshipUnsetsThePreviousFlagshipAndAwardsDignitasOnce()
     {
         var (state, settlementId) = MaritimeSettlement();
         var (householdId, _) = HouseholdWithHead(state);
@@ -277,8 +365,41 @@ public sealed class ShippingTests
             Assert.That(secondAfter!.IsFlagship, Is.True);
             Assert.That(MerchantMarineQuery.FlagshipOf(state, householdId)!.Id, Is.EqualTo(secondShip.Id));
             Assert.That(dignitasAfterFirst, Is.GreaterThan(0));
-            Assert.That(DignitasResolver.Current(state, householdId), Is.GreaterThan(dignitasAfterFirst));
+
+            // The Dignitas award is a real, one-time household achievement, not a repeatable grant — a
+            // household re-designating the title onto a different owned Ship earns no further Dignitas
+            // (Codex review finding, PR #97): only the household's own first-ever designation pays out.
+            Assert.That(DignitasResolver.Current(state, householdId), Is.EqualTo(dignitasAfterFirst));
         });
+    }
+
+    [Test]
+    public void DesignateFlagshipDoesNotReawardDignitasWhenAlternatingBetweenTwoOwnedShips()
+    {
+        var (state, settlementId) = MaritimeSettlement();
+        var (householdId, _) = HouseholdWithHead(state);
+        Fund(state, householdId, Money.FromDenarii(10_000));
+
+        var firstShip = RunCommissionToCompletion(
+            state, StartCommission(state, householdId, settlementId, ShipVesselClass.Liburnian), ShipVesselClass.Liburnian, GoodQuality.Common);
+        var secondShip = RunCommissionToCompletion(
+            state, StartCommission(state, householdId, settlementId, ShipVesselClass.Liburnian), ShipVesselClass.Liburnian, GoodQuality.Common);
+
+        DesignateFlagshipCommands.Pipeline.Execute(
+            state, new DesignateFlagshipCommand(state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, firstShip.Id));
+        DesignateFlagshipCommands.Pipeline.Execute(
+            state, new DesignateFlagshipCommand(state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, secondShip.Id));
+        var dignitasAfterTwoSwaps = DignitasResolver.Current(state, householdId);
+
+        // Alternate the title back onto the first Ship a second time — this is the exact farming pattern
+        // the fix guards against.
+        var result = DesignateFlagshipCommands.Pipeline.Execute(
+            state, new DesignateFlagshipCommand(state.CommandIds.Issue(), "player", new GameDate(0), null, householdId, firstShip.Id));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+        Assert.That(
+            DignitasResolver.Current(state, householdId), Is.EqualTo(dignitasAfterTwoSwaps),
+            "Repeatedly alternating the Flagship title between two owned Ships must not re-earn the one-time award.");
     }
 
     [Test]
@@ -413,6 +534,69 @@ public sealed class ShippingTests
         Assert.That(assigned!.AssignedTradeRouteId, Is.EqualTo(routeId));
     }
 
+    [Test]
+    public void AssignShipToTradeRouteRejectsAnEndedRoute()
+    {
+        var (state, settlementId) = MaritimeSettlement();
+        var (householdId, _) = HouseholdWithHead(state);
+        Fund(state, householdId, Money.FromDenarii(5000));
+        var ship = RunCommissionToCompletion(
+            state, StartCommission(state, householdId, settlementId, ShipVesselClass.Corbita), ShipVesselClass.Corbita, GoodQuality.Common);
+        var routeId = state.StandingContractIds.Issue();
+        state.StandingContracts.Add(
+            routeId,
+            new StandingContract(
+                routeId, StandingContractKind.TradeRouteInvestment, settlementId, householdId, StandingContractStatus.Ended,
+                denariiCommitted: Money.FromDenarii(100), routeName: "Ostia run"));
+
+        var result = AssignShipToTradeRouteCommands.Pipeline.Execute(
+            state, new AssignShipToTradeRouteCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, ship.Id, routeId));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(AssignShipToTradeRouteCommands.TradeRouteNotActive));
+    }
+
+    [Test]
+    public void AnEndedTradeRouteNeverQualifiesAShipForAVoyageEvent()
+    {
+        var (state, settlementId) = MaritimeSettlement();
+        var (householdId, _) = HouseholdWithHead(state);
+        Fund(state, householdId, Money.FromDenarii(5000));
+        var ship = RunCommissionToCompletion(
+            state, StartCommission(state, householdId, settlementId, ShipVesselClass.Corbita), ShipVesselClass.Corbita, GoodQuality.Common);
+        var routeId = state.StandingContractIds.Issue();
+        state.StandingContracts.Add(
+            routeId,
+            new StandingContract(
+                routeId, StandingContractKind.TradeRouteInvestment, settlementId, householdId, StandingContractStatus.Active,
+                denariiCommitted: Money.FromDenarii(100), routeName: "Ostia run"));
+        AssignShipToTradeRouteCommands.Pipeline.Execute(
+            state, new AssignShipToTradeRouteCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, ship.Id, routeId));
+
+        // The Ship is a Flagship (so it would otherwise qualify), but the route it's still pointed at has
+        // since ended.
+        state.MerchantShips.TryGet(ship.Id, out var current);
+        state.MerchantShips.Remove(ship.Id);
+        state.MerchantShips.Add(ship.Id, current! with { IsFlagship = true });
+        state.StandingContracts.Remove(routeId);
+        state.StandingContracts.Add(
+            routeId,
+            new StandingContract(
+                routeId, StandingContractKind.TradeRouteInvestment, settlementId, householdId, StandingContractStatus.Ended,
+                denariiCommitted: Money.FromDenarii(100), routeName: "Ostia run"));
+
+        var streams = new RandomStreamSet();
+        streams.AddDerived(ShipVoyageRiskSystem.StreamName, rootSeed: 1);
+        var events = ShipVoyageRiskSystem.Tick(
+            state, new GameDate(2), new[] { StormEvent(state, settlementId, DisasterSeverity.Catastrophic, new GameDate(2)) }, streams);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(events, Is.Empty, "An ended Trade Route must never keep generating Voyage Events.");
+            Assert.That(state.VoyageEvents.Count, Is.EqualTo(0));
+        });
+    }
+
     // ---- §6.2/§8 Discrete Voyage Events (Storm) ------------------------------------------------
 
     private static (WorldState State, RuntimeId<Settlement> SettlementId, RuntimeId<Household> HouseholdId, MerchantShip Ship, RuntimeId<DebtRecord> DebtId)
@@ -436,7 +620,10 @@ public sealed class ShippingTests
         var debt = DebtService.IssueLoan(state, new GameDate(1), settlementId, householdId, Money.FromDenarii(500), isFenusNauticum: true);
         state.MerchantShips.TryGet(ship.Id, out var current);
         state.MerchantShips.Remove(ship.Id);
-        var financed = current! with { FenusNauticumRecordId = debt.Id };
+        // Pristine condition, so ShippingCatalog.ConditionRiskMultiplier stays neutral (1.0x) here — this
+        // fixture is about the fenus nauticum/Storm mechanics, not §7's condition-based risk, which has
+        // its own dedicated coverage below.
+        var financed = current! with { FenusNauticumRecordId = debt.Id, Condition = LandCondition.Pristine };
         state.MerchantShips.Add(ship.Id, financed);
 
         return (state, settlementId, householdId, financed, debt.Id);
@@ -444,6 +631,134 @@ public sealed class ShippingTests
 
     private static DisasterEventOccurredEvent StormEvent(WorldState state, RuntimeId<Settlement> settlementId, DisasterSeverity severity, GameDate date) =>
         new(state.EventIds.Issue(), date, settlementId, state.DisasterEventIds.Issue(), HazardType.Storm, severity, TriggeredByCompounding: false);
+
+    private static (WorldState State, RuntimeId<Settlement> SettlementId, RuntimeId<Household> HouseholdId, MerchantShip Ship)
+        ShipAssignedToARoute(ShipVesselClass vesselClass = ShipVesselClass.Corbita)
+    {
+        var (state, settlementId) = MaritimeSettlement();
+        var (householdId, _) = HouseholdWithHead(state);
+        Fund(state, householdId, Money.FromDenarii(5000));
+        var ship = RunCommissionToCompletion(
+            state, StartCommission(state, householdId, settlementId, vesselClass), vesselClass, GoodQuality.Common);
+        var routeId = state.StandingContractIds.Issue();
+        state.StandingContracts.Add(
+            routeId,
+            new StandingContract(
+                routeId, StandingContractKind.TradeRouteInvestment, settlementId, householdId, StandingContractStatus.Active,
+                denariiCommitted: Money.FromDenarii(100), routeName: "Alexandria run"));
+        AssignShipToTradeRouteCommands.Pipeline.Execute(
+            state, new AssignShipToTradeRouteCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, ship.Id, routeId));
+        return (state, settlementId, householdId, ship);
+    }
+
+    [Test]
+    public void FinanceVoyageWithFenusNauticumAttachesARealLoanToTheShip()
+    {
+        var (state, _, householdId, ship) = ShipAssignedToARoute();
+
+        var result = ShippingCommands.Pipeline.Execute(
+            state, new FinanceVoyageWithFenusNauticumCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, ship.Id, Money.FromDenarii(300)));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+        state.MerchantShips.TryGet(ship.Id, out var financed);
+        Assert.That(financed!.FenusNauticumRecordId, Is.Not.Null);
+        state.DebtRecords.TryGet(financed.FenusNauticumRecordId!.Value, out var debt);
+        Assert.Multiple(() =>
+        {
+            Assert.That(debt, Is.Not.Null);
+            Assert.That(debt!.IsFenusNauticum, Is.True);
+            Assert.That(debt.Principal, Is.EqualTo(Money.FromDenarii(300)));
+            Assert.That(debt.DebtorHouseholdId, Is.EqualTo(householdId));
+        });
+    }
+
+    [Test]
+    public void FinanceVoyageWithFenusNauticumRejectsAShipAlreadyFinanced()
+    {
+        var (state, settlementId, householdId, ship, _) = FlagshipOnAFenusNauticumFinancedRoute();
+
+        var result = ShippingCommands.Pipeline.Execute(
+            state, new FinanceVoyageWithFenusNauticumCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, ship.Id, Money.FromDenarii(100)));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(ShippingCommands.AlreadyFinanced));
+        _ = settlementId;
+    }
+
+    [Test]
+    public void ARealFenusNauticumLoanAttachedThroughTheCommandForgivesOnALostVoyage()
+    {
+        WorldState? finalState = null;
+        RuntimeId<DebtRecord> debtId = default;
+        RuntimeId<MerchantShip> shipId = default;
+
+        for (var seed = 1UL; seed <= 80UL && finalState is null; seed++)
+        {
+            var (state, settlementId, householdId, ship) = ShipAssignedToARoute();
+            var financeResult = ShippingCommands.Pipeline.Execute(
+                state, new FinanceVoyageWithFenusNauticumCommand(
+                    state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, ship.Id, Money.FromDenarii(300)));
+            Assert.That(financeResult.Accepted, Is.True, $"Rejected: {financeResult.Error}");
+            state.MerchantShips.TryGet(ship.Id, out var financed);
+            state.MerchantShips.Remove(ship.Id);
+            state.MerchantShips.Add(ship.Id, financed! with { Condition = LandCondition.Pristine });
+
+            var streams = new RandomStreamSet();
+            streams.AddDerived(ShipVoyageRiskSystem.StreamName, seed);
+            ShipVoyageRiskSystem.Tick(
+                state, new GameDate(2), new[] { StormEvent(state, settlementId, DisasterSeverity.Catastrophic, new GameDate(2)) }, streams);
+
+            state.MerchantShips.TryGet(ship.Id, out var after);
+            if (after!.Status != ShipStatus.LostToStorm)
+                continue;
+
+            finalState = state;
+            debtId = financed.FenusNauticumRecordId!.Value;
+            shipId = ship.Id;
+        }
+
+        Assert.That(finalState, Is.Not.Null, "Expected at least one seed to resolve LostToStorm for the financed Ship.");
+        finalState!.DebtRecords.TryGet(debtId, out var debt);
+        Assert.That(debt!.Status, Is.EqualTo(DebtStatus.Forgiven), "A Ship lost while fenus-nauticum-financed forgives the debt (§8).");
+        _ = shipId;
+    }
+
+    [Test]
+    public void APoorlyMaintainedShipCarriesElevatedVoyageRiskComparedToAPristineOne()
+    {
+        int SafeArrivalsAcrossSeeds(int condition)
+        {
+            var safeCount = 0;
+            for (var seed = 1UL; seed <= 200UL; seed++)
+            {
+                var (state, settlementId, householdId, ship, _) = FlagshipOnAFenusNauticumFinancedRoute();
+                state.MerchantShips.TryGet(ship.Id, out var current);
+                state.MerchantShips.Remove(ship.Id);
+                state.MerchantShips.Add(ship.Id, current! with { IsFlagship = true, Condition = new LandCondition(condition) });
+
+                var streams = new RandomStreamSet();
+                streams.AddDerived(ShipVoyageRiskSystem.StreamName, seed);
+                ShipVoyageRiskSystem.Tick(
+                    state, new GameDate(2), new[] { StormEvent(state, settlementId, DisasterSeverity.Severe, new GameDate(2)) }, streams);
+
+                state.MerchantShips.TryGet(ship.Id, out var after);
+                if (after!.Status == ShipStatus.Active && after.VoyagesCompleted > 0)
+                    safeCount++;
+                _ = householdId;
+            }
+
+            return safeCount;
+        }
+
+        var pristineSafeArrivals = SafeArrivalsAcrossSeeds(condition: 100);
+        var wreckedSafeArrivals = SafeArrivalsAcrossSeeds(condition: 10);
+
+        Assert.That(
+            wreckedSafeArrivals, Is.LessThan(pristineSafeArrivals),
+            "A poorly-maintained Ship must carry a real, elevated Voyage Event risk (§7) compared to a pristine one.");
+    }
 
     [Test]
     public void OnlyAQualifyingShipEverRollsAgainstAStorm()
