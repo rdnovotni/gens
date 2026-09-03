@@ -1152,6 +1152,75 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.TotalMonths);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 8.
+        foreach (var entry in state.MerchantShips.InAscendingOrder())
+        {
+            var ship = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, ship.Name);
+            hash = MixLong(hash, (long)ship.VesselClass);
+            hash = MixLong(hash, (long)ship.BuildQuality);
+            hash = MixLong(hash, (long)ship.OwnershipMode);
+            hash = MixLong(hash, ship.ActualOwnerHouseholdId.Value);
+            hash = MixLong(hash, ship.OwningSocietasId?.Value ?? -1L);
+            hash = MixLong(hash, ship.IsFlagship ? 1L : 0L);
+            hash = MixLong(hash, ship.BlessedLaunch ? 1L : 0L);
+            hash = MixLong(hash, (long)ship.ReputationTier);
+            hash = MixLong(hash, ship.VoyagesCompleted);
+            hash = MixLong(hash, ship.ConsecutiveBadOutcomes);
+            hash = MixLong(hash, (long)ship.Status);
+            hash = MixLong(hash, ship.Condition.Value);
+            hash = MixLong(hash, ship.NavarchusId?.Value ?? -1L);
+            hash = MixLong(hash, ship.HomeSettlementId.Value);
+            hash = MixLong(hash, ship.AssignedTradeRouteId?.Value ?? -1L);
+            hash = MixLong(hash, ship.FenusNauticumRecordId?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 8.
+        foreach (var entry in state.ShipCommissionProjects.InAscendingOrder())
+        {
+            var project = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, project.HouseholdId.Value);
+            hash = MixLong(hash, project.SettlementId.Value);
+            hash = MixString(hash, project.ShipName);
+            hash = MixLong(hash, (long)project.VesselClass);
+            hash = MixLong(hash, (long)project.BuildQuality);
+            hash = MixString(hash, project.DecorationChoice);
+            hash = MixLong(hash, project.ConsecratedLaunchRequested ? 1L : 0L);
+            hash = MixLong(hash, (long)project.OwnershipMode);
+            hash = MixLong(hash, project.OwningSocietasId?.Value ?? -1L);
+            hash = MixLong(hash, project.FrontingPersonOrSocietasId is { } fronting ? (long)fronting.Kind : -1L);
+            hash = MixString(hash, project.FrontingPersonOrSocietasId?.OwnerId ?? string.Empty);
+            hash = MixLong(hash, project.StartMonth.TotalMonths);
+            hash = MixLong(hash, project.MonthsInvested);
+            hash = MixLong(hash, (long)project.Status);
+            hash = MixLong(hash, project.ResultingShipId?.Value ?? -1L);
+        }
+
+        // Already ascending-Ship-ID order (ADR 0004) via OrderedRegistry. Phase 15 item 8.
+        foreach (var entry in state.ShipFrontingArrangements.InAscendingOrder())
+        {
+            var arrangement = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, arrangement.RealOwnerHouseholdId.Value);
+            hash = MixLong(hash, (long)arrangement.FrontingPersonOrSocietasId.Kind);
+            hash = MixString(hash, arrangement.FrontingPersonOrSocietasId.OwnerId ?? string.Empty);
+            hash = MixLong(hash, arrangement.Exposed ? 1L : 0L);
+            hash = MixString(hash, arrangement.ExposureScandalRef ?? string.Empty);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 8.
+        foreach (var entry in state.VoyageEvents.InAscendingOrder())
+        {
+            var voyageEvent = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, voyageEvent.ShipId.Value);
+            hash = MixLong(hash, voyageEvent.Month.TotalMonths);
+            hash = MixLong(hash, (long)voyageEvent.TriggerReason);
+            hash = MixLong(hash, (long)voyageEvent.Outcome);
+        }
+
         return hash;
     }
 

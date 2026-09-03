@@ -681,6 +681,30 @@ public sealed record WorldSaveDocument
     /// matching <see cref="InfrastructureConditions"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(107)]
     public IReadOnlyList<UnifiedEstateMilestoneDto> UnifiedEstateMilestones { get; init; } = Array.Empty<UnifiedEstateMilestoneDto>();
+
+    /// <summary>Every §11 <see cref="Gens.Simulation.Shipping.MerchantShip"/> (Phase 15 item 8), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="UnifiedEstateMilestones"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(108)]
+    public IReadOnlyList<MerchantShipDto> MerchantShips { get; init; } = Array.Empty<MerchantShipDto>();
+
+    /// <summary>Every §3 <see cref="Gens.Simulation.Shipping.ShipCommissionProject"/> (Phase 15 item 8),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="MerchantShips"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(109)]
+    public IReadOnlyList<ShipCommissionProjectDto> ShipCommissionProjects { get; init; } = Array.Empty<ShipCommissionProjectDto>();
+
+    /// <summary>Every §5 <see cref="Gens.Simulation.Shipping.FrontingArrangement"/> (Phase 15 item 8),
+    /// already in ascending-Ship-ID order. Not <c>required</c>, and defaults to empty, matching <see
+    /// cref="ShipCommissionProjects"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(110)]
+    public IReadOnlyList<ShipFrontingArrangementDto> ShipFrontingArrangements { get; init; } = Array.Empty<ShipFrontingArrangementDto>();
+
+    /// <summary>Every resolved §6.2 <see cref="Gens.Simulation.Shipping.VoyageEvent"/> (Phase 15 item 8),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="ShipFrontingArrangements"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(111)]
+    public IReadOnlyList<VoyageEventDto> VoyageEvents { get; init; } = Array.Empty<VoyageEventDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -987,6 +1011,18 @@ public sealed record CounterSetDto
 
     [JsonPropertyOrder(57)]
     public long PrivateBridgeIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-8 save has no MerchantShips,
+    /// ShipCommissionProjects, or VoyageEvents. Additive-only per ADR 0011's policy, matching <see
+    /// cref="PrivateBridgeIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(58)]
+    public long MerchantShipIds { get; init; }
+
+    [JsonPropertyOrder(59)]
+    public long ShipCommissionProjectIds { get; init; }
+
+    [JsonPropertyOrder(60)]
+    public long VoyageEventIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -4254,4 +4290,155 @@ public sealed record UnifiedEstateMilestoneDto
 
     [JsonPropertyOrder(1)]
     public required int AchievedDateTotalMonths { get; init; }
+}
+
+/// <summary>One §11 <see cref="Gens.Simulation.Shipping.MerchantShip"/> (Phase 15 item 8).</summary>
+public sealed record MerchantShipDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ShipId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Name { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string VesselClass { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string BuildQuality { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string OwnershipMode { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string ActualOwnerHouseholdId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? OwningSocietasId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool IsFlagship { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool BlessedLaunch { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required string ReputationTier { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int VoyagesCompleted { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required int ConsecutiveBadOutcomes { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required int Condition { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public string? NavarchusId { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public required string HomeSettlementId { get; init; }
+
+    [JsonPropertyOrder(16)]
+    public string? AssignedTradeRouteId { get; init; }
+
+    [JsonPropertyOrder(17)]
+    public string? FenusNauticumRecordId { get; init; }
+}
+
+/// <summary>One §3 <see cref="Gens.Simulation.Shipping.ShipCommissionProject"/> (Phase 15 item 8).</summary>
+public sealed record ShipCommissionProjectDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ProjectId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string ShipName { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string VesselClass { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string BuildQuality { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required string DecorationChoice { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool ConsecratedLaunchRequested { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required string OwnershipMode { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? OwningSocietasId { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public string? FrontingKind { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public string? FrontingOwnerId { get; init; }
+
+    [JsonPropertyOrder(12)]
+    public required int StartMonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(13)]
+    public required int MonthsInvested { get; init; }
+
+    [JsonPropertyOrder(14)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(15)]
+    public string? ResultingShipId { get; init; }
+}
+
+/// <summary>One §5 <see cref="Gens.Simulation.Shipping.FrontingArrangement"/> (Phase 15 item 8).</summary>
+public sealed record ShipFrontingArrangementDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ShipId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string RealOwnerHouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string FrontingKind { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? FrontingOwnerId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required bool Exposed { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? ExposureScandalRef { get; init; }
+}
+
+/// <summary>One resolved §6.2 <see cref="Gens.Simulation.Shipping.VoyageEvent"/> (Phase 15 item 8).</summary>
+public sealed record VoyageEventDto
+{
+    [JsonPropertyOrder(0)]
+    public required string VoyageEventId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ShipId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int MonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string TriggerReason { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Outcome { get; init; }
 }

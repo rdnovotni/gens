@@ -24,6 +24,7 @@ using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
+using Gens.Simulation.Shipping;
 using Gens.Simulation.Societates;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -308,6 +309,14 @@ internal static class RuntimeIdTagRegistry
         // RuntimeId<Household> respectively, matching HouseholdDoctrineState's identical exemption.
         [typeof(PavedRoadConnection)] = "pavedroad",
         [typeof(PrivateBridge)] = "privatebridge",
+        // Phase 15 item 8 — Gens.Simulation.Shipping's own three runtime-entity kinds needing a real
+        // identity of their own, same "real record as its own tag" convention as PavedRoadConnection/
+        // PrivateBridge above: MerchantShip, ShipCommissionProject, and VoyageEvent. FrontingArrangement
+        // needs no entry: it is keyed by the already-registered RuntimeId<MerchantShip> it describes, not
+        // by its own RuntimeId, matching SenateEntryInvestmentLog's identical exemption above.
+        [typeof(MerchantShip)] = "merchantship",
+        [typeof(ShipCommissionProject)] = "shipcommission",
+        [typeof(VoyageEvent)] = "voyageevent",
     };
 
     public static string Resolve(Type type) =>

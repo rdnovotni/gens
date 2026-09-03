@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 7 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 8 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -3255,6 +3255,195 @@ sandbox again started with no .NET SDK installed, resolved the same way item 6's
 describes (`apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned SDK version via
 `rollForward: latestPatch`). `dotnet run --project tools/Gens.ContentCompiler -- validate content` is
 unaffected since this item adds no new content.
+
+**Item 8 progress:** Shipping Ventures lands as a new domain, `src/Gens.Simulation/Shipping/`
+(`gens-private-ships-shipping-ventures-design.md`), the document that finally gives Military & Combat's
+Fleet, the Shipping Magnate archetype, and Land Ownership's own Societas Unius Rei a real, named,
+persistent vessel to actually point at — §1's own framing, "no individual merchant vessel has ever
+actually existed as a persistent, named, ownable thing" until this item. §2's full fourteen-class Ship
+Registry lands as `ShipVesselClass`, every real category represented (matching `PropertyOwnerRef`'s and
+`LegalCase.CaseType`'s own "every real category represented" precedent), but per this item's own scope
+decision only two axes of that registry carry live mechanical weight — `ShippingCatalog.CapacityTierFor`
+(every class's own §2 capacity reading, honestly narrowed where the design doc names a range: Red Sea/
+Nabataean Trader and Pontic Grain Trader each pick one of their own "Standard to High" spread rather than
+inventing a fifth tier) and the Gallic/Britannic Coaster's own explicitly named "elevated Storm
+resistance." Speed (Liburnian, Actuaria) and cargo-type specialization (Hippago's live-animal transport,
+Ponto's ferry role) stay real, listed, flavor-only categories with no further stat block, the same
+"content is data, rules are code" restraint `PrivateInfrastructureCatalog`'s own per-class documentation
+already models.
+
+§3's Custom Commissioning lands as `ShipCommissionProject`/`CommissionShipCommand`/
+`ShipCommissionResolutionSystem`, mirroring `PrivateInfrastructure.LandReclamationProject`'s own real,
+slow, multi-month, Ledger-funded construction shape (a real invented per-tier duration/cost in
+`ShippingCatalog`, an unpaid month stalling rather than failing) rather than an instant purchase. §3's own
+"commissioned at the Shipyard/Navalia" is a confirmed, honest gap: no Shipyard/Navalia building exists
+anywhere in this codebase (`Buildings.BuildingDefinition`'s own roster, confirmed unbuilt by direct
+search) — this item gates commissioning on the one real, checkable proxy a Buildings entry would
+otherwise require, the settlement actually having a Coast- or River-terrain Plot, matching
+`BuildPrivateBridgeCommands`' own identical "at least one Plot River-terrain or River-adjacent" gate
+applied to a settlement's own maritime access rather than one Plot's own riverbank. §3.1's own
+region/culture hull-class gating is the same honest gap, named directly in `ShipCommissionProject`'s own
+doc comment rather than faked: every vessel class is commissionable at any maritime settlement regardless
+of culture. Build Quality reuses `Goods.GoodQuality` directly rather than inventing a fourth scale, per
+§3.1's own explicit steer, with a real, invented starting-Condition/decay-resistance split
+(`ShippingCatalog.StartingCondition`/`UnpaidUpkeepConditionLoss`) genuinely distinct per quality tier. §3.2's
+Consecrated Launch is a real Religion Funded Action — gated on `HouseholdReligionResolver.HasChosenPatron`,
+paying a flat invented cost and granting Favor through `HouseholdReligionResolver.ApplyFavorDelta` plus
+Dignitas through `AdjustDignitasCommand`'s own established path — reusing the exact "not a generic Funded
+Action system, only the same Favor/Dignitas payoff shape" scope `FundFestivalCelebrationCommand`'s own
+doc comment already set as this codebase's real precedent for a Religion-adjacent spend, rather than
+building the still-unbuilt generic Funded Action abstraction that document's own doc comment names as
+Policies & Edicts' future territory. An unfunded ceremony at completion simply leaves `BlessedLaunch`
+false rather than blocking the Ship's own creation, per §3.2's own "a Ship launched without this ceremony
+suffers no penalty."
+
+§4's Flagship lands as `DesignateFlagshipCommand`, enforcing "only ever holds one at a time" by unsetting
+whichever Ship previously held the title in the same mutation, with a real one-time Dignitas award
+(`ShippingCatalog.FlagshipDesignationDignitasAward`) matching `FullReclamationDignitasAward`'s own
+identical "real, invented, one-time achievement award" shape — §12's own open re-designation-cost question
+stays exactly that open, a free, instant administrative choice. §1's `MerchantMarine` lands as
+`MerchantMarineQuery`, computed rather than stored (`ShipsOwnedBy`/`FlagshipOf` read `MerchantShip.
+ActualOwnerHouseholdId`/`IsFlagship` directly), matching `RoadClusterQuery`'s and `EquestrianStatusQuery`'s
+own identical "computed, not stored" precedent rather than a redundantly-maintained ID list that could
+drift from the real fields it would only restate.
+
+§5's three ownership shapes land as `ShipOwnershipMode` plus real fields chosen at commissioning time
+(§5 frames the three shapes as how a household "actually holds a Ship," not as a state it transitions
+through, and no sibling ownership record in this codebase — `PropertyOwnerRef`, `Societas` — offers a live
+re-titling command either): Sole is the bare default; Societas ties `MerchantShip.OwningSocietasId`
+directly to a real, validated, active `Societates.Societas` (item 2's own real record, not a placeholder —
+this item does not additionally extend `Societas.LinkedPropertySubject`/`PropertySubjectRef` to point back
+at a Ship, an honestly un-taken reverse link named directly in `MerchantShip`'s own doc comment); Fronted
+lands as a real `FrontingArrangement` partition reusing `RealEstate.PropertyOwnerRef` directly for the
+freedman-or-Societas registered owner of record (§5's own "a freedman Operator or a Societas the senator
+quietly controls"), the *lex Claudia de nave senatorum*'s own real, if light, mechanical teeth Land
+Ownership §7's own doc comment already named this item as the eventual home for. §5's own exposure
+consequence is honestly not wired: Espionage, Legal & Court, and Scandal are all real, shipped domains in
+this codebase, but §5's own text names three plausible discovery paths "without specifying relative
+likelihood or a formal detection roll" (§12), so `FrontingArrangement.Exposed`/`ExposureScandalRef` are
+real, queryable fields with no live system in this item ever setting them, matching
+`PrivateInfrastructureCatalog`'s own `PairedWithFortifyPosture`/`RustlingRiskReduction` "the primitive
+ships, the caller doesn't exist yet" precedent exactly — no new `Scandal.ScandalSourceType` case is added
+either, since no live trigger would ever produce one.
+
+§6's Voyage Resolution lands split exactly along its own "aggregate by default, discrete where it
+matters" line. §6.1's aggregate default lands as `AssignShipToTradeRouteCommand`, a real, persisted
+`MerchantShip.AssignedTradeRouteId` — but the Capacity-Tier-and-Condition multiplier itself is the
+identical honest gap item 7's own Trade-Proximity-bonus finding already named: `Economy.StandingContract.
+TradeRouteInvestment` is "only a persisted record of a one-off commitment," with no live, recurring
+"Trade Route effectiveness" figure anywhere in this codebase for a Ship to actually multiply, confirmed
+by direct search still holding. §6.2's discrete Voyage Event lands as `VoyageEvent`/
+`ShipVoyageRiskSystem`, mirroring `InfrastructureDisasterVulnerabilitySystem`'s own "read the real
+`Hazards.DisasterEvent`s this same tick already produced, roll a real per-asset hit against them" shape
+rather than re-rolling ignition or severity. Of §6.2's own four named triggers, this item's own live
+system fires for exactly two real, directly checkable ones — `IsFlagship` and `FenusNauticumFinanced` —
+plus the real gate that a qualifying Ship must be `Active` and actually `AssignedTradeRouteId`-assigned;
+`LuxuryRoute` and `NamedSignificantCargo` stay real, listed `VoyageTriggerReason` values no live system
+ever produces, since `StandingContract` carries no route-risk-tier field and no per-shipment cargo
+concept for this item to read, confirmed by direct search of that record's own schema. Every other Ship —
+an ordinary Corbita on an ordinary route, nothing financed, no Flagship — stays on §6.1's aggregate
+default and is never touched by this system at all, the literal reading of "no per-voyage roll... for
+routine trade."
+
+§7's Condition, Aging & Repair lands as `Condition` directly on the `MerchantShip` record itself (reusing
+`Land.LandCondition`'s own 0-100 scale, matching `RealEstate.PropertyRecord.Condition`'s identical reuse
+rather than `InfrastructureCondition`'s separate keyed partition, since a Ship is already a single owned
+record with nowhere else its condition could live), `ShipUpkeepSystem` (a real monthly Ledger expense per
+Capacity Tier, an unpaid month costing Build-Quality-scaled condition points instead, mirroring
+`InfrastructureUpkeepSystem`'s exact shape), and `RepairShipCommand` (mirroring
+`RepairInfrastructureCommand`'s own shape directly). §7's own "a poorly-maintained, aging Ship carries a
+real, elevated Voyage Event risk" is realized as a genuinely live effect: `ShipVoyageRiskSystem`'s own
+hit-probability calculation is the same `Hazards.DisasterDamageCalculator.BuildingHitProbability` curve
+`InfrastructureDisasterVulnerabilitySystem` already reuses, modulated multiplicatively by §3.2's Blessed
+Launch, §9's lucky-ship/bad-reputation tiers, and the Gallic/Britannic Coaster's own Storm resistance —
+condition itself is not yet a further direct multiplier on that same roll, an honest simplification named
+directly in `ShipVoyageRiskSystem`'s own doc comment rather than a claimed-but-unwired mechanic. §7's own
+sale/scrap path is explicitly not built: this item ties a Ship's `Retired`/`Sold` status values into the
+schema (§11's own roster, every real category represented) but wires no live command that ever produces
+either, since Land Ownership & Real Estate's own sale mechanics (`TransferPropertyCommand`) operate over
+`PropertyOwnerRef`/`PropertyRecord`, not this item's own separate `MerchantShip` record — a real,
+disclosed scope cut rather than a forced retrofit of another item's already-tested command.
+
+§8's Loss, Capture & Recovery lands split by what this codebase can actually support. Storm loss is real
+and live: `ShipVoyageRiskSystem` resolves a Severe-or-worse hit against a qualifying Ship as
+`LostToStorm`, posting a real Dignitas penalty (`ShippingCatalog.OrdinaryLossDignitasPenalty`, or the
+sharper `FlagshipLossDignitasPenalty` for a lost Flagship, per §4's own "a real, sharper Dignitas hit"),
+and — the one piece of this item's own genuine cross-system payoff — actually forgiving the associated
+`Economy.DebtRecord` when one was financed via fenus nauticum: `DebtStatus.Forgiven` was, per that enum's
+own doc comment, "not reachable by any system in this implementation... named so it has a real terminal
+state to reach once one does." This item is that system. Piracy loss/capture is honestly not wired:
+Piracy & Banditry is Phase 16, confirmed unbuilt by direct search (no raid, capture, or ransom machinery
+of any kind exists anywhere in this codebase) — `ShipStatus.LostToPiracy`/`Captured` and
+`VoyageOutcome.LostToPiracy`/`Captured` are real, listed values this item's own live system never
+produces, matching `PrivateInfrastructureCatalog`'s own identical "the primitive ships, the caller
+doesn't exist yet" precedent for a Phase-16-owned consumer. Presumed Lost is the same kind of gap: a real,
+listed `VoyageOutcome`/`ShipStatus` value with no live "voyage that simply never resolves a cause" system
+built to produce it. §12's own open "whether a captured Ship can ever be recovered" therefore stays
+exactly as open as the document itself leaves it — capture cannot happen yet, so recovery has nothing to
+resolve.
+
+§9's Ship Reputation lands as two real, separately-tracked mechanisms exactly as that section's own "worth
+keeping separate rather than merging into one generic score" calls for: `BlessedLaunch` (set once, at
+commissioning, never revoked) and `ReputationTier` (`LuckyShip`/`BadReputation`, earned gradually and kept
+sticky once reached — this item builds no reversal path between tiers, the same "name the gap, don't
+fabricate the unspecified branch" discipline `LandReclamationProject`'s own no-continuation-past-resolution
+precedent already established). Both are real, live inputs to `ShipVoyageRiskSystem`'s own risk
+calculation, not stored-and-unconsumed flags: a Ship crossing `ShippingCatalog.LuckyShipVoyageThreshold`
+consecutive `ArrivedSafely` discrete resolutions earns `LuckyShip` (a real risk reduction plus a modest
+Dignitas award), and one crossing `BadReputationVoyageThreshold` consecutive `Damaged` resolutions earns
+`BadReputation` (a real risk increase) — §9's own "a genuinely harder ship to crew" Sailor-trait-Character
+half is honestly not wired, since no Character ever refuses a crew assignment anywhere in this codebase
+for this item to hook. §9's own Fame tie-in for a storied Ship or its Navarchus is the identical kind of
+gap: `Fame.CharacterFame`/`FameResolver` are real, shipped (Phase 12 item 8), but this item does not
+itself post to them — a long-lived, storied Ship earning its captain real Fame is a genuine, natural
+future consumer of both this item's own `VoyagesCompleted`/`ReputationTier` and Fame's own existing
+`Apply` path, not built here to keep this item's own scope to the shipping asset itself rather than
+reaching into a sibling domain's write path uninvited.
+
+Every new partition (`MerchantShips`, `ShipCommissionProjects`, `ShipFrontingArrangements`, `VoyageEvents`,
+plus the `MerchantShipIds`/`ShipCommissionProjectIds`/`VoyageEventIds` counters) is wired into
+`WorldState`, `Saves.WorldSaveDto`/`WorldStateMapper`, and `State.StateHasher` for full save/load and
+deterministic-hash coverage, additive-only (ADR 0011), exactly like every prior Phase 15 item's own new
+partitions — `MerchantShip`, `ShipCommissionProject`, and `VoyageEvent` each register a real `Identity.
+RuntimeIdTagRegistry` entry, matching `PavedRoadConnection`'s own "real record as its own tag" convention;
+`FrontingArrangement` needs none, keyed by the already-registered `RuntimeId<MerchantShip>` instead. A
+Ship's own dramatic Storm loss also gains a real `ChronicleProjector` case (a Flagship's loss reading
+`Major` tier per §4's own "guaranteed... entry," an ordinary Ship's `Minor`), matching that projector's own
+"every system that already flagged something as Chronicle-worthy... is the actual generation source"
+convention. Covered in `tests/Gens.Simulation.Tests/Shipping/ShippingTests.cs` (19 tests): Custom
+Commissioning's maritime-settlement gate and its rejection of an inland settlement, the Consecrated
+Launch's Patron Deity gate, Societas ownership's real validation against an active `Societas` record
+(missing and never-registered cases both), commissioning's real pay-or-stall monthly resolution and its
+correctly-quality-scaled starting Condition on completion, a funded Consecrated Launch's real Favor/
+Dignitas payoff, a Fronted commission's real `FrontingArrangement` with the actual owner still tracked and
+never exposed, Flagship designation unsetting the previous holder and awarding Dignitas (and rejecting a
+non-owned Ship), paid-versus-unpaid upkeep's real Ledger charge and quality-scaled condition decay, a
+funded Repair actually restoring condition, Trade Route assignment's real rejection of a non-trade vessel
+(the Ponto) alongside its acceptance of an ordinary cargo vessel, an ordinary Ship never rolling against a
+Storm at all (the aggregate-default path), a bounded-seed search finding both `ArrivedSafely` and
+`LostToStorm` outcomes for a qualifying Ship (with the latter asserting real fenus nauticum debt
+forgiveness), a lost Flagship's own sharper Dignitas penalty and Chronicle entry, repeated safe voyages
+earning a real `LuckyShip` reputation, and a save/load round trip exercising every new partition
+(including a Fronted Ship and a resolved Voyage Event) with the deterministic state hash staying stable.
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than assumption:**
+the Shipyard/Navalia building (§3), §3.1's culture/region hull-class gating, Piracy & Banditry's own
+capture/ransom half of §8 (Phase 16, confirmed unbuilt by direct search), a Presumed Lost resolution path,
+condition as a further direct multiplier on Voyage Event risk (§7), a live sale/scrap command for a Ship
+(§7), Fronting exposure's actual trigger conditions and its Scandal consequence (§5, §12), a Sailor-trait
+crew-reluctance mechanic and a Ship/Navarchus Fame tie-in (§9), and §6.2's `LuxuryRoute`/
+`NamedSignificantCargo` Voyage Event triggers (no route-risk-tier or per-shipment-cargo concept exists on
+`StandingContract` for either to read) are all real, disclosed gaps this item names directly in its own
+doc comments rather than silently skips — most because the system or field they would need does not exist
+yet anywhere in this codebase, confirmed by direct search in each case above. §12's own "all numeric
+sizing" is unsized exactly as that section leaves it, and its own capture-recovery question stays open
+precisely because capture itself cannot happen yet.
+
+`dotnet build`/`dotnet test`/`dotnet format --verify-no-changes` all pass in the Release configuration
+(1630/1630 tests: 1622/1622 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`); this
+sandbox again started with no .NET SDK installed, resolved the same way item 7's own progress note
+describes (`apt-get install dotnet-sdk-10.0`). `dotnet run --project tools/Gens.ContentCompiler --
+validate content` is unaffected since this item adds no new content.
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 
