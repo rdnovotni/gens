@@ -18,6 +18,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.NotableBusinesses;
+using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
@@ -297,6 +298,16 @@ internal static class RuntimeIdTagRegistry
         [typeof(ContractBid)] = "contractbid",
         [typeof(LustrumEvent)] = "lustrumevent",
         [typeof(ContractFraudRecord)] = "contractfraudrecord",
+        // Phase 15 item 7 — Gens.Simulation.PrivateInfrastructure's own two new runtime-entity kinds
+        // needing a real identity of their own, same "real record as its own tag" convention as
+        // PublicContract/ContractBid above: PavedRoadConnection and PrivateBridge. IrrigationCanal,
+        // WellOrCistern, LandReclamationProject, and BoundaryInfrastructure need no entry: each is
+        // keyed by the already-registered RuntimeId<Plot> it was built on, not by its own RuntimeId,
+        // matching SenateEntryInvestmentLog's identical exemption above. InfrastructureCondition and
+        // UnifiedEstateMilestones need no entry either: keyed by InfrastructureConditionKey and
+        // RuntimeId<Household> respectively, matching HouseholdDoctrineState's identical exemption.
+        [typeof(PavedRoadConnection)] = "pavedroad",
+        [typeof(PrivateBridge)] = "privatebridge",
     };
 
     public static string Resolve(Type type) =>

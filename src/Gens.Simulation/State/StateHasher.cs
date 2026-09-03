@@ -19,6 +19,7 @@ using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.NotableBusinesses;
+using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
@@ -1066,6 +1067,89 @@ public static class StateHasher
         {
             hash = MixLong(hash, entry.Key.Value);
             hash = MixLong(hash, entry.Value.FraudRecordId.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.PavedRoadConnections.InAscendingOrder())
+        {
+            var connection = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, connection.SettlementId.Value);
+            hash = MixLong(hash, connection.HouseholdId.Value);
+            hash = MixLong(hash, connection.PlotAId.Value);
+            hash = MixLong(hash, connection.PlotBId.Value);
+            hash = MixLong(hash, connection.BuiltDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId (by Plot ID) order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.IrrigationCanals.InAscendingOrder())
+        {
+            var canal = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)canal.SourceType);
+            hash = MixLong(hash, canal.BuiltDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId (by Plot ID) order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.WellOrCisterns.InAscendingOrder())
+        {
+            var well = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)well.Type);
+            hash = MixLong(hash, well.BuiltDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId (by Plot ID) order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.LandReclamationProjects.InAscendingOrder())
+        {
+            var project = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, project.StartMonth.TotalMonths);
+            hash = MixLong(hash, project.MonthsInvested);
+            hash = MixLong(hash, project.LaborAssigned);
+            hash = MixLong(hash, (long)project.Status);
+            hash = MixLong(hash, project.ResolvedOutcome is { } outcome ? (long)outcome : -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.PrivateBridges.InAscendingOrder())
+        {
+            var bridge = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, bridge.SettlementId.Value);
+            hash = MixLong(hash, bridge.HouseholdId.Value);
+            hash = MixLong(hash, bridge.PlotAId.Value);
+            hash = MixLong(hash, bridge.PlotBId.Value);
+            hash = MixLong(hash, bridge.RiverCrossing ? 1L : 0L);
+            hash = MixLong(hash, bridge.BuiltDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId (by Plot ID) order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.BoundaryInfrastructures.InAscendingOrder())
+        {
+            var boundary = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)boundary.Type);
+            hash = MixLong(hash, boundary.ConfinementBacking ? 1L : 0L);
+            hash = MixLong(hash, boundary.PairedWithFortifyPosture ? 1L : 0L);
+            hash = MixLong(hash, boundary.BuiltDate.TotalMonths);
+        }
+
+        // Already ascending-key order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.InfrastructureConditions.InAscendingOrder())
+        {
+            var condition = entry.Value;
+            hash = MixLong(hash, (long)entry.Key.StructureType);
+            hash = MixString(hash, entry.Key.StructureTag);
+            hash = MixLong(hash, condition.Condition);
+            hash = MixLong(hash, condition.LastDisasterEventRef?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 7.
+        foreach (var entry in state.UnifiedEstateMilestones.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.TotalMonths);
         }
 
         return hash;

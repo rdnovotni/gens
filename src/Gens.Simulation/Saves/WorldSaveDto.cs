@@ -632,6 +632,55 @@ public sealed record WorldSaveDocument
     /// identical reasoning.</summary>
     [JsonPropertyOrder(99)]
     public IReadOnlyList<ContractFraudLegalLinkDto> ContractFraudLegalLinks { get; init; } = Array.Empty<ContractFraudLegalLinkDto>();
+
+    /// <summary>Every §2/§4 <see cref="Gens.Simulation.PrivateInfrastructure.PavedRoadConnection"/>
+    /// (Phase 15 item 7), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="ContractFraudLegalLinks"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(100)]
+    public IReadOnlyList<PavedRoadConnectionDto> PavedRoadConnections { get; init; } = Array.Empty<PavedRoadConnectionDto>();
+
+    /// <summary>Every §3 <see cref="Gens.Simulation.PrivateInfrastructure.IrrigationCanal"/> (Phase 15
+    /// item 7), already in ascending-Plot-ID order. Not <c>required</c>, and defaults to empty, matching
+    /// <see cref="PavedRoadConnections"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(101)]
+    public IReadOnlyList<IrrigationCanalDto> IrrigationCanals { get; init; } = Array.Empty<IrrigationCanalDto>();
+
+    /// <summary>Every §3.1 <see cref="Gens.Simulation.PrivateInfrastructure.WellOrCistern"/> (Phase 15
+    /// item 7), already in ascending-Plot-ID order. Not <c>required</c>, and defaults to empty, matching
+    /// <see cref="IrrigationCanals"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(102)]
+    public IReadOnlyList<WellOrCisternDto> WellOrCisterns { get; init; } = Array.Empty<WellOrCisternDto>();
+
+    /// <summary>Every §5 <see cref="Gens.Simulation.PrivateInfrastructure.LandReclamationProject"/>
+    /// (Phase 15 item 7), already in ascending-Plot-ID order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="WellOrCisterns"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(103)]
+    public IReadOnlyList<LandReclamationProjectDto> LandReclamationProjects { get; init; } = Array.Empty<LandReclamationProjectDto>();
+
+    /// <summary>Every §6 <see cref="Gens.Simulation.PrivateInfrastructure.PrivateBridge"/> (Phase 15
+    /// item 7), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="LandReclamationProjects"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(104)]
+    public IReadOnlyList<PrivateBridgeDto> PrivateBridges { get; init; } = Array.Empty<PrivateBridgeDto>();
+
+    /// <summary>Every §7 <see cref="Gens.Simulation.PrivateInfrastructure.BoundaryInfrastructure"/>
+    /// (Phase 15 item 7), already in ascending-Plot-ID order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="PrivateBridges"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(105)]
+    public IReadOnlyList<BoundaryInfrastructureDto> BoundaryInfrastructures { get; init; } = Array.Empty<BoundaryInfrastructureDto>();
+
+    /// <summary>Every §8 <see cref="Gens.Simulation.PrivateInfrastructure.InfrastructureCondition"/>
+    /// (Phase 15 item 7), already in ascending-key order. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="BoundaryInfrastructures"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(106)]
+    public IReadOnlyList<InfrastructureConditionDto> InfrastructureConditions { get; init; } = Array.Empty<InfrastructureConditionDto>();
+
+    /// <summary>§4.1's Unified Estate milestone dates, keyed by household (Phase 15 item 7), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="InfrastructureConditions"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(107)]
+    public IReadOnlyList<UnifiedEstateMilestoneDto> UnifiedEstateMilestones { get; init; } = Array.Empty<UnifiedEstateMilestoneDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -929,6 +978,15 @@ public sealed record CounterSetDto
 
     [JsonPropertyOrder(55)]
     public long ContractFraudRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-7 save has no Paved Road
+    /// Connections or private Bridges. Additive-only per ADR 0011's policy, matching <see
+    /// cref="ContractFraudRecordIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(56)]
+    public long PavedRoadConnectionIds { get; init; }
+
+    [JsonPropertyOrder(57)]
+    public long PrivateBridgeIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -4051,4 +4109,149 @@ public sealed record ContractFraudLegalLinkDto
 
     [JsonPropertyOrder(1)]
     public required string FraudRecordId { get; init; }
+}
+
+/// <summary>One §2/§4 <see cref="Gens.Simulation.PrivateInfrastructure.PavedRoadConnection"/> (Phase 15
+/// item 7).</summary>
+public sealed record PavedRoadConnectionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string ConnectionId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string PlotAId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string PlotBId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int BuiltDateTotalMonths { get; init; }
+}
+
+/// <summary>One §3 <see cref="Gens.Simulation.PrivateInfrastructure.IrrigationCanal"/> (Phase 15 item 7).</summary>
+public sealed record IrrigationCanalDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SourceType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int BuiltDateTotalMonths { get; init; }
+}
+
+/// <summary>One §3.1 <see cref="Gens.Simulation.PrivateInfrastructure.WellOrCistern"/> (Phase 15 item 7).</summary>
+public sealed record WellOrCisternDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string WellType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int BuiltDateTotalMonths { get; init; }
+}
+
+/// <summary>One §5 <see cref="Gens.Simulation.PrivateInfrastructure.LandReclamationProject"/> (Phase 15
+/// item 7).</summary>
+public sealed record LandReclamationProjectDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int StartMonthTotalMonths { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int MonthsInvested { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int LaborAssigned { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? ResolvedOutcome { get; init; }
+}
+
+/// <summary>One §6 <see cref="Gens.Simulation.PrivateInfrastructure.PrivateBridge"/> (Phase 15 item 7).</summary>
+public sealed record PrivateBridgeDto
+{
+    [JsonPropertyOrder(0)]
+    public required string BridgeId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string PlotAId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string PlotBId { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool RiverCrossing { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int BuiltDateTotalMonths { get; init; }
+}
+
+/// <summary>One §7 <see cref="Gens.Simulation.PrivateInfrastructure.BoundaryInfrastructure"/> (Phase 15
+/// item 7).</summary>
+public sealed record BoundaryInfrastructureDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PlotId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string BoundaryType { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required bool ConfinementBacking { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool PairedWithFortifyPosture { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int BuiltDateTotalMonths { get; init; }
+}
+
+/// <summary>One §8 <see cref="Gens.Simulation.PrivateInfrastructure.InfrastructureCondition"/> (Phase 15
+/// item 7).</summary>
+public sealed record InfrastructureConditionDto
+{
+    [JsonPropertyOrder(0)]
+    public required string StructureType { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string StructureTag { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int Condition { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? LastDisasterEventRef { get; init; }
+}
+
+/// <summary>One §4.1 Unified Estate milestone (Phase 15 item 7) — the month one household's own Road
+/// Cluster first covered every Plot it holds.</summary>
+public sealed record UnifiedEstateMilestoneDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int AchievedDateTotalMonths { get; init; }
 }

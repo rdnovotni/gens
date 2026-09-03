@@ -31,6 +31,7 @@ using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Policies;
+using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Regions;
@@ -120,6 +121,8 @@ public static class WorldStateMapper
                 ContractBidIds = state.ContractBidIds.Peek,
                 LustrumEventIds = state.LustrumEventIds.Peek,
                 ContractFraudRecordIds = state.ContractFraudRecordIds.Peek,
+                PavedRoadConnectionIds = state.PavedRoadConnectionIds.Peek,
+                PrivateBridgeIds = state.PrivateBridgeIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -320,6 +323,25 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId (by case ID) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ContractFraudLegalLinks = state.ContractFraudLegalLinks.InAscendingOrder()
                 .Select(entry => ToContractFraudLegalLinkDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PavedRoadConnections = state.PavedRoadConnections.InAscendingOrder().Select(entry => ToPavedRoadConnectionDto(entry.Value)).ToArray(),
+            // Already ascending-Plot-ID order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            IrrigationCanals = state.IrrigationCanals.InAscendingOrder().Select(entry => ToIrrigationCanalDto(entry.Value)).ToArray(),
+            WellOrCisterns = state.WellOrCisterns.InAscendingOrder().Select(entry => ToWellOrCisternDto(entry.Value)).ToArray(),
+            LandReclamationProjects = state.LandReclamationProjects.InAscendingOrder()
+                .Select(entry => ToLandReclamationProjectDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PrivateBridges = state.PrivateBridges.InAscendingOrder().Select(entry => ToPrivateBridgeDto(entry.Value)).ToArray(),
+            // Already ascending-Plot-ID order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            BoundaryInfrastructures = state.BoundaryInfrastructures.InAscendingOrder()
+                .Select(entry => ToBoundaryInfrastructureDto(entry.Value)).ToArray(),
+            // Already ascending-key order (ADR 0004) via OrderedRegistry.InAscendingOrder.
+            InfrastructureConditions = state.InfrastructureConditions.InAscendingOrder()
+                .Select(entry => ToInfrastructureConditionDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            UnifiedEstateMilestones = state.UnifiedEstateMilestones.InAscendingOrder()
+                .Select(entry => new UnifiedEstateMilestoneDto { HouseholdId = entry.Key.ToTaggedString(), AchievedDateTotalMonths = entry.Value.TotalMonths })
+                .ToArray(),
         };
     }
 
@@ -963,6 +985,60 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<LegalCase>, ContractFraudLegalLink>(link.CaseId, link);
             }));
 
+        var pavedRoadConnections = OrderedRegistry<RuntimeId<PavedRoadConnection>, PavedRoadConnection>.Restore(
+            dto.PavedRoadConnections.Select(c =>
+            {
+                var connection = FromPavedRoadConnectionDto(c);
+                return new KeyValuePair<RuntimeId<PavedRoadConnection>, PavedRoadConnection>(connection.ConnectionId, connection);
+            }));
+
+        var irrigationCanals = OrderedRegistry<RuntimeId<Plot>, IrrigationCanal>.Restore(
+            dto.IrrigationCanals.Select(c =>
+            {
+                var canal = FromIrrigationCanalDto(c);
+                return new KeyValuePair<RuntimeId<Plot>, IrrigationCanal>(canal.PlotId, canal);
+            }));
+
+        var wellOrCisterns = OrderedRegistry<RuntimeId<Plot>, WellOrCistern>.Restore(
+            dto.WellOrCisterns.Select(c =>
+            {
+                var well = FromWellOrCisternDto(c);
+                return new KeyValuePair<RuntimeId<Plot>, WellOrCistern>(well.PlotId, well);
+            }));
+
+        var landReclamationProjects = OrderedRegistry<RuntimeId<Plot>, LandReclamationProject>.Restore(
+            dto.LandReclamationProjects.Select(p =>
+            {
+                var project = FromLandReclamationProjectDto(p);
+                return new KeyValuePair<RuntimeId<Plot>, LandReclamationProject>(project.PlotId, project);
+            }));
+
+        var privateBridges = OrderedRegistry<RuntimeId<PrivateBridge>, PrivateBridge>.Restore(
+            dto.PrivateBridges.Select(b =>
+            {
+                var bridge = FromPrivateBridgeDto(b);
+                return new KeyValuePair<RuntimeId<PrivateBridge>, PrivateBridge>(bridge.BridgeId, bridge);
+            }));
+
+        var boundaryInfrastructures = OrderedRegistry<RuntimeId<Plot>, BoundaryInfrastructure>.Restore(
+            dto.BoundaryInfrastructures.Select(b =>
+            {
+                var boundary = FromBoundaryInfrastructureDto(b);
+                return new KeyValuePair<RuntimeId<Plot>, BoundaryInfrastructure>(boundary.PlotId, boundary);
+            }));
+
+        var infrastructureConditions = OrderedRegistry<InfrastructureConditionKey, InfrastructureCondition>.Restore(
+            dto.InfrastructureConditions.Select(c =>
+            {
+                var condition = FromInfrastructureConditionDto(c);
+                return new KeyValuePair<InfrastructureConditionKey, InfrastructureCondition>(condition.Key, condition);
+            }));
+
+        var unifiedEstateMilestones = OrderedRegistry<RuntimeId<Household>, GameDate>.Restore(
+            dto.UnifiedEstateMilestones.Select(m =>
+                new KeyValuePair<RuntimeId<Household>, GameDate>(
+                    RuntimeId<Household>.Parse(m.HouseholdId), new GameDate(m.AchievedDateTotalMonths))));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -1021,6 +1097,8 @@ public static class WorldStateMapper
             contractBidIds: RuntimeIdCounter<ContractBid>.Restore(dto.Counters.ContractBidIds),
             lustrumEventIds: RuntimeIdCounter<LustrumEvent>.Restore(dto.Counters.LustrumEventIds),
             contractFraudRecordIds: RuntimeIdCounter<ContractFraudRecord>.Restore(dto.Counters.ContractFraudRecordIds),
+            pavedRoadConnectionIds: RuntimeIdCounter<PavedRoadConnection>.Restore(dto.Counters.PavedRoadConnectionIds),
+            privateBridgeIds: RuntimeIdCounter<PrivateBridge>.Restore(dto.Counters.PrivateBridgeIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1116,6 +1194,14 @@ public static class WorldStateMapper
             lustrumEvents: lustrumEvents,
             publicContractFraudRecords: publicContractFraudRecords,
             contractFraudLegalLinks: contractFraudLegalLinks,
+            pavedRoadConnections: pavedRoadConnections,
+            irrigationCanals: irrigationCanals,
+            wellOrCisterns: wellOrCisterns,
+            landReclamationProjects: landReclamationProjects,
+            privateBridges: privateBridges,
+            boundaryInfrastructures: boundaryInfrastructures,
+            infrastructureConditions: infrastructureConditions,
+            unifiedEstateMilestones: unifiedEstateMilestones,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -1955,6 +2041,117 @@ public static class WorldStateMapper
     private static ContractFraudLegalLink FromContractFraudLegalLinkDto(ContractFraudLegalLinkDto dto) => new(
         RuntimeId<LegalCase>.Parse(dto.CaseId),
         RuntimeId<ContractFraudRecord>.Parse(dto.FraudRecordId));
+
+    // ---- Phase 15 item 7: Private Infrastructure -----------------------------------------------
+
+    private static PavedRoadConnectionDto ToPavedRoadConnectionDto(PavedRoadConnection connection) => new()
+    {
+        ConnectionId = connection.ConnectionId.ToTaggedString(),
+        SettlementId = connection.SettlementId.ToTaggedString(),
+        HouseholdId = connection.HouseholdId.ToTaggedString(),
+        PlotAId = connection.PlotAId.ToTaggedString(),
+        PlotBId = connection.PlotBId.ToTaggedString(),
+        BuiltDateTotalMonths = connection.BuiltDate.TotalMonths,
+    };
+
+    private static PavedRoadConnection FromPavedRoadConnectionDto(PavedRoadConnectionDto dto) => PavedRoadConnection.Create(
+        RuntimeId<PavedRoadConnection>.Parse(dto.ConnectionId),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Plot>.Parse(dto.PlotAId),
+        RuntimeId<Plot>.Parse(dto.PlotBId),
+        new GameDate(dto.BuiltDateTotalMonths));
+
+    private static IrrigationCanalDto ToIrrigationCanalDto(IrrigationCanal canal) => new()
+    {
+        PlotId = canal.PlotId.ToTaggedString(),
+        SourceType = canal.SourceType.ToString(),
+        BuiltDateTotalMonths = canal.BuiltDate.TotalMonths,
+    };
+
+    private static IrrigationCanal FromIrrigationCanalDto(IrrigationCanalDto dto) => IrrigationCanal.Create(
+        RuntimeId<Plot>.Parse(dto.PlotId), Enum.Parse<IrrigationSourceType>(dto.SourceType), new GameDate(dto.BuiltDateTotalMonths));
+
+    private static WellOrCisternDto ToWellOrCisternDto(WellOrCistern well) => new()
+    {
+        PlotId = well.PlotId.ToTaggedString(),
+        WellType = well.Type.ToString(),
+        BuiltDateTotalMonths = well.BuiltDate.TotalMonths,
+    };
+
+    private static WellOrCistern FromWellOrCisternDto(WellOrCisternDto dto) => WellOrCistern.Create(
+        RuntimeId<Plot>.Parse(dto.PlotId), Enum.Parse<WellOrCisternType>(dto.WellType), new GameDate(dto.BuiltDateTotalMonths));
+
+    private static LandReclamationProjectDto ToLandReclamationProjectDto(LandReclamationProject project) => new()
+    {
+        PlotId = project.PlotId.ToTaggedString(),
+        StartMonthTotalMonths = project.StartMonth.TotalMonths,
+        MonthsInvested = project.MonthsInvested,
+        LaborAssigned = project.LaborAssigned,
+        Status = project.Status.ToString(),
+        ResolvedOutcome = project.ResolvedOutcome?.ToString(),
+    };
+
+    private static LandReclamationProject FromLandReclamationProjectDto(LandReclamationProjectDto dto) => new()
+    {
+        PlotId = RuntimeId<Plot>.Parse(dto.PlotId),
+        StartMonth = new GameDate(dto.StartMonthTotalMonths),
+        MonthsInvested = dto.MonthsInvested,
+        LaborAssigned = dto.LaborAssigned,
+        Status = Enum.Parse<LandReclamationStatus>(dto.Status),
+        ResolvedOutcome = dto.ResolvedOutcome is { } outcome2 ? Enum.Parse<LandReclamationOutcome>(outcome2) : null,
+    };
+
+    private static PrivateBridgeDto ToPrivateBridgeDto(PrivateBridge bridge) => new()
+    {
+        BridgeId = bridge.BridgeId.ToTaggedString(),
+        SettlementId = bridge.SettlementId.ToTaggedString(),
+        HouseholdId = bridge.HouseholdId.ToTaggedString(),
+        PlotAId = bridge.PlotAId.ToTaggedString(),
+        PlotBId = bridge.PlotBId.ToTaggedString(),
+        RiverCrossing = bridge.RiverCrossing,
+        BuiltDateTotalMonths = bridge.BuiltDate.TotalMonths,
+    };
+
+    private static PrivateBridge FromPrivateBridgeDto(PrivateBridgeDto dto) => PrivateBridge.Create(
+        RuntimeId<PrivateBridge>.Parse(dto.BridgeId),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Plot>.Parse(dto.PlotAId),
+        RuntimeId<Plot>.Parse(dto.PlotBId),
+        dto.RiverCrossing,
+        new GameDate(dto.BuiltDateTotalMonths));
+
+    private static BoundaryInfrastructureDto ToBoundaryInfrastructureDto(BoundaryInfrastructure boundary) => new()
+    {
+        PlotId = boundary.PlotId.ToTaggedString(),
+        BoundaryType = boundary.Type.ToString(),
+        ConfinementBacking = boundary.ConfinementBacking,
+        PairedWithFortifyPosture = boundary.PairedWithFortifyPosture,
+        BuiltDateTotalMonths = boundary.BuiltDate.TotalMonths,
+    };
+
+    private static BoundaryInfrastructure FromBoundaryInfrastructureDto(BoundaryInfrastructureDto dto) => new()
+    {
+        PlotId = RuntimeId<Plot>.Parse(dto.PlotId),
+        Type = Enum.Parse<BoundaryInfrastructureType>(dto.BoundaryType),
+        ConfinementBacking = dto.ConfinementBacking,
+        PairedWithFortifyPosture = dto.PairedWithFortifyPosture,
+        BuiltDate = new GameDate(dto.BuiltDateTotalMonths),
+    };
+
+    private static InfrastructureConditionDto ToInfrastructureConditionDto(InfrastructureCondition condition) => new()
+    {
+        StructureType = condition.Key.StructureType.ToString(),
+        StructureTag = condition.Key.StructureTag,
+        Condition = condition.Condition,
+        LastDisasterEventRef = condition.LastDisasterEventRef?.ToTaggedString(),
+    };
+
+    private static InfrastructureCondition FromInfrastructureConditionDto(InfrastructureConditionDto dto) => InfrastructureCondition.Restore(
+        new InfrastructureConditionKey(Enum.Parse<InfrastructureStructureType>(dto.StructureType), dto.StructureTag),
+        dto.Condition,
+        dto.LastDisasterEventRef is { } eventRef ? RuntimeId<Hazards.DisasterEvent>.Parse(eventRef) : null);
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

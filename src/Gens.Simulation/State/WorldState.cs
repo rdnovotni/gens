@@ -29,6 +29,7 @@ using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Policies;
+using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
@@ -122,6 +123,8 @@ public sealed class WorldState
         RuntimeIdCounter<ContractBid> contractBidIds,
         RuntimeIdCounter<LustrumEvent> lustrumEventIds,
         RuntimeIdCounter<ContractFraudRecord> contractFraudRecordIds,
+        RuntimeIdCounter<PavedRoadConnection> pavedRoadConnectionIds,
+        RuntimeIdCounter<PrivateBridge> privateBridgeIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -217,6 +220,14 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<LustrumEvent>, LustrumEvent> lustrumEvents,
         OrderedRegistry<RuntimeId<ContractFraudRecord>, ContractFraudRecord> publicContractFraudRecords,
         OrderedRegistry<RuntimeId<LegalCase>, ContractFraudLegalLink> contractFraudLegalLinks,
+        OrderedRegistry<RuntimeId<PavedRoadConnection>, PavedRoadConnection> pavedRoadConnections,
+        OrderedRegistry<RuntimeId<Plot>, IrrigationCanal> irrigationCanals,
+        OrderedRegistry<RuntimeId<Plot>, WellOrCistern> wellOrCisterns,
+        OrderedRegistry<RuntimeId<Plot>, LandReclamationProject> landReclamationProjects,
+        OrderedRegistry<RuntimeId<PrivateBridge>, PrivateBridge> privateBridges,
+        OrderedRegistry<RuntimeId<Plot>, BoundaryInfrastructure> boundaryInfrastructures,
+        OrderedRegistry<InfrastructureConditionKey, InfrastructureCondition> infrastructureConditions,
+        OrderedRegistry<RuntimeId<Household>, GameDate> unifiedEstateMilestones,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -277,6 +288,8 @@ public sealed class WorldState
         ContractBidIds = contractBidIds;
         LustrumEventIds = lustrumEventIds;
         ContractFraudRecordIds = contractFraudRecordIds;
+        PavedRoadConnectionIds = pavedRoadConnectionIds;
+        PrivateBridgeIds = privateBridgeIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -372,6 +385,14 @@ public sealed class WorldState
         LustrumEvents = lustrumEvents;
         PublicContractFraudRecords = publicContractFraudRecords;
         ContractFraudLegalLinks = contractFraudLegalLinks;
+        PavedRoadConnections = pavedRoadConnections;
+        IrrigationCanals = irrigationCanals;
+        WellOrCisterns = wellOrCisterns;
+        LandReclamationProjects = landReclamationProjects;
+        PrivateBridges = privateBridges;
+        BoundaryInfrastructures = boundaryInfrastructures;
+        InfrastructureConditions = infrastructureConditions;
+        UnifiedEstateMilestones = unifiedEstateMilestones;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -517,6 +538,15 @@ public sealed class WorldState
     public RuntimeIdCounter<ContractBid> ContractBidIds { get; } = new();
     public RuntimeIdCounter<LustrumEvent> LustrumEventIds { get; } = new();
     public RuntimeIdCounter<ContractFraudRecord> ContractFraudRecordIds { get; } = new();
+
+    /// <summary>Phase 15 item 7's two new runtime-entity kinds needing a real identity of their own —
+    /// <see cref="PavedRoadConnection"/> and <see cref="PrivateBridge"/> — matching <see
+    /// cref="PublicContractIds"/>'s identical "genuinely its own entity" precedent. Every other new
+    /// structure this item adds (<see cref="IrrigationCanal"/>, <see cref="WellOrCistern"/>, <see
+    /// cref="LandReclamationProject"/>, <see cref="BoundaryInfrastructure"/>) is instead keyed by the
+    /// already-issued <see cref="RuntimeId{Plot}"/> it was built on, needing no counter of its own.</summary>
+    public RuntimeIdCounter<PavedRoadConnection> PavedRoadConnectionIds { get; } = new();
+    public RuntimeIdCounter<PrivateBridge> PrivateBridgeIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -1085,6 +1115,44 @@ public sealed class WorldState
     /// that already-issued case ID, matching <see cref="ActioProSocioLinks"/>'s identical convention.</summary>
     public OrderedRegistry<RuntimeId<LegalCase>, ContractFraudLegalLink> ContractFraudLegalLinks { get; } = new();
 
+    /// <summary>Every §2/§4 <see cref="Gens.Simulation.PrivateInfrastructure.PavedRoadConnection"/>
+    /// (Phase 15 item 7), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<PavedRoadConnection>, PavedRoadConnection> PavedRoadConnections { get; } = new();
+
+    /// <summary>Every §3 <see cref="Gens.Simulation.PrivateInfrastructure.IrrigationCanal"/> (Phase 15
+    /// item 7), sparse and keyed by the Plot it was built on, matching <see
+    /// cref="RealEstate.PlotPropertyExtension"/>'s own "wrap the existing record in a parallel partition"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<Plot>, IrrigationCanal> IrrigationCanals { get; } = new();
+
+    /// <summary>Every §3.1 <see cref="Gens.Simulation.PrivateInfrastructure.WellOrCistern"/> (Phase 15
+    /// item 7), sparse and keyed by Plot, same convention as <see cref="IrrigationCanals"/>.</summary>
+    public OrderedRegistry<RuntimeId<Plot>, WellOrCistern> WellOrCisterns { get; } = new();
+
+    /// <summary>Every §5 <see cref="Gens.Simulation.PrivateInfrastructure.LandReclamationProject"/>
+    /// (Phase 15 item 7), sparse and keyed by Plot — at most one project (in progress or resolved) per
+    /// Plot.</summary>
+    public OrderedRegistry<RuntimeId<Plot>, LandReclamationProject> LandReclamationProjects { get; } = new();
+
+    /// <summary>Every §6 <see cref="Gens.Simulation.PrivateInfrastructure.PrivateBridge"/> (Phase 15
+    /// item 7), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<PrivateBridge>, PrivateBridge> PrivateBridges { get; } = new();
+
+    /// <summary>Every §7 <see cref="Gens.Simulation.PrivateInfrastructure.BoundaryInfrastructure"/>
+    /// (Phase 15 item 7), sparse and keyed by Plot, same convention as <see cref="IrrigationCanals"/>.</summary>
+    public OrderedRegistry<RuntimeId<Plot>, BoundaryInfrastructure> BoundaryInfrastructures { get; } = new();
+
+    /// <summary>Every §8 <see cref="Gens.Simulation.PrivateInfrastructure.InfrastructureCondition"/>
+    /// (Phase 15 item 7), one entry per built structure above, keyed by that structure's own <see
+    /// cref="Gens.Simulation.PrivateInfrastructure.InfrastructureConditionKey"/>.</summary>
+    public OrderedRegistry<InfrastructureConditionKey, InfrastructureCondition> InfrastructureConditions { get; } = new();
+
+    /// <summary>§4.1's Unified Estate milestone — the <see cref="GameDate"/> a household's own <see
+    /// cref="RoadClusterQuery"/> cluster first covered every Plot it holds, sparse and keyed by
+    /// household; present means already achieved, matching <see
+    /// cref="PrivateInfrastructureBenefitsSystem"/>'s own "fire exactly once" guard.</summary>
+    public OrderedRegistry<RuntimeId<Household>, GameDate> UnifiedEstateMilestones { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1247,6 +1315,14 @@ public sealed class WorldState
         ["lustrumEvents"] = LustrumEvents.Version,
         ["publicContractFraudRecords"] = PublicContractFraudRecords.Version,
         ["contractFraudLegalLinks"] = ContractFraudLegalLinks.Version,
+        ["pavedRoadConnections"] = PavedRoadConnections.Version,
+        ["irrigationCanals"] = IrrigationCanals.Version,
+        ["wellOrCisterns"] = WellOrCisterns.Version,
+        ["landReclamationProjects"] = LandReclamationProjects.Version,
+        ["privateBridges"] = PrivateBridges.Version,
+        ["boundaryInfrastructures"] = BoundaryInfrastructures.Version,
+        ["infrastructureConditions"] = InfrastructureConditions.Version,
+        ["unifiedEstateMilestones"] = UnifiedEstateMilestones.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,
