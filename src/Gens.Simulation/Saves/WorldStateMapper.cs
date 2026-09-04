@@ -123,6 +123,9 @@ public static class WorldStateMapper
                 ContractFraudRecordIds = state.ContractFraudRecordIds.Peek,
                 PavedRoadConnectionIds = state.PavedRoadConnectionIds.Peek,
                 PrivateBridgeIds = state.PrivateBridgeIds.Peek,
+                MerchantShipIds = state.MerchantShipIds.Peek,
+                ShipCommissionProjectIds = state.ShipCommissionProjectIds.Peek,
+                VoyageEventIds = state.VoyageEventIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -341,6 +344,18 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             UnifiedEstateMilestones = state.UnifiedEstateMilestones.InAscendingOrder()
                 .Select(entry => new UnifiedEstateMilestoneDto { HouseholdId = entry.Key.ToTaggedString(), AchievedDateTotalMonths = entry.Value.TotalMonths })
+                .ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            MerchantShips = state.MerchantShips.InAscendingOrder().Select(entry => ToMerchantShipDto(entry.Value)).ToArray(),
+            ShipCommissionProjects = state.ShipCommissionProjects.InAscendingOrder()
+                .Select(entry => ToShipCommissionProjectDto(entry.Value)).ToArray(),
+            // Already ascending-Ship-ID order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ShipFrontingArrangements = state.ShipFrontingArrangements.InAscendingOrder()
+                .Select(entry => ToShipFrontingArrangementDto(entry.Value)).ToArray(),
+            VoyageEvents = state.VoyageEvents.InAscendingOrder().Select(entry => ToVoyageEventDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            FlagshipDesignationAwards = state.FlagshipDesignationAwards.InAscendingOrder()
+                .Select(entry => new FlagshipDesignationAwardDto { HouseholdId = entry.Key.ToTaggedString(), AwardedDateTotalMonths = entry.Value.TotalMonths })
                 .ToArray(),
         };
     }
@@ -1039,6 +1054,39 @@ public static class WorldStateMapper
                 new KeyValuePair<RuntimeId<Household>, GameDate>(
                     RuntimeId<Household>.Parse(m.HouseholdId), new GameDate(m.AchievedDateTotalMonths))));
 
+        var merchantShips = OrderedRegistry<RuntimeId<Shipping.MerchantShip>, Shipping.MerchantShip>.Restore(
+            dto.MerchantShips.Select(s =>
+            {
+                var ship = FromMerchantShipDto(s);
+                return new KeyValuePair<RuntimeId<Shipping.MerchantShip>, Shipping.MerchantShip>(ship.Id, ship);
+            }));
+
+        var shipCommissionProjects = OrderedRegistry<RuntimeId<Shipping.ShipCommissionProject>, Shipping.ShipCommissionProject>.Restore(
+            dto.ShipCommissionProjects.Select(p =>
+            {
+                var project = FromShipCommissionProjectDto(p);
+                return new KeyValuePair<RuntimeId<Shipping.ShipCommissionProject>, Shipping.ShipCommissionProject>(project.Id, project);
+            }));
+
+        var shipFrontingArrangements = OrderedRegistry<RuntimeId<Shipping.MerchantShip>, Shipping.FrontingArrangement>.Restore(
+            dto.ShipFrontingArrangements.Select(f =>
+            {
+                var arrangement = FromShipFrontingArrangementDto(f);
+                return new KeyValuePair<RuntimeId<Shipping.MerchantShip>, Shipping.FrontingArrangement>(arrangement.ShipId, arrangement);
+            }));
+
+        var voyageEvents = OrderedRegistry<RuntimeId<Shipping.VoyageEvent>, Shipping.VoyageEvent>.Restore(
+            dto.VoyageEvents.Select(v =>
+            {
+                var voyageEvent = FromVoyageEventDto(v);
+                return new KeyValuePair<RuntimeId<Shipping.VoyageEvent>, Shipping.VoyageEvent>(voyageEvent.Id, voyageEvent);
+            }));
+
+        var flagshipDesignationAwards = OrderedRegistry<RuntimeId<Household>, GameDate>.Restore(
+            dto.FlagshipDesignationAwards.Select(a =>
+                new KeyValuePair<RuntimeId<Household>, GameDate>(
+                    RuntimeId<Household>.Parse(a.HouseholdId), new GameDate(a.AwardedDateTotalMonths))));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -1099,6 +1147,9 @@ public static class WorldStateMapper
             contractFraudRecordIds: RuntimeIdCounter<ContractFraudRecord>.Restore(dto.Counters.ContractFraudRecordIds),
             pavedRoadConnectionIds: RuntimeIdCounter<PavedRoadConnection>.Restore(dto.Counters.PavedRoadConnectionIds),
             privateBridgeIds: RuntimeIdCounter<PrivateBridge>.Restore(dto.Counters.PrivateBridgeIds),
+            merchantShipIds: RuntimeIdCounter<Shipping.MerchantShip>.Restore(dto.Counters.MerchantShipIds),
+            shipCommissionProjectIds: RuntimeIdCounter<Shipping.ShipCommissionProject>.Restore(dto.Counters.ShipCommissionProjectIds),
+            voyageEventIds: RuntimeIdCounter<Shipping.VoyageEvent>.Restore(dto.Counters.VoyageEventIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1202,6 +1253,11 @@ public static class WorldStateMapper
             boundaryInfrastructures: boundaryInfrastructures,
             infrastructureConditions: infrastructureConditions,
             unifiedEstateMilestones: unifiedEstateMilestones,
+            merchantShips: merchantShips,
+            shipCommissionProjects: shipCommissionProjects,
+            shipFrontingArrangements: shipFrontingArrangements,
+            voyageEvents: voyageEvents,
+            flagshipDesignationAwards: flagshipDesignationAwards,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2152,6 +2208,120 @@ public static class WorldStateMapper
         new InfrastructureConditionKey(Enum.Parse<InfrastructureStructureType>(dto.StructureType), dto.StructureTag),
         dto.Condition,
         dto.LastDisasterEventRef is { } eventRef ? RuntimeId<Hazards.DisasterEvent>.Parse(eventRef) : null);
+
+    private static MerchantShipDto ToMerchantShipDto(Shipping.MerchantShip ship) => new()
+    {
+        ShipId = ship.Id.ToTaggedString(),
+        Name = ship.Name,
+        VesselClass = ship.VesselClass.ToString(),
+        BuildQuality = ship.BuildQuality.ToString(),
+        OwnershipMode = ship.OwnershipMode.ToString(),
+        ActualOwnerHouseholdId = ship.ActualOwnerHouseholdId.ToTaggedString(),
+        OwningSocietasId = ship.OwningSocietasId?.ToTaggedString(),
+        IsFlagship = ship.IsFlagship,
+        BlessedLaunch = ship.BlessedLaunch,
+        ReputationTier = ship.ReputationTier.ToString(),
+        VoyagesCompleted = ship.VoyagesCompleted,
+        ConsecutiveBadOutcomes = ship.ConsecutiveBadOutcomes,
+        Status = ship.Status.ToString(),
+        Condition = ship.Condition.Value,
+        NavarchusId = ship.NavarchusId?.ToTaggedString(),
+        HomeSettlementId = ship.HomeSettlementId.ToTaggedString(),
+        AssignedTradeRouteId = ship.AssignedTradeRouteId?.ToTaggedString(),
+        FenusNauticumRecordId = ship.FenusNauticumRecordId?.ToTaggedString(),
+    };
+
+    private static Shipping.MerchantShip FromMerchantShipDto(MerchantShipDto dto) => Shipping.MerchantShip.Restore(
+        RuntimeId<Shipping.MerchantShip>.Parse(dto.ShipId),
+        dto.Name,
+        Enum.Parse<Shipping.ShipVesselClass>(dto.VesselClass),
+        Enum.Parse<GoodQuality>(dto.BuildQuality),
+        Enum.Parse<Shipping.ShipOwnershipMode>(dto.OwnershipMode),
+        RuntimeId<Household>.Parse(dto.ActualOwnerHouseholdId),
+        dto.OwningSocietasId is { } societasId ? RuntimeId<Societas>.Parse(societasId) : null,
+        dto.IsFlagship,
+        dto.BlessedLaunch,
+        Enum.Parse<Shipping.ShipReputationTier>(dto.ReputationTier),
+        dto.VoyagesCompleted,
+        dto.ConsecutiveBadOutcomes,
+        Enum.Parse<Shipping.ShipStatus>(dto.Status),
+        new LandCondition(dto.Condition),
+        dto.NavarchusId is { } navarchusId ? RuntimeId<Character>.Parse(navarchusId) : null,
+        RuntimeId<Settlement>.Parse(dto.HomeSettlementId),
+        dto.AssignedTradeRouteId is { } routeId ? RuntimeId<StandingContract>.Parse(routeId) : null,
+        dto.FenusNauticumRecordId is { } debtId ? RuntimeId<DebtRecord>.Parse(debtId) : null);
+
+    private static ShipCommissionProjectDto ToShipCommissionProjectDto(Shipping.ShipCommissionProject project) => new()
+    {
+        ProjectId = project.Id.ToTaggedString(),
+        HouseholdId = project.HouseholdId.ToTaggedString(),
+        SettlementId = project.SettlementId.ToTaggedString(),
+        ShipName = project.ShipName,
+        VesselClass = project.VesselClass.ToString(),
+        BuildQuality = project.BuildQuality.ToString(),
+        DecorationChoice = project.DecorationChoice,
+        ConsecratedLaunchRequested = project.ConsecratedLaunchRequested,
+        OwnershipMode = project.OwnershipMode.ToString(),
+        OwningSocietasId = project.OwningSocietasId?.ToTaggedString(),
+        FrontingKind = project.FrontingPersonOrSocietasId?.Kind.ToString(),
+        FrontingOwnerId = project.FrontingPersonOrSocietasId?.OwnerId,
+        StartMonthTotalMonths = project.StartMonth.TotalMonths,
+        MonthsInvested = project.MonthsInvested,
+        Status = project.Status.ToString(),
+        ResultingShipId = project.ResultingShipId?.ToTaggedString(),
+    };
+
+    private static Shipping.ShipCommissionProject FromShipCommissionProjectDto(ShipCommissionProjectDto dto) => Shipping.ShipCommissionProject.Restore(
+        RuntimeId<Shipping.ShipCommissionProject>.Parse(dto.ProjectId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        dto.ShipName,
+        Enum.Parse<Shipping.ShipVesselClass>(dto.VesselClass),
+        Enum.Parse<GoodQuality>(dto.BuildQuality),
+        dto.DecorationChoice,
+        dto.ConsecratedLaunchRequested,
+        Enum.Parse<Shipping.ShipOwnershipMode>(dto.OwnershipMode),
+        dto.OwningSocietasId is { } societasId ? RuntimeId<Societas>.Parse(societasId) : null,
+        dto.FrontingKind is { } frontingKind
+            ? new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(frontingKind), dto.FrontingOwnerId)
+            : null,
+        new GameDate(dto.StartMonthTotalMonths),
+        dto.MonthsInvested,
+        Enum.Parse<Shipping.ShipCommissionStatus>(dto.Status),
+        dto.ResultingShipId is { } shipId ? RuntimeId<Shipping.MerchantShip>.Parse(shipId) : null);
+
+    private static ShipFrontingArrangementDto ToShipFrontingArrangementDto(Shipping.FrontingArrangement arrangement) => new()
+    {
+        ShipId = arrangement.ShipId.ToTaggedString(),
+        RealOwnerHouseholdId = arrangement.RealOwnerHouseholdId.ToTaggedString(),
+        FrontingKind = arrangement.FrontingPersonOrSocietasId.Kind.ToString(),
+        FrontingOwnerId = arrangement.FrontingPersonOrSocietasId.OwnerId,
+        Exposed = arrangement.Exposed,
+        ExposureScandalRef = arrangement.ExposureScandalRef,
+    };
+
+    private static Shipping.FrontingArrangement FromShipFrontingArrangementDto(ShipFrontingArrangementDto dto) => Shipping.FrontingArrangement.Restore(
+        RuntimeId<Shipping.MerchantShip>.Parse(dto.ShipId),
+        RuntimeId<Household>.Parse(dto.RealOwnerHouseholdId),
+        new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.FrontingKind), dto.FrontingOwnerId),
+        dto.Exposed,
+        dto.ExposureScandalRef);
+
+    private static VoyageEventDto ToVoyageEventDto(Shipping.VoyageEvent voyageEvent) => new()
+    {
+        VoyageEventId = voyageEvent.Id.ToTaggedString(),
+        ShipId = voyageEvent.ShipId.ToTaggedString(),
+        MonthTotalMonths = voyageEvent.Month.TotalMonths,
+        TriggerReason = voyageEvent.TriggerReason.ToString(),
+        Outcome = voyageEvent.Outcome.ToString(),
+    };
+
+    private static Shipping.VoyageEvent FromVoyageEventDto(VoyageEventDto dto) => Shipping.VoyageEvent.Create(
+        RuntimeId<Shipping.VoyageEvent>.Parse(dto.VoyageEventId),
+        RuntimeId<Shipping.MerchantShip>.Parse(dto.ShipId),
+        new GameDate(dto.MonthTotalMonths),
+        Enum.Parse<Shipping.VoyageTriggerReason>(dto.TriggerReason),
+        Enum.Parse<Shipping.VoyageOutcome>(dto.Outcome));
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

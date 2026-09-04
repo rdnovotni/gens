@@ -491,6 +491,26 @@ public static class ChronicleProjector
                 reclaimed.EventId.ToTaggedString(),
                 reclaimingHousehold),
 
+            // Phase 15 item 8 (§8 of gens-private-ships-shipping-ventures-design.md): "a Ship's dramatic
+            // loss... [is a] real, natural Chronicle entry," with a Flagship's own loss carrying "a
+            // guaranteed Dynasty Chronicle entry" per §4 specifically — both land here as one case, since
+            // <see cref="Shipping.VoyageEventResolvedEvent.WasFlagship"/> already carries which applies;
+            // only an actual loss is Chronicle-worthy, matching <see
+            // cref="PrivateInfrastructure.LandReclamationCompletedEvent"/>'s own "only the dramatic
+            // outcome, not every resolution" precedent.
+            Shipping.VoyageEventResolvedEvent { Outcome: Shipping.VoyageOutcome.LostToStorm } lost
+                when ShipOwnerHousehold(state, lost.ShipId) is { } shipOwner => new ChronicleEntryDraft(
+                lost.OccurredDate,
+                ChronicleCategory.WealthAndBuilding,
+                lost.WasFlagship ? ChronicleTier.Major : ChronicleTier.Minor,
+                lost.WasFlagship
+                    ? "The household's own Flagship is lost to a storm at sea."
+                    : "A ship of the household's own Marine is lost to a storm at sea.",
+                Array.Empty<RuntimeId<Character>>(),
+                lost.Type,
+                lost.EventId.ToTaggedString(),
+                shipOwner),
+
             _ => null,
         };
 
@@ -506,6 +526,15 @@ public static class ChronicleProjector
 
     private static RuntimeId<Household>? HouseholdOf(WorldState state, RuntimeId<Character> characterId) =>
         state.Characters.TryGet(characterId, out var character) ? character.Household : null;
+
+    /// <summary>Resolves a <see cref="Shipping.MerchantShip"/>'s own actual owner, for the one Phase 15
+    /// item 8 event (<see cref="Shipping.VoyageEventResolvedEvent"/>) that names a Ship rather than a
+    /// Character or household directly — reads <see cref="Shipping.MerchantShip.ActualOwnerHouseholdId"/>
+    /// directly (§11's own "always tracked, regardless of ownerType") rather than needing <see
+    /// cref="HouseholdOfPlot"/>'s own owner-string parse, since a Ship's owning household is already a
+    /// real, typed field.</summary>
+    private static RuntimeId<Household>? ShipOwnerHousehold(WorldState state, RuntimeId<Shipping.MerchantShip> shipId) =>
+        state.MerchantShips.TryGet(shipId, out var ship) ? ship!.ActualOwnerHouseholdId : null;
 
     /// <summary>Resolves a Plot's own owning household, for the one Phase 15 item 7 event
     /// (<see cref="PrivateInfrastructure.LandReclamationCompletedEvent"/>) that names a Plot rather than

@@ -35,6 +35,7 @@ using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
+using Gens.Simulation.Shipping;
 using Gens.Simulation.Societates;
 using Gens.Simulation.Stewardship;
 using Gens.Simulation.Succession;
@@ -125,6 +126,9 @@ public sealed class WorldState
         RuntimeIdCounter<ContractFraudRecord> contractFraudRecordIds,
         RuntimeIdCounter<PavedRoadConnection> pavedRoadConnectionIds,
         RuntimeIdCounter<PrivateBridge> privateBridgeIds,
+        RuntimeIdCounter<MerchantShip> merchantShipIds,
+        RuntimeIdCounter<ShipCommissionProject> shipCommissionProjectIds,
+        RuntimeIdCounter<VoyageEvent> voyageEventIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -228,6 +232,11 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Plot>, BoundaryInfrastructure> boundaryInfrastructures,
         OrderedRegistry<InfrastructureConditionKey, InfrastructureCondition> infrastructureConditions,
         OrderedRegistry<RuntimeId<Household>, GameDate> unifiedEstateMilestones,
+        OrderedRegistry<RuntimeId<MerchantShip>, MerchantShip> merchantShips,
+        OrderedRegistry<RuntimeId<ShipCommissionProject>, ShipCommissionProject> shipCommissionProjects,
+        OrderedRegistry<RuntimeId<MerchantShip>, FrontingArrangement> shipFrontingArrangements,
+        OrderedRegistry<RuntimeId<VoyageEvent>, VoyageEvent> voyageEvents,
+        OrderedRegistry<RuntimeId<Household>, GameDate> flagshipDesignationAwards,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -290,6 +299,9 @@ public sealed class WorldState
         ContractFraudRecordIds = contractFraudRecordIds;
         PavedRoadConnectionIds = pavedRoadConnectionIds;
         PrivateBridgeIds = privateBridgeIds;
+        MerchantShipIds = merchantShipIds;
+        ShipCommissionProjectIds = shipCommissionProjectIds;
+        VoyageEventIds = voyageEventIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -393,6 +405,11 @@ public sealed class WorldState
         BoundaryInfrastructures = boundaryInfrastructures;
         InfrastructureConditions = infrastructureConditions;
         UnifiedEstateMilestones = unifiedEstateMilestones;
+        MerchantShips = merchantShips;
+        ShipCommissionProjects = shipCommissionProjects;
+        ShipFrontingArrangements = shipFrontingArrangements;
+        VoyageEvents = voyageEvents;
+        FlagshipDesignationAwards = flagshipDesignationAwards;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -547,6 +564,9 @@ public sealed class WorldState
     /// already-issued <see cref="RuntimeId{Plot}"/> it was built on, needing no counter of its own.</summary>
     public RuntimeIdCounter<PavedRoadConnection> PavedRoadConnectionIds { get; } = new();
     public RuntimeIdCounter<PrivateBridge> PrivateBridgeIds { get; } = new();
+    public RuntimeIdCounter<MerchantShip> MerchantShipIds { get; } = new();
+    public RuntimeIdCounter<ShipCommissionProject> ShipCommissionProjectIds { get; } = new();
+    public RuntimeIdCounter<VoyageEvent> VoyageEventIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -1152,6 +1172,33 @@ public sealed class WorldState
     /// household; present means already achieved, matching <see
     /// cref="PrivateInfrastructureBenefitsSystem"/>'s own "fire exactly once" guard.</summary>
     public OrderedRegistry<RuntimeId<Household>, GameDate> UnifiedEstateMilestones { get; } = new();
+
+    /// <summary>Every §11 <see cref="Gens.Simulation.Shipping.MerchantShip"/> (Phase 15 item 8), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<MerchantShip>, MerchantShip> MerchantShips { get; } = new();
+
+    /// <summary>Every §3 <see cref="Gens.Simulation.Shipping.ShipCommissionProject"/> (Phase 15 item 8),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — kept forever, matching <see
+    /// cref="PrivateInfrastructure.LandReclamationProject"/>'s own "in progress or resolved, a real
+    /// record either way" convention.</summary>
+    public OrderedRegistry<RuntimeId<ShipCommissionProject>, ShipCommissionProject> ShipCommissionProjects { get; } = new();
+
+    /// <summary>Every §5 <see cref="Gens.Simulation.Shipping.FrontingArrangement"/> (Phase 15 item 8),
+    /// sparse and keyed by the already-registered <see cref="RuntimeId{MerchantShip}"/> it describes,
+    /// matching <see cref="RealEstate.PlotPropertyExtension"/>'s own "wrap the existing record in a
+    /// parallel partition" convention.</summary>
+    public OrderedRegistry<RuntimeId<MerchantShip>, FrontingArrangement> ShipFrontingArrangements { get; } = new();
+
+    /// <summary>Every resolved §6.2 <see cref="Gens.Simulation.Shipping.VoyageEvent"/> (Phase 15 item 8),
+    /// in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<VoyageEvent>, VoyageEvent> VoyageEvents { get; } = new();
+
+    /// <summary>§4's Flagship-designation Dignitas-award dates (Phase 15 item 8), sparse and keyed by
+    /// household; present means that household has already received <see
+    /// cref="Gens.Simulation.Shipping.ShippingCatalog.FlagshipDesignationDignitasAward"/> once, matching
+    /// <see cref="UnifiedEstateMilestones"/>'s own identical "sparse, present-means-achieved, fire
+    /// exactly once" guard.</summary>
+    public OrderedRegistry<RuntimeId<Household>, GameDate> FlagshipDesignationAwards { get; } = new();
 
     public KnowledgeState Knowledge { get; } = new();
 
