@@ -80,6 +80,8 @@ public static class StateHasher
         hash = MixLong(hash, state.DisasterEventIds.Peek);
         hash = MixLong(hash, state.WandererIds.Peek);
         hash = MixLong(hash, state.WandererEngagementIds.Peek);
+        hash = MixLong(hash, state.PublicWorkIds.Peek);
+        hash = MixLong(hash, state.CompetitiveEuergetismEventIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())

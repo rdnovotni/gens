@@ -49,6 +49,13 @@ public sealed class PublicWorksTests
         return (state, settlementId);
     }
 
+    private static RuntimeId<District> DistrictIn(WorldState state, RuntimeId<Settlement> settlementId, string name = "Forum")
+    {
+        var districtId = state.DistrictIds.Issue();
+        state.Districts.Add(districtId, District.Create(districtId, settlementId, name));
+        return districtId;
+    }
+
     private static RuntimeId<Household> HouseholdWithHead(WorldState state, string nomen = "Cornelius")
     {
         var householdId = state.HouseholdIds.Issue();
@@ -73,8 +80,12 @@ public sealed class PublicWorksTests
     private static Money TreasuryBalanceOf(WorldState state, RuntimeId<Settlement> settlementId) =>
         state.LedgerAccounts.TryGet(LedgerAccountKey.ForSettlementTreasury(settlementId), out var account) ? account!.Balance : Money.Zero;
 
-    private static void SetNetWorth(WorldState state, RuntimeId<Household> householdId, Money total) =>
+    private static void SetNetWorth(WorldState state, RuntimeId<Household> householdId, Money total)
+    {
+        if (state.NetWorthAssessments.TryGet(householdId, out _))
+            state.NetWorthAssessments.Remove(householdId);
         state.NetWorthAssessments.Add(householdId, new NetWorth(householdId, state.Date, total, Money.Zero, Money.Zero, total));
+    }
 
     private static RuntimeId<PublicWork> FundWork(
         WorldState state, RuntimeId<Settlement> settlementId, PublicWorkType workType, PublicWorkFundingSource fundingSource,
@@ -94,10 +105,11 @@ public sealed class PublicWorksTests
     {
         var (state, settlementId) = CoastalSettlement();
         FundTreasury(state, settlementId, Money.FromDenarii(10_000));
+        var districtId = DistrictIn(state, settlementId);
 
         foreach (var workType in Enum.GetValues<PublicWorkType>())
         {
-            var id = FundWork(state, settlementId, workType, PublicWorkFundingSource.StateTaxRevenue);
+            var id = FundWork(state, settlementId, workType, PublicWorkFundingSource.StateTaxRevenue, districtId: districtId);
             Assert.That(state.PublicWorks.TryGet(id, out var work), Is.True);
             Assert.That(work!.HasInscription, Is.False, $"{workType} state funding should carry no inscription.");
             Assert.That(work.FundingPatronId, Is.Null);
@@ -170,6 +182,57 @@ public sealed class PublicWorksTests
     }
 
     [Test]
+    public void MarketplaceAndBridgeRequireADistrictUpFront()
+    {
+        var (state, settlementId) = InlandSettlement();
+        FundTreasury(state, settlementId, Money.FromDenarii(2000));
+
+        foreach (var workType in new[] { PublicWorkType.MarketplaceOrBasilica, PublicWorkType.Bridge })
+        {
+            var result = FundPublicWorkCommands.Pipeline.Execute(
+                state, new FundPublicWorkCommand(
+                    state.CommandIds.Issue(), "player", new GameDate(0), null, settlementId, workType,
+                    PublicWorkFundingSource.StateTaxRevenue));
+
+            Assert.That(result.Accepted, Is.False, workType.ToString());
+            Assert.That(result.Error, Is.EqualTo(FundPublicWorkCommands.DistrictRequiredForWorkType), workType.ToString());
+        }
+    }
+
+    [Test]
+    public void ADistrictFromAnotherSettlementIsRejected()
+    {
+        var (state, settlementId) = InlandSettlement();
+        var otherSettlementId = state.SettlementIds.Issue();
+        state.Settlements.Add(otherSettlementId, Settlement.Create(otherSettlementId, state.Regions.InAscendingOrder().Single().Key, SettlementStage.Villa));
+        var foreignDistrictId = DistrictIn(state, otherSettlementId);
+        FundTreasury(state, settlementId, Money.FromDenarii(2000));
+
+        var result = FundPublicWorkCommands.Pipeline.Execute(
+            state, new FundPublicWorkCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null, settlementId, PublicWorkType.Road,
+                PublicWorkFundingSource.StateTaxRevenue, DistrictId: foreignDistrictId));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(FundPublicWorkCommands.DistrictNotInSettlement));
+    }
+
+    [Test]
+    public void StateFundingRejectsAnUnderfundedTreasury()
+    {
+        var (state, settlementId) = InlandSettlement();
+        FundTreasury(state, settlementId, Money.FromDenarii(1));
+
+        var result = FundPublicWorkCommands.Pipeline.Execute(
+            state, new FundPublicWorkCommand(
+                state.CommandIds.Issue(), "player", new GameDate(0), null, settlementId, PublicWorkType.Road,
+                PublicWorkFundingSource.StateTaxRevenue));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(FundPublicWorkCommands.InsufficientTreasuryFunds));
+    }
+
+    [Test]
     public void JointSocietasFundingSharesDignitasAndObligationCreditAcrossPlayerHouseholdPartners()
     {
         var (state, settlementId) = InlandSettlement();
@@ -187,6 +250,7 @@ public sealed class PublicWorksTests
                 }));
         Assert.That(formResult.Accepted, Is.True);
         var societasId = state.Societates.InAscendingOrder().Last().Key;
+        var districtId = DistrictIn(state, settlementId);
 
         var dignitasABefore = DignitasResolver.Current(state, partnerA);
         var dignitasBBefore = DignitasResolver.Current(state, partnerB);
@@ -194,7 +258,7 @@ public sealed class PublicWorksTests
         var result = FundPublicWorkCommands.Pipeline.Execute(
             state, new FundPublicWorkCommand(
                 state.CommandIds.Issue(), "player", new GameDate(0), null, settlementId, PublicWorkType.Bridge,
-                PublicWorkFundingSource.PrivateEuergetism, FundingSocietasId: societasId));
+                PublicWorkFundingSource.PrivateEuergetism, DistrictId: districtId, FundingSocietasId: societasId));
         Assert.That(result.Accepted, Is.True);
 
         Assert.Multiple(() =>
@@ -406,7 +470,11 @@ public sealed class PublicWorksTests
     public void StateFundedWorkNeverReachesTheNeglectScandalCommand()
     {
         var (state, settlementId) = InlandSettlement();
-        FundTreasury(state, settlementId, Money.FromDenarii(10));
+        // Exactly the Road's own construction cost — the Treasury is drained by construction itself and
+        // has nothing left over for upkeep, so the work goes unpaid (and decays) from month 1 onward,
+        // matching this test's own intent: confirm State funding is never a reachable Scandal source
+        // (§7's "no individual patron's name"), not merely that it takes longer to reach the same place.
+        FundTreasury(state, settlementId, PublicWorksCatalog.ConstructionCost(PublicWorkType.Road));
         var workId = FundWork(state, settlementId, PublicWorkType.Road, PublicWorkFundingSource.StateTaxRevenue);
         var monthsToSeverelyNeglect = Math.Max(
             PublicWorksCatalog.SevereNeglectConsecutiveMonths,
@@ -455,6 +523,33 @@ public sealed class PublicWorksTests
             EuergetismObligationSystem.Tick(state, new GameDate(month));
 
         Assert.That(EuergetismObligationResolver.Current(state, householdId).PerceivedAsNeglectful, Is.False);
+    }
+
+    [Test]
+    public void FallingBelowTheThresholdResetsTheGracePeriodClockOnReQualification()
+    {
+        // A household that briefly qualifies, drops back below the threshold for well over the grace
+        // period, then re-qualifies must get a fresh grace period — not an immediate penalty computed
+        // against its original, long-stale FirstQualifiedDate.
+        var state = new WorldState(new GameDate(0));
+        var householdId = HouseholdWithHead(state);
+
+        SetNetWorth(state, householdId, PublicWorksCatalog.ObligationNetWorthThreshold);
+        EuergetismObligationSystem.Tick(state, new GameDate(1));
+        Assert.That(EuergetismObligationResolver.Current(state, householdId).FirstQualifiedDate, Is.Not.Null);
+
+        SetNetWorth(state, householdId, PublicWorksCatalog.ObligationNetWorthThreshold - Money.FromDenarii(1));
+        for (var month = 2; month <= PublicWorksCatalog.ObligationGracePeriodMonths + 10; month++)
+            EuergetismObligationSystem.Tick(state, new GameDate(month));
+        Assert.That(EuergetismObligationResolver.Current(state, householdId).FirstQualifiedDate, Is.Null);
+
+        SetNetWorth(state, householdId, PublicWorksCatalog.ObligationNetWorthThreshold);
+        var requalifiedMonth = PublicWorksCatalog.ObligationGracePeriodMonths + 11;
+        EuergetismObligationSystem.Tick(state, new GameDate(requalifiedMonth));
+
+        Assert.That(
+            EuergetismObligationResolver.Current(state, householdId).PerceivedAsNeglectful, Is.False,
+            "Re-qualification must start a fresh grace period rather than reusing the stale FirstQualifiedDate.");
     }
 
     [Test]

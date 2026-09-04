@@ -84,8 +84,12 @@ public static class EuergetismObligationSystem
 
             if (!qualifies)
             {
-                if (obligation.PerceivedAsNeglectful)
-                    EuergetismObligationResolver.Set(state, obligation with { PerceivedAsNeglectful = false });
+                // Falling back below the threshold resets the qualification clock, not just the neglect
+                // flag — otherwise a household that re-qualifies later would have its new
+                // `monthsQualified` measured from a stale `FirstQualifiedDate` spanning the entire
+                // non-qualifying interval, skipping the grace period §2/§10 both assume is continuous.
+                if (obligation.PerceivedAsNeglectful || obligation.FirstQualifiedDate is not null)
+                    EuergetismObligationResolver.Set(state, obligation with { PerceivedAsNeglectful = false, FirstQualifiedDate = null });
                 continue;
             }
 

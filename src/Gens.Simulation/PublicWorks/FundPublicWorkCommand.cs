@@ -50,6 +50,8 @@ public static class FundPublicWorkCommands
 {
     public static readonly ValidationErrorCode SettlementNotFound = new("publicWorks.fund.settlementNotFound");
     public static readonly ValidationErrorCode DistrictNotFound = new("publicWorks.fund.districtNotFound");
+    public static readonly ValidationErrorCode DistrictNotInSettlement = new("publicWorks.fund.districtNotInSettlement");
+    public static readonly ValidationErrorCode DistrictRequiredForWorkType = new("publicWorks.fund.districtRequiredForWorkType");
     public static readonly ValidationErrorCode PatronRequired = new("publicWorks.fund.patronRequired");
     public static readonly ValidationErrorCode PatronNotSupportedForStateFunding = new("publicWorks.fund.patronNotSupportedForStateFunding");
     public static readonly ValidationErrorCode BothPatronAndSocietasSupplied = new("publicWorks.fund.bothPatronAndSocietasSupplied");
@@ -58,6 +60,7 @@ public static class FundPublicWorkCommands
     public static readonly ValidationErrorCode SocietasNotActive = new("publicWorks.fund.societasNotActive");
     public static readonly ValidationErrorCode HarborRequiresCoastalSettlement = new("publicWorks.fund.harborRequiresCoastalSettlement");
     public static readonly ValidationErrorCode InsufficientFunds = new("publicWorks.fund.insufficientFunds");
+    public static readonly ValidationErrorCode InsufficientTreasuryFunds = new("publicWorks.fund.insufficientTreasuryFunds");
 
     public static readonly CommandPipeline<WorldState, FundPublicWorkCommand> Pipeline = new(
         validate: Validate, mutate: Mutate, issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
@@ -66,8 +69,23 @@ public static class FundPublicWorkCommands
     {
         if (!state.Settlements.TryGet(command.SettlementId, out _))
             return SettlementNotFound;
-        if (command.DistrictId is { } districtId && !state.Districts.TryGet(districtId, out _))
-            return DistrictNotFound;
+
+        if (command.DistrictId is { } districtId)
+        {
+            if (!state.Districts.TryGet(districtId, out var district))
+                return DistrictNotFound;
+            if (district!.SettlementId != command.SettlementId)
+                return DistrictNotInSettlement;
+        }
+        else if (command.WorkType is PublicWorkType.Bridge or PublicWorkType.MarketplaceOrBasilica)
+        {
+            // §3's Bridge/Marketplace benefits are both District-scoped (the linked-District Plot-value
+            // bump and the District-level Notable Business income respectively) — a work funded with no
+            // District at all would deduct its full construction/upkeep cost yet never deliver its only
+            // benefit, so this item requires a District up front for exactly these two work types rather
+            // than silently accepting a permanently inert work.
+            return DistrictRequiredForWorkType;
+        }
 
         if (command.WorkType == PublicWorkType.Harbor)
         {
@@ -85,6 +103,17 @@ public static class FundPublicWorkCommands
         {
             if (command.FundingPatronId is not null || command.FundingSocietasId is not null)
                 return PatronNotSupportedForStateFunding;
+
+            // Matches the identical PlayerHousehold fund check below — a settlement Treasury with no
+            // account yet, or an insufficient balance, must reject construction rather than let `Mutate`
+            // post the cost and drive the Treasury negative with no check at all.
+            var treasuryCost = PublicWorksCatalog.ConstructionCost(command.WorkType);
+            var treasuryBalance = state.LedgerAccounts.TryGet(LedgerAccountKey.ForSettlementTreasury(command.SettlementId), out var treasuryAccount)
+                ? treasuryAccount!.Balance
+                : Money.Zero;
+            if (treasuryBalance.RawValue < treasuryCost.RawValue)
+                return InsufficientTreasuryFunds;
+
             return null;
         }
 
