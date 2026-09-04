@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 8 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 9 of 10 complete)
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -3444,6 +3444,189 @@ precisely because capture itself cannot happen yet.
 sandbox again started with no .NET SDK installed, resolved the same way item 7's own progress note
 describes (`apt-get install dotnet-sdk-10.0`). `dotnet run --project tools/Gens.ContentCompiler --
 validate content` is unaffected since this item adds no new content.
+
+**Item 9 progress:** Public Works &amp; Euergetism lands as a new domain,
+`src/Gens.Simulation/PublicWorks/` (`gens-public-works-euergetism-design.md`), the document that
+finally gives Policies &amp; Edicts' own one-line "Public Works" Funded Action entry (§4 of that document)
+the "full depth that line never had room for" (§1) — functional civic infrastructure a settlement's own
+population actually uses, distinct from Monuments &amp; Legacy Building's own singular glory monuments
+(§1's explicit framing, honored directly: this item builds no monument-shaped mechanic at all).
+
+§3's six real work types land as `PublicWorkType`, and §7's two funding sources as
+`PublicWorkFundingSource`; `PublicWork` itself (§9's own data model) carries Condition and a neglect
+streak directly on the record rather than a separate keyed partition, matching `Shipping.MerchantShip`'s
+own identical "already a single owned record with nowhere else its own condition could live" reasoning
+over `PrivateInfrastructure.InfrastructureCondition`'s several-structure-shapes precedent — this domain
+has exactly one structure shape. §9's own `fundingPatronHouseholdOrSocietasId` sketch splits into two real
+fields rather than one: `FundingPatronId` (a `RealEstate.PropertyOwnerRef` restricted to
+`PlayerHousehold`/`RivalGens`, the two real household-like entities this codebase tracks) and
+`FundingSocietasId` (a real `RuntimeId<Societates.Societas>`), mirroring `Shipping.MerchantShip`'s own
+identical split between a narrative-only `PropertyOwnerKind.Societas` placeholder and a real, registry-
+backed Societas link — `PropertyOwnerKind.Societas` is, per that enum's own doc comment, "always
+narrative-only," so a genuine joint venture needed the same real link Shipping's own `OwningSocietasId`
+already established rather than folding it into the narrative placeholder.
+
+`FundPublicWorkCommand` (`FundPublicWorkCommand.cs`) is §2/§3/§4/§7's real construction-and-funding
+mutation — one command path for both funding sources, per rule 2. State funding draws from
+`Ledger.LedgerAccountKey.ForSettlementTreasury` (Health's own already-established Sanitation Investment
+account, reused directly rather than a second Treasury concept); a `PlayerHousehold` patron pays from
+their own real, fund-checked Ledger account; a `RivalGens` or Societas patron has no real balance this
+codebase can debit and is routed through the Mint with no real charge, matching
+`RealEstate.TransferPropertyCommand`'s own "route an owner kind this item cannot yet track a real balance
+for through the Mint" precedent. §4's inscription credit is realized exactly as literally as §4 frames it
+— `HasInscription` is true for every `PrivateEuergetism` work, false for every `StateTaxRevenue` one —
+and a `PlayerHousehold` patron (or, for a Societas venture, every partner who themselves resolves to a
+real `PlayerHousehold`) receives a real, invented Dignitas award (`PublicWorksCatalog.
+PrivateFundingDignitasAward`) through `Reputation.AdjustDignitasCommand`'s own established path, plus a
+real `EuergetismObligationResolver.RecordFunded` credit toward §2's own obligation. Harbor construction is
+gated on the settlement actually carrying a Coast-terrain Plot, matching `Shipping.CommissionShipCommands`'
+own identical maritime-access gate applied to §3's own explicitly coastal work type.
+
+§2's real, quiet obligation lands as `EuergetismObligation`/`EuergetismObligationResolver`/
+`EuergetismObligationSystem` (`EuergetismObligation.cs`). §9's own `prominenceTier` field (Events §5's
+Prominence) is confirmed, by direct search, not to exist anywhere in this codebase — the same gap
+`Scandal.ScandalScope`'s own doc comment already names for Provincial/RomeWide spread — so this item reads
+the identical real, checkable proxy `MerchantFamilies.EquestrianStatusQuery` already established instead:
+a household's own tracked Net Worth against `PublicWorksCatalog.ObligationNetWorthThreshold`, this item's
+own invented figure set meaningfully above `MerchantFamiliesCatalog.EquestrianNetWorthThreshold` so only a
+household genuinely wealthier than the ordinary Equestrian bar carries this further civic expectation. A
+static, unwired `EuergetismObligationSystem.Tick(state, date)` — matching every other Phase 15 item's
+identical "no central `IMonthlySystem` pipeline registry exists" convention — tracks each qualifying
+household's own first-qualified date and, once `PublicWorksCatalog.ObligationGracePeriodMonths` elapse
+with zero `PublicWorksFundedCount`, marks it neglectful and applies §2's own "real, quiet Dignitas cost"
+every month it stays that way; funding any real Public Work clears the reading immediately, this item's
+own reasoned reading of §10's "all numeric sizing... unsized" rather than inventing a further unspecified
+sustained-pattern requirement.
+
+§5's Competitive Euergetism lands as `CompetitiveEuergetismEvent`/`InitiateCompetitiveEuergetismCommand`/
+`EscalateCompetitiveEuergetismCommand` (`CompetitiveEuergetism.cs`), reusing Business Competition's own
+escalation-ladder logic per §5's own explicit text ("built on the identical underlying escalation logic")
+but needing a real, fresh `RuntimeId<T>` of its own — unlike `BusinessCompetition.CompetitiveEscalation`'s
+naturally two-party-but-one-attributable shape (keyed by the aggressor's own `NotableBusiness`), a Public
+Works rivalry has no single already-registered entity both households share, matching
+`BusinessCompetition.CartelAgreement`'s own identical "genuinely its own entity" precedent for the same
+reason. Each escalation round alternates which household is currently the initiator versus the responder
+(§5's own real back-and-forth "arms race"), charges the responding side a real, round-scaled cost
+(`PublicWorksCatalog.EscalationCostMultiplierPerRound`) and awards a real, round-scaled Dignitas bump —
+only for a `PlayerHousehold` side, the same honest narrowing `FundPublicWorkCommand` already applies to a
+`RivalGens` participant with no real tracked balance or adjustable Dignitas field. §10's own open "natural
+stopping point" question is resolved as a real, invented ceiling (`PublicWorksCatalog.
+MaxEscalationRounds`), matching `BusinessCompetition.CompetitiveEscalation`'s own four-rung-ladder
+precedent for "a real escalation needs a real top" rather than an unbounded ladder.
+
+§6's Maintenance &amp; Upkeep lands as `PublicWorksMaintenanceSystem` (a static, unwired monthly
+`Tick(state, date)`, mirroring `PrivateInfrastructure.InfrastructureUpkeepSystem`'s identical shape
+exactly), `FundPublicWorkUpkeepCommand` (a real, funded restoration mirroring `PrivateInfrastructure.
+RepairInfrastructureCommand`'s own shape, deliberately reachable by any paying household, not only the
+work's own original patron — §6's own "the honest, harder half of euergetism's own real obligation" read
+as a genuine third-party rescue opportunity), and `RecordEuergetismNeglectScandalCommand`
+(`PublicWorkMaintenance.cs`). The Scandal half reveals an already-true ground state — Condition below
+`PublicWorksCatalog.SevereNeglectConditionThreshold` for at least `SevereNeglectConsecutiveMonths`
+consecutive unpaid months — rather than rolling anything itself, mirroring `RealEstate.
+AuditPropertyOperatorCommand`'s and `DiscoverFabricationCommand`'s own identical "reveal, don't
+re-validate" shape, and posts through `Scandal.RecordScandalCommand`'s own established path with a new,
+purely additive `Scandal.ScandalSourceType.PublicWorksNeglect` value (matching `BusinessMisconduct`/
+`CartelDiscovery`'s own identical precedent for a later Phase 15 item amending that list) — deliberately
+*not* suppressing the ordinary personal Dignitas penalty/Trait grant, since a patron's own publicly
+neglected contribution implicates their own personal conduct directly (matching `CartelDiscovery`'s own
+identical reasoning rather than `BusinessMisconduct`'s suppression). Only reachable for a work whose
+patron resolves to a real `PlayerHousehold`: `Scandal.RecordScandalCommand` is itself household-scoped, so
+a RivalGens/Societas-patronized or State-funded work's own neglect (no individual reputation to burn for
+the latter, per §7's own "no individual patron's name") is honestly never a reachable Scandal source
+through this command, confirmed directly by this item's own tests.
+
+§3's six per-type mechanical effects land split across three real mechanisms, per this item's own
+"genuine, distinct mechanical effect" mandate rather than a uniform Dignitas-and-nothing-else payoff.
+Aqueduct and Sewer land as `PublicWorksHealthQuery.SanitationMultiplier` (`PublicWorksBenefitsSystem.cs`),
+read live by `Health.EndemicIllnessSystem` as one further real multiplicative factor stacked on top of
+`Health.SanitationInvestmentCalculator.ExposureMultiplier` — the identical "gains one further real input,
+computed by a later item" shape `Hazards.HazardExposureProfile.Compute`'s own irrigated-fraction reduction
+already established for Phase 15 item 7, extended here from an optional-parameter addition to a direct,
+purely additive multiplier a pre-item-9 save or Public-Works-free settlement reads as exactly 1.0. Sewer's
+own further, distinct Contentment boost (§3: "a genuine Settlement Demographics Contentment boost")
+lands as `PublicWorksContentmentQuery.CivicInfrastructureBonus`, read by `Characters.ContentmentSystem`
+through a genuine new fifth overload of `Characters.ContentmentCalculator.ComputeContentment`, matching
+that calculator's own already-established `rentBurden` "gains one new optional parameter" precedent
+exactly (Phase 15 item 1's own addition) — every pre-item-9 call site passes `Fixed64.Zero` and reads
+identically to before this item shipped. This bonus is honestly settlement-wide, not District-scoped as
+§3's own text literally reads: `Characters.PopGroupKey` carries no District attribution at all (confirmed
+by direct search of that key's own two-field shape), a real, disclosed simplification rather than a
+fabricated per-District PopGroup split this codebase has never modeled. Bridge lands as a real, one-time
+bump to every already-Districted Plot's own tracked `RealEstate.PlotPropertyExtension.Value` in the
+Bridge's linked District, applied directly by `FundPublicWorkCommand` through that item's own public
+`RealEstate.PlotPropertyResolver` — `RealEstate.District.PropertyValue` itself is recomputed wholesale
+every month by `RealEstate.DistrictPropertyValueSystem` from its own named inputs, so a direct additive
+nudge there would simply be overwritten the same tick, the concrete reason this item reuses item 1's own
+Plot-level precedent (`PrivateInfrastructureCatalog.PropertyValueBonusPerStructure`) instead of touching
+District's own field. Road and Harbor land as a real monthly Treasury income credit
+(`PublicWorksBenefitsSystem.Tick`), the same "post real income as a concrete realization" precedent
+`PrivateInfrastructureCatalog.TradeProximityMonthlyBonus`'s own doc comment already established for an
+identical honest finding: neither Travel's own inter-region `DistanceTierCatalog` nor Economy &amp;
+Finance's `StandingContract.TradeRouteInvestment` carries a live, per-settlement figure this item could
+actually multiply (the latter already confirmed a "one-off commitment stub" by Phase 15 items 7/8), and
+Resources &amp; Goods carries no live import/export flow figure either. Marketplace/Basilica lands as a
+real monthly Ledger income credit to every `NotableBusinesses.NotableBusiness` resolved to a real
+household in the Marketplace's own District, deliberately never touching `Markets.SettlementMarket.Price`
+— Business Competition (Phase 15 item 5) already established that item as "the one Phase 15 item actually
+allowed to move" that field — and honestly not tied to a live District-level Purchasing Power figure
+either, since Population Wealth &amp; Purchasing Power is this item's own very next roadmap item (Phase 15
+item 10), confirmed unbuilt.
+
+Every new partition (`PublicWorks`, `EuergetismObligations`, `CompetitiveEuergetismEvents`, plus the
+`PublicWorkIds`/`CompetitiveEuergetismEventIds` counters — `EuergetismObligation` needs none, keyed by the
+already-registered `RuntimeId<Household>` it describes) is wired into `WorldState`, `Saves.WorldSaveDto`/
+`WorldStateMapper`, and `State.StateHasher` for full save/load and deterministic-hash coverage,
+additive-only (ADR 0011), exactly like every prior Phase 15 item's own new partitions — `PublicWork` and
+`CompetitiveEuergetismEvent` each register a real `Identity.RuntimeIdTagRegistry` entry, matching
+`MerchantShip`'s own "real record as its own tag" convention. Two further, honestly cross-phase edits
+complete the real integration wave named directly in this item's own doc comments: `Health.
+EndemicIllnessSystem`'s own sanitation multiplier now folds in `PublicWorksHealthQuery.
+SanitationMultiplier` (Phase 14, referencing this item's own new Phase 15 types directly — the identical
+direction `Hazards.HazardExposureProfile.Compute` already established for Phase 15 item 7's own
+irrigated-fraction reduction), and `Characters.ContentmentCalculator`/`ContentmentSystem` gain the fifth
+`ComputeContentment` overload described above (Phase 7). `Scandal.ScandalSourceType.PublicWorksNeglect` is
+the one further, purely additive amendment to that already-shipped enum (Phase 12 item 7).
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than assumption:**
+§4's Epithets/Agnomen and Dynasty Chronicle tie-in ("a sufficiently significant public work is a real,
+plausible source of a formal grant-style Agnomen") is a real, disclosed scope cut: `Epithets.
+AgnomenGrantMethod.FormalSenateOrCuriaGrant` needs a real Senate/Curia vote this codebase cannot convene
+(Politics &amp; Patronage's own Rome-track magistracy gap, already named by that enum's own doc comment),
+and this item invents no organic-crowd-origin substitute of its own rather than reaching into Epithets'
+own award logic uninvited. Harbor's own "Major Port-type Property Records nearby" (§3) is the identical
+kind of gap: `RealEstate.PropertyAssetType` carries only `Ship`/`NamedHolding`, confirmed by direct search
+to have no Major Port category at all, so this item's own Harbor Treasury bonus stands in for that named
+effect rather than fabricating a third asset type Land Ownership &amp; Real Estate's own item 1 never
+built. §10's own "whether a public work should ever be formally completed versus perpetually needing
+upkeep" and "cross-settlement public works" (a Road connecting two settlements) are both left exactly as
+open as that section leaves them — every work this item builds is sited at exactly one settlement, needing
+upkeep forever. Competitive Euergetism's own defeated-household consequence (what happens to whichever
+side simply stops escalating) is not modeled beyond the real cost/Dignitas asymmetry each round already
+produces — no forced-consolidation-style terminal event exists for this ladder, an honest, disclosed
+narrower ending than Business Competition's own rung-four Forced Consolidation.
+
+Covered in `tests/Gens.Simulation.Tests/PublicWorks/PublicWorksTests.cs` (23 tests): every `PublicWorkType`
+state-fundable at once, state funding's real Treasury debit with no patron credit, a `PlayerHousehold`
+patron's real Ledger debit/Dignitas award/inscription/obligation credit, the insufficient-funds rejection,
+Harbor's coastal-settlement gate, a joint Societas venture's shared Dignitas/obligation credit across two
+`PlayerHousehold` partners, Aqueduct/Sewer's real, stacking Sanitation multiplier, Sewer's real Contentment
+bonus, Bridge's real Plot Property Value bump across a linked District, Road/Harbor's real monthly
+Treasury income, Marketplace's real monthly income to a District's own household-owned Notable Business,
+paid-versus-unpaid upkeep's real condition/neglect-streak branches, a funded upkeep top-up's real recovery,
+severe neglect's real two-gate Scandal trigger (and its rejection both too-early and for a State-funded
+work with no resolvable household patron), a wealthy household's real quiet Dignitas cost once the grace
+period elapses (contrasted against a sub-threshold household's own honest non-accrual), a real Public Work
+clearing an already-neglectful reading, Competitive Euergetism's real alternating-round cost/Dignitas
+escalation and its ceiling rejection, an unsupported-owner-kind initiation rejection, and a save/load round
+trip exercising every new partition (including a resolved Competitive Euergetism event) with the
+deterministic state hash staying stable.
+
+`dotnet build`/`dotnet test`/`dotnet format --verify-no-changes` all pass in the Release configuration
+(1663/1663 tests: 1655/1655 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests`); this sandbox
+again started with no .NET SDK installed, resolved the same way item 8's own progress note describes
+(`apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned SDK version via `rollForward:
+latestPatch`). `dotnet run --project tools/Gens.ContentCompiler -- validate content` is unaffected since
+this item adds no new content.
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 

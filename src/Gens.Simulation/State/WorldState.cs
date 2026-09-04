@@ -31,6 +31,7 @@ using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Policies;
 using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
+using Gens.Simulation.PublicWorks;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -129,6 +130,8 @@ public sealed class WorldState
         RuntimeIdCounter<MerchantShip> merchantShipIds,
         RuntimeIdCounter<ShipCommissionProject> shipCommissionProjectIds,
         RuntimeIdCounter<VoyageEvent> voyageEventIds,
+        RuntimeIdCounter<PublicWork> publicWorkIds,
+        RuntimeIdCounter<CompetitiveEuergetismEvent> competitiveEuergetismEventIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -237,6 +240,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<MerchantShip>, FrontingArrangement> shipFrontingArrangements,
         OrderedRegistry<RuntimeId<VoyageEvent>, VoyageEvent> voyageEvents,
         OrderedRegistry<RuntimeId<Household>, GameDate> flagshipDesignationAwards,
+        OrderedRegistry<RuntimeId<PublicWork>, PublicWork> publicWorks,
+        OrderedRegistry<RuntimeId<Household>, EuergetismObligation> euergetismObligations,
+        OrderedRegistry<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent> competitiveEuergetismEvents,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -302,6 +308,8 @@ public sealed class WorldState
         MerchantShipIds = merchantShipIds;
         ShipCommissionProjectIds = shipCommissionProjectIds;
         VoyageEventIds = voyageEventIds;
+        PublicWorkIds = publicWorkIds;
+        CompetitiveEuergetismEventIds = competitiveEuergetismEventIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -410,6 +418,9 @@ public sealed class WorldState
         ShipFrontingArrangements = shipFrontingArrangements;
         VoyageEvents = voyageEvents;
         FlagshipDesignationAwards = flagshipDesignationAwards;
+        PublicWorks = publicWorks;
+        EuergetismObligations = euergetismObligations;
+        CompetitiveEuergetismEvents = competitiveEuergetismEvents;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -567,6 +578,16 @@ public sealed class WorldState
     public RuntimeIdCounter<MerchantShip> MerchantShipIds { get; } = new();
     public RuntimeIdCounter<ShipCommissionProject> ShipCommissionProjectIds { get; } = new();
     public RuntimeIdCounter<VoyageEvent> VoyageEventIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.PublicWorks.PublicWork"/> (Phase 15 item 9).</summary>
+    public RuntimeIdCounter<PublicWork> PublicWorkIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Gens.Simulation.PublicWorks.CompetitiveEuergetismEvent"/> (Phase
+    /// 15 item 9) — the one new entity kind this item needs a fresh counter for, matching <see
+    /// cref="BusinessCompetition.CartelAgreement"/>'s own identical "genuinely its own entity" precedent;
+    /// <see cref="Gens.Simulation.PublicWorks.EuergetismObligation"/> needs none, keyed by the
+    /// already-registered <see cref="RuntimeId{Household}"/> it describes instead.</summary>
+    public RuntimeIdCounter<CompetitiveEuergetismEvent> CompetitiveEuergetismEventIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -1199,6 +1220,20 @@ public sealed class WorldState
     /// <see cref="UnifiedEstateMilestones"/>'s own identical "sparse, present-means-achieved, fire
     /// exactly once" guard.</summary>
     public OrderedRegistry<RuntimeId<Household>, GameDate> FlagshipDesignationAwards { get; } = new();
+
+    /// <summary>Every §9 <see cref="Gens.Simulation.PublicWorks.PublicWork"/> (Phase 15 item 9), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<PublicWork>, PublicWork> PublicWorks { get; } = new();
+
+    /// <summary>Every §2 <see cref="Gens.Simulation.PublicWorks.EuergetismObligation"/> (Phase 15 item 9),
+    /// sparse and keyed by household — present only once a household has either funded a Public Work or
+    /// been read as wealthy enough to matter, matching <see cref="RealEstate.PlotPropertyExtension"/>'s
+    /// own "wrap the existing record in a parallel partition" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, EuergetismObligation> EuergetismObligations { get; } = new();
+
+    /// <summary>Every §5 <see cref="Gens.Simulation.PublicWorks.CompetitiveEuergetismEvent"/> (Phase 15
+    /// item 9), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
+    public OrderedRegistry<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent> CompetitiveEuergetismEvents { get; } = new();
 
     public KnowledgeState Knowledge { get; } = new();
 

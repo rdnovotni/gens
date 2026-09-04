@@ -17,7 +17,11 @@ namespace Gens.Simulation.Health;
 /// own doc comment names "item 2's endemic-exposure rolls" explicitly). A Character already carrying an
 /// active case of a given disease, or already immune to it, is simply never rolled a second time —
 /// <see cref="AfflictCharacterCommands.Pipeline"/> rejects both cases on its own, so this system does
-/// not duplicate that check before calling it.</summary>
+/// not duplicate that check before calling it. Phase 15 item 9 (<c>gens-public-works-euergetism-
+/// design.md</c> §3) adds one further real, live multiplier on top of Sanitation Investment's own —
+/// <see cref="PublicWorks.PublicWorksHealthQuery.SanitationMultiplier"/>, an operational Aqueduct and/or
+/// Sewer Public Work each reducing this settlement's own exposure further — reading <c>Fixed64.One</c>
+/// (no change) for a pre-item-9 save or any settlement with no such Public Works.</summary>
 public sealed class EndemicIllnessSystem : IMonthlySystem<WorldState>
 {
     /// <summary>Invented onset severity for a newly-afflicted endemic case (§12: "no numeric... curve
@@ -58,6 +62,13 @@ public sealed class EndemicIllnessSystem : IMonthlySystem<WorldState>
             var profile = SettlementHealthProfile.Compute(state, settlementId);
             var sanitationMultiplier = SanitationInvestmentCalculator.ExposureMultiplier(
                 SanitationQueries.EffectiveTier(state, settlementId));
+            // Phase 15 item 9's own real, live extension (gens-public-works-euergetism-design.md §3): an
+            // operational Aqueduct and/or Sewer Public Work each further reduce this settlement's own
+            // Endemic Illness exposure, stacking multiplicatively on top of Sanitation Investment's own
+            // tier multiplier. A pre-item-9 save (or any settlement with no such Public Works) reads
+            // Fixed64.One here and multiplies through unchanged.
+            sanitationMultiplier *= (double)PublicWorks.PublicWorksHealthQuery.SanitationMultiplier(state, settlementId).RawValue
+                / Numerics.Fixed64.One.RawValue;
 
             var residents = state.Characters.InAscendingOrder()
                 .Where(entry => entry.Value.IsAlive && entry.Value.Location == settlementId)
