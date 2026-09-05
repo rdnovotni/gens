@@ -80,6 +80,8 @@ public static class StateHasher
         hash = MixLong(hash, state.DisasterEventIds.Peek);
         hash = MixLong(hash, state.WandererIds.Peek);
         hash = MixLong(hash, state.WandererEngagementIds.Peek);
+        hash = MixLong(hash, state.PublicWorkIds.Peek);
+        hash = MixLong(hash, state.CompetitiveEuergetismEventIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -1226,6 +1228,47 @@ public static class StateHasher
         {
             hash = MixLong(hash, entry.Key.Value);
             hash = MixLong(hash, entry.Value.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 9.
+        foreach (var entry in state.PublicWorks.InAscendingOrder())
+        {
+            var work = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, work.SettlementId.Value);
+            hash = MixLong(hash, work.DistrictId?.Value ?? -1L);
+            hash = MixLong(hash, (long)work.WorkType);
+            hash = MixLong(hash, (long)work.FundingSource);
+            hash = MixLong(hash, work.FundingPatronId is { } patron ? (long)patron.Kind : -1L);
+            hash = MixString(hash, work.FundingPatronId?.OwnerId ?? string.Empty);
+            hash = MixLong(hash, work.FundingSocietasId?.Value ?? -1L);
+            hash = MixLong(hash, work.HasInscription ? 1L : 0L);
+            hash = MixLong(hash, work.Condition);
+            hash = MixLong(hash, work.ConsecutiveNeglectedMonths);
+            hash = MixLong(hash, work.BuiltDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId (by household) order (ADR 0004) via OrderedRegistry. Phase 15 item 9.
+        foreach (var entry in state.EuergetismObligations.InAscendingOrder())
+        {
+            var obligation = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, obligation.PublicWorksFundedCount);
+            hash = MixLong(hash, obligation.FirstQualifiedDate?.TotalMonths ?? -1L);
+            hash = MixLong(hash, obligation.PerceivedAsNeglectful ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 9.
+        foreach (var entry in state.CompetitiveEuergetismEvents.InAscendingOrder())
+        {
+            var record = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, record.SettlementId.Value);
+            hash = MixLong(hash, (long)record.InitiatingHouseholdId.Kind);
+            hash = MixString(hash, record.InitiatingHouseholdId.OwnerId ?? string.Empty);
+            hash = MixLong(hash, (long)record.RespondingHouseholdId.Kind);
+            hash = MixString(hash, record.RespondingHouseholdId.OwnerId ?? string.Empty);
+            hash = MixLong(hash, record.EscalationRound);
         }
 
         return hash;

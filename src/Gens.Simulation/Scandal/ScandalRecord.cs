@@ -68,6 +68,18 @@ public enum ScandalSourceType
     /// reasoning: nothing in this file's already-shipped, already-tested pipeline switches on <see
     /// cref="ScandalSourceType"/> at all.</summary>
     CartelDiscovery,
+
+    /// <summary>Phase 15 item 9's own real, reachable addition (<c>gens-public-works-euergetism-design.md</c>
+    /// §6/§8): "neglected upkeep... is a real, new Scandal source" — a once-celebrated <see
+    /// cref="PublicWorks.PublicWork"/> a patron funded and then let fall into severe, sustained
+    /// disrepair. Unlike <see cref="BusinessMisconduct"/> this implicates the patron's own personal
+    /// conduct directly (the very obligation §2 of that document is built around, publicly unmet), so
+    /// <see cref="PublicWorks.RecordEuergetismNeglectScandalCommand"/> does <b>not</b> suppress the
+    /// ordinary personal Dignitas penalty/Trait grant, matching <see cref="CartelDiscovery"/>'s own
+    /// identical reasoning rather than <see cref="BusinessMisconduct"/>'s suppression. Purely additive:
+    /// nothing in this file's own already-shipped, already-tested <see cref="RecordScandalCommand"/>
+    /// pipeline switches on <see cref="ScandalSourceType"/> at all.</summary>
+    PublicWorksNeglect,
 }
 
 /// <summary>§6's severity ladder. <see cref="NotaCensoriaEligible"/> is kept for schema completeness

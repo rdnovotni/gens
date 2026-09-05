@@ -714,6 +714,25 @@ public sealed record WorldSaveDocument
     /// reasoning.</summary>
     [JsonPropertyOrder(112)]
     public IReadOnlyList<FlagshipDesignationAwardDto> FlagshipDesignationAwards { get; init; } = Array.Empty<FlagshipDesignationAwardDto>();
+
+    /// <summary>Every §9 <see cref="Gens.Simulation.PublicWorks.PublicWork"/> (Phase 15 item 9), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, matching <see cref="FlagshipDesignationAwards"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(113)]
+    public IReadOnlyList<PublicWorkDto> PublicWorks { get; init; } = Array.Empty<PublicWorkDto>();
+
+    /// <summary>Every §2 <see cref="Gens.Simulation.PublicWorks.EuergetismObligation"/> (Phase 15 item 9),
+    /// keyed by household, already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="PublicWorks"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(114)]
+    public IReadOnlyList<EuergetismObligationDto> EuergetismObligations { get; init; } = Array.Empty<EuergetismObligationDto>();
+
+    /// <summary>Every §5 <see cref="Gens.Simulation.PublicWorks.CompetitiveEuergetismEvent"/> (Phase 15
+    /// item 9), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, matching <see cref="EuergetismObligations"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(115)]
+    public IReadOnlyList<CompetitiveEuergetismEventDto> CompetitiveEuergetismEvents { get; init; } = Array.Empty<CompetitiveEuergetismEventDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1032,6 +1051,15 @@ public sealed record CounterSetDto
 
     [JsonPropertyOrder(60)]
     public long VoyageEventIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-15-item-9 save has no PublicWorks or
+    /// CompetitiveEuergetismEvents. Additive-only per ADR 0011's policy, matching <see
+    /// cref="VoyageEventIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(61)]
+    public long PublicWorkIds { get; init; }
+
+    [JsonPropertyOrder(62)]
+    public long CompetitiveEuergetismEventIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -4462,4 +4490,85 @@ public sealed record FlagshipDesignationAwardDto
 
     [JsonPropertyOrder(1)]
     public required int AwardedDateTotalMonths { get; init; }
+}
+
+/// <summary>One §9 <see cref="Gens.Simulation.PublicWorks.PublicWork"/> (Phase 15 item 9).</summary>
+public sealed record PublicWorkDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PublicWorkId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public string? DistrictId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string WorkType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string FundingSource { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? FundingPatronKind { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public string? FundingPatronOwnerId { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public string? FundingSocietasId { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool HasInscription { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required int Condition { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int ConsecutiveNeglectedMonths { get; init; }
+
+    [JsonPropertyOrder(11)]
+    public required int BuiltDateTotalMonths { get; init; }
+}
+
+/// <summary>One §2 <see cref="Gens.Simulation.PublicWorks.EuergetismObligation"/> (Phase 15 item 9).</summary>
+public sealed record EuergetismObligationDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int PublicWorksFundedCount { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public int? FirstQualifiedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool PerceivedAsNeglectful { get; init; }
+}
+
+/// <summary>One §5 <see cref="Gens.Simulation.PublicWorks.CompetitiveEuergetismEvent"/> (Phase 15 item 9).</summary>
+public sealed record CompetitiveEuergetismEventDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CompetitiveEuergetismEventId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string InitiatingHouseholdKind { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public string? InitiatingHouseholdOwnerId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string RespondingHouseholdKind { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public string? RespondingHouseholdOwnerId { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int EscalationRound { get; init; }
 }

@@ -33,6 +33,7 @@ using Gens.Simulation.Numerics;
 using Gens.Simulation.Policies;
 using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
+using Gens.Simulation.PublicWorks;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
@@ -126,6 +127,8 @@ public static class WorldStateMapper
                 MerchantShipIds = state.MerchantShipIds.Peek,
                 ShipCommissionProjectIds = state.ShipCommissionProjectIds.Peek,
                 VoyageEventIds = state.VoyageEventIds.Peek,
+                PublicWorkIds = state.PublicWorkIds.Peek,
+                CompetitiveEuergetismEventIds = state.CompetitiveEuergetismEventIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -357,6 +360,13 @@ public static class WorldStateMapper
             FlagshipDesignationAwards = state.FlagshipDesignationAwards.InAscendingOrder()
                 .Select(entry => new FlagshipDesignationAwardDto { HouseholdId = entry.Key.ToTaggedString(), AwardedDateTotalMonths = entry.Value.TotalMonths })
                 .ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PublicWorks = state.PublicWorks.InAscendingOrder().Select(entry => ToPublicWorkDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId (by household) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            EuergetismObligations = state.EuergetismObligations.InAscendingOrder().Select(entry => ToEuergetismObligationDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            CompetitiveEuergetismEvents = state.CompetitiveEuergetismEvents.InAscendingOrder()
+                .Select(entry => ToCompetitiveEuergetismEventDto(entry.Value)).ToArray(),
         };
     }
 
@@ -1087,6 +1097,27 @@ public static class WorldStateMapper
                 new KeyValuePair<RuntimeId<Household>, GameDate>(
                     RuntimeId<Household>.Parse(a.HouseholdId), new GameDate(a.AwardedDateTotalMonths))));
 
+        var publicWorks = OrderedRegistry<RuntimeId<PublicWork>, PublicWork>.Restore(
+            dto.PublicWorks.Select(w =>
+            {
+                var work = FromPublicWorkDto(w);
+                return new KeyValuePair<RuntimeId<PublicWork>, PublicWork>(work.Id, work);
+            }));
+
+        var euergetismObligations = OrderedRegistry<RuntimeId<Household>, EuergetismObligation>.Restore(
+            dto.EuergetismObligations.Select(o =>
+            {
+                var obligation = FromEuergetismObligationDto(o);
+                return new KeyValuePair<RuntimeId<Household>, EuergetismObligation>(obligation.HouseholdId, obligation);
+            }));
+
+        var competitiveEuergetismEvents = OrderedRegistry<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent>.Restore(
+            dto.CompetitiveEuergetismEvents.Select(e =>
+            {
+                var record = FromCompetitiveEuergetismEventDto(e);
+                return new KeyValuePair<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent>(record.Id, record);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -1150,6 +1181,8 @@ public static class WorldStateMapper
             merchantShipIds: RuntimeIdCounter<Shipping.MerchantShip>.Restore(dto.Counters.MerchantShipIds),
             shipCommissionProjectIds: RuntimeIdCounter<Shipping.ShipCommissionProject>.Restore(dto.Counters.ShipCommissionProjectIds),
             voyageEventIds: RuntimeIdCounter<Shipping.VoyageEvent>.Restore(dto.Counters.VoyageEventIds),
+            publicWorkIds: RuntimeIdCounter<PublicWork>.Restore(dto.Counters.PublicWorkIds),
+            competitiveEuergetismEventIds: RuntimeIdCounter<CompetitiveEuergetismEvent>.Restore(dto.Counters.CompetitiveEuergetismEventIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1258,6 +1291,9 @@ public static class WorldStateMapper
             shipFrontingArrangements: shipFrontingArrangements,
             voyageEvents: voyageEvents,
             flagshipDesignationAwards: flagshipDesignationAwards,
+            publicWorks: publicWorks,
+            euergetismObligations: euergetismObligations,
+            competitiveEuergetismEvents: competitiveEuergetismEvents,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2322,6 +2358,67 @@ public static class WorldStateMapper
         new GameDate(dto.MonthTotalMonths),
         Enum.Parse<Shipping.VoyageTriggerReason>(dto.TriggerReason),
         Enum.Parse<Shipping.VoyageOutcome>(dto.Outcome));
+
+    private static PublicWorkDto ToPublicWorkDto(PublicWork work) => new()
+    {
+        PublicWorkId = work.Id.ToTaggedString(),
+        SettlementId = work.SettlementId.ToTaggedString(),
+        DistrictId = work.DistrictId?.ToTaggedString(),
+        WorkType = work.WorkType.ToString(),
+        FundingSource = work.FundingSource.ToString(),
+        FundingPatronKind = work.FundingPatronId?.Kind.ToString(),
+        FundingPatronOwnerId = work.FundingPatronId?.OwnerId,
+        FundingSocietasId = work.FundingSocietasId?.ToTaggedString(),
+        HasInscription = work.HasInscription,
+        Condition = work.Condition,
+        ConsecutiveNeglectedMonths = work.ConsecutiveNeglectedMonths,
+        BuiltDateTotalMonths = work.BuiltDate.TotalMonths,
+    };
+
+    private static PublicWork FromPublicWorkDto(PublicWorkDto dto) => PublicWork.Restore(
+        RuntimeId<PublicWork>.Parse(dto.PublicWorkId),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        dto.DistrictId is { } districtId ? RuntimeId<District>.Parse(districtId) : null,
+        Enum.Parse<PublicWorkType>(dto.WorkType),
+        Enum.Parse<PublicWorkFundingSource>(dto.FundingSource),
+        dto.FundingPatronKind is { } patronKind ? new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(patronKind), dto.FundingPatronOwnerId) : null,
+        dto.FundingSocietasId is { } societasId ? RuntimeId<Societas>.Parse(societasId) : null,
+        dto.HasInscription,
+        dto.Condition,
+        dto.ConsecutiveNeglectedMonths,
+        new GameDate(dto.BuiltDateTotalMonths));
+
+    private static EuergetismObligationDto ToEuergetismObligationDto(EuergetismObligation obligation) => new()
+    {
+        HouseholdId = obligation.HouseholdId.ToTaggedString(),
+        PublicWorksFundedCount = obligation.PublicWorksFundedCount,
+        FirstQualifiedDateTotalMonths = obligation.FirstQualifiedDate?.TotalMonths,
+        PerceivedAsNeglectful = obligation.PerceivedAsNeglectful,
+    };
+
+    private static EuergetismObligation FromEuergetismObligationDto(EuergetismObligationDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.PublicWorksFundedCount,
+        dto.FirstQualifiedDateTotalMonths is { } months ? new GameDate(months) : null,
+        dto.PerceivedAsNeglectful);
+
+    private static CompetitiveEuergetismEventDto ToCompetitiveEuergetismEventDto(CompetitiveEuergetismEvent record) => new()
+    {
+        CompetitiveEuergetismEventId = record.Id.ToTaggedString(),
+        SettlementId = record.SettlementId.ToTaggedString(),
+        InitiatingHouseholdKind = record.InitiatingHouseholdId.Kind.ToString(),
+        InitiatingHouseholdOwnerId = record.InitiatingHouseholdId.OwnerId,
+        RespondingHouseholdKind = record.RespondingHouseholdId.Kind.ToString(),
+        RespondingHouseholdOwnerId = record.RespondingHouseholdId.OwnerId,
+        EscalationRound = record.EscalationRound,
+    };
+
+    private static CompetitiveEuergetismEvent FromCompetitiveEuergetismEventDto(CompetitiveEuergetismEventDto dto) => CompetitiveEuergetismEvent.Restore(
+        RuntimeId<CompetitiveEuergetismEvent>.Parse(dto.CompetitiveEuergetismEventId),
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.InitiatingHouseholdKind), dto.InitiatingHouseholdOwnerId),
+        new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.RespondingHouseholdKind), dto.RespondingHouseholdOwnerId),
+        dto.EscalationRound);
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {

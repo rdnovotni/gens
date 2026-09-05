@@ -20,6 +20,7 @@ using Gens.Simulation.Magistracies;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
+using Gens.Simulation.PublicWorks;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -317,6 +318,14 @@ internal static class RuntimeIdTagRegistry
         [typeof(MerchantShip)] = "merchantship",
         [typeof(ShipCommissionProject)] = "shipcommission",
         [typeof(VoyageEvent)] = "voyageevent",
+        // Phase 15 item 9 — Gens.Simulation.PublicWorks's two runtime-entity kinds needing a real
+        // identity of their own, same "real record as its own tag" convention as MerchantShip/
+        // ShipCommissionProject/VoyageEvent above: PublicWork and CompetitiveEuergetismEvent.
+        // EuergetismObligation needs no entry: it is keyed by the already-registered
+        // RuntimeId<Household> it describes, not by its own RuntimeId, matching
+        // SenateEntryInvestmentLog's identical exemption above.
+        [typeof(PublicWork)] = "publicwork",
+        [typeof(CompetitiveEuergetismEvent)] = "competitiveeuergetismevent",
     };
 
     public static string Resolve(Type type) =>

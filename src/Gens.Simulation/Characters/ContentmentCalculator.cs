@@ -29,14 +29,27 @@ public static class ContentmentCalculator
     /// cref="Characters.ContentmentSystem"/> never flags as rent-exposed) always passes <see
     /// cref="Fixed64.Zero"/> here and reads identically to before this item shipped.</summary>
     public static Fixed64 ComputeContentment(
-        Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction, Fixed64 rentBurden)
+        Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction, Fixed64 rentBurden) =>
+        ComputeContentment(employmentRatio, housingSatisfaction, needsSatisfaction, rentBurden, civicInfrastructureBonus: Fixed64.Zero);
+
+    /// <summary>Phase 15 item 9's overload (<c>gens-public-works-euergetism-design.md</c> §3): the same
+    /// formula above, with <paramref name="civicInfrastructureBonus"/> — <see
+    /// cref="PublicWorks.PublicWorksContentmentQuery.CivicInfrastructureBonus"/>'s own read of an
+    /// operational Sewer Public Work at the settlement — added afterward and capped at <see
+    /// cref="Fixed64.One"/>, matching <paramref name="rentBurden"/>'s own identical "an added term on the
+    /// existing formula rather than a parallel calculation" precedent. Every pre-item-9 call site passes
+    /// <see cref="Fixed64.Zero"/> here and reads identically to before this item shipped.</summary>
+    public static Fixed64 ComputeContentment(
+        Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction, Fixed64 rentBurden, Fixed64 civicInfrastructureBonus)
     {
         var cappedEmployment = Min(employmentRatio, Fixed64.One);
         var cappedHousing = Min(housingSatisfaction, Fixed64.One);
         var sum = cappedEmployment + cappedHousing + needsSatisfaction;
         var baseline = Fixed64.Divide(sum, Fixed64.FromInt(3));
         var withBurden = baseline - rentBurden;
-        return withBurden < Fixed64.Zero ? Fixed64.Zero : withBurden;
+        var floored = withBurden < Fixed64.Zero ? Fixed64.Zero : withBurden;
+        var withBonus = floored + civicInfrastructureBonus;
+        return withBonus > Fixed64.One ? Fixed64.One : withBonus;
     }
 
     /// <summary>§7.3's overcrowding cross-reference: a group whose housing capacity has fallen short
