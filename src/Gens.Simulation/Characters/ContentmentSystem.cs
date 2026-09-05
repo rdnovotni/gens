@@ -53,8 +53,11 @@ public sealed class ContentmentSystem : IMonthlySystem<WorldState>
                     ? DistrictRentBurdenCalculator.ComputeRentBurden(highestDistrictPropertyValue)
                     : Fixed64.Zero;
                 var civicInfrastructureBonus = PublicWorks.PublicWorksContentmentQuery.CivicInfrastructureBonus(state, settlementId);
+                var subsistencePriceSpikePenalty = PurchasingPower.SubsistenceGoodSensitivityQuery.ContentmentPenalty(
+                    state, settlementId, group.WealthBand);
                 var contentment = ContentmentCalculator.ComputeContentment(
-                    group.EmploymentRatio, group.HousingSatisfaction, needsSatisfaction, rentBurden, civicInfrastructureBonus);
+                    group.EmploymentRatio, group.HousingSatisfaction, needsSatisfaction, rentBurden, civicInfrastructureBonus,
+                    subsistencePriceSpikePenalty);
                 var healthExposure = ContentmentCalculator.ComputeHealthExposure(group.HousingSatisfaction);
 
                 if (contentment != group.Contentment || healthExposure != group.HealthExposure)

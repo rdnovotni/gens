@@ -77,7 +77,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 12** — Build institutions, reputation, law, religion, and public life
 - [x] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [x] **Phase 14** — Add health, disease, disasters, and mobile populations
-- [ ] **Phase 15** — Add advanced commerce, property, and public investment
+- [x] **Phase 15** — Add advanced commerce, property, and public investment
 - [ ] **Phase 16** — Add espionage, banditry, military force, and diplomacy
 - [ ] **Phase 17** — Add deep relationships, activities, culture, and legacy objects
 - [ ] **Phase 18** — Scale content, presentation, art, performance, and release operations
@@ -2336,7 +2336,7 @@ Stability as real player levers, and the handful of other proxies items 3/4 alre
 genuinely absent codebase capability this phase does not own building, not something item 5 skipped — the
 phase is marked complete on that basis.
 
-### Phase 15 — Add advanced commerce, property, and public investment — 🔶 IN PROGRESS (item 9 of 10 complete)
+### Phase 15 — Add advanced commerce, property, and public investment — ✅ COMPLETE
 
 **Outcome:** economic play expands from one household market loop into institutions, portfolios, partnerships, and infrastructure.
 
@@ -3627,6 +3627,174 @@ again started with no .NET SDK installed, resolved the same way item 8's own pro
 (`apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned SDK version via `rollForward:
 latestPatch`). `dotnet run --project tools/Gens.ContentCompiler -- validate content` is unaffected since
 this item adds no new content.
+
+**Item 10 progress:** Population Wealth &amp; Purchasing Power — the final Phase 15 item — lands as a new
+domain, `src/Gens.Simulation/PurchasingPower/` (`gens-population-wealth-purchasing-power-design.md`),
+closing the phase out entirely. §2's Wealth Pyramid needed no new population model at all: `Characters.
+WealthBand` (Subsistence/ModestSurplus/EliteDiscretionary) and `PopGroup.WealthBand` already exist in this
+codebase, each already carrying this exact design doc's own §2 citation in its own doc comment — real,
+pre-laid groundwork this item is the first to actually compute rather than leave test-authored. §2's
+literal mapping lands as `PurchasingPowerCalculator.ClassifyPopGroup(PopGroupType, employmentRatio)`:
+Coloni/Operarii → Subsistence, Opifices/Negotiatores → ModestSurplus, Aeditui/Curiales → EliteDiscretionary,
+with an unfavorable Employment Ratio (&lt; 1.0) forcing Subsistence regardless of type first, per §2's own
+literal "and any pop group currently reading an unfavorable Employment Ratio" clause — a real downgrade,
+not a type-locked mapping. §2 only enumerates six of the eight `PopGroupType` values; this item's own
+reasoned, disclosed reading places Veterani with Coloni (land-tenant economics) and the Non-Household
+Enslaved cohort at Subsistence (zero discretionary spending), since neither is named in §2's own bullets.
+`WealthBandClassificationSystem` is not itself wired anywhere — matching every other Phase 15 item's
+identical "no central `IMonthlySystem` pipeline registry exists" finding — so it never fights `Characters.
+SocialMobilitySystem`'s own separate, already-shipped upward-mobility path that can already carry a
+Negotiatores/Opifices group to `WealthBand.EliteDiscretionary` (`SocialMobilitySystemTests`' own existing
+fixtures exercise exactly that state); this interaction is left honestly open, exactly like §10's own
+"whether Modest Surplus should itself be split further."
+
+§3's Aggregate Purchasing Power lands as `AggregateDemandReading` (a new sparse `WorldState` partition
+keyed by `RuntimeId<Settlement>`) and `AggregatePurchasingPowerSystem.Tick(state)` (static, unwired,
+matching `BusinessCompetition.MarketSaturationSystem`'s identical convention): sums each settlement's own
+already-tracked `PopGroup.Size` by `WealthBand`, then weights per capita via `PurchasingPowerCatalog`'s own
+invented 0.2 / 1.0 / 5.0 Subsistence/ModestSurplus/EliteDiscretionary figures — §3's own explicit rejection
+of "a linear population-times-average-wealth calculation" realized as a genuine 5x-over-Modest-Surplus
+per-capita weight for the elite tier, documented as invented pending playtesting like every other Phase 15
+catalog constant. Deliberately settlement-scoped, not District-scoped: `Characters.PopGroupKey` carries no
+District attribution at all (confirmed by direct search of that key's own two-field shape — the identical
+gap `PublicWorksCatalog.SewerContentmentBonus`'s own doc comment already named for item 9's Sewer bonus),
+so every District within a settlement reads the same reading rather than a fabricated per-District
+population split this codebase has never modeled. No Notable Households contribution is folded in either:
+that domain is confirmed, by direct search, still unbuilt (only its own design doc exists — the same gap
+Phase 15 item 4's own `NotableBusiness` doc comments already name), and the closest real analog this
+codebase tracks, `LivingWorldActor.NetWorth`'s `HouseholdWealthBand` for a handful of named Rival Gens
+households, counts households rather than the per-person population figures this reading is built from —
+mixing the two units would need an unspecified per-household population-equivalent allocation rule this
+item does not invent, a real, disclosed scope cut.
+
+§4's Subsistence Goods and Political Sensitivity lands as `SubsistenceGoodSensitivityQuery`, a pure
+read-side query rather than a further tracked partition (`gens-population-wealth-purchasing-power-design.
+md`'s own §9 `SubsistenceGoodSensitivity` sketch, realized entirely from already-persisted state): its own
+real "genuine shortage" signal is reused directly, not reinvented, from `BusinessCompetition.
+GrainHoardingResolutionSystem`'s own identical `SettlementMarket.UnsatisfiedDemand &gt; 0` check for
+`NeedsConsumptionCalculator.ConsumptionGood` — this codebase's one real, already-established "the
+subsistence good," the same proxy `GrainHoardingResolver.IsGrainTrading` already reads. §4's own "a direct
+Contentment crisis" is a genuinely new, real wire: `Characters.ContentmentCalculator` gains a sixth
+overload (matching `rentBurden`'s and `civicInfrastructureBonus`'s own identical "one further optional
+parameter" precedent) subtracting `PurchasingPowerCatalog.SubsistenceShortageContentmentPenalty` for a
+`WealthBand.Subsistence`-tier `PopGroup` specifically during a genuine shortage — every pre-item-10 call
+site passes `Fixed64.Zero` and reads identically to before this item shipped, confirmed directly by the
+full pre-existing suite staying green. §4's own "hoardingRiskMultiplier" lands as a real, computed reading
+(`SubsistenceGoodSensitivityQuery.HoardingRiskMultiplier`) with no autonomous caller yet, matching
+`MarketSaturationSystem`'s own identical "a real, computed primitive with no autonomous caller yet"
+precedent — no autonomous NPC decision loop exists anywhere in this codebase for a business to roll its
+own hoarding decision from it.
+
+§4's own further "a genuine Scandal risk... if a Notable Business is seen profiting from it" lands as
+`RecordSubsistencePriceGougingScandalCommand`, deliberately distinct from Business Competition's own Grain
+Hoarding consequence chain (item 5's `DeclareGrainHoardingCommand` + `GrainHoardingResolutionSystem`, which
+needs an explicit hoarding declaration first): this command reveals a different real ground truth reachable
+for *any* grain-trading business, hoarding or not — a Tracked, grain-trading business whose own Reputation
+reads above `NotableBusinessesCatalog.DefaultReputation` (visibly thriving) while its settlement's grain
+market genuinely carries unsatisfied demand — mirroring `PublicWorks.RecordEuergetismNeglectScandalCommand`'s
+and `RealEstate.AuditPropertyOperatorCommand`'s own identical "reveal, don't re-validate" shape. It reuses
+`NotableBusinesses.RecordBusinessScandalCommand` (and, through it, `Scandal.ScandalSourceType.
+BusinessMisconduct`) wholesale rather than adding a redundant `ScandalSourceType` value — that enum's own
+doc comment already names "price gouging" as one of the real conducts `BusinessMisconduct` covers, so no
+further amendment to that already-shipped enum was needed at all.
+
+§5/§7's own good-tier classification (`PurchasingPowerCalculator.GetGoodTier`) is a real, disclosed gap:
+Resources &amp; Goods' own content registry authors a `category` field (`raw-materials` / `intermediate` /
+`finished` / `luxury` / `imported` — `content/schemas/goods.schema.json`) but no C# type anywhere in this
+codebase actually reads it, confirmed by direct search of `Goods.GoodDefinition` (which carries only
+`Perishability`/`QualityEligible`/`ConditionTracked`/`ShelfLifeTicks`), and no content good is actually
+authored under the `luxury` or `imported` category today either — confirmed by direct search of every file
+under `content/source/goods/`, six goods total (grain, bread, wool, textiles, iron, tools), none tagged
+either way. This item cannot honestly classify goods by an unused, unpopulated field, so `GetGoodTier`
+instead reuses `NeedsConsumptionCalculator.ConsumptionGood` as the one real Subsistence-tier good and reads
+every other good as ModestSurplus by default; no good reads as EliteDiscretionary today since none exists
+to classify that way — this function will need revisiting once Resources &amp; Goods authors a genuine
+luxury/imported good, an honest limitation disclosed directly in its own doc comment rather than a
+fabricated content change this item's own scope never called for.
+
+§6's Regional/District variation and its Business Competition/Land Ownership &amp; Real Estate integration
+land as two further real inputs into already-shipped Phase 15 mechanics, both additive: `RealEstate.
+DistrictPropertyValueSystem`'s own monthly target gains one further additive term reading `AggregateDemand
+Resolver.TryGetCurrent` against the District's own settlement (`PurchasingPowerCatalog.
+PurchasingPowerPropertyValueWeight` against the reading's `TotalDemandIndex` minus a neutral baseline),
+matching `ProminenceTierBonus`'s own identical "one further named input" shape — a District whose
+settlement carries no reading yet contributes exactly zero, reading identically to every pre-item-10
+computation. `BusinessCompetition.MarketSaturationSystem.ComputeSaturation` gains a real third overload
+folding in the same `TotalDemandIndex` (falling back to `PurchasingPowerCatalog.NeutralDemandIndex` when no
+reading exists, preserving pre-item-10 behavior exactly): a settlement reading below `ThinPurchasingPowerCeiling`
+now reads an otherwise-Balanced business count as Saturated instead, extending that system's own doc
+comment's "a crowded, flat-population settlement genuinely dilutes... demand" from population *trend*
+(already scoped out there as needing an unbuilt per-District allocation rule) to population *purchasing
+power*, which this item can compute at real settlement granularity. Regional/District variation itself
+needed no further code: it falls out directly from `PopGroup`'s own already-region-varying population and
+`WealthBand` composition, per this item's own scope decision not to hardcode any per-region special value.
+
+§7's Business Viability lands as `BusinessViabilityCheck` (a new sparse `WorldState` partition keyed by the
+already-registered `RuntimeId<NotableBusiness>`) and `BusinessViabilitySystem.Tick(state, date)` (static,
+unwired, matching `GrainHoardingResolutionSystem`'s identical convention): for every Tracked business with
+both a real `OutputGoodId` and `DistrictId`, resolved against its settlement's `AggregateDemandReading`,
+computes a real match/mismatch verdict via `PurchasingPowerCalculator.EvaluateBusinessViability` — a
+Subsistence-tier Output always matches (§7's own "can thrive almost anywhere a real population exists at
+all"); a ModestSurplus-tier Output needs a real non-Subsistence population fraction above
+`MinNonSubsistenceFractionForModestSurplus` (recommending `"specialize"` when it fails); an
+EliteDiscretionary-tier Output needs a real Elite Discretionary population floor above
+`MinEliteDiscretionaryPopulationForLuxury` (recommending `"move"` when it fails) — §5's own "a large enough
+Elite Discretionary population actually existing nearby." `RecommendedAction` is a real, honest
+recommendation only: nothing in this item calls `NotableBusinesses.MoveNotableBusinessCommand`
+automatically on a mismatched reading, matching `MarketSaturationSystem`'s own identical "a real, computed
+primitive with no autonomous caller yet" precedent (no autonomous NPC decision loop exists anywhere in this
+codebase for a Notable Business to plug this into). §7's own "a real, honest constraint... on Reputation and
+income mechanics" is realized as a genuine, ongoing effect since `NotableBusiness` tracks no separate income
+field at all: a new, purely additive `BusinessReputationChangeReason.LocalDemandMismatch` value (matching
+`CompetitiveRivalry`'s own identical "this item's own addition beyond §4's own list" precedent) applies a
+small, real, recurring monthly Reputation drain via the already-shipped `AdjustBusinessReputationCommand`
+while a mismatch persists, clamped at `NotableBusinessesCatalog.MinReputation` so a genuinely stranded
+business settles at the floor rather than an unbounded negative — a deliberately ongoing "long-term
+viability" drag, distinct from Grain Hoarding's own one-shot mob-violence consequence.
+
+Both new partitions (`AggregateDemandReadings`, `BusinessViabilityChecks` — neither needs a counter, both
+keyed by an already-registered `RuntimeId<T>`, matching `EuergetismObligation`'s identical "needs none"
+precedent) are wired into `WorldState`, `Saves.WorldSaveDto`/`WorldStateMapper`, and `State.StateHasher` for
+full save/load and deterministic-hash coverage, additive-only (ADR 0011), exactly like every prior Phase 15
+item's own new partitions.
+
+**Explicitly not built, matching this item's own scope, after real investigation rather than assumption:**
+Notable Households' own Meager/Modest/Comfortable/Prosperous wealth tiers (§2's own literal "Notable
+Households at Modest or Comfortable Wealth tier" / "Prosperous-tier Notable Household" framing) are
+confirmed unbuilt by direct search — only `gens-notable-households-design.md` exists, repeatedly named as
+unbuilt across Phase 12/13's own progress notes — so this item's Aggregate Purchasing Power reads
+population entirely through the real, already-shipped `PopGroup`/`WealthBand` mechanism instead, per §2's
+own "mapped directly onto Settlement Demographics' own existing... pop groups" framing (the mapping this
+document actually requires this item to use). Every §10 Open Question is left exactly as open as that
+section leaves it: all numeric sizing (§3's exact weighting curve, every tier boundary) is this item's own
+invented, disclosed figures, not a resolved formula; whether Modest Surplus should split further is
+untouched; cross-region luxury demand via Celebrities/Fame is untouched (Fame itself is confirmed unbuilt,
+matching Phase 12 item 1's own identical finding); the interaction with Natural Disasters/Disease beyond
+the existing Contentment/mortality mechanics is untouched; and whether Aggregate Purchasing Power should
+feed Legal &amp; Court's own case volume is untouched — no code in this item reads or writes anything in
+`Gens.Simulation.Legal`.
+
+Covered in `tests/Gens.Simulation.Tests/PurchasingPower/PurchasingPowerTests.cs` (18 tests): every real
+`PopGroupType`'s §2 classification and the unfavorable-Employment-Ratio override, Aggregate Purchasing
+Power's elite-weighted computation and its honest "no reading yet" absence for an empty settlement, the
+subsistence-shortage detector and its Contentment penalty applying to Subsistence-tier groups only (and a
+live `ContentmentSystem` integration test showing a measurable Subsistence-tier Contentment drop against an
+unaffected Elite-tier control group), the subsistence price-gouging Scandal command's full acceptance path
+and every rejection reason (no shortage, not visibly thriving, wrong good, unknown business), District
+Property Value's and Market Capacity/saturation's real Aggregate Purchasing Power integration, every
+Business Viability tier's match/mismatch verdict and recommended action (including the real recurring
+Reputation drain across two ticks and the honest no-reading skip), and a save/load round trip exercising
+both new partitions with the deterministic state hash staying stable.
+
+`dotnet build`/`dotnet test`/`dotnet format --verify-no-changes` all pass in the Release configuration
+(1685/1685 tests: 1677/1677 in `Gens.Simulation.Tests`, 8/8 in `Gens.ContentCompiler.Tests` — up from item
+9's 1663/1663, reflecting both this item's own 18 new tests and other tests landed on `main` since item 9's
+own snapshot); this sandbox again started with no .NET SDK installed, resolved the same way item 9's own
+progress note describes (`apt-get install dotnet-sdk-10.0`, satisfying `global.json`'s pinned SDK version
+via `rollForward: latestPatch`). `dotnet run --project tools/Gens.ContentCompiler -- validate content`
+passes unaffected (59 definitions across 10 families) since this item adds no new content, confirming the
+§5/§7 good-tier gap noted above rather than papering over it. **Phase 15 — Add advanced commerce, property,
+and public investment — is now complete: all 10 items shipped.**
 
 ### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
 

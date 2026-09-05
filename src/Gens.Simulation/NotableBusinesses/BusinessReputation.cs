@@ -29,6 +29,15 @@ public enum BusinessReputationChangeReason
     /// distinctly-named mechanic moving the same field. See <see
     /// cref="RecordBusinessRivalryActionCommand"/>.</summary>
     CompetitiveRivalry,
+
+    /// <summary>Phase 15 item 10's own addition (<c>gens-population-wealth-purchasing-power-design.md</c>
+    /// §7): "a real, honest constraint... on Notable Businesses' own Reputation and income mechanics" —
+    /// a genuine, ongoing mismatch between this business's own Output tier and the real Purchasing Power
+    /// available in its own District, applied monthly by <see
+    /// cref="PurchasingPower.BusinessViabilitySystem"/> while the mismatch persists. Purely additive,
+    /// matching <see cref="CompetitiveRivalry"/>'s own identical "this item's own addition beyond §4's
+    /// own list" precedent.</summary>
+    LocalDemandMismatch,
 }
 
 /// <summary>

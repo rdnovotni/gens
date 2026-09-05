@@ -34,6 +34,7 @@ using Gens.Simulation.Policies;
 using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.PublicWorks;
+using Gens.Simulation.PurchasingPower;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
@@ -367,6 +368,12 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CompetitiveEuergetismEvents = state.CompetitiveEuergetismEvents.InAscendingOrder()
                 .Select(entry => ToCompetitiveEuergetismEventDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId (by settlement) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            AggregateDemandReadings = state.AggregateDemandReadings.InAscendingOrder()
+                .Select(entry => ToAggregateDemandReadingDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            BusinessViabilityChecks = state.BusinessViabilityChecks.InAscendingOrder()
+                .Select(entry => ToBusinessViabilityCheckDto(entry.Value)).ToArray(),
         };
     }
 
@@ -1118,6 +1125,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent>(record.Id, record);
             }));
 
+        var aggregateDemandReadings = OrderedRegistry<RuntimeId<Settlement>, AggregateDemandReading>.Restore(
+            dto.AggregateDemandReadings.Select(r =>
+            {
+                var reading = FromAggregateDemandReadingDto(r);
+                return new KeyValuePair<RuntimeId<Settlement>, AggregateDemandReading>(reading.SettlementId, reading);
+            }));
+
+        var businessViabilityChecks = OrderedRegistry<RuntimeId<NotableBusiness>, BusinessViabilityCheck>.Restore(
+            dto.BusinessViabilityChecks.Select(c =>
+            {
+                var check = FromBusinessViabilityCheckDto(c);
+                return new KeyValuePair<RuntimeId<NotableBusiness>, BusinessViabilityCheck>(check.BusinessId, check);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -1294,6 +1315,8 @@ public static class WorldStateMapper
             publicWorks: publicWorks,
             euergetismObligations: euergetismObligations,
             competitiveEuergetismEvents: competitiveEuergetismEvents,
+            aggregateDemandReadings: aggregateDemandReadings,
+            businessViabilityChecks: businessViabilityChecks,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2419,6 +2442,44 @@ public static class WorldStateMapper
         new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.InitiatingHouseholdKind), dto.InitiatingHouseholdOwnerId),
         new PropertyOwnerRef(Enum.Parse<PropertyOwnerKind>(dto.RespondingHouseholdKind), dto.RespondingHouseholdOwnerId),
         dto.EscalationRound);
+
+    private static AggregateDemandReadingDto ToAggregateDemandReadingDto(AggregateDemandReading reading) => new()
+    {
+        SettlementId = reading.SettlementId.ToTaggedString(),
+        SubsistencePopulation = reading.SubsistencePopulation,
+        ModestSurplusPopulation = reading.ModestSurplusPopulation,
+        EliteDiscretionaryPopulation = reading.EliteDiscretionaryPopulation,
+        SubsistenceWeightRawValue = reading.SubsistenceWeight.RawValue,
+        ModestSurplusWeightRawValue = reading.ModestSurplusWeight.RawValue,
+        EliteDiscretionaryWeightRawValue = reading.EliteDiscretionaryWeight.RawValue,
+        TotalDemandIndexRawValue = reading.TotalDemandIndex.RawValue,
+    };
+
+    private static AggregateDemandReading FromAggregateDemandReadingDto(AggregateDemandReadingDto dto) => new(
+        RuntimeId<Settlement>.Parse(dto.SettlementId),
+        dto.SubsistencePopulation,
+        dto.ModestSurplusPopulation,
+        dto.EliteDiscretionaryPopulation,
+        Fixed64.FromRaw(dto.SubsistenceWeightRawValue),
+        Fixed64.FromRaw(dto.ModestSurplusWeightRawValue),
+        Fixed64.FromRaw(dto.EliteDiscretionaryWeightRawValue),
+        Fixed64.FromRaw(dto.TotalDemandIndexRawValue));
+
+    private static BusinessViabilityCheckDto ToBusinessViabilityCheckDto(BusinessViabilityCheck check) => new()
+    {
+        BusinessId = check.BusinessId.ToTaggedString(),
+        DistrictId = check.DistrictId.ToTaggedString(),
+        OutputGoodTier = check.OutputGoodTier.ToString(),
+        LocalDemandMatch = check.LocalDemandMatch,
+        RecommendedAction = check.RecommendedAction,
+    };
+
+    private static BusinessViabilityCheck FromBusinessViabilityCheckDto(BusinessViabilityCheckDto dto) => new(
+        RuntimeId<NotableBusiness>.Parse(dto.BusinessId),
+        RuntimeId<District>.Parse(dto.DistrictId),
+        Enum.Parse<WealthBand>(dto.OutputGoodTier),
+        dto.LocalDemandMatch,
+        dto.RecommendedAction);
 
     private static CharacterVisualProfileDto ToVisualProfileDto(CharacterVisualProfile profile) => new()
     {
