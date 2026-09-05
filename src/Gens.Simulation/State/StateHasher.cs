@@ -1271,6 +1271,31 @@ public static class StateHasher
             hash = MixLong(hash, record.EscalationRound);
         }
 
+        // Already ascending-RuntimeId (by settlement) order (ADR 0004) via OrderedRegistry. Phase 15 item 10.
+        foreach (var entry in state.AggregateDemandReadings.InAscendingOrder())
+        {
+            var reading = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, reading.SubsistencePopulation);
+            hash = MixLong(hash, reading.ModestSurplusPopulation);
+            hash = MixLong(hash, reading.EliteDiscretionaryPopulation);
+            hash = MixLong(hash, reading.SubsistenceWeight.RawValue);
+            hash = MixLong(hash, reading.ModestSurplusWeight.RawValue);
+            hash = MixLong(hash, reading.EliteDiscretionaryWeight.RawValue);
+            hash = MixLong(hash, reading.TotalDemandIndex.RawValue);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 15 item 10.
+        foreach (var entry in state.BusinessViabilityChecks.InAscendingOrder())
+        {
+            var check = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, check.DistrictId.Value);
+            hash = MixLong(hash, (long)check.OutputGoodTier);
+            hash = MixLong(hash, check.LocalDemandMatch ? 1L : 0L);
+            hash = MixString(hash, check.RecommendedAction ?? string.Empty);
+        }
+
         return hash;
     }
 

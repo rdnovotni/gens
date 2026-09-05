@@ -103,7 +103,11 @@ public static class MarketSaturationSystem
                 ? popGroup!.EmploymentRatio
                 : Fixed64.One;
 
-            var saturation = ComputeSaturation(count, employmentRatio);
+            var purchasingPowerIndex = PurchasingPower.AggregateDemandResolver.TryGetCurrent(state, key.SettlementId, out var demand)
+                ? demand.TotalDemandIndex
+                : PurchasingPower.PurchasingPowerCatalog.NeutralDemandIndex;
+
+            var saturation = ComputeSaturation(count, employmentRatio, purchasingPowerIndex);
             var reading = new MarketCapacityReading(key.SettlementId, key.GoodId, count, employmentRatio, saturation);
 
             if (state.MarketCapacityReadings.TryGet(key, out _))
@@ -112,7 +116,19 @@ public static class MarketSaturationSystem
         }
     }
 
-    private static MarketSaturationLevel ComputeSaturation(int businessCount, Fixed64 employmentRatio)
+    /// <summary>Phase 15 item 10's overload (<c>gens-population-wealth-purchasing-power-design.md</c>
+    /// §6): the same saturation read above, with <paramref name="purchasingPowerIndex"/> — this
+    /// document's own <see cref="PurchasingPower.AggregateDemandReading.TotalDemandIndex"/> — folded in
+    /// as one further real signal, extending this class's own doc comment's "a crowded, flat-population
+    /// settlement genuinely dilutes... demand" from population *trend* (already scoped out as needing an
+    /// unbuilt per-District allocation rule) to population *purchasing power*, which this codebase can
+    /// already compute at settlement granularity. A genuinely thin-purchasing-power settlement (below
+    /// <see cref="PurchasingPower.PurchasingPowerCatalog.ThinPurchasingPowerCeiling"/>) reads a merely
+    /// Balanced business count as Saturated instead — the same population genuinely cannot absorb as
+    /// many sellers when most of it has no real discretionary spending. <see cref="Tick"/>'s own fallback
+    /// (<see cref="PurchasingPower.PurchasingPowerCatalog.NeutralDemandIndex"/>) preserves this method's
+    /// pre-item-10 behavior exactly when no reading has been recorded yet.</summary>
+    private static MarketSaturationLevel ComputeSaturation(int businessCount, Fixed64 employmentRatio, Fixed64 purchasingPowerIndex)
     {
         if (employmentRatio < Fixed64.One)
             return MarketSaturationLevel.Saturated;
@@ -120,6 +136,8 @@ public static class MarketSaturationSystem
             return MarketSaturationLevel.Saturated;
         if (businessCount <= BusinessCompetitionCatalog.UndersaturatedBusinessCountCeiling)
             return MarketSaturationLevel.Undersaturated;
+        if (purchasingPowerIndex < PurchasingPower.PurchasingPowerCatalog.ThinPurchasingPowerCeiling)
+            return MarketSaturationLevel.Saturated;
 
         return MarketSaturationLevel.Balanced;
     }

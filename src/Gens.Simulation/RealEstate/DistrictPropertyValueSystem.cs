@@ -60,10 +60,15 @@ public sealed class DistrictPropertyValueSystem : IMonthlySystem<WorldState>
             var populationGrowth = ComputeGrowthRate(district.PreviousSettlementPopulation, population);
             var buildingsDamaged = RecentDisasterDamage(state, district.SettlementId, context.Date);
 
+            var purchasingPowerDelta = PurchasingPower.AggregateDemandResolver.TryGetCurrent(state, district.SettlementId, out var demandReading)
+                ? demandReading.TotalDemandIndex - PurchasingPower.PurchasingPowerCatalog.NeutralDemandIndex
+                : Fixed64.Zero;
+
             var target = RealEstateCatalog.BaselinePropertyValue
                 + Fixed64.Multiply(RealEstateCatalog.PopulationGrowthWeight, Clamp(populationGrowth, GrowthRateFloor, GrowthRateCeiling))
                 + Fixed64.Multiply(RealEstateCatalog.ContentmentWeight, contentment - Fixed64.FromRaw(500_000))
-                - Fixed64.Multiply(RealEstateCatalog.DisasterDamagePerBuildingWeight, Fixed64.FromInt(buildingsDamaged));
+                - Fixed64.Multiply(RealEstateCatalog.DisasterDamagePerBuildingWeight, Fixed64.FromInt(buildingsDamaged))
+                + Fixed64.Multiply(PurchasingPower.PurchasingPowerCatalog.PurchasingPowerPropertyValueWeight, purchasingPowerDelta);
 
             if (district.LinkedGazetteerLocationId is { } gazetteerId &&
                 _regions is not null && TryFindGazetteerEntry(_regions, gazetteerId, out var location))

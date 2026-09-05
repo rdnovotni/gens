@@ -733,6 +733,20 @@ public sealed record WorldSaveDocument
     /// defaults to empty, matching <see cref="EuergetismObligations"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(115)]
     public IReadOnlyList<CompetitiveEuergetismEventDto> CompetitiveEuergetismEvents { get; init; } = Array.Empty<CompetitiveEuergetismEventDto>();
+
+    /// <summary>Every §3 <see cref="Gens.Simulation.PurchasingPower.AggregateDemandReading"/> (Phase 15
+    /// item 10), keyed by settlement, already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="CompetitiveEuergetismEvents"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(116)]
+    public IReadOnlyList<AggregateDemandReadingDto> AggregateDemandReadings { get; init; } = Array.Empty<AggregateDemandReadingDto>();
+
+    /// <summary>Every §7 <see cref="Gens.Simulation.PurchasingPower.BusinessViabilityCheck"/> (Phase 15
+    /// item 10), keyed by the already-registered Notable Business ID, already in ascending-<see
+    /// cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty, matching <see
+    /// cref="AggregateDemandReadings"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(117)]
+    public IReadOnlyList<BusinessViabilityCheckDto> BusinessViabilityChecks { get; init; } = Array.Empty<BusinessViabilityCheckDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -4571,4 +4585,53 @@ public sealed record CompetitiveEuergetismEventDto
 
     [JsonPropertyOrder(6)]
     public required int EscalationRound { get; init; }
+}
+
+/// <summary>One §3 <see cref="Gens.Simulation.PurchasingPower.AggregateDemandReading"/> (Phase 15 item
+/// 10).</summary>
+public sealed record AggregateDemandReadingDto
+{
+    [JsonPropertyOrder(0)]
+    public required string SettlementId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int SubsistencePopulation { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int ModestSurplusPopulation { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int EliteDiscretionaryPopulation { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required long SubsistenceWeightRawValue { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required long ModestSurplusWeightRawValue { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required long EliteDiscretionaryWeightRawValue { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required long TotalDemandIndexRawValue { get; init; }
+}
+
+/// <summary>One §7 <see cref="Gens.Simulation.PurchasingPower.BusinessViabilityCheck"/> (Phase 15 item
+/// 10).</summary>
+public sealed record BusinessViabilityCheckDto
+{
+    [JsonPropertyOrder(0)]
+    public required string BusinessId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string DistrictId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string OutputGoodTier { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool LocalDemandMatch { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public string? RecommendedAction { get; init; }
 }

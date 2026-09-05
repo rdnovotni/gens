@@ -32,6 +32,7 @@ using Gens.Simulation.Policies;
 using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.PublicWorks;
+using Gens.Simulation.PurchasingPower;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
@@ -243,6 +244,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<PublicWork>, PublicWork> publicWorks,
         OrderedRegistry<RuntimeId<Household>, EuergetismObligation> euergetismObligations,
         OrderedRegistry<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent> competitiveEuergetismEvents,
+        OrderedRegistry<RuntimeId<Settlement>, AggregateDemandReading> aggregateDemandReadings,
+        OrderedRegistry<RuntimeId<NotableBusiness>, BusinessViabilityCheck> businessViabilityChecks,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -421,6 +424,8 @@ public sealed class WorldState
         PublicWorks = publicWorks;
         EuergetismObligations = euergetismObligations;
         CompetitiveEuergetismEvents = competitiveEuergetismEvents;
+        AggregateDemandReadings = aggregateDemandReadings;
+        BusinessViabilityChecks = businessViabilityChecks;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -1234,6 +1239,18 @@ public sealed class WorldState
     /// <summary>Every §5 <see cref="Gens.Simulation.PublicWorks.CompetitiveEuergetismEvent"/> (Phase 15
     /// item 9), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004).</summary>
     public OrderedRegistry<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent> CompetitiveEuergetismEvents { get; } = new();
+
+    /// <summary>Every settlement's own §3 <see cref="Gens.Simulation.PurchasingPower.AggregateDemandReading"/>
+    /// (Phase 15 item 10), keyed by <see cref="RuntimeId{Settlement}"/> — sparse, present only for a
+    /// settlement <see cref="Gens.Simulation.PurchasingPower.AggregatePurchasingPowerSystem"/> has actually
+    /// computed a reading for.</summary>
+    public OrderedRegistry<RuntimeId<Settlement>, AggregateDemandReading> AggregateDemandReadings { get; } = new();
+
+    /// <summary>Every §7 <see cref="Gens.Simulation.PurchasingPower.BusinessViabilityCheck"/> (Phase 15 item
+    /// 10), keyed by the already-registered <see cref="RuntimeId{NotableBusiness}"/> — sparse, present only
+    /// for a <see cref="NotableBusinessStatus.Tracked"/> business <see
+    /// cref="Gens.Simulation.PurchasingPower.BusinessViabilitySystem"/> has actually evaluated.</summary>
+    public OrderedRegistry<RuntimeId<NotableBusiness>, BusinessViabilityCheck> BusinessViabilityChecks { get; } = new();
 
     public KnowledgeState Knowledge { get; } = new();
 

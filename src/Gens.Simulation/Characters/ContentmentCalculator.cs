@@ -40,13 +40,26 @@ public static class ContentmentCalculator
     /// existing formula rather than a parallel calculation" precedent. Every pre-item-9 call site passes
     /// <see cref="Fixed64.Zero"/> here and reads identically to before this item shipped.</summary>
     public static Fixed64 ComputeContentment(
-        Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction, Fixed64 rentBurden, Fixed64 civicInfrastructureBonus)
+        Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction, Fixed64 rentBurden, Fixed64 civicInfrastructureBonus) =>
+        ComputeContentment(employmentRatio, housingSatisfaction, needsSatisfaction, rentBurden, civicInfrastructureBonus, subsistencePriceSpikePenalty: Fixed64.Zero);
+
+    /// <summary>Phase 15 item 10's overload (<c>gens-population-wealth-purchasing-power-design.md</c>
+    /// §4): the same formula above, with <paramref name="subsistencePriceSpikePenalty"/> — <see
+    /// cref="PurchasingPower.SubsistenceGoodSensitivityQuery.ContentmentPenalty"/>'s own read of a genuine
+    /// subsistence-good shortage against a <see cref="WealthBand.Subsistence"/>-tier group specifically —
+    /// subtracted alongside <paramref name="rentBurden"/> before the shared floor, matching that
+    /// parameter's own identical "an added term on the existing formula rather than a parallel
+    /// calculation" precedent. Every pre-item-10 call site passes <see cref="Fixed64.Zero"/> here and
+    /// reads identically to before this item shipped.</summary>
+    public static Fixed64 ComputeContentment(
+        Fixed64 employmentRatio, Fixed64 housingSatisfaction, Fixed64 needsSatisfaction, Fixed64 rentBurden,
+        Fixed64 civicInfrastructureBonus, Fixed64 subsistencePriceSpikePenalty)
     {
         var cappedEmployment = Min(employmentRatio, Fixed64.One);
         var cappedHousing = Min(housingSatisfaction, Fixed64.One);
         var sum = cappedEmployment + cappedHousing + needsSatisfaction;
         var baseline = Fixed64.Divide(sum, Fixed64.FromInt(3));
-        var withBurden = baseline - rentBurden;
+        var withBurden = baseline - rentBurden - subsistencePriceSpikePenalty;
         var floored = withBurden < Fixed64.Zero ? Fixed64.Zero : withBurden;
         var withBonus = floored + civicInfrastructureBonus;
         return withBonus > Fixed64.One ? Fixed64.One : withBonus;
