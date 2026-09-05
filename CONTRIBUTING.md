@@ -43,6 +43,23 @@ Licensed Unity tests and builds are deferred until CI credential and runner poli
 is approved. Do not commit generated directories such as `Library`, `Temp`, or
 `Logs`.
 
+### Connecting an AI coding agent to the Editor
+
+The repository's `.mcp.json` registers the Unity CLI's built-in MCP server
+(`unity mcp`) as a project-scoped MCP server. To use it from Claude Code:
+
+1. Install the Unity CLI (offered by Unity Hub during editor install, or see
+   [Unity's CLI docs](https://unity.com/blog/meet-the-unity-cli)) and confirm
+   `unity --version` runs from a terminal.
+2. Open the Unity Editor on this project so a live Editor session exists.
+3. Open Claude Code in the repository root; it will detect `.mcp.json` and
+   offer to start the `unity-editor-mcp` server. Approve it, then verify with
+   a prompt like "read the Unity console and summarize any errors."
+
+This gives the agent access to console logs, compilation results, test runs,
+and scene/asset inspection through the live Editor session. It only works
+locally, where both the Unity CLI and a running Editor are present.
+
 ## Repository conventions
 
 - Keep simulation code in `src/Gens.Simulation` independent of Unity APIs.
