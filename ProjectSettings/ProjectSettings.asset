@@ -12,4 +12,7 @@ PlayerSettings:
   il2cppCompilerConfiguration: {}
   apiCompatibilityLevelPerPlatform:
     Standalone: 6
+  additionalCompilerArguments:
+    Standalone:
+    - -langversion:10
 
