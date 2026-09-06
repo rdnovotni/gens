@@ -1,6 +1,6 @@
 # ADR 0012 — Content Versioning and Validation
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

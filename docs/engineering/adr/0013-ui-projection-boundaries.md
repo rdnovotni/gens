@@ -1,6 +1,6 @@
 # ADR 0013 — UI Projection Boundaries
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

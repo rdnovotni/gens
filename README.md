@@ -40,13 +40,19 @@ phased monthly ticks with declared read/write sets, a command/event envelope
 with atomic application, named and persistable PCG32 random streams, canonical
 `.gens` save serialization with a migration registry, a headless campaign
 bootstrap and console runner, and asynchronous artwork-provider boundaries.
-On top of that foundation, characters and Familia households (lifecycle,
-traits, relationships, roles), and land/goods/buildings/villas/labor with a
-production network (three compact chains, storage, construction, maintenance,
-and ledger-ready event emission) are implemented and covered by headless
-exit-gate soak tests. See the [build roadmap](docs/engineering/gens-comprehensive-build-roadmap.md)
-for what is and is not built yet — population groups, the ledger/market, and
-the player-facing Unity loop are not started.
+On top of that foundation, characters and Familia households; land, goods,
+buildings, villas, and labor with a production network; background
+population groups and employment; the household ledger, market, and debt/
+contract system; the action/standing-policy layer and event/report
+projections; a Unity application shell and adapters exposing a playable
+loop (household roster, estate/settlement, monthly report, and character
+detail screens, with confirmations, pause/advance, save/load, and
+deterministic-replay diagnostics); autonomous rival houses and steward/
+Council delegation; and dynasty continuity (succession, Regency, the
+Chronicle) are all implemented and covered by headless exit-gate soak
+tests. See the [build roadmap](docs/engineering/gens-comprehensive-build-roadmap.md)
+for the authoritative, continually-updated phase checklist of what is and
+is not built yet.
 
 ## Documentation and contributions
 

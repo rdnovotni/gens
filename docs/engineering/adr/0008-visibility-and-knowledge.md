@@ -1,6 +1,6 @@
 # ADR 0008 — Visibility and Knowledge Separation
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 
