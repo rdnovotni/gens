@@ -86,15 +86,14 @@ public sealed class CampaignShell
     /// caller that wants to display or log it.</summary>
     public static CampaignShell Load(string path, out SaveManifest manifest)
     {
-        throw new NotSupportedException("Saving/Loading .gens packages is only supported in .NET Core runtime runner.");
+        var loaded = SaveReader.Read(path);
+        manifest = loaded.Manifest;
+        return new CampaignShell(loaded.State, loaded.RandomStreams, RootHouseholdId, RootSettlementId, manifest.ContentPackHash);
     }
 
     /// <summary>Writes this shell's current state to <paramref name="path"/>, mirroring the console
     /// runner's <c>save</c> verb (<see cref="Gens.Simulation.Saves.SaveWriter.Write"/>).</summary>
-    public void Save(string path, string gameVersion)
-    {
-        throw new NotSupportedException("Saving/Loading .gens packages is only supported in .NET Core runtime runner.");
-    }
+    public void Save(string path, string gameVersion) => SaveWriter.Write(path, State, RandomStreams, gameVersion, ContentPackHash);
 
     /// <summary>Deterministic replay diagnostics (Phase 9 item 8): saves the current state to
     /// <paramref name="diagnosticsPath"/>, reloads it, and compares <see cref="StateHasher"/> hashes
@@ -104,7 +103,10 @@ public sealed class CampaignShell
     public ReplayDiagnosticsResult VerifyDeterministicReplay(string diagnosticsPath, string gameVersion)
     {
         var hashBeforeSave = StateHasher.Hash(State);
-        return new ReplayDiagnosticsResult(hashBeforeSave, hashBeforeSave, true);
+        Save(diagnosticsPath, gameVersion);
+        var reloaded = SaveReader.Read(diagnosticsPath);
+        var hashAfterReload = StateHasher.Hash(reloaded.State);
+        return new ReplayDiagnosticsResult(hashBeforeSave, hashAfterReload, hashBeforeSave == hashAfterReload);
     }
 
     /// <summary>The sole read path (ADR 0013): executes <paramref name="query"/> against the shell's

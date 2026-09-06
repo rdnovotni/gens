@@ -1,5 +1,4 @@
 using System.Linq;
-#if !UNITY_2021_1_OR_NEWER
 #nullable enable
 using System;
 using System.Text.Json;
@@ -145,5 +144,3 @@ public sealed class DefinitionIdJsonConverterFactory : JsonConverterFactory
         return (JsonConverter)Activator.CreateInstance(converterType)!;
     }
 }
-
-#endif

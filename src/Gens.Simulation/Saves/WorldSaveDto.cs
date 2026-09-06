@@ -1,5 +1,4 @@
 using System.Linq;
-#if !UNITY_2021_1_OR_NEWER
 #nullable enable
 using System;
 using System.Collections.Generic;
@@ -4640,5 +4639,3 @@ public sealed record BusinessViabilityCheckDto
     [JsonPropertyOrder(4)]
     public string? RecommendedAction { get; init; }
 }
-
-#endif
