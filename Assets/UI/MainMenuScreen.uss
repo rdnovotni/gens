@@ -1,0 +1,67 @@
+@import url("Palette.uss");
+
+/*
+ * The title screen (game-framework work following Phase 9's ink bar/screens): the one screen with no
+ * ink bar above it, since no campaign is running yet.
+ */
+
+.menu-screen {
+    flex-grow: 1;
+    background-color: #2A231B;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-tablet {
+    background-color: #E9DFC4;
+    border-width: 3px;
+    border-color: #B9922E;
+    border-radius: 4px;
+    padding: 32px 48px;
+    align-items: center;
+    min-width: 320px;
+}
+
+.menu-title {
+    color: #2A231B;
+    font-size: 32px;
+    -unity-font-style: bold;
+    letter-spacing: 4px;
+    margin-bottom: 6px;
+}
+
+.menu-subtitle {
+    color: #6E8272;
+    font-size: 13px;
+    -unity-font-style: italic;
+    margin-bottom: 24px;
+}
+
+.menu-button {
+    width: 220px;
+    margin-top: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: rgba(42, 35, 27, 0.08);
+    color: #2A231B;
+    border-width: 1px;
+    border-color: #2A231B;
+    border-radius: 2px;
+}
+
+.menu-button--primary {
+    background-color: #B9922E;
+    color: #2A231B;
+    -unity-font-style: bold;
+}
+
+.menu-button:disabled {
+    opacity: 0.4;
+}
+
+.menu-status {
+    color: #7A2E1F;
+    font-size: 12px;
+    margin-top: 12px;
+    white-space: normal;
+}

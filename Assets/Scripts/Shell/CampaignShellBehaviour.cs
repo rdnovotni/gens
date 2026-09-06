@@ -50,6 +50,24 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
     /// <see cref="CampaignShell.AdvanceMonth"/> result instead. Empty until <see cref="Awake"/> runs.</summary>
     public IReadOnlyList<IDomainEvent> InitialHistory { get; private set; } = Array.Empty<IDomainEvent>();
 
+    /// <summary>Overwrites the bootstrap fields <see cref="Awake"/> reads, for a caller (the New Game
+    /// setup screen, via <see cref="GensAppController"/>) that collects a player's choices before this
+    /// behaviour's GameObject is ever activated. Must be called while the GameObject is still inactive
+    /// — <see cref="Awake"/> fires the moment it activates, so a call after that point has no effect on
+    /// the campaign it already bootstrapped.</summary>
+    public void Configure(
+        ulong seed, int startMonths, string rulesetId, string contentPackHash, string regionId,
+        string? startProfileId, string difficulty)
+    {
+        this.seed = seed;
+        this.startMonths = startMonths;
+        this.rulesetId = rulesetId;
+        this.contentPackHash = contentPackHash;
+        this.regionId = regionId;
+        this.startProfileId = startProfileId;
+        this.difficulty = difficulty;
+    }
+
     private void Awake()
     {
         var config = new CampaignConfig

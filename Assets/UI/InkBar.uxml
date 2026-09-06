@@ -3,6 +3,9 @@
     <ui:VisualElement name="ink-bar-root" class="ink-bar">
         <ui:Label name="ink-bar-gens-name" text="—" class="ink-bar__gens-name" />
         <ui:VisualElement style="flex-direction: row; align-items: center;">
+            <ui:Button name="ink-bar-nav-roster" text="Household" class="ink-bar__control ink-bar__nav" />
+            <ui:Button name="ink-bar-nav-estate" text="Estate" class="ink-bar__control ink-bar__nav" />
+            <ui:Button name="ink-bar-nav-report" text="Report" class="ink-bar__control ink-bar__nav" />
             <ui:Label name="ink-bar-date" text="—" class="ink-bar__stat" />
             <ui:Label name="ink-bar-treasury" text="—" class="ink-bar__stat ink-bar__stat--treasury" />
             <ui:Label name="ink-bar-dignitas" text="—" class="ink-bar__stat ink-bar__stat--dignitas" />

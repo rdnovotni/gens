@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="NewGameSetupScreen.uss" />
+    <ui:VisualElement name="new-game-setup-screen" class="menu-screen">
+        <ui:VisualElement class="menu-tablet setup-tablet">
+            <ui:Label text="NEW GENS" class="menu-title" />
+            <ui:Label text="Choose where this household begins." class="menu-subtitle" />
+
+            <ui:VisualElement class="setup-field">
+                <ui:Label text="Region" class="setup-field__label" />
+                <ui:DropdownField name="new-game-region" class="setup-field__control" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="setup-field">
+                <ui:Label text="Difficulty" class="setup-field__label" />
+                <ui:DropdownField name="new-game-difficulty" class="setup-field__control" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="setup-field">
+                <ui:Label text="Seed" class="setup-field__label" />
+                <ui:VisualElement class="setup-field__row">
+                    <ui:IntegerField name="new-game-seed" class="setup-field__control setup-field__control--seed" />
+                    <ui:Button name="new-game-random-seed" text="Random" class="menu-button setup-field__random" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="setup-actions">
+                <ui:Button name="new-game-back" text="Back" class="menu-button" />
+                <ui:Button name="new-game-begin" text="Begin" class="menu-button menu-button--primary" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

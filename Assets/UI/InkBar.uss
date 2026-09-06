@@ -53,6 +53,12 @@
     border-radius: 2px;
 }
 
+.ink-bar__nav--active {
+    background-color: rgba(185, 146, 46, 0.35);
+    border-color: #B9922E;
+    color: #B9922E;
+}
+
 .ink-bar__advance {
     width: 32px;
     height: 32px;
