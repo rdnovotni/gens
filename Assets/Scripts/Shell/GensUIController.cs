@@ -105,6 +105,12 @@ public sealed class GensUIController : MonoBehaviour
             $"{nameof(GensUIController)} requires {nameof(CampaignShellBehaviour)} to have bootstrapped its shell first.");
         _lastMonthEvents = shellBehaviour.InitialHistory;
 
+        // Every campaign starts paused (see _isPaused's own doc comment) — reset explicitly here since
+        // a second campaign entry after Return to Main Menu reuses this same controller instance rather
+        // than a fresh one, and would otherwise carry over whatever pause state the previous campaign
+        // was left in.
+        _isPaused = true;
+
         var root = document.rootVisualElement;
         root.Clear();
         root.style.flexGrow = 1;

@@ -59,6 +59,10 @@ public sealed class GensAppController : MonoBehaviour
         if (uiController != null)
             uiController.OnReturnToMainMenuConfirmed = ReturnToMainMenu;
 
+        // Applied here (not just when the Settings slider mounts) so a campaign started or loaded
+        // straight from the Main Menu also honors a volume saved in a previous session.
+        AudioListener.volume = PlayerPrefs.GetFloat(MasterVolumePrefKey, 1f);
+
         ShowMainMenu();
     }
 
