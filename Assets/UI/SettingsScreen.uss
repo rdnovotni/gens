@@ -52,6 +52,11 @@
     margin-right: 0;
 }
 
+.settings-toggle {
+    margin-left: 0;
+    color: #2A231B;
+}
+
 .settings-action-button {
     height: 40px;
     margin-top: 4px;

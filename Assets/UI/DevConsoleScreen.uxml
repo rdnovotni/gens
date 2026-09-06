@@ -1,0 +1,10 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="DevConsoleScreen.uss" />
+    <ui:VisualElement name="dev-console-root" class="dev-console-root" picking-mode="Position">
+        <ui:ScrollView name="dev-console-scrollback" class="dev-console-scrollback" />
+        <ui:VisualElement class="dev-console-input-row">
+            <ui:Label text="&gt;" class="dev-console-prompt" />
+            <ui:TextField name="dev-console-input" class="dev-console-input" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
