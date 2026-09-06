@@ -265,6 +265,8 @@ MonoBehaviour:
   document: {fileID: 1252906143}
   mainMenuAsset: {fileID: 9197481963319205126, guid: 655b690c028f166439bdb14582d2c3b0, type: 3}
   newGameSetupAsset: {fileID: 9197481963319205126, guid: 4048a3bfdee03ce4fb3b8ad7b5d99d7c, type: 3}
+  settingsAsset: {fileID: 9197481963319205126, guid: 52f274522e0c4e35b1174f54ad3aa7a3, type: 3}
+  creditsAsset: {fileID: 9197481963319205126, guid: 21ae328a744345ae9018e08c67b7e887, type: 3}
   gameplayRoot: {fileID: 1387410971}
   shellBehaviour: {fileID: 1387410974}
   uiController: {fileID: 1387410972}

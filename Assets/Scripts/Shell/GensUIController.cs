@@ -84,7 +84,22 @@ public sealed class GensUIController : MonoBehaviour
     /// than something that happens on its own.</summary>
     private bool _isPaused = true;
 
-    private void Start()
+    /// <summary>Set by <see cref="GensAppController"/> before the player can ever reach the ink bar's
+    /// "Main Menu" control — invoked once the return-to-menu confirmation (see <see
+    /// cref="WireMainMenuControl"/>) is accepted. A plain settable delegate rather than a hard reference
+    /// back to <see cref="GensAppController"/>, matching this class's existing screen-callback pattern
+    /// (e.g. <see cref="ShowEstateSettlement"/>'s <c>RequestChangeRitesBudget</c>/<c>RequestFundFestival</c>).</summary>
+    public Action? OnReturnToMainMenuConfirmed;
+
+    private void Start() => Initialize();
+
+    /// <summary>Mounts the ink bar, screen host, and confirmation overlay against whatever <see
+    /// cref="CampaignShellBehaviour.Shell"/> currently holds, and (re)wires every control. Unity calls
+    /// <see cref="Start"/> exactly once per object lifetime, which is enough for the very first campaign
+    /// entry — but a player can return to the Main Menu and start or load a second campaign in the same
+    /// session, and Unity will never call <see cref="Start"/> again for that. <see
+    /// cref="GensAppController"/> calls this directly for every entry after the first.</summary>
+    public void Initialize()
     {
         var shell = shellBehaviour.Shell ?? throw new InvalidOperationException(
             $"{nameof(GensUIController)} requires {nameof(CampaignShellBehaviour)} to have bootstrapped its shell first.");
@@ -109,6 +124,7 @@ public sealed class GensUIController : MonoBehaviour
         WireNavigationControls();
         WireCampaignClockControls();
         WireSaveLoadDiagnosticsControls();
+        WireMainMenuControl();
 
         RefreshInkBar(shell);
         RefreshClockControls();
@@ -417,6 +433,18 @@ public sealed class GensUIController : MonoBehaviour
             result.Matches
                 ? $"Save/reload reproduced an identical state hash ({result.HashBeforeSave:x16})."
                 : $"Hash before save {result.HashBeforeSave:x16} does not match hash after reload {result.HashAfterReload:x16}.");
+    }
+
+    private void WireMainMenuControl()
+    {
+        var mainMenuButton = document.rootVisualElement.Q<Button>("ink-bar-main-menu");
+        if (mainMenuButton is not null)
+            mainMenuButton.clicked += () => ShowConfirmation(
+                "Return to Main Menu",
+                "Unsaved progress will be lost unless you save first.",
+                isWaxSeal: false,
+                onConfirm: () => OnReturnToMainMenuConfirmed?.Invoke(),
+                onCancel: () => { });
     }
 
     #endregion

@@ -73,7 +73,15 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
         this.difficulty = difficulty;
     }
 
-    private void Awake()
+    private void Awake() => Bootstrap();
+
+    /// <summary>Bootstraps (or re-bootstraps) a fresh <see cref="CampaignShell"/> from this behaviour's
+    /// current fields. Unity calls <see cref="Awake"/> exactly once per object lifetime, which covers
+    /// the very first campaign — but a player can return to the Main Menu and start another campaign in
+    /// the same session, and Unity will never call <see cref="Awake"/> again for that. <see
+    /// cref="GensAppController"/> calls this directly (after <see cref="Configure"/>) for every "New
+    /// Campaign" after the first.</summary>
+    public void Bootstrap()
     {
         var config = new CampaignConfig
         {
