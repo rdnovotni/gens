@@ -108,6 +108,7 @@ public sealed class GensUIController : MonoBehaviour
 
         WireCampaignClockControls();
         WireSaveLoadDiagnosticsControls();
+        WireScreenNavigationControls();
 
         RefreshInkBar(shell);
         RefreshClockControls();
@@ -144,6 +145,7 @@ public sealed class GensUIController : MonoBehaviour
     {
         var shell = RequireShell();
         var screen = MountScreen(householdRosterAsset);
+        SetActiveNav(RosterNavButtonName);
 
         var projection = shell.Query(new HouseholdRosterQuery(shell.HouseholdId), PlayerObserverId);
         var viewModel = new HouseholdRosterAdapter().Adapt(projection);
@@ -154,6 +156,7 @@ public sealed class GensUIController : MonoBehaviour
     {
         var shell = RequireShell();
         var screen = MountScreen(estateSettlementAsset);
+        SetActiveNav(EstateNavButtonName);
 
         var projection = shell.Query(new EstateSettlementQuery(shell.SettlementId, shell.HouseholdId), PlayerObserverId);
         var viewModel = new EstateSettlementAdapter().Adapt(projection);
@@ -164,6 +167,7 @@ public sealed class GensUIController : MonoBehaviour
     {
         var shell = RequireShell();
         var screen = MountScreen(monthlyReportAsset);
+        SetActiveNav(ReportNavButtonName);
 
         var financials = shell.Query(new HouseholdFinancialsQuery(shell.HouseholdId), PlayerObserverId);
         var report = MonthlyReportProjector.Project(shell.State.Date, _lastMonthEvents);
@@ -254,6 +258,35 @@ public sealed class GensUIController : MonoBehaviour
 
     #endregion
 
+    #region Screen navigation — the ink bar's persistent Household/Estate/Report controls
+
+    private const string RosterNavButtonName = "ink-bar-nav-roster";
+    private const string EstateNavButtonName = "ink-bar-nav-estate";
+    private const string ReportNavButtonName = "ink-bar-nav-report";
+
+    private static readonly IReadOnlyList<string> NavButtonNames =
+        new[] { RosterNavButtonName, EstateNavButtonName, ReportNavButtonName };
+
+    private void WireScreenNavigationControls()
+    {
+        var root = document.rootVisualElement;
+        root.Q<Button>(RosterNavButtonName)?.RegisterCallback<ClickEvent>(_ => ShowHouseholdRoster());
+        root.Q<Button>(EstateNavButtonName)?.RegisterCallback<ClickEvent>(_ => ShowEstateSettlement());
+        root.Q<Button>(ReportNavButtonName)?.RegisterCallback<ClickEvent>(_ => ShowMonthlyReport());
+    }
+
+    /// <summary>Highlights whichever nav control corresponds to the screen <see cref="MountScreen"/>
+    /// just swapped in, so the ink bar always shows which of the three first-class screens is current
+    /// (Character Detail, reached only from a roster row, leaves the Household control highlighted).</summary>
+    private void SetActiveNav(string activeButtonName)
+    {
+        var root = document.rootVisualElement;
+        foreach (var buttonName in NavButtonNames)
+            root.Q<Button>(buttonName)?.EnableInClassList("ink-bar__nav--active", buttonName == activeButtonName);
+    }
+
+    #endregion
+
     #region Phase 9 items 7-8 — command submission through confirmation
 
     private void RequestChangeRitesBudget()
@@ -327,6 +360,16 @@ public sealed class GensUIController : MonoBehaviour
     #region Phase 9 item 8 — save/load, deterministic replay diagnostics
 
     private static string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
+
+    /// <summary>Whether a quicksave exists to load — the Main Menu's Load Game control (<see
+    /// cref="GensAppController"/>) checks this before offering to load, the same file this
+    /// controller's own <see cref="LoadNow"/> reads.</summary>
+    public static bool HasSaveFile() => File.Exists(SaveFilePath);
+
+    /// <summary>The Main Menu's Load Game entry point (<see cref="GensAppController"/>) — identical to
+    /// the in-game Load control's own <see cref="LoadNow"/>, just reachable before this controller's
+    /// <see cref="Start"/> has run its own initial <see cref="ShowHouseholdRoster"/>.</summary>
+    public void LoadSavedCampaign() => LoadNow();
 
     private void WireSaveLoadDiagnosticsControls()
     {

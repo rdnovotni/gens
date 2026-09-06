@@ -1,0 +1,13 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="MainMenuScreen.uss" />
+    <ui:VisualElement name="main-menu-screen" class="menu-screen">
+        <ui:VisualElement class="menu-tablet">
+            <ui:Label text="GENS" class="menu-title" />
+            <ui:Label text="A Roman household across the generations." class="menu-subtitle" />
+            <ui:Button name="main-menu-new-game" text="New Game" class="menu-button menu-button--primary" />
+            <ui:Button name="main-menu-load-game" text="Load Game" class="menu-button" />
+            <ui:Button name="main-menu-quit" text="Quit" class="menu-button" />
+            <ui:Label name="main-menu-status" text="" class="menu-status" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
