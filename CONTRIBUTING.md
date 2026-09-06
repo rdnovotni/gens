@@ -73,6 +73,24 @@ locally, where both the Unity CLI and a running Editor are present.
   behavior change.
 - Use concise, imperative commit subjects.
 
+## CI workflows
+
+- **`standalone.yml`** runs on every pull request and on pushes to `main`. It
+  has two independent jobs so a content failure is never hidden behind a test
+  failure or vice versa:
+  - **`standalone`** — `dotnet restore`/`format --verify-no-changes`/`build`/
+    `test` in Release, a dry-run of the benchmark suite, and
+    `scripts/verify-deterministic-build.sh`.
+  - **`content`** — validates every content family (schema, duplicate IDs,
+    references, localization), compiles the golden content pack, then runs
+    the exit-gate smoke test: bootstrap a campaign, save, verify, migrate,
+    and replay it, comparing state hashes throughout.
+- **`unity-smoke.yml`** is manual (`workflow_dispatch`) only and requires a
+  self-hosted runner with the pinned Unity editor. Licensed Unity EditMode/
+  PlayMode test and build jobs are deferred until CI credential and runner
+  policy is approved; until then, use `scripts/unity-smoke.sh` locally (see
+  above) to check assembly compilation.
+
 ## Pull requests
 
 Complete the pull-request template, call out save/content compatibility concerns,

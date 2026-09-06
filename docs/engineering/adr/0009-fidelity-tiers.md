@@ -1,6 +1,6 @@
 # ADR 0009 — Fidelity Tiers
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

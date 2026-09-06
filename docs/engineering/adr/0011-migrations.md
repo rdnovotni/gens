@@ -1,6 +1,6 @@
 # ADR 0011 — Save Migrations
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 

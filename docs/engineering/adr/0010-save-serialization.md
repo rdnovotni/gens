@@ -1,6 +1,6 @@
 # ADR 0010 — Save Serialization
 
-**Status:** Proposed
+**Status:** Accepted
 
 ## Context
 
