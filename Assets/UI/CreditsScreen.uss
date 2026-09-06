@@ -1,0 +1,74 @@
+@import url("Palette.uss");
+
+.credits-root {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    background-color: #2A231B;
+    justify-content: center;
+    align-items: center;
+}
+
+.credits-card {
+    width: 480px;
+    background-color: #E9DFC4;
+    border-width: 3px;
+    border-color: #B9922E;
+    border-radius: 4px;
+    padding: 32px;
+    align-items: center;
+}
+
+.credits-title {
+    font-size: 36px;
+    color: #2A231B;
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+}
+
+.credits-subtitle {
+    font-size: 12px;
+    color: #5C3350;
+    -unity-font-style: italic;
+    margin-bottom: 16px;
+}
+
+.credits-divider {
+    width: 100%;
+    height: 2px;
+    background-color: #B9922E;
+    margin-bottom: 16px;
+    margin-top: 4px;
+}
+
+.credits-section-label {
+    font-size: 11px;
+    color: #5C3350;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.credits-line {
+    font-size: 14px;
+    color: #2A231B;
+    margin-bottom: 16px;
+}
+
+.credits-action-button {
+    width: 100%;
+    height: 40px;
+    margin-top: 4px;
+    background-color: #2A231B;
+    color: #E9DFC4;
+    font-size: 13px;
+    -unity-font-style: bold;
+    border-width: 1px;
+    border-color: #B9922E;
+    border-radius: 3px;
+}
+
+.credits-action-button:hover {
+    background-color: #3D3328;
+}

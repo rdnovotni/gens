@@ -24,6 +24,12 @@ public sealed class GensAppController : MonoBehaviour
     private VisualTreeAsset newGameSetupAsset = null!;
 
     [SerializeField]
+    private VisualTreeAsset settingsAsset = null!;
+
+    [SerializeField]
+    private VisualTreeAsset creditsAsset = null!;
+
+    [SerializeField]
     private GameObject gameplayRoot = null!;
 
     [SerializeField]
@@ -33,15 +39,25 @@ public sealed class GensAppController : MonoBehaviour
     private GensUIController uiController = null!;
 
     private const string SaveFileName = "quicksave.gens";
+    private const string MasterVolumePrefKey = "MasterVolume";
     private static string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
 
     private string _selectedRegion = "latium";
     private string _selectedDifficulty = "standard";
 
+    /// <summary>True once gameplay has been entered (New Campaign or Load Campaign) at least once this
+    /// session. Unity only ever calls <see cref="CampaignShellBehaviour.Awake"/>/<see
+    /// cref="GensUIController.Start"/> on the very first activation, so every entry after the first
+    /// (reachable via <see cref="ReturnToMainMenu"/>) must re-bootstrap/re-mount explicitly instead.</summary>
+    private bool _gameplayEnteredOnce;
+
     private void Start()
     {
         if (gameplayRoot != null)
             gameplayRoot.SetActive(false);
+
+        if (uiController != null)
+            uiController.OnReturnToMainMenuConfirmed = ReturnToMainMenu;
 
         ShowMainMenu();
     }
@@ -56,8 +72,16 @@ public sealed class GensAppController : MonoBehaviour
         menuInstance.style.flexGrow = 1;
         root.Add(menuInstance);
 
+        // The card starts at opacity:0/scale:0.96 in MainMenuScreen.uss so this class add (next frame,
+        // after the initial style has actually applied) triggers the USS transition into view rather
+        // than the card just appearing instantly.
+        var menuCard = root.Q<VisualElement>(className: "main-menu-card");
+        menuCard?.schedule.Execute(() => menuCard.AddToClassList("main-menu-card--visible"));
+
         var newGameBtn = root.Q<Button>("main-menu-new-game");
         var loadGameBtn = root.Q<Button>("main-menu-load-game");
+        var settingsBtn = root.Q<Button>("main-menu-settings");
+        var creditsBtn = root.Q<Button>("main-menu-credits");
         var quitBtn = root.Q<Button>("main-menu-quit");
 
         bool hasSave = File.Exists(SaveFilePath);
@@ -70,8 +94,70 @@ public sealed class GensAppController : MonoBehaviour
         if (newGameBtn != null)
             newGameBtn.clicked += ShowNewGameSetup;
 
+        if (settingsBtn != null)
+            settingsBtn.clicked += ShowSettings;
+
+        if (creditsBtn != null)
+            creditsBtn.clicked += ShowCredits;
+
         if (quitBtn != null)
             quitBtn.clicked += QuitApp;
+    }
+
+    public void ShowSettings()
+    {
+        var root = document.rootVisualElement;
+        root.Clear();
+        root.style.flexGrow = 1;
+
+        var settingsInstance = settingsAsset.CloneTree();
+        settingsInstance.style.flexGrow = 1;
+        root.Add(settingsInstance);
+
+        var volumeSlider = root.Q<Slider>("settings-master-volume");
+        if (volumeSlider != null)
+        {
+            var savedVolume = PlayerPrefs.GetFloat(MasterVolumePrefKey, 1f);
+            AudioListener.volume = savedVolume;
+            volumeSlider.value = savedVolume;
+            volumeSlider.RegisterValueChangedCallback(evt =>
+            {
+                AudioListener.volume = evt.newValue;
+                PlayerPrefs.SetFloat(MasterVolumePrefKey, evt.newValue);
+            });
+        }
+
+        var backBtn = root.Q<Button>("settings-back-button");
+        if (backBtn != null)
+            backBtn.clicked += ShowMainMenu;
+    }
+
+    public void ShowCredits()
+    {
+        var root = document.rootVisualElement;
+        root.Clear();
+        root.style.flexGrow = 1;
+
+        var creditsInstance = creditsAsset.CloneTree();
+        creditsInstance.style.flexGrow = 1;
+        root.Add(creditsInstance);
+
+        var backBtn = root.Q<Button>("credits-back-button");
+        if (backBtn != null)
+            backBtn.clicked += ShowMainMenu;
+    }
+
+    /// <summary>Deactivates gameplay and returns to the Main Menu, invoked once the ink bar's "Main
+    /// Menu" confirmation (<see cref="GensUIController"/>) is accepted. The campaign itself is left
+    /// running in memory (a player who instead chooses New Campaign or Load Campaign next re-bootstraps
+    /// or replaces it explicitly — see <see cref="BeginCampaign"/>/<see cref="LoadGame"/>).</summary>
+    public void ReturnToMainMenu()
+    {
+        if (gameplayRoot != null)
+            gameplayRoot.SetActive(false);
+
+        document.rootVisualElement.style.display = DisplayStyle.Flex;
+        ShowMainMenu();
     }
 
     public void ShowNewGameSetup()
@@ -145,10 +231,19 @@ public sealed class GensAppController : MonoBehaviour
         document.rootVisualElement.style.display = DisplayStyle.None;
 
         if (shellBehaviour != null)
+        {
             shellBehaviour.Configure(seed: 1, regionId: region, difficulty: difficulty);
+            if (_gameplayEnteredOnce)
+                shellBehaviour.Bootstrap();
+        }
 
         if (gameplayRoot != null)
             gameplayRoot.SetActive(true);
+
+        if (_gameplayEnteredOnce)
+            uiController.Initialize();
+
+        _gameplayEnteredOnce = true;
     }
 
     public void LoadGame()
@@ -164,8 +259,14 @@ public sealed class GensAppController : MonoBehaviour
 
         var loadedShell = CampaignShell.Load(SaveFilePath, out _);
         shellBehaviour.ReplaceShell(loadedShell);
-        uiController.RefreshInkBar();
-        uiController.ShowHouseholdRoster();
+
+        // Initialize() (re)mounts the ink bar/screen host synchronously against the just-replaced shell
+        // rather than relying on Unity's own GensUIController.Start(), which SetActive(true) above only
+        // schedules for next frame — calling ShowHouseholdRoster() before that had run would hit a null
+        // screen host on this session's very first Load.
+        uiController.Initialize();
+
+        _gameplayEnteredOnce = true;
     }
 
     private static void QuitApp()

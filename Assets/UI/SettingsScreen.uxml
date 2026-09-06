@@ -1,0 +1,17 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="SettingsScreen.uss" />
+    <ui:VisualElement name="settings-screen" class="settings-root">
+        <ui:VisualElement class="settings-card">
+            <ui:Label text="SETTINGS" class="settings-title" />
+            <ui:VisualElement class="settings-divider" />
+
+            <ui:VisualElement class="settings-section">
+                <ui:Label text="MASTER VOLUME" class="settings-section-label" />
+                <ui:Slider name="settings-master-volume" low-value="0" high-value="1" value="1" class="settings-slider" />
+            </ui:VisualElement>
+
+            <ui:VisualElement class="settings-divider" />
+            <ui:Button name="settings-back-button" text="Back" class="settings-action-button" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

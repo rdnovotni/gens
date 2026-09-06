@@ -24,6 +24,7 @@
             <ui:Button name="ink-bar-save" text="Save" class="ink-bar__control" />
             <ui:Button name="ink-bar-load" text="Load" class="ink-bar__control" />
             <ui:Button name="ink-bar-diagnostics" text="Diagnostics" class="ink-bar__control" />
+            <ui:Button name="ink-bar-main-menu" text="Main Menu" class="ink-bar__control" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
