@@ -3,7 +3,8 @@
   "rootNamespace": "Gens.Presentation.Shell",
   "references": [
     "Gens.Simulation",
-    "Gens.Presentation.Adapters"
+    "Gens.Presentation.Adapters",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using Gens.Presentation.Shell.DevConsole;
 using Gens.Simulation.Campaign;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -125,6 +126,14 @@ public sealed class GensAppController : MonoBehaviour
                 AudioListener.volume = evt.newValue;
                 PlayerPrefs.SetFloat(MasterVolumePrefKey, evt.newValue);
             });
+        }
+
+        var devConsoleToggle = root.Q<Toggle>("settings-dev-console-toggle");
+        if (devConsoleToggle != null)
+        {
+            devConsoleToggle.value = PlayerPrefs.GetInt(DevConsoleController.EnabledPrefKey, 0) != 0;
+            devConsoleToggle.RegisterValueChangedCallback(evt =>
+                PlayerPrefs.SetInt(DevConsoleController.EnabledPrefKey, evt.newValue ? 1 : 0));
         }
 
         var backBtn = root.Q<Button>("settings-back-button");

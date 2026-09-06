@@ -45,6 +45,15 @@ AI art is optional, asynchronous, and never blocks a campaign. Client code uses
 `IArtGenerationProvider`, initially with null and mock providers. Production cloud
 providers belong behind a controlled backend; local models run out of process.
 
+## Developer tooling
+
+A Settings-gated in-app dev/debug console (backquote to toggle) lets a
+developer or tester query and submit commands against a running campaign
+without leaving the Editor/build — see
+[`docs/engineering/dev-console.md`](dev-console.md). It reaches the campaign
+exclusively through the same `CampaignShell.Query`/`Submit` boundary as the
+rest of the UI (ADR 0013).
+
 ## Verification
 
 NUnit and FsCheck cover the standalone simulation, including golden seeds,
