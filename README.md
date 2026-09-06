@@ -6,7 +6,8 @@ are recorded in [`docs/engineering/tech-stack.md`](docs/engineering/tech-stack.m
 
 The project is in early development. The consolidated [game-design index](docs/design/README.md)
 describes the intended systems and setting; implemented behavior is represented by
-the source, content schemas, and tests.
+the source, content schemas, and tests. For a player-facing read of what the game
+actually is and how it plays, see the [player manual](docs/manual/README.md).
 
 ## Prerequisites
 

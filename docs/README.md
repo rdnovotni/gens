@@ -7,6 +7,9 @@ Project documentation is organized by audience and purpose:
   directly under `docs/`: the
   [Canonical Object & Data Registry](gens-canonical-registry-design.md) and the
   [Design Authority Registry](gens-design-authority-registry.md).
+- [`manual/`](manual/README.md) is the player-facing manual: a synthesis of
+  `design/` written for players and newcomers to read start-to-finish, rather
+  than for implementation.
 - [`engineering/`](engineering/) records implementation constraints and technical
   decisions that contributors must preserve, including the technical baseline
   ([`tech-stack.md`](engineering/tech-stack.md)), the
