@@ -1,4 +1,5 @@
 using System.Linq;
+#if !UNITY_2021_1_OR_NEWER
 #nullable enable
 using System.Text.Json.Serialization;
 using System;
@@ -71,3 +72,5 @@ public static class CanonicalJson
         return builder.ToString();
     }
 }
+
+#endif
