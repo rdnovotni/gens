@@ -86,14 +86,30 @@ public sealed class CampaignShell
     /// caller that wants to display or log it.</summary>
     public static CampaignShell Load(string path, out SaveManifest manifest)
     {
-        throw new NotSupportedException("Saving/Loading .gens packages is only supported in .NET Core runtime runner.");
+#if !UNITY_2021_1_OR_NEWER
+        var loaded = SaveReader.Read(path);
+        manifest = loaded.Manifest;
+        return new CampaignShell(loaded.State, loaded.RandomStreams, RootHouseholdId, RootSettlementId, manifest.ContentPackHash);
+#else
+        throw new NotSupportedException(
+            "Saving/loading .gens packages requires System.Text.Json, which this Unity project has no " +
+            "assembly reference for (Gens.Simulation.asmdef has no precompiledReferences for it, and " +
+            "Unity's asmdef compilation never sees the csproj's NuGet PackageReference) — only the " +
+            ".NET Core runtime runner supports it today.");
+#endif
     }
 
     /// <summary>Writes this shell's current state to <paramref name="path"/>, mirroring the console
     /// runner's <c>save</c> verb (<see cref="Gens.Simulation.Saves.SaveWriter.Write"/>).</summary>
     public void Save(string path, string gameVersion)
     {
-        throw new NotSupportedException("Saving/Loading .gens packages is only supported in .NET Core runtime runner.");
+#if !UNITY_2021_1_OR_NEWER
+        SaveWriter.Write(path, State, RandomStreams, gameVersion, ContentPackHash);
+#else
+        throw new NotSupportedException(
+            "Saving/loading .gens packages requires System.Text.Json, which this Unity project has no " +
+            "assembly reference for — only the .NET Core runtime runner supports it today.");
+#endif
     }
 
     /// <summary>Deterministic replay diagnostics (Phase 9 item 8): saves the current state to
@@ -103,8 +119,17 @@ public sealed class CampaignShell
     /// shell can run it on demand without shelling out.</summary>
     public ReplayDiagnosticsResult VerifyDeterministicReplay(string diagnosticsPath, string gameVersion)
     {
+#if !UNITY_2021_1_OR_NEWER
         var hashBeforeSave = StateHasher.Hash(State);
-        return new ReplayDiagnosticsResult(hashBeforeSave, hashBeforeSave, true);
+        Save(diagnosticsPath, gameVersion);
+        var reloaded = SaveReader.Read(diagnosticsPath);
+        var hashAfterReload = StateHasher.Hash(reloaded.State);
+        return new ReplayDiagnosticsResult(hashBeforeSave, hashAfterReload, hashBeforeSave == hashAfterReload);
+#else
+        throw new NotSupportedException(
+            "Deterministic replay diagnostics require System.Text.Json, which this Unity project has no " +
+            "assembly reference for — only the .NET Core runtime runner supports it today.");
+#endif
     }
 
     /// <summary>The sole read path (ADR 0013): executes <paramref name="query"/> against the shell's

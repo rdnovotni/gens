@@ -56,8 +56,13 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
     /// — <see cref="Awake"/> fires the moment it activates, so a call after that point has no effect on
     /// the campaign it already bootstrapped.</summary>
     public void Configure(
-        ulong seed, int startMonths, string rulesetId, string contentPackHash, string regionId,
-        string? startProfileId, string difficulty)
+        ulong seed = 1,
+        int startMonths = 0,
+        string rulesetId = "default",
+        string contentPackHash = "",
+        string regionId = "latium",
+        string? startProfileId = null,
+        string difficulty = "standard")
     {
         this.seed = seed;
         this.startMonths = startMonths;
@@ -95,24 +100,5 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
     {
         Shell = shell ?? throw new ArgumentNullException(nameof(shell));
         InitialHistory = Array.Empty<IDomainEvent>();
-    }
-
-    /// <summary>Configures the campaign parameters before <see cref="Awake"/> bootstraps the shell.</summary>
-    public void Configure(
-        ulong seed = 1,
-        string regionId = "latium",
-        string difficulty = "standard",
-        string rulesetId = "default",
-        int startMonths = 0,
-        string contentPackHash = "",
-        string? startProfileId = null)
-    {
-        this.seed = seed;
-        this.regionId = regionId;
-        this.difficulty = difficulty;
-        this.rulesetId = rulesetId;
-        this.startMonths = startMonths;
-        this.contentPackHash = contentPackHash;
-        this.startProfileId = startProfileId;
     }
 }

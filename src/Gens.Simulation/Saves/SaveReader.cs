@@ -2,6 +2,7 @@ using System.Linq;
 #if !UNITY_2021_1_OR_NEWER
 #nullable enable
 using System;
+using System.IO;
 using System.IO.Compression;
 using System.Text.Json;
 using Gens.Simulation.Random;

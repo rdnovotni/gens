@@ -3,6 +3,7 @@ using System.Linq;
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.IO.Compression;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
