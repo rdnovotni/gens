@@ -1,11 +1,14 @@
-<Solution>
-  <Folder Name="/Source/">
-    <Project Path="src/Gens.Simulation/Gens.Simulation.csproj" />
-    <Project Path="tools/Gens.ContentCompiler/Gens.ContentCompiler.csproj" />
-    <Project Path="benchmarks/Gens.Simulation.Benchmarks/Gens.Simulation.Benchmarks.csproj" />
-  </Folder>
-  <Folder Name="/Tests/">
-    <Project Path="tests/Gens.Simulation.Tests/Gens.Simulation.Tests.csproj" />
-    <Project Path="tests/Gens.ContentCompiler.Tests/Gens.ContentCompiler.Tests.csproj" />
-  </Folder>
+﻿<Solution>
+  <Project Path="Gens.Simulation.csproj" />
+  <Project Path="Gens.Presentation.Shell.csproj" />
+  <Project Path="Gens.Presentation.EditModeTests.csproj" />
+  <Project Path="Gens.Presentation.Adapters.csproj" />
+  <Project Path="Gens.Presentation.PlayModeTests.csproj" />
+  <Project Path="Gens.Presentation.TestSupport.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="src/Gens.Simulation/Gens.Simulation.csproj" />
+  <Project Path="tools/Gens.ContentCompiler/Gens.ContentCompiler.csproj" />
+  <Project Path="benchmarks/Gens.Simulation.Benchmarks/Gens.Simulation.Benchmarks.csproj" />
+  <Project Path="tests/Gens.Simulation.Tests/Gens.Simulation.Tests.csproj" />
+  <Project Path="tests/Gens.ContentCompiler.Tests/Gens.ContentCompiler.Tests.csproj" />
 </Solution>

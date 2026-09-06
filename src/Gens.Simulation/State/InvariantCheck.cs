@@ -1,3 +1,7 @@
+using System.Linq;
+#nullable enable
+using System;
+using System.Collections.Generic;
 namespace Gens.Simulation.State;
 
 /// <summary>One invariant failure: which invariant, a human-readable message, and the subjects involved.</summary>

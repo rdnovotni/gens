@@ -78,4 +78,23 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
         Shell = shell ?? throw new ArgumentNullException(nameof(shell));
         InitialHistory = Array.Empty<IDomainEvent>();
     }
+
+    /// <summary>Configures the campaign parameters before <see cref="Awake"/> bootstraps the shell.</summary>
+    public void Configure(
+        ulong seed = 1,
+        string regionId = "latium",
+        string difficulty = "standard",
+        string rulesetId = "default",
+        int startMonths = 0,
+        string contentPackHash = "",
+        string? startProfileId = null)
+    {
+        this.seed = seed;
+        this.regionId = regionId;
+        this.difficulty = difficulty;
+        this.rulesetId = rulesetId;
+        this.startMonths = startMonths;
+        this.contentPackHash = contentPackHash;
+        this.startProfileId = startProfileId;
+    }
 }

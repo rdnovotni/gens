@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Travel;
 
 /// <summary>§4's route-danger classification — "real-stakes events... weighted up sharply on genuinely

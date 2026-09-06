@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Goods;
 
 /// <summary>The displayed craftsmanship grades used by quality-eligible goods.</summary>

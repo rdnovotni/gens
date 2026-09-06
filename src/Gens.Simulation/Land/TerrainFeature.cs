@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Land;
 
 /// <summary>Additional map features which may overlap a plot's primary terrain.</summary>

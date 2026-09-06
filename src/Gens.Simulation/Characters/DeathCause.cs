@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Why a Character died (<c>gens-familia-design.md</c> §3: "Death is deliberately

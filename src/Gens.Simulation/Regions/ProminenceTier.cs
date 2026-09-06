@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Regions;
 
 /// <summary>A light, three-step read of how significant a <see cref="GazetteerLocationDefinition"/> is

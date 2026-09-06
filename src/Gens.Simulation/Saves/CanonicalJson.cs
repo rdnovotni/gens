@@ -1,3 +1,8 @@
+using System.Linq;
+#if !UNITY_2021_1_OR_NEWER
+#nullable enable
+using System.Text.Json.Serialization;
+using System;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -66,3 +71,5 @@ public static class CanonicalJson
         return builder.ToString();
     }
 }
+
+#endif

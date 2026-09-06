@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Wanderers;
 
 /// <summary>The six real, historically grounded categories <c>gens-wandering-populations-design.md</c>

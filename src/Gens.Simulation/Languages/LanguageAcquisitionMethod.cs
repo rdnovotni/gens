@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Languages;
 
 /// <summary>§5's real, concrete acquisition paths and §10's <c>acquisitionMethod</c> field — a fact

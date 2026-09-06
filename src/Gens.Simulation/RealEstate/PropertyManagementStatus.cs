@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.RealEstate;
 
 /// <summary>§6's "any developed property the household owns can be flagged Leased Out rather than

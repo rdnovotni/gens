@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>One of the fixed-genetics "height and build" attributes <c>gens-familia-design.md</c>

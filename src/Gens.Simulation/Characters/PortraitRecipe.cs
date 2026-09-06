@@ -1,3 +1,7 @@
+using System.Linq;
+#nullable enable
+using System;
+using System.Collections.Generic;
 namespace Gens.Simulation.Characters;
 
 /// <summary>An ordered list of semantic layer tokens (e.g. <c>"body/build/slight"</c>,

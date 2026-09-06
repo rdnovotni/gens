@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Diet axis tier (<c>gens-labor-slavery-design.md</c> §5), primarily affecting Health trend

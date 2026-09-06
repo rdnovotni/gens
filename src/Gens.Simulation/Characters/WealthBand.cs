@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The three-tier wealth pyramid <c>gens-population-wealth-purchasing-power-design.md</c>

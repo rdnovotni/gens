@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Correspondence;
 
 /// <summary>§11's <c>direction</c> field — which way a <see cref="Letter"/> is traveling. <see

@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>How a Character record first came to exist (<c>gens-characters-design.md</c> §14's

@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Hazards;
 
 /// <summary>Pure, RNG-free monthly Exposure math for §3's eight standing hazards (<see

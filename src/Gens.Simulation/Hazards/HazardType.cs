@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Hazards;
 
 /// <summary>The nine named hazards <c>gens-natural-disasters-design.md</c> §2 catalogs — the eight

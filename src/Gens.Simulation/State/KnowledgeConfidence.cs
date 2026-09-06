@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.State;
 
 /// <summary>How certain an observer's knowledge of a fact is (ADR 0008). Shared between the

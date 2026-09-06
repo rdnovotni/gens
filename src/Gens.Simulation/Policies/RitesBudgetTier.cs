@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Policies;
 
 /// <summary>The three tiers of <c>gens-policies-edicts-design.md</c> §2.3's Rites Budget Standing

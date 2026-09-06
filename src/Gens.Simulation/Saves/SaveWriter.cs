@@ -1,3 +1,8 @@
+using System.Linq;
+#if !UNITY_2021_1_OR_NEWER
+#nullable enable
+using System;
+using System.Collections.Generic;
 using System.IO.Compression;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
@@ -84,3 +89,5 @@ public static class SaveWriter
         entryStream.Write(bytes, 0, bytes.Length);
     }
 }
+
+#endif

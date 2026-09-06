@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 using System.Text;
 
 namespace Gens.Simulation.Random;

@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The per-tier numeric effects <c>gens-labor-slavery-design.md</c> §5 leaves untuned (its

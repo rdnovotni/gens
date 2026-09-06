@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Health;
 
 /// <summary>Pure, RNG-free monthly probability math for §3's Epidemic layer: how a new outbreak

@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Travel;
 
 /// <summary><c>gens-starting-regions-design.md</c> §7.1's abstract Distance Tier: every region pair

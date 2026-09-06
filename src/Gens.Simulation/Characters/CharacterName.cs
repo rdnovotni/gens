@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>A generated name, shaped per <c>gens-familia-design.md</c> §2.8's naming convention for

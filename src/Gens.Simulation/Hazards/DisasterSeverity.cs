@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Hazards;
 
 /// <summary>§5.1's four Disaster Event severity tiers, in ascending order of consequence — <see

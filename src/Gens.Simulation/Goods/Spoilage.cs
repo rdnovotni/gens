@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Goods;
 
 /// <summary>Information supplied to downstream reporting/ledger hooks when stock expires.</summary>

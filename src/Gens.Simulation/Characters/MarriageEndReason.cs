@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Why a <see cref="MarriageRecord"/> closed (<c>gens-familia-design.md</c> §5.1). <see

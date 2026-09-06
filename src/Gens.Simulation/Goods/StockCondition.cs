@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Goods;
 
 /// <summary>A deterministic 0-100 condition measure for goods that physically degrade.</summary>

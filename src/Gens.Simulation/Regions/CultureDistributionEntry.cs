@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Regions;
 
 /// <summary>One weighted row of a region's Population &amp; Culture Distribution table

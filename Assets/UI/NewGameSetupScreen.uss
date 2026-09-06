@@ -1,0 +1,117 @@
+@import url("Palette.uss");
+
+.setup-root {
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    background-color: #2A231B;
+    justify-content: center;
+    align-items: center;
+}
+
+.setup-card {
+    width: 540px;
+    background-color: #E9DFC4;
+    border-width: 3px;
+    border-color: #B9922E;
+    border-radius: 4px;
+    padding: 32px;
+}
+
+.setup-title {
+    font-size: 28px;
+    color: #2A231B;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    -unity-text-align: middle-center;
+}
+
+.setup-subtitle {
+    font-size: 13px;
+    color: #5C3350;
+    -unity-font-style: italic;
+    margin-bottom: 16px;
+    -unity-text-align: middle-center;
+}
+
+.setup-divider {
+    width: 100%;
+    height: 2px;
+    background-color: #B9922E;
+    margin-bottom: 16px;
+    margin-top: 4px;
+}
+
+.setup-section {
+    margin-bottom: 16px;
+}
+
+.setup-section-label {
+    font-size: 12px;
+    color: #5C3350;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+}
+
+.setup-radio-group {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.setup-option-button {
+    flex-grow: 1;
+    margin-right: 4px;
+    margin-left: 4px;
+    padding: 8px 4px;
+    background-color: #E9DFC4;
+    color: #2A231B;
+    border-width: 1px;
+    border-color: #6E8272;
+    border-radius: 2px;
+    font-size: 11px;
+    -unity-text-align: middle-center;
+}
+
+.setup-option-button:hover {
+    background-color: rgba(185, 146, 46, 0.2);
+}
+
+.setup-option-button--selected {
+    background-color: #5C3350;
+    color: #E9DFC4;
+    border-color: #B9922E;
+    -unity-font-style: bold;
+}
+
+.setup-actions {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-top: 8px;
+}
+
+.setup-action-button {
+    flex-grow: 1;
+    height: 40px;
+    margin: 4px;
+    background-color: #2A231B;
+    color: #E9DFC4;
+    font-size: 13px;
+    -unity-font-style: bold;
+    border-width: 1px;
+    border-color: #B9922E;
+    border-radius: 3px;
+}
+
+.setup-action-button:hover {
+    background-color: #3D3328;
+}
+
+.setup-action-button--primary {
+    background-color: #5C3350;
+}
+
+.setup-action-button--primary:hover {
+    background-color: #723E63;
+}

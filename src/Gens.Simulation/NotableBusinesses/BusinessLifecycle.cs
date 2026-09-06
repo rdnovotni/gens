@@ -1,3 +1,7 @@
+using System.Linq;
+#nullable enable
+using System;
+using System.Collections.Generic;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Commands;

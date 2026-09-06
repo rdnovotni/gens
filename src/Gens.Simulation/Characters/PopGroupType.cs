@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The eight background population groups <c>gens-settlement-demographics-design.md</c> §3

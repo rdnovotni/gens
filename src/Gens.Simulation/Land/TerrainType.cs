@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Land;
 
 /// <summary>The fixed, map-generated terrain of a <see cref="Plot"/>.</summary>

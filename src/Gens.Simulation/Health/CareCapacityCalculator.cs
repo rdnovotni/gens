@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Health;
 
 /// <summary>Pure math for how many standing <see cref="CharacterHealthCondition"/> cases one

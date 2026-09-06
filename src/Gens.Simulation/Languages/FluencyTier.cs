@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Languages;
 
 /// <summary>§4's four-step Language Proficiency scale.</summary>

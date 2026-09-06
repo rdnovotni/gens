@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Pure labor-output/fatigue/condition-trend math (<c>gens-labor-slavery-design.md</c> §4:

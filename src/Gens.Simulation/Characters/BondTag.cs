@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The relationship-web bond vocabulary (<c>gens-familia-design.md</c> §2.7,

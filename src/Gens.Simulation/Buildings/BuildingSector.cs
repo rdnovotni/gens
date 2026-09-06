@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Buildings;
 
 /// <summary>The background-economy sector a Building's own investment counts toward

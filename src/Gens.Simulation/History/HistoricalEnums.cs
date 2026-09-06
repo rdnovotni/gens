@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.History;
 
 /// <summary>A <see cref="HistoricalTimelineEntryDefinition"/>'s real-world category (§10's own

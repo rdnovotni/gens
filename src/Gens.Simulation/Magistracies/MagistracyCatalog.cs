@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Magistracies;
 
 /// <summary>Versioned constants for Phase 12 item 2's Local Magistracies mechanics (§5), matching <see

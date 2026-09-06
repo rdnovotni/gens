@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Health;
 
 /// <summary>§6's Sanitation Investment standing policy tier — "Minimal / Standard / Comprehensive,

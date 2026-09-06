@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Regions;
 
 /// <summary>The five Reputation Duality applicability shapes a region can carry

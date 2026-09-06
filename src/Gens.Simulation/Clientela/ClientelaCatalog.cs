@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Clientela;
 
 /// <summary>Versioned constants for Phase 12 item 2's Clientela/Influence/Salutatio/poaching mechanics

@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Markets;
 
 /// <summary>Which side of a <see cref="MarketOrder"/> a line represents (Phase 8 item 3's "orders").</summary>

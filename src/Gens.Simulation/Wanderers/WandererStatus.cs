@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Wanderers;
 
 /// <summary>Where a tracked <see cref="Wanderer"/> stands relative to the §6 engagement and §7

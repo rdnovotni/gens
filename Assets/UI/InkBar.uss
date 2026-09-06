@@ -23,6 +23,33 @@
     letter-spacing: 1px;
 }
 
+.ink-bar__nav-group {
+    flex-direction: row;
+    margin-left: 20px;
+}
+
+.ink-bar__nav-button {
+    font-size: 12px;
+    padding: 4px 12px;
+    margin-right: 6px;
+    background-color: transparent;
+    color: #E9DFC4;
+    border-width: 1px;
+    border-color: #6E8272;
+    border-radius: 2px;
+}
+
+.ink-bar__nav-button:hover {
+    background-color: rgba(233, 223, 196, 0.15);
+}
+
+.ink-bar__nav-button--active {
+    background-color: #B9922E;
+    color: #2A231B;
+    border-color: #B9922E;
+    -unity-font-style: bold;
+}
+
 .ink-bar__stat {
     color: #E9DFC4;
     font-size: 13px;

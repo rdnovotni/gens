@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Regions;
 
 /// <summary>What a <see cref="GazetteerLocationDefinition"/> is *for* — which of a region's

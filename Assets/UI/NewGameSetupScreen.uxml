@@ -1,0 +1,35 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="NewGameSetupScreen.uss" />
+    <ui:VisualElement name="new-game-setup-screen" class="setup-root">
+        <ui:VisualElement class="setup-card">
+            <ui:Label text="NEW CAMPAIGN SETUP" class="setup-title" />
+            <ui:Label text="Establish your Roman lineage and choose your starting region." class="setup-subtitle" />
+            <ui:VisualElement class="setup-divider" />
+            
+            <ui:VisualElement class="setup-section">
+                <ui:Label text="STARTING REGION" class="setup-section-label" />
+                <ui:VisualElement class="setup-radio-group">
+                    <ui:Button name="region-latium" text="Latium (Heartland)" class="setup-option-button setup-option-button--selected" />
+                    <ui:Button name="region-campania" text="Campania (Fertile South)" class="setup-option-button" />
+                    <ui:Button name="region-cisalpina" text="Gallia Cisalpina (Frontier)" class="setup-option-button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            
+            <ui:VisualElement class="setup-section">
+                <ui:Label text="DIFFICULTY" class="setup-section-label" />
+                <ui:VisualElement class="setup-radio-group">
+                    <ui:Button name="difficulty-standard" text="Standard" class="setup-option-button setup-option-button--selected" />
+                    <ui:Button name="difficulty-hard" text="Challenging" class="setup-option-button" />
+                    <ui:Button name="difficulty-relaxed" text="Relaxed" class="setup-option-button" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <ui:VisualElement class="setup-divider" />
+            
+            <ui:VisualElement class="setup-actions">
+                <ui:Button name="setup-begin-button" text="Begin Campaign" class="setup-action-button setup-action-button--primary" />
+                <ui:Button name="setup-back-button" text="Back" class="setup-action-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

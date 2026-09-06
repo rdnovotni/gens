@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Correspondence;
 
 /// <summary>§5's nine correspondence actions — the six carried over from the first pass plus the

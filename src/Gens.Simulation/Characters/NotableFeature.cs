@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>A distinctive, permanent physical detail (<c>gens-familia-design.md</c> §2.4 / Core

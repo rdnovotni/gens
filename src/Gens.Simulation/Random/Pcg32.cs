@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Random;
 
 /// <summary>A small, versioned PCG-XSH-RR generator with serializable state.</summary>

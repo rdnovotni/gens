@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Regions;
 
 /// <summary>Whether a region is selectable at campaign start or belongs to the roster's own future

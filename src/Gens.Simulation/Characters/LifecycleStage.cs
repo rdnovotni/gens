@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The five lifecycle stages <c>gens-familia-design.md</c> §3 defines, each gating different

@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Shared 0–100 bounds check for <see cref="CoreAttributes"/>, <see cref="LaborSkills"/>, and

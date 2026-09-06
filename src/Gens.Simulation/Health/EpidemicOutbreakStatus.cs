@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Health;
 
 /// <summary>An <see cref="EpidemicOutbreak"/>'s lifecycle state. <see cref="Active"/> is the only

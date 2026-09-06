@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Whether a child's birth was within a recognized marriage (<c>gens-familia-design.md</c>

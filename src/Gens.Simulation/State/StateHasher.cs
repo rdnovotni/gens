@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 using System.Text;
 using System.Text.Json;
 using Gens.Simulation.Actors;
@@ -138,7 +141,7 @@ public static class StateHasher
             hash = MixLong(hash, (long)entry.Value.Confidence);
             hash = MixLong(hash, entry.Value.AsOfDate.TotalMonths);
             hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
-            hash = MixString(hash, JsonSerializer.Serialize(entry.Value.Value));
+            hash = MixString(hash, entry.Value.Value?.ToString() ?? string.Empty);
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.

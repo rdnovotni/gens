@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Hazards;
 
 /// <summary>Turns a live <see cref="HazardExposureProfile.ExposureFor"/> reading into §3's own "warnings

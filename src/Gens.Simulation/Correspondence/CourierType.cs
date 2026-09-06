@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Correspondence;
 
 /// <summary>§8's three courier choices — unchanged by name from the superseded first-pass doc, whose

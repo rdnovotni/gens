@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Collegia;
 
 /// <summary>The four real, historically distinct collegium categories (Phase 12 item 6;

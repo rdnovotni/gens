@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Health;
 
 /// <summary>Which of Disease &amp; Public Health's two separately-tracked layers

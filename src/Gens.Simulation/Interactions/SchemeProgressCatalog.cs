@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Interactions;
 
 /// <summary>Numeric constants for <see cref="SchemeProgressSystem"/> (Phase 10 item 6's Scheme engine;

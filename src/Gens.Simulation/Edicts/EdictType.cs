@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Edicts;
 
 /// <summary>§5's eight Edict types (<c>gens-policies-edicts-design.md</c>) — every named type is

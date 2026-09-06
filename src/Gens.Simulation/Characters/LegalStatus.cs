@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The five categorical legal statuses <c>gens-familia-design.md</c> §2.5 defines, each with

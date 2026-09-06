@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Correspondence;
 
 /// <summary>§9's message-content risk resolution — what a <see cref="Letter"/>'s content actually was

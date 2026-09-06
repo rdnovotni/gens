@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Goods;
 
 /// <summary>The storage lifetime category authored on a good definition.</summary>

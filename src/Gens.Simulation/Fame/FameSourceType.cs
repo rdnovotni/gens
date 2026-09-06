@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Fame;
 
 /// <summary>§3/§10's source vocabulary (<c>gens-celebrities-influential-figures-design.md</c>) —

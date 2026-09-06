@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Cultures;
 
 /// <summary>§2 and §17's four real categories a culture can hold. The data model's own enum is

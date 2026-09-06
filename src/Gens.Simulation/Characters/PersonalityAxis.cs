@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The seven hidden behavioral axes <c>gens-characters-design.md</c> §5 defines: "seven

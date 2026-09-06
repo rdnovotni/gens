@@ -1,3 +1,8 @@
+using System.Linq;
+#if !UNITY_2021_1_OR_NEWER
+#nullable enable
+using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
@@ -4133,3 +4138,5 @@ public static class WorldStateMapper
         dto.ProcuratorCharacterId is null ? null : RuntimeId<Character>.Parse(dto.ProcuratorCharacterId),
         dto.MismanagementRiskActive);
 }
+
+#endif

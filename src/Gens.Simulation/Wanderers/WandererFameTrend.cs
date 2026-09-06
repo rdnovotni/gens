@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Wanderers;
 
 /// <summary>A Wanderer's own itinerant-reputation trajectory

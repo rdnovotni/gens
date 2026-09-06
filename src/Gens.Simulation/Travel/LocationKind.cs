@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Travel;
 
 /// <summary>The seven destination kinds <c>gens-travel-design.md</c> §2 names, matching that

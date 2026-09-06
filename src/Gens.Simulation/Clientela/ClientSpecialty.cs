@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Clientela;
 
 /// <summary>The five client specialties <c>gens-politics-patronage-design.md</c> §4.2 defines, each

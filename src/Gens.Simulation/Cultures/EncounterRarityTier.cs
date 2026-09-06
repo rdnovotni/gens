@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Cultures;
 
 /// <summary>§17's <c>encounterRarityTier</c> — "only meaningful for the six Trade Contact Only

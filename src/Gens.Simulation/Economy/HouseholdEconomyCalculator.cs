@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 using System.Numerics;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;

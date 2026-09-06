@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 // Required for the `required` member modifier when compiling against .NET Standard 2.1, matching the
 // IsExternalInit.cs polyfill precedent in this same directory.
 namespace System.Runtime.CompilerServices

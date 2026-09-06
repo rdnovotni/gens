@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The five Core Attributes (<c>gens-familia-design.md</c> §2.1), numeric 0–100, applying

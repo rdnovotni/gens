@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Goods;
 
 /// <summary>An immutable view of one homogeneous batch in a <see cref="Stockpile"/>.</summary>

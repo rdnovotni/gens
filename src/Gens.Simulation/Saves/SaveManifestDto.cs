@@ -1,3 +1,8 @@
+using System.Linq;
+#if !UNITY_2021_1_OR_NEWER
+#nullable enable
+using System;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Gens.Simulation.Saves;
@@ -71,3 +76,5 @@ public sealed record EntryChecksumDto
     [JsonPropertyOrder(1)]
     public required string Sha256 { get; init; }
 }
+
+#endif

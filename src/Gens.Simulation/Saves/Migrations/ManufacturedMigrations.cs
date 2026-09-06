@@ -1,3 +1,8 @@
+using System.Linq;
+#if !UNITY_2021_1_OR_NEWER
+#nullable enable
+using System;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Gens.Simulation.Saves.Migrations;
@@ -41,3 +46,5 @@ public static class ManufacturedMigrations
             [1] = Migrate1To2,
         });
 }
+
+#endif

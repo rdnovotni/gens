@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The citizen-only political-ceiling categorical <c>gens-familia-design.md</c> §2.5

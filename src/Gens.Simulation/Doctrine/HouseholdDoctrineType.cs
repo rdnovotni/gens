@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Doctrine;
 
 /// <summary>§3.2's seven Household Doctrines (<c>gens-policies-edicts-design.md</c>) — every named

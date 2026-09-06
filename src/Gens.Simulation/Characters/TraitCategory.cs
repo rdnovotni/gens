@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The three lifecycle-gated trait categories <c>gens-characters-design.md</c> §4 defines —

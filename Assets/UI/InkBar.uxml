@@ -1,7 +1,14 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <Style src="InkBar.uss" />
     <ui:VisualElement name="ink-bar-root" class="ink-bar">
-        <ui:Label name="ink-bar-gens-name" text="—" class="ink-bar__gens-name" />
+        <ui:VisualElement style="flex-direction: row; align-items: center;">
+            <ui:Label name="ink-bar-gens-name" text="—" class="ink-bar__gens-name" />
+            <ui:VisualElement name="ink-bar-nav-group" class="ink-bar__nav-group">
+                <ui:Button name="ink-bar-nav-household" text="Household" class="ink-bar__nav-button" />
+                <ui:Button name="ink-bar-nav-estate" text="Estate" class="ink-bar__nav-button" />
+                <ui:Button name="ink-bar-nav-report" text="Report" class="ink-bar__nav-button" />
+            </ui:VisualElement>
+        </ui:VisualElement>
         <ui:VisualElement style="flex-direction: row; align-items: center;">
             <ui:Label name="ink-bar-date" text="—" class="ink-bar__stat" />
             <ui:Label name="ink-bar-treasury" text="—" class="ink-bar__stat ink-bar__stat--treasury" />

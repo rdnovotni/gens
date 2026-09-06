@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Travel;
 
 /// <summary>§10's <c>status</c> field, plus a terminal <see cref="Completed"/> state §10's own sketch

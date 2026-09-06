@@ -1,3 +1,7 @@
+using System.Linq;
+#nullable enable
+using System;
+using System.Collections.Generic;
 namespace Gens.Simulation.Saves;
 
 public static class SaveFormat
@@ -21,4 +25,5 @@ public sealed record SaveManifest(
     IReadOnlyDictionary<string, Random.Pcg32State> RandomStreams,
     IReadOnlyList<string> GeneratedAssetReferences,
     IReadOnlyDictionary<string, string> EntryChecksums);
+
 

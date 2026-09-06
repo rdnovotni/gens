@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 using Gens.Simulation.State;
 
 namespace Gens.Simulation.Queries;

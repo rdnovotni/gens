@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Health;
 
 /// <summary>A <see cref="CharacterHealthCondition"/> case's current outcome. <see cref="Active"/> is

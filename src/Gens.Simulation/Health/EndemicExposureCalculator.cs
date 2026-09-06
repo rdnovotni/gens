@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Health;
 
 /// <summary>Pure, RNG-free monthly affliction-probability math for §2's Endemic Illness layer, one

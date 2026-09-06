@@ -106,12 +106,49 @@ public sealed class GensUIController : MonoBehaviour
             $"{nameof(confirmationDialogAsset)} must define a 'confirmation-overlay' root element.");
         WireConfirmationDialog();
 
+        WireNavigationControls();
         WireCampaignClockControls();
         WireSaveLoadDiagnosticsControls();
 
         RefreshInkBar(shell);
         RefreshClockControls();
         ShowHouseholdRoster();
+    }
+
+    private void WireNavigationControls()
+    {
+        var root = document.rootVisualElement;
+        var rosterBtn = root.Q<Button>("ink-bar-nav-household");
+        var estateBtn = root.Q<Button>("ink-bar-nav-estate");
+        var reportBtn = root.Q<Button>("ink-bar-nav-report");
+
+        if (rosterBtn is not null)
+            rosterBtn.clicked += ShowHouseholdRoster;
+        if (estateBtn is not null)
+            estateBtn.clicked += ShowEstateSettlement;
+        if (reportBtn is not null)
+            reportBtn.clicked += ShowMonthlyReport;
+    }
+
+    private void UpdateNavHighlights(string? activeNavName)
+    {
+        var root = document.rootVisualElement;
+        const string activeClass = "ink-bar__nav-button--active";
+
+        var rosterBtn = root.Q<Button>("ink-bar-nav-household");
+        var estateBtn = root.Q<Button>("ink-bar-nav-estate");
+        var reportBtn = root.Q<Button>("ink-bar-nav-report");
+
+        rosterBtn?.RemoveFromClassList(activeClass);
+        estateBtn?.RemoveFromClassList(activeClass);
+        reportBtn?.RemoveFromClassList(activeClass);
+
+        if (activeNavName == "ink-bar-nav-household")
+            rosterBtn?.AddToClassList(activeClass);
+        else if (activeNavName == "ink-bar-nav-estate")
+            estateBtn?.AddToClassList(activeClass);
+        else if (activeNavName == "ink-bar-nav-report")
+            reportBtn?.AddToClassList(activeClass);
     }
 
     /// <summary>Re-applies each month's ink-bar figures. Called after every <see
@@ -144,6 +181,7 @@ public sealed class GensUIController : MonoBehaviour
     {
         var shell = RequireShell();
         var screen = MountScreen(householdRosterAsset);
+        UpdateNavHighlights("ink-bar-nav-household");
 
         var projection = shell.Query(new HouseholdRosterQuery(shell.HouseholdId), PlayerObserverId);
         var viewModel = new HouseholdRosterAdapter().Adapt(projection);
@@ -154,6 +192,7 @@ public sealed class GensUIController : MonoBehaviour
     {
         var shell = RequireShell();
         var screen = MountScreen(estateSettlementAsset);
+        UpdateNavHighlights("ink-bar-nav-estate");
 
         var projection = shell.Query(new EstateSettlementQuery(shell.SettlementId, shell.HouseholdId), PlayerObserverId);
         var viewModel = new EstateSettlementAdapter().Adapt(projection);
@@ -164,6 +203,7 @@ public sealed class GensUIController : MonoBehaviour
     {
         var shell = RequireShell();
         var screen = MountScreen(monthlyReportAsset);
+        UpdateNavHighlights("ink-bar-nav-report");
 
         var financials = shell.Query(new HouseholdFinancialsQuery(shell.HouseholdId), PlayerObserverId);
         var report = MonthlyReportProjector.Project(shell.State.Date, _lastMonthEvents);
@@ -175,6 +215,7 @@ public sealed class GensUIController : MonoBehaviour
     {
         var shell = RequireShell();
         var screen = MountScreen(characterDetailAsset);
+        UpdateNavHighlights("ink-bar-nav-household");
 
         var projection = shell.Query(new CharacterDetailQuery(characterId), PlayerObserverId);
         var viewModel = new CharacterDetailAdapter().Adapt(projection);

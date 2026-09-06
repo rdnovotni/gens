@@ -1,3 +1,7 @@
+using System.Linq;
+#if !UNITY_2021_1_OR_NEWER
+#nullable enable
+using System;
 using System.IO.Compression;
 using System.Text.Json;
 using Gens.Simulation.Random;
@@ -99,3 +103,5 @@ public sealed class SaveCorruptedException : Exception
     {
     }
 }
+
+#endif

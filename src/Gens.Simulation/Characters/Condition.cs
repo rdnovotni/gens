@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The five universal Condition stats (<c>gens-familia-design.md</c> §2.3), numeric 0–100.

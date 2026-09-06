@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>The five Labor Skills (<c>gens-familia-design.md</c> §2.2), numeric 0–100, governing manual

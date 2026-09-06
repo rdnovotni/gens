@@ -1,3 +1,6 @@
+using System.Linq;
+#nullable enable
+using System;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Pure flight-risk math (<c>gens-labor-slavery-design.md</c> §7: "flight risk is derived from
