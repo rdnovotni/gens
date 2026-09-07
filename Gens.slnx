@@ -7,6 +7,7 @@
     <Project Path="src/Gens.Graphics/Gens.Graphics.csproj" />
     <Project Path="src/Gens.Graphics.Skia/Gens.Graphics.Skia.csproj" />
     <Project Path="src/Gens.Runtime/Gens.Runtime.csproj" />
+    <Project Path="src/Gens.UI/Gens.UI.csproj" />
     <Project Path="tools/Gens.ContentCompiler/Gens.ContentCompiler.csproj" />
     <Project Path="tools/Gens.EngineSandbox/Gens.EngineSandbox.csproj" />
     <Project Path="benchmarks/Gens.Simulation.Benchmarks/Gens.Simulation.Benchmarks.csproj" />
@@ -21,5 +22,6 @@
     <Project Path="tests/Gens.Platform.Tests/Gens.Platform.Tests.csproj" />
     <Project Path="tests/Gens.Graphics.Tests/Gens.Graphics.Tests.csproj" />
     <Project Path="tests/Gens.Runtime.Tests/Gens.Runtime.Tests.csproj" />
+    <Project Path="tests/Gens.UI.Tests/Gens.UI.Tests.csproj" />
   </Folder>
 </Solution>

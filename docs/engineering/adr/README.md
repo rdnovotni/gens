@@ -59,3 +59,9 @@ It remains **Proposed** while the NR2 desktop exit checklist is incomplete.
 Ticket 4's production-shaped foundation was implemented under an explicit
 override; that implementation does not itself satisfy ADR 0015's outstanding
 acceptance conditions.
+
+## ADR 0016 — retained-mode UI
+
+[ADR 0016](0016-retained-mode-ui-tree-and-layout.md) records the accepted
+retained-tree, measure/arrange, logical-unit, typed-theme, backend-neutral, and
+accessibility-semantics foundation implemented by Ticket 5.

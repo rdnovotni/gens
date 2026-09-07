@@ -20,8 +20,9 @@ actually is and how it plays, see the [player manual](docs/manual/README.md).
 
 ## Prerequisites
 
-These are instructions for the current, transitional Unity client. Native
-runtime development has not started yet — see the
+These are instructions for the current, transitional Unity client. The native
+runtime and retained UI foundations now exist, while the native desktop client
+and campaign-screen migration remain in progress — see the
 [native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md).
 
 - Unity Hub with the editor version in `ProjectSettings/ProjectVersion.txt`
@@ -45,6 +46,7 @@ dotnet test Gens.slnx
 | `src/Gens.Platform/`, `src/Gens.Platform.Sdl/` | Engine-neutral desktop contracts and the isolated SDL3 backend |
 | `src/Gens.Graphics/`, `src/Gens.Graphics.Skia/` | Backend-neutral 2D graphics contracts and Skia software/OpenGL implementation |
 | `src/Gens.Runtime/` | Native application loop, presentation clock, invalidation scheduling, lifecycle, and diagnostics |
+| `src/Gens.UI/` | Backend-neutral retained UI tree, layout, controls, input/focus, themes, accessibility semantics, and Gens design primitives |
 | `tests/Gens.Application.Tests/` | Standalone integration tests for the shared campaign session |
 | `tests/` | Standalone automated tests |
 | `benchmarks/` | Simulation performance benchmarks |
