@@ -53,6 +53,13 @@ design and technical documentation respectively.
 
 `src/Gens.Application` depends on `Gens.Simulation` and owns campaign-host behavior: creation, queries, commands, month advancement, saves, loads, and replay verification. All clients, including Unity, must use `CampaignSession` for those responsibilities rather than bypassing it. The layer is engine-neutral and contains no platform paths, UI, rendering, audio, SDL, Skia, or AI-provider code.
 
+`src/Gens.Platform` and `src/Gens.Graphics` define the production native abstractions.
+SDL calls and unsafe interop stay in `Gens.Platform.Sdl`; SkiaSharp/HarfBuzz types
+stay in `Gens.Graphics.Skia`. `Gens.Runtime` references abstractions only and owns
+the event-driven host, presentation clock, invalidation, diagnostics, and disposal
+order. Use `tools/Gens.EngineSandbox` for native-runtime development; do not import
+spike types into production projects.
+
 ## Architecture rules
 
 These are load-bearing, not stylistic — see the

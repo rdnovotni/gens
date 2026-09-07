@@ -13,13 +13,13 @@ Gens currently ships a working Unity 6.3 LTS client, but per
 is migrating to a purpose-built native Gens runtime/client and will retire
 Unity once the ADR's retirement gates pass. Everything in this document below
 is **current Unity client and standalone-tooling development** — it remains
-accurate and Unity remains fully supported. **Native runtime development**
-has not started as implementation; it begins in the phases tracked by the
-[native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md),
-starting with extracting `Gens.Application`. There are no SDL/Skia setup
-instructions here yet because those dependencies do not exist in the
-repository yet — they will be added to this document once a phase actually
-introduces them.
+accurate and Unity remains fully supported. **Native runtime development** has
+begun with its platform, graphics, and runtime foundation; subsequent UI/client
+work follows the phases tracked by the
+[native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md).
+See [`native-runtime-architecture.md`](docs/engineering/native-runtime-architecture.md)
+for dependency and lifetime rules. Windows x64 SDL is app-local; no system SDL
+installation or PATH entry is required.
 
 ## Local setup
 
@@ -39,6 +39,14 @@ dotnet run --project tools/Gens.ContentCompiler -- validate content
 dotnet run --project tools/Gens.ContentCompiler -- compile content artifacts/content/catalog.json
 dotnet run --project benchmarks/Gens.Simulation.Benchmarks -- --job Dry
 ./scripts/verify-deterministic-build.sh
+```
+
+Exercise the native foundation separately:
+
+```sh
+dotnet run --project tools/Gens.EngineSandbox --configuration Release
+dotnet run --project tools/Gens.EngineSandbox --configuration Release -- --renderer=software
+./scripts/publish-engine-sandbox.ps1
 ```
 
 The content compiler also exposes `inspect`, `diff`, and the save/campaign

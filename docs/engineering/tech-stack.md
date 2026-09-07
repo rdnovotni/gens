@@ -17,7 +17,7 @@ Gens.Simulation netstandard2.1
 .NET 10 standalone tooling
 ```
 
-**Target stack (adopted direction, not yet implemented):**
+**Native foundation now implemented (client/UI migration still in progress):**
 
 ```text
 .NET 10
@@ -28,10 +28,24 @@ custom retained-mode Gens UI
 custom lightweight Scene2D
 ```
 
-The isolated NR2 evidence harness and its still-open desktop validation items
-are documented in [native-runtime-spike-results.md](native-runtime-spike-results.md).
-SDL/Skia remain conditional backend candidates until those measured exit-gate
-items are completed; the experiment is not a production dependency.
+The production-shaped foundation is documented in
+[native-runtime-architecture.md](native-runtime-architecture.md). The isolated
+NR2 evidence harness and its still-open desktop validation items are documented
+in [native-runtime-spike-results.md](native-runtime-spike-results.md). SDL/Skia
+remain a conditional backend decision until those measured exit-gate items are
+completed. Ticket 4 implementation proceeded under an explicit override; the
+experiment remains separate and is not a production dependency.
+
+## Native runtime versions and boundaries
+
+- Runtime/tool target: .NET 10.
+- SDL: 3.2.22 Windows x64 app-local payload, project-owned narrow C ABI.
+- SkiaSharp: 3.119.1; OpenGL 3.3 core candidate plus software reference surfaces.
+- HarfBuzzSharp: 8.3.1.2, isolated behind backend-neutral shaped glyph runs.
+- Font fixture: bundled Noto Sans under the SIL Open Font License.
+
+Only backend projects reference these native packages or types. `Gens.Runtime`,
+`Gens.Application`, and `Gens.Simulation` do not.
 
 The remainder of this document, unless a section says otherwise, describes
 the **current, transitional** baseline — the Unity client and the standalone

@@ -6,6 +6,11 @@
 [measured results and outstanding checklist](../native-runtime-spike-results.md).
 This proposal does not authorize Ticket 4 production implementation.
 
+**Implementation note (Ticket 4):** production-shaped platform, graphics,
+runtime, and sandbox projects were subsequently implemented under an explicit
+prerequisite override. This ADR remains Proposed: the override does not replace
+the outstanding acceptance evidence below.
+
 ## Context
 
 ADR 0014 requires a dedicated backend spike. Windows now has measured SDL3 3.2.22

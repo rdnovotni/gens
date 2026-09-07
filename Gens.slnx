@@ -2,7 +2,13 @@
   <Folder Name="/Source/">
     <Project Path="src/Gens.Simulation/Gens.Simulation.csproj" />
     <Project Path="src/Gens.Application/Gens.Application.csproj" />
+    <Project Path="src/Gens.Platform/Gens.Platform.csproj" />
+    <Project Path="src/Gens.Platform.Sdl/Gens.Platform.Sdl.csproj" />
+    <Project Path="src/Gens.Graphics/Gens.Graphics.csproj" />
+    <Project Path="src/Gens.Graphics.Skia/Gens.Graphics.Skia.csproj" />
+    <Project Path="src/Gens.Runtime/Gens.Runtime.csproj" />
     <Project Path="tools/Gens.ContentCompiler/Gens.ContentCompiler.csproj" />
+    <Project Path="tools/Gens.EngineSandbox/Gens.EngineSandbox.csproj" />
     <Project Path="benchmarks/Gens.Simulation.Benchmarks/Gens.Simulation.Benchmarks.csproj" />
   </Folder>
   <Folder Name="/Experiments/">
@@ -12,5 +18,8 @@
     <Project Path="tests/Gens.Simulation.Tests/Gens.Simulation.Tests.csproj" />
     <Project Path="tests/Gens.Application.Tests/Gens.Application.Tests.csproj" />
     <Project Path="tests/Gens.ContentCompiler.Tests/Gens.ContentCompiler.Tests.csproj" />
+    <Project Path="tests/Gens.Platform.Tests/Gens.Platform.Tests.csproj" />
+    <Project Path="tests/Gens.Graphics.Tests/Gens.Graphics.Tests.csproj" />
+    <Project Path="tests/Gens.Runtime.Tests/Gens.Runtime.Tests.csproj" />
   </Folder>
 </Solution>

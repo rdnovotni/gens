@@ -23,6 +23,8 @@ that ADR for the full 17-gate list before treating any later phase here as
 - [x] **Phase NR1** — Extract `Gens.Application` / `CampaignSession`
 - [ ] **Phase NR2** — SDL3 + Skia rendering/platform spike
 - [ ] **Phase NR3** — Runtime and custom UI foundation
+  - [x] **NR3A** — Platform, graphics, runtime loop, and engine sandbox implementation
+  - [ ] **NR3B** — Retained-mode UI and first real presentation screen
 - [ ] **Phase NR4** — Native-client vertical-slice parity
 - [ ] **Phase NR5** — Scene2D and procedural portrait pipeline
 - [ ] **Phase NR6** — AI art, audio, accessibility, packaging
@@ -96,7 +98,8 @@ dependency; no change to `Gens.Simulation`'s public contract beyond what
 recorded in [the spike results](native-runtime-spike-results.md). NR2 remains
 incomplete: actual monitor/IME checks, cross-platform SDL packaging and GPU
 resource-lifetime evidence are outstanding. [ADR 0015](adr/0015-native-backend-selection.md)
-remains Proposed; Ticket 4 production implementation has not started.
+remains Proposed. Ticket 4's NR3A implementation proceeded later under an
+explicit prerequisite override; that does not close NR2 or accept ADR 0015.
 
 **Outcome:** a throwaway-quality technical spike validates (or disqualifies)
 SDL3 and SkiaSharp as the initial platform/rendering backends before any
@@ -129,14 +132,22 @@ spike code is not expected to be production-quality or kept as-is.
 
 ### Phase NR3 — Runtime and custom UI foundation
 
+NR3 is split into NR3A (Ticket 4: platform/graphics/runtime foundation) and
+NR3B (Ticket 5: retained-mode UI foundation). NR3A code and automated tests are
+present, but overall NR3 remains open until NR3B and the phase exit gate pass.
+This split does not waive the still-open NR2 evidence.
+
 **Outcome:** the minimum `Gens.Runtime` + `Gens.UI` foundation needed to
 render a real (not spike) screen exists: application loop, navigation,
 layout, text, focus, input, and enough styling to build a first real screen.
 
 **Major deliverables:**
 
-- `Gens.Runtime` (application loop, navigation, modal lifecycle, service
-  lifetime, presentation clock, diagnostics scaffold).
+- NR3A: `Gens.Platform`, `Gens.Platform.Sdl`, `Gens.Graphics`,
+  `Gens.Graphics.Skia`, `Gens.Runtime`, and `Gens.EngineSandbox` (application
+  loop, native lifetime, presentation clock, dirty/animation scheduling,
+  diagnostics, reference rendering, production candidate renderer).
+- NR3B: navigation, modal lifecycle, and remaining service-lifetime integration.
 - `Gens.UI` (layout, text rendering via the chosen backend, focus, input,
   scrolling, basic styling).
 - `Gens.Presentation` (engine-neutral presentation models consumed by the
