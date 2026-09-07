@@ -56,3 +56,6 @@ boundary Unity is bound by today.
 
 [ADR 0015](0015-native-backend-selection.md) records the measured Windows candidate.
 It remains **Proposed** while the NR2 desktop exit checklist is incomplete.
+Ticket 4's production-shaped foundation was implemented under an explicit
+override; that implementation does not itself satisfy ADR 0015's outstanding
+acceptance conditions.

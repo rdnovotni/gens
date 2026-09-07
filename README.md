@@ -42,12 +42,15 @@ dotnet test Gens.slnx
 | `Assets/`, `Packages/`, `ProjectSettings/` | Unity project and package configuration |
 | `src/Gens.Simulation/` | Engine-independent deterministic simulation package |
 | `src/Gens.Application/` | Engine-neutral campaign lifecycle, query/command, save/load, and replay host |
+| `src/Gens.Platform/`, `src/Gens.Platform.Sdl/` | Engine-neutral desktop contracts and the isolated SDL3 backend |
+| `src/Gens.Graphics/`, `src/Gens.Graphics.Skia/` | Backend-neutral 2D graphics contracts and Skia software/OpenGL implementation |
+| `src/Gens.Runtime/` | Native application loop, presentation clock, invalidation scheduling, lifecycle, and diagnostics |
 | `tests/Gens.Application.Tests/` | Standalone integration tests for the shared campaign session |
 | `tests/` | Standalone automated tests |
 | `benchmarks/` | Simulation performance benchmarks |
 | `content/source/` | Authored content inputs — typed definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation) validated against `content/schemas/` |
 | `content/schemas/` | Content validation contracts (JSON Schema per definition family, plus cross-file reference/duplicate-ID checks in the content compiler) |
-| `tools/` | Standalone development and content tooling, including the `Gens.ContentCompiler` CLI (`validate`, `compile`, `run-campaign`, `verify-save`, `migrate-save`, `replay`) |
+| `tools/` | Standalone tooling, including `Gens.ContentCompiler` and the production-abstraction `Gens.EngineSandbox` native executable |
 | `docs/design/` | Game design, setting references, and content plans |
 | `docs/engineering/` | Technical architecture, implementation policy, and the [build roadmap](docs/engineering/gens-comprehensive-build-roadmap.md) |
 
