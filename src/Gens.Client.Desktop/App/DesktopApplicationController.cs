@@ -1,4 +1,5 @@
 using Gens.Application.Campaign;
+using Gens.Art;
 using Gens.Client.Desktop.Platform;
 using Gens.Client.Desktop.Settings;
 using Gens.Presentation;
@@ -115,6 +116,8 @@ public sealed class DesktopApplicationController
     public void SetUiScale(float scale) { Settings = Settings with { Display = Settings.Display with { UiScale = Math.Clamp(scale, 1f, 2f) } }; settingsStore.Save(Settings); }
     public void SetReducedMotion(bool value) { Settings = Settings with { Accessibility = Settings.Accessibility with { ReducedMotion = value } }; settingsStore.Save(Settings); }
     public void SetConsoleEnabled(bool value) { Settings = Settings with { Developer = Settings.Developer with { ConsoleEnabled = value } }; settingsStore.Save(Settings); }
+    public void SetAiArtEnabled(bool value) { Settings = Settings with { Art = Settings.Art with { AiGenerationEnabled = value, Provider = value ? "mock" : "none" } }; settingsStore.Save(Settings); }
+    public void SetExternalArtConsent(bool value) { Settings = Settings with { Art = Settings.Art with { ExternalGenerationConsent = value } }; settingsStore.Save(Settings); }
 
     public InkBarModel InkBar() => RequirePresentation().InkBar();
     public HouseholdRosterModel Roster() => RequirePresentation().HouseholdRoster();

@@ -4,22 +4,24 @@ using Gens.Presentation.Visuals;
 
 namespace Gens.Portraits;
 
-public sealed record ResolvedPortrait(PortraitReference Reference, IGraphicsImage Image, AppearanceDescription Appearance, bool CacheHit);
+public sealed record ResolvedPortrait(PortraitReference Reference, IGraphicsImage Image, AppearanceDescription Appearance, bool CacheHit, GeneratedPortraitStaleness? Staleness = null);
 
 public sealed class PortraitService : IDisposable
 {
     private readonly IGraphicsBackend graphics;
     private readonly ProceduralPortraitRenderer renderer;
     private readonly ContentAddressedCache cache;
+    private readonly IGeneratedPortraitSource? generated;
     private readonly Dictionary<string, IGraphicsImage> memory = new(StringComparer.Ordinal);
     private readonly List<PortraitSnapshot> snapshots = [];
     private bool disposed;
 
-    public PortraitService(IGraphicsBackend graphics, string cacheRoot)
+    public PortraitService(IGraphicsBackend graphics, string cacheRoot, IGeneratedPortraitSource? generated = null)
     {
         this.graphics = graphics ?? throw new ArgumentNullException(nameof(graphics));
         renderer = new(graphics);
         cache = new(cacheRoot);
+        this.generated = generated;
     }
 
     public IReadOnlyList<PortraitSnapshot> Snapshots => snapshots;
@@ -27,6 +29,20 @@ public sealed class PortraitService : IDisposable
     public ResolvedPortrait Resolve(CharacterVisualState visual, int pixelSize)
     {
         ObjectDisposedException.ThrowIf(disposed, this);
+        GeneratedPortraitAsset? selected = generated?.GetCurrent(visual);
+        if (selected is not null && selected.Staleness != GeneratedPortraitStaleness.StaleMajor)
+        {
+            string assetHash = selected.AssetHash;
+            var generatedReference = new PortraitReference(PortraitSourceKind.Generated, assetHash, selected.StyleId, selected.VisualStateHash,
+                PortraitRecipeBuilder.CurrentRecipeVersion, selected.ProviderVersion, selected.PixelSize);
+            if (memory.TryGetValue(assetHash, out IGraphicsImage? generatedImage)) return new(generatedReference, generatedImage, AppearanceDescriptionBuilder.Build(visual), true, selected.Staleness);
+            try
+            {
+                using FileStream stream = File.OpenRead(selected.ObjectPath); generatedImage = graphics.DecodeImage(stream); memory.Add(assetHash, generatedImage);
+                return new(generatedReference, generatedImage, AppearanceDescriptionBuilder.Build(visual), false, selected.Staleness);
+            }
+            catch (Exception error) when (error is IOException or InvalidDataException or ArgumentException) { }
+        }
         PortraitRecipe recipe = PortraitRecipeBuilder.Build(visual);
         AppearanceDescription description = AppearanceDescriptionBuilder.Build(visual);
         string request = recipe.CanonicalIdentity + "\n" + ProceduralPortraitRenderer.Version + "\n" + pixelSize;

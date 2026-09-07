@@ -239,6 +239,9 @@ be a real production release candidate rather than a development-only build.
 - `Gens.Art` orchestration for the existing `IArtGenerationProvider` seam,
   preserving the ADR 0014 art/AI authority boundary (optional, async,
   cancelable, cacheable, non-blocking, non-authoritative).
+  The provider-neutral core, cache, provenance, Mock/Null providers, local-worker/backend client
+  boundaries, and portrait presentation service landed with Ticket 8. Concrete native screen wiring
+  remains gated on the still-unfinished NR3B/NR4/NR5 client and procedural-renderer prerequisites.
 - `Gens.Audio` abstraction/mixing layer.
 - Accessibility semantics in `Gens.UI`.
 - Dev/debug console parity (ADR 0014 gate 14).
