@@ -1,0 +1,3 @@
+words=3000,shape_ms=13.001,font=Segoe UI
+layout_and_blob_ms=12.537,height=3773
+cached_text,1200x3773,5.340,6.415,7.853,0,50.7

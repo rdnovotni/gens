@@ -1,0 +1,3 @@
+# Match .gitattributes on Windows as well as Unix; avoid formatter-only CRLF churn.
+[*.cs]
+end_of_line = lf

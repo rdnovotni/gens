@@ -1,0 +1,14 @@
+  Gens.NativeSpike -> <worktree>\experiments\Gens.NativeSpike\bin\Release\net10.0\Gens.NativeSpike.dll
+  Gens.Simulation -> <worktree>\src\Gens.Simulation\bin\Release\netstandard2.1\Gens.Simulation.dll
+  Gens.Application -> <worktree>\src\Gens.Application\bin\Release\netstandard2.1\Gens.Application.dll
+  Gens.Simulation.Benchmarks -> <worktree>\benchmarks\Gens.Simulation.Benchmarks\bin\Release\net10.0\Gens.Simulation.Benchmarks.dll
+  Gens.ContentCompiler -> <worktree>\tools\Gens.ContentCompiler\bin\Release\net10.0\Gens.ContentCompiler.dll
+  Gens.ContentCompiler.Tests -> <worktree>\tests\Gens.ContentCompiler.Tests\bin\Release\net10.0\Gens.ContentCompiler.Tests.dll
+  Gens.Application.Tests -> <worktree>\tests\Gens.Application.Tests\bin\Release\net10.0\Gens.Application.Tests.dll
+  Gens.Simulation.Tests -> <worktree>\tests\Gens.Simulation.Tests\bin\Release\net10.0\Gens.Simulation.Tests.dll
+
+Build succeeded.
+    0 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:20.88

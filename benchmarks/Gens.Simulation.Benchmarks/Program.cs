@@ -3,7 +3,7 @@ using BenchmarkDotNet.Running;
 using Gens.Simulation.Benchmarks;
 using Gens.Simulation.Random;
 
-BenchmarkRunner.Run<MonthlyTickBaseline>();
+BenchmarkRunner.Run<MonthlyTickBaseline>(args: args);
 
 namespace Gens.Simulation.Benchmarks
 {
@@ -22,4 +22,3 @@ namespace Gens.Simulation.Benchmarks
         }
     }
 }
-

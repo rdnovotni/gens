@@ -48,10 +48,10 @@ internal sealed class SoftwareRenderer : IDisposable
     internal static BenchmarkSample Measure(int width, int height, Action<SKCanvas, int, int, double> draw, int frames)
     {
         using var renderer = new SoftwareRenderer(width, height);
-        draw(renderer.Canvas, width, height, 0);
+        for (int i = 0; i < 10; i++) draw(renderer.Canvas, width, height, i / 60d);
+        var samples = new double[frames];
         long allocated = GC.GetAllocatedBytesForCurrentThread();
         int[] collections = [GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2)];
-        var samples = new double[frames];
         var clock = Stopwatch.StartNew();
         for (int i = 0; i < frames; i++)
         {

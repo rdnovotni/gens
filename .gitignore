@@ -25,3 +25,5 @@ artifacts/
 experiments/Gens.NativeSpike/captures/
 experiments/Gens.NativeSpike/benchmark-results/
 .claude/
+
+/captures/

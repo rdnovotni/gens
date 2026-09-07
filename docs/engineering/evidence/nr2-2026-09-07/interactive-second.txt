@@ -1,0 +1,18 @@
+.NET 10.0.11; Microsoft Windows 10.0.26200; X64; SkiaSharp 3.119.0.0; renderer=Skia CPU  SDL streaming texture
+SDL 3002022; logical=1280x720; pixels=1280x720; effective-scale=1.00
+key=224 modifiers=64 repeat=False
+key=25 modifiers=64 repeat=False
+key=25 modifiers=64 repeat=False
+key=224 modifiers=0 repeat=False
+key=4 modifiers=0 repeat=False
+text=a
+key=4 modifiers=0 repeat=False
+key=68 modifiers=0 repeat=False
+key=68 modifiers=0 repeat=False
+key=69 modifiers=0 repeat=False
+Captured captures\frame-20260907-015934.png
+key=69 modifiers=0 repeat=False
+key=68 modifiers=0 repeat=False
+key=68 modifiers=0 repeat=False
+key=41 modifiers=0 repeat=False
+key=41 modifiers=0 repeat=False

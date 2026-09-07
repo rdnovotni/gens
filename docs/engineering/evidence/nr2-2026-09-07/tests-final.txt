@@ -1,0 +1,21 @@
+Test run for <worktree>\tests\Gens.ContentCompiler.Tests\bin\Release\net10.0\Gens.ContentCompiler.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for <worktree>\tests\Gens.Application.Tests\bin\Release\net10.0\Gens.Application.Tests.dll (.NETCoreApp,Version=v10.0)
+Test run for <worktree>\tests\Gens.Simulation.Tests\bin\Release\net10.0\Gens.Simulation.Tests.dll (.NETCoreApp,Version=v10.0)
+VSTest version 18.0.1 (x64)
+
+VSTest version 18.0.1 (x64)
+
+VSTest version 18.0.1 (x64)
+
+Starting test execution, please wait...
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+A total of 1 test files matched the specified pattern.
+
+Passed!  - Failed:     0, Passed:     5, Skipped:     0, Total:     5, Duration: 548 ms - Gens.Application.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:     8, Skipped:     0, Total:     8, Duration: 960 ms - Gens.ContentCompiler.Tests.dll (net10.0)
+
+Passed!  - Failed:     0, Passed:  1677, Skipped:     0, Total:  1677, Duration: 6 s - Gens.Simulation.Tests.dll (net10.0)

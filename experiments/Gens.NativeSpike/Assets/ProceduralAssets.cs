@@ -27,8 +27,9 @@ internal sealed class ProceduralAssets : IDisposable
         SKCanvas c = surface.Canvas;
         c.Clear(new SKColor(44, 34, 27));
         using var paint = new SKPaint { IsAntialias = true };
-        paint.Shader = SKShader.CreateLinearGradient(new SKPoint(0, 0), new SKPoint(width, height),
+        using var gradient = SKShader.CreateLinearGradient(new SKPoint(0, 0), new SKPoint(width, height),
             [new SKColor(157, 118, 62), new SKColor(44, 66, 64), new SKColor(65, 36, 40)], null, SKShaderTileMode.Clamp);
+        paint.Shader = gradient;
         c.DrawRect(0, 0, width, height, paint);
         paint.Shader = null; paint.Color = new SKColor(239, 218, 174, 210);
         int count = portrait ? 24 : 80;

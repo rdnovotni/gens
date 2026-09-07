@@ -1,0 +1,4 @@
+  Determining projects to restore...
+  Restored <worktree>\experiments\Gens.NativeSpike\Gens.NativeSpike.csproj (in 1.01 sec).
+  Gens.NativeSpike -> <worktree>\experiments\Gens.NativeSpike\bin\Release\net10.0\linux-x64\Gens.NativeSpike.dll
+  Gens.NativeSpike -> <worktree>\artifacts\native-spike\linux-x64\

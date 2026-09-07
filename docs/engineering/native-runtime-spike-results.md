@@ -1,283 +1,273 @@
 # Native runtime spike results
 
-**Date:** 2026-09-07  
-**Scope:** isolated NR2 experiment; no production runtime code  
-**Evidence status:** implementation and headless evidence harness complete; execution on this
-agent host was blocked because the .NET SDK, SDL3, a display server, and a GPU device are not
-installed. Tables below distinguish inspected/design evidence from measurements still requiring
-the desktop validation run. **NR2 must not be marked complete until those rows are populated.**
+**Desktop run:** 2026-09-07 UTC (2026-09-06 local).
+**Decision:** conditional go only; **NR2 remains incomplete**.
+**ADR:** [0015 — proposed](adr/0015-native-backend-selection.md).
+**Evidence:** [raw logs and captures](evidence/nr2-2026-09-07/README.md).
 
-## Executive decision
+The desktop run now proves a Windows SDL3/OpenGL/Skia path, software rendering,
+text timing, SVG rendering, allocation measurement, and executable packaging.
+It does **not** pass the entire required desktop completion checklist. The user
+confirmed this workstation has one monitor and no IME. Linux/macOS publishes
+compile, but their SDL payloads are absent. GPU resize working-set growth still
+needs lifetime investigation. These gaps are not marked passed or waived.
 
-The source-level spike supports a **conditional go** for SDL3 and SkiaSharp, but the repository
-does not yet contain sufficient measured evidence for the unconditional production decision the
-NR2 exit gate requires. Ticket 4 must not promote the experiment before a workstation runs the
-published checklist and records results here.
+Ticket 4 explicitly requires NR2 completion before writing production code.
+No production runtime projects or engine sandbox have been introduced, ADR 0015
+is not accepted, and NR3 remains unchecked. Screenshots here are **spike captures**,
+not screenshots of a production sandbox.
 
-The candidate architecture to validate is:
+## Environment and reproducibility
 
-```text
-Gens platform abstraction → small project-owned SDL3 C ABI surface → SDL3
-Gens graphics abstraction → GPU-backed Skia (OpenGL first; Metal on macOS) → window
-                         └→ software Skia → deterministic tests/screenshots/fallback
-HarfBuzzSharp → cached shaped runs → Skia glyph drawing
-SVG: compiled static icons + constrained runtime SVG for composed portraits
-```
-
-## Environment
-
-| Item | Agent environment |
+| Item | Measured/inspected desktop value |
 |---|---|
-| OS/kernel | Linux x86-64, kernel 6.18.35 |
-| CPU | 3 vCPU, Intel Xeon Platinum 8272CL at 2.60 GHz |
-| GPU/display | None exposed (`lspci` reports none; no display server) |
-| RAM | 17 GiB, no swap |
-| .NET SDK/runtime | Not installed (`dotnet: command not found`) |
+| OS | Windows build 10.0.26200, x64 |
+| CPU | AMD Ryzen 5 7520U with Radeon Graphics |
+| GPU | AMD Radeon(TM) Graphics; driver 32.0.21039.2003 |
+| OpenGL | 3.3.0 Core Profile Context 25.10.39.02.260118 |
+| Physical RAM | 16,368,779,264 bytes |
+| SDK | 10.0.100, matching global.json; installed locally for this run |
+| Measured final executable runtime | .NET 10.0.11, framework-dependent Windows apphost |
+| SDL | 3.2.22; SDL_GetVersion returned 3002022 |
+| Display | One monitor; observed fullscreen 1920×1080, scale 1.00 |
 
-This is not representative desktop benchmark hardware. It can review source but cannot supply
-window, DPI, input, GPU, publish-launch, or Skia timing evidence.
+The initial Linux host's inability to execute the spike is superseded by this
+Windows evidence. Early .NET 10.0.0 runs and GPU runs preceding the framebuffer
+fix are excluded from the tables. Raw logs selected below identify the accepted
+measurement runs. Measurements are single workstation observations, not estimates
+or cross-platform performance guarantees. A 4K drawable was created and checked;
+this is not evidence of a physical 4K monitor or monitor-to-monitor DPI changes.
 
-## Dependencies evaluated
+## Dependencies and boundary choice
 
-The version set is intentionally stable rather than preview/EAP. Version and license metadata
-must be reconfirmed from upstream/NuGet during the workstation restore; outbound package and
-GitHub access was blocked by the agent environment.
-
-| Name | Purpose/version evaluated | License/source | Native dependencies and platforms | Maintenance/need/replacement |
-|---|---|---|---|---|
-| SDL | Window, events, display/DPI, presentation; **3.2.22** | zlib; [libsdl-org/SDL](https://github.com/libsdl-org/SDL) | Native Windows x64 DLL, Linux x64 SO, macOS arm64 dylib; SDL supports all three | Mature, active upstream. Essential behind a narrow boundary; medium replacement cost. |
-| SDL3-CS | Binding candidate A; repository state inspected conceptually against SDL 3.2 API | zlib; [flibitijibibo/SDL3-CS](https://github.com/flibitijibibo/SDL3-CS) | Requires separately supplied SDL; broad generated binding | Thin and debuggable, but consumes a much larger API and release coupling than this spike needs. Low/medium replacement cost behind an abstraction. |
-| ppy.SDL3-CS | Binding candidate B | MIT; [ppy/SDL3-CS](https://github.com/ppy/SDL3-CS) | Managed wrapper/native packages target desktop RIDs | Credible and exercised by osu!, but its fork/package cadence and broad surface are another supply-chain/version coupling. Medium replacement cost. |
-| Project-owned interop | Binding candidate C and implemented choice; SDL 3.2.22 ABI subset | Project code under repository license; declarations derived from [SDL headers](https://github.com/libsdl-org/SDL/tree/release-3.2.x/include/SDL3) | Exactly one official SDL binary per RID; unsafe only for fixed event text buffer | About 35 imports cover the spike. Easy native debugging and deterministic loading. Medium upkeep, low replacement cost. |
-| SkiaSharp | Raster/vector/image implementation; **3.119.1** | MIT; [mono/SkiaSharp](https://github.com/mono/SkiaSharp) | `libSkiaSharp` native assets; Windows/Linux/macOS | Active .NET binding to Skia. High replacement cost after graphics contracts gain breadth, hence isolation is essential. |
-| HarfBuzzSharp / SkiaSharp.HarfBuzz | Unicode shaping; **3.119.1** | MIT; [mono/SkiaSharp](https://github.com/mono/SkiaSharp) wrapping HarfBuzz (MIT) | Native HarfBuzz bundled through package graph on the three desktop targets | Necessary: raw `DrawText` is not shaping architecture. Medium replacement cost. |
-| Svg.Skia | SVG parser-to-`SKPicture` candidate; **3.2.1** | MIT; [wieslawsoltes/Svg.Skia](https://github.com/wieslawsoltes/Svg.Skia) | SkiaSharp plus managed SVG parsing; desktop targets follow SkiaSharp | Maintained and convenient, but SVG feature/security/compatibility surface is large. Use only behind an asset boundary. Medium replacement cost. |
-
-No SDL/Skia package or project reference was added to `Gens.Simulation` or `Gens.Application`.
-
-## SDL binding decision
-
-### Evaluation
-
-| Criterion | SDL3-CS | ppy.SDL3-CS | Project-owned narrow ABI |
+| Dependency | Resolved version | License evidence | Role |
 |---|---|---|---|
-| Coverage | Broad/generated | Broad/fork-oriented | Only APIs Gens proves it needs |
-| SDL lag | Tracks upstream tags, still a second release | Tracks ppy needs | Header update is explicit work |
-| API quality | C-like names; low abstraction | C-like/generated | C-like declarations hidden in one file |
-| Unsafe | Binding implementation | Binding implementation | One fixed UTF-8 event buffer |
-| Loading | Generally default native resolution | Package conventions | Explicit app-local/RID-only resolver |
-| Debugging | Straightforward | Straightforward, more package layers | Most direct stack and ABI mapping |
-| Burden observed | Dependency plus native packaging | Dependency/package family | 35 declarations, event union, resolver |
+| SDL | 3.2.22 official VC archive | Bundled LICENSE.txt, zlib | Window/events/OpenGL context |
+| SkiaSharp / SkiaSharp.HarfBuzz | 3.119.1 | Restored NuGet metadata, MIT | Raster/GPU graphics and shaping integration |
+| HarfBuzzSharp / native assets | 8.3.1.2 | Restored NuGet metadata, MIT | Actual transitive shaping dependency |
+| Svg.Skia | 3.2.1 | Restored NuGet metadata, MIT | SVG parser to cached SKPicture |
 
-**Recommendation:** own the narrow ABI, generated from pinned SDL headers once the production
-surface grows. The implemented manual surface proves the initial burden is modest. Add an ABI
-layout test (event size/offsets) and header-diff review in Ticket 4; do not let these declarations
-escape `Gens.Platform.Sdl`. Switch to SDL3-CS if the production API expands enough that maintaining
-the subset ceases to be small.
+The project-owned narrow SDL C ABI remains the proposed binding choice. SDL3-CS
+and ppy.SDL3-CS were alternatives discussed by the original spike, **not** bindings
+benchmarked on this desktop. Keep any eventual production declarations private to
+Gens.Platform.Sdl and compare them with pinned headers. Keep Skia/HarfBuzz private
+to Gens.Graphics.Skia. Simulation/Application have no SDL/Skia references.
 
-## Implemented evidence harness
+The Windows archive URL and SHA-256 are pinned in
+`scripts/publish-native-spike.ps1`. Its hash is
+`093821FCD2B0EAFEDC86E93713687136872A6556966DB036FEBA2672F58586ED`.
+This is a recorded content pin of the downloaded upstream release, not a claim
+that an independent signature was verified.
 
-`experiments/Gens.NativeSpike` provides:
+## Defects discovered and corrected before measurements
 
-- app-local-only SDL resolution with actionable missing-library errors;
-- resizable/high-pixel-density window creation and logical/pixel metric capture;
-- quit, window, physical keyboard, modifiers/repeat, mouse motion/buttons/wheel, and SDL text input;
-- software BGRA Skia surface uploaded to an SDL streaming texture;
-- primitive and dense Gens-tablet scenes, procedural PNG/JPEG decode, 512/1024/2048 imagery,
-  transforms, nested clipping, gradients, opacity, animation, and 100-sprite stress scene;
-- dirty wait-with-timeout and active 60 Hz modes;
-- overlay, fullscreen toggle, screenshot capture, deterministic pixel hash self-test;
-- direct HarfBuzz shaping probes for Latin/ligatures/accented Latin/Greek and Arabic;
-- CSV benchmarks for three scenes at 720p, 1080p, 1440p, and 4K.
+- SDL event union members must begin at offset 0, not 16. SDL3 text input holds a
+  UTF-8 pointer, not an SDL2-style inline buffer. Keyboard events include `raw`
+  before `down`/`repeat`; wheel events include integer deltas in SDL 3.2.22.
+- Composition pointer/start/length are now preserved and logged. Header-derived
+  64-bit size/offset assertions run in `--headless --self-test`.
+- HarfBuzz's unsupported `new Blob(byte[])` was replaced with its stream API.
+  OpenType font functions are explicitly installed.
+- The procedural gradient now has explicit shader ownership.
+- Linux publish lacked libHarfBuzzSharp; explicit matching native assets fix it.
+- A solution build failed because Gens.Application lacked the netstandard2.1
+  IsExternalInit compatibility marker. Added that marker; no campaign logic changed.
+- GPU resize must preserve the SDL window framebuffer captured at context creation.
+  Querying the current framebuffer after Skia readback can return an internal FBO
+  and produce blank resized frames. Fixed binding/reset and target recreation.
+  Captures occur before swap, outside timing, and reject blank scene readbacks.
 
-The test field is deliberately rudimentary and composition events are captured by the SDL event
-surface rather than turned into a textbox framework.
+## Implemented GPU path
 
-## Renderer candidates
+SDL creates an OpenGL 3.3 core context. GRGlInterface resolves entry points through
+SDL; GRContext wraps that interface; a GRBackendRenderTarget wraps the window FBO;
+a GPU SKSurface renders into it. Each resize disposes the old surface/target,
+rebinds the window framebuffer, resets Skia's cached GL state, and queries the
+actual drawable dimensions and stencil/sample counts. Teardown disposes Skia
+objects before destroying the GL context/window and quitting SDL.
 
-### Software Skia reference
+`--gpu-benchmark` draws all three scenes at all four requested physical sizes.
+The program rejects a requested/actual dimension mismatch. All twelve readbacks
+passed the nonblank check; the dense 1080p image was visually inspected after the
+resize fix. No macOS Metal or Linux display execution is claimed.
 
-Architecture: persistent `SKBitmap`/`SKCanvas` in physical pixel dimensions → draw with logical
-scene scale → `SDL_UpdateTexture` copy → `SDL_RenderTexture`/present. Resizes dispose and recreate
-bitmap, canvas, and SDL texture. PNG capture and hash operate before SDL presentation, so window
-driver differences cannot affect reference pixels.
+## Software and GPU performance
 
-This should remain the permanent CI/reference backend if workstation results confirm exact hashes.
-It is simple, inspectable, and works headlessly. Its unavoidable full-frame CPU raster plus CPU/GPU
-upload makes it an unlikely production choice at 4K.
+Both paths use 10 warm-up frames followed by 120 timed frames per scene. The
+software timings measure CPU paint/flush only. GPU timings include paint, flush,
+submit, glFinish, swap at interval zero, and event pumping. GPU values are thus
+**not GPU timer-query measurements**, and CPU numbers exclude SDL upload/present.
+Scene time advances by frame index in both paths. Screenshots are outside timing.
+Managed allocation is current-thread bytes/frame; native allocations are separate.
+The dense scene is the existing tablet fixture, not a production UI workload.
 
-### Accelerated Skia
+Average milliseconds/frame:
 
-The viable candidate is SDL-created OpenGL 3.3+ core context → `GRGlInterface`/`GRContext` →
-`GRBackendRenderTarget` wrapping the current framebuffer → GPU `SKSurface`; recreate the backend
-target after drawable resize, flush/submit before `SDL_GL_SwapWindow`, and dispose Skia objects
-before the GL context/window. macOS should use Metal rather than making deprecated OpenGL the
-shipping contract; Windows can initially use OpenGL while a Direct3D/ANGLE decision is evaluated.
+| Path / scene | 1280×720 | 1920×1080 | 2560×1440 | 3840×2160 |
+|---|---:|---:|---:|---:|
+| Software basic | 1.042 | 1.739 | 2.267 | 4.345 |
+| Software dense | 0.856 | 2.114 | 2.988 | 6.356 |
+| Software visual | 1.897 | 3.389 | 5.260 | 10.366 |
+| GPU basic | 2.190 | 2.991 | 2.417 | 3.315 |
+| GPU dense | 1.264 | 2.351 | 3.546 | 4.740 |
+| GPU visual | 1.746 | 2.986 | 3.971 | 5.959 |
 
-This path was **investigated but not implemented or benchmarked** here: the host exposes no GPU or
-display, and adding untestable context code would create false evidence. The production v1 choice
-therefore remains conditional. A 100–200 line accelerated branch on representative hardware is the
-last mandatory NR2 activity; SDL_GPU is not needed to answer it.
+[Software raw data](evidence/nr2-2026-09-07/software-final.txt) contains average,
+p95/p99, allocation, GC counts and working set.
+[GPU raw data](evidence/nr2-2026-09-07/gpu-verified.txt) contains average, p95/p99,
+allocation and working set. Earlier GPU results are rejected because the resized
+framebuffer/readback bug had not yet been corrected.
 
-## Text findings
+These results support continuing the OpenGL experiment on Windows; they do not
+justify declaring all desktop/platform/lifetime gates passed.
 
-The shaping probe feeds UTF-16 to HarfBuzz, calls `GuessSegmentProperties`, shapes with the actual
-Skia typeface bytes, and records glyph IDs, advances, and direction. That demonstrates the required
-raw capability; production rendering should segment text by script/bidi/font fallback, shape each
-run once, and draw glyph IDs/positions through Skia. Cache immutable shaped runs or `SKTextBlob`s;
-cache `SKPicture`s for larger static document sections. Cached surfaces are appropriate only after
-profiling because they consume resolution-dependent memory.
+## Text, SVG, allocation and decode
 
-Fallback recommendation: build rune coverage runs using the primary `SKTypeface`, query the
-platform/bundled fallback family for missing code points, preserve grapheme/script clusters, then
-shape each resulting run. Ship an OFL-licensed primary family plus explicit fallback families;
-do not rely on copied OS fonts. The spike commits no font.
+The text corpus is exactly 3,000 whitespace-separated words: 150 repetitions of
+a checked-in 20-word sentence. The generated input is retained with evidence.
+This is a repeatable synthetic Chronicle workload, not 3,000 unique words.
+Segoe UI at 18 px is a host font; it is not redistributed and these measurements
+must not be used as portable golden text tests.
 
-Chronicle shape/layout/paint separation exists as a benchmark requirement but has **not been timed**
-on this host. Ticket 4 should use 3,000 words, record cold shaping separately from cached painting,
-and retain the corpus/input alongside results.
+| Measurement | Actual result |
+|---|---:|
+| Cold word shaping (font/shaper already initialized) | 13.001 ms |
+| Greedy line layout + positioned SKTextBlob construction | 12.537 ms |
+| Cached paint, entire 1200×3773 paragraph surface | 5.340 ms average; 6.415 p95; 7.853 p99 |
+| Cached paragraph paint managed allocation | 0 bytes/frame |
+| Cached primitive/path resource paint, 1080p, 1,000 frames | 1.089 ms average; 0 bytes/frame |
+| PNG actual bitmap decode, 1024×768 | 4.692 ms average; 163 managed bytes/decode |
+| JPEG actual bitmap decode, 1024×768 | 5.274 ms average; 161 managed bytes/decode |
 
-## SVG findings
+`--text-benchmark` shapes through SKShaper/HarfBuzz, lays out positioned glyphs,
+and repeatedly paints the cached blob. This is a minimal word-wrap experiment,
+not bidi segmentation, fallback, grapheme-aware editing, or a paragraph engine.
+The separate probe reports Latin/Greek and Arabic glyphs and RTL direction; the
+interactive primitive scene still uses raw DrawText. Do not promote it as a
+production multilingual rendering implementation.
 
-SkiaSharp is not an SVG document engine. `Svg.Skia` is the evaluated runtime parser and can turn
-supported SVG documents into an `SKPicture`, but the checked-in demo intentionally uses equivalent
-Skia paths until package/API execution can be verified. Recommendation: **hybrid pipeline**.
+`--svg` loads the checked-in `Fixtures/features.svg` through Svg.Skia. Its fixture
+covers paths, even-odd fill, stroke, linear gradient, transform and viewBox.
+The 640×360 output was visually inspected. Pixel hash:
+`BA6AC19312D00FA45CFBFC36172CEC9206F97EC2E83B72E000238246FC09272A`.
+The hybrid compiled-static/constrained-runtime SVG recommendation remains:
+validate trusted SVG at an asset boundary; this spike is not that validator.
 
-1. Validate and compile static icons at build time to a versioned, constrained vector/display-list
-   representation (no scripts, external resources, remote URLs, embedded fonts, or filters).
-2. Permit runtime parsing only for trusted, generated layered portraits through the same validator,
-   then cache the resulting picture by content hash and renderer version.
-3. Rasterize complex event art when SVG features exceed the supported subset.
+## Idle and pacing
 
-This meets procedural composition needs without parsing every static asset at startup or accepting
-arbitrary active SVG content.
+With F3 disabling animation, five seconds of no input in dirty mode consumed
+**0.000 ms process CPU over 5041.624 ms wall time** at the OS counter's resolution.
+F2 continuous redraw consumed **875.000 ms over 5034.001 ms**. Do not interpret the
+zero sample as proof of zero power consumption or zero CPU indefinitely.
 
-## DPI and input findings
+At 1280×720, a separate clear/present probe measured:
 
-SDL logical window size and pixel size are queried independently; `pixel/logical` is the effective
-scale per axis. Skia targets physical pixels and receives a logical-to-pixel canvas scale. SDL mouse
-coordinates are logical window coordinates, so hit regions remain logical and do not receive an
-extra scale. The pure conversion helper covers 1.0, 1.25, 1.5, and 2.0; a desktop must still verify
-monitor moves and fractional scale changes.
+| Swap interval | Average | p95 | p99 | Managed bytes/frame |
+|---|---:|---:|---:|---:|
+| 0 | 1.288 ms | 3.989 ms | 6.070 ms | 0 |
+| 1 | 16.671 ms | 17.812 ms | 17.922 ms | 0 |
 
-Physical key/scancode and modifiers/repeat are recorded separately from `SDL_EVENT_TEXT_INPUT`.
-Text is never derived from a scan code. SDL start/stop text input follows field focus. The event
-union reserves SDL's documented 128-byte size; production must generate this ABI definition and
-test composition/editing offsets against the pinned header.
+Vsync selection succeeded. Keep idle event waits and explicit frame deadlines;
+do not combine a full post-present 16.7 ms sleep with an already blocking vsync
+present in production. The old software interactive loop observed roughly 50 FPS
+because it sleeps after drawing; Ticket 4 must replace that pacing implementation.
 
-## Performance and idle results
+## Resource soak
 
-Run:
+Both `--soak` and `--soak --gpu` completed 1,000 alternating 640×360/800×450
+resizes and 10,000 create/draw/dispose iterations without an observed native crash.
+Each create iteration constructs a raster surface, path and snapshot; GPU mode
+also draws that snapshot through the GPU and presents every 100 iterations.
+This is not 10,000 complete GPU context creations.
 
-```sh
-dotnet run -c Release --project experiments/Gens.NativeSpike -- --benchmark
-```
+| Sample | Working-set bytes | Private bytes |
+|---|---:|---:|
+| Software first resize | 29,409,280 | 8,908,800 |
+| Software resize 1,000 | 31,080,448 | 10,399,744 |
+| Software create/dispose 10,000 | 42,553,344 | 21,000,192 |
+| GPU first resize | 100,298,752 | 97,665,024 |
+| GPU resize 1,000 | 695,865,344 | 728,604,672 |
+| GPU create/dispose 10,000 | 472,920,064 | 453,042,176 |
 
-The harness records 120 frames after warm-up, average/p95/p99 CPU paint time, approximate unpaced
-FPS, current-thread allocation/frame, GC0/1/2, and process working set.
-
-| Path | Scene | 1280×720 | 1920×1080 | 2560×1440 | 3840×2160 |
-|---|---|---:|---:|---:|---:|
-| Software | A basic | not run | not run | not run | not run |
-| Software | B dense tablet | not run | not run | not run | not run |
-| Software | C visual future | not run | not run | not run | not run |
-| GPU OpenGL | A/B/C | not run | not run | not run | not run |
-
-Idle CPU, present/vsync behavior, resource-lifetime soak, decode/upload timing, 3,000-word paragraph
-timing, and managed allocations are likewise **not measured**, not guessed. Dirty mode blocks in
-`SDL_WaitEventTimeout(250)` when inactive; active animation uses short waits plus a 60 Hz deadline.
-This is the recommended loop topology, but the required “drastically lower CPU” observation remains
-a desktop validation item.
+GPU memory rises and falls substantially; the sampled resize private-memory peak
+was 752,660,480 bytes. **Leak-free steady state is not established.** Working set
+and private bytes include driver caches/allocator retention and do not isolate
+live native resources. A longer plateau/disposal investigation with native GPU
+resource accounting remains an exit concern. The modes expose real observations
+instead of equating “no crash” with “no leak.”
 
 ## Screenshot determinism
 
-`--headless --self-test` renders the identical tablet twice into separate BGRA surfaces and requires
-exact SHA-256 equality, then encodes a PNG and validates shaping/DPI invariants. It was not executed
-on this host. Exact hashes are expected only for a pinned OS/RID, Skia native version, font asset,
-pixel format, color space, dimensions, and renderer configuration. Production goldens should bundle
-the font and compare software pixel bytes; tolerances must be justified by a diagnosed difference.
+The final Windows framework-dependent self-test renders the tablet twice into
+independent software bitmaps and checks exact equality:
 
-## Native packaging and security
+`C4C40A8F756881132440730E25A40CF39FA74030A84BFAC8148DC9F19D0BE889`.
 
-The SDL resolver considers only:
+This passes paired rendering on this configuration. Earlier .NET 10.0.0 execution
+produced a different paired hash; no cross-runtime golden guarantee is made.
+Production reference tests must pin runtime/native versions, font files, dimensions,
+color/pixel format and scale. No host-font-dependent global golden is introduced.
+
+## Packaging and controlled failure
+
+All three framework-dependent publish commands completed. File inspection is
+separate from publish success:
+
+| RID | Skia | HarfBuzz | SDL | Launch |
+|---|---|---|---|---|
+| win-x64 | present | present | present + license, pinned script | passed |
+| linux-x64 | present | present after fix | **missing** | not run |
+| osx-arm64 | present | present | **missing** | not run |
+
+`scripts/test-native-spike-packaging.ps1` correctly fails for the two missing SDL
+payloads. Cross-RID compile success is not a distributable package claim. SDL Linux
+build baseline and macOS dylib bundling/signing need target-platform work.
+
+Windows publish was copied to a fresh directory and run with the repository as a
+**different working directory**. Headless self-test and native window launch worked;
+the resolver only considers app-local/RID-local SDL, not PATH or the working directory.
+A separate copied publish excluding SDL failed with exit code **1** and exactly:
 
 ```text
-<publish>/SDL3.dll                         (Windows)
-<publish>/libSDL3.so.0                     (Linux)
-<publish>/libSDL3.0.dylib                  (macOS)
-<publish>/runtimes/<rid>/native/<same file>
+Native spike failed: SDL3 native library 'SDL3.dll' was not found beside the executable or in runtimes/win-x64/native. See experiments/Gens.NativeSpike/README.md.
 ```
 
-It never mutates `PATH`, `LD_LIBRARY_PATH`, or searches the working directory/system installation.
-Publish automation should download the pinned official artifact, verify a checked-in SHA-256, copy
-only the correct RID binary, and retain SDL's license. Windows needs SDL3.dll; Linux needs a distro-
-compatible `libSDL3.so.0` plus normal system graphics/window libraries; macOS should bundle/sign the
-universal/arm64 dylib under `Contents/Frameworks` and use an app-relative install name.
-
-Skia/HarfBuzz native assets are NuGet runtime assets. Inspect each publish RID and fail packaging if
-any expected native binary is absent. A controlled missing-SDL launch should produce the resolver's
-actionable `DllNotFoundException`, not an access violation.
-
-Framework-dependent publish commands to validate are:
-
-```sh
-dotnet publish experiments/Gens.NativeSpike -c Release -r linux-x64 --self-contained false -o artifacts/native-spike/linux-x64
-dotnet publish experiments/Gens.NativeSpike -c Release -r win-x64 --self-contained false -o artifacts/native-spike/win-x64
-dotnet publish experiments/Gens.NativeSpike -c Release -r osx-arm64 --self-contained false -o artifacts/native-spike/osx-arm64
-```
-
-No publish could be produced here. Copy the primary RID output to a fresh directory, launch from a
-different working directory, run the headless self-test, then run the window checklist. Cross-RID
-compile and native packaging status remain unverified.
-
-## Resource lifecycle
-
-Explicitly disposable objects include `SKBitmap`, `SKCanvas`, `SKSurface`, `SKImage`, encoded data,
-paint/font/typeface, shaders/paths, HarfBuzz blob/face/font/buffer, SDL texture/renderer/window, GL
-surface/context, and SVG pictures. Long-lived scenes should reuse immutable fonts, paints, images,
-and shaped blobs; resize should dispose framebuffer wrappers in dependency order. Ticket 4 needs a
-1,000-resize and 10,000 create/draw/dispose soak with working-set/native-memory sampling.
-
-## Risks and blockers
-
-1. No executable or manual evidence was obtainable on this environment; this is the blocking risk.
-2. Handwritten event ABI drift can corrupt memory; generate/check layouts from pinned headers.
-3. OpenGL portability, macOS Metal divergence, color management, and GPU context loss need proof.
-4. Font fallback/bidi/line breaking is substantially more than calling HarfBuzz once.
-5. Svg.Skia supports a broad SVG surface; restrict/validate it and pin behavior with fixtures.
-6. Software 4K copy bandwidth is likely too costly for continuous production rendering.
-7. Linux SDL binaries need an explicit glibc/window-system compatibility baseline.
-8. Current benchmark drawing creates temporary text resources; it reveals allocation pressure but
-   is not the recommended cached production pattern.
-
-## Final recommendation (conditional pending measurements)
-
-| Question | Answer |
-|---|---|
-| Proceed with SDL3? | **Conditional yes**; API surface fits, desktop execution/package proof pending. |
-| Proceed with SkiaSharp? | **Conditional yes**; software surface fits, GPU proof pending. |
-| SDL strategy? | Small project-owned generated ABI behind `Gens.Platform.Sdl`. |
-| Production v1 renderer? | GPU-backed Skia, OpenGL initially on Windows/Linux and Metal on macOS, only after benchmark proof. |
-| Permanent software backend? | **Yes**, for headless CI, screenshots, debugging, and fallback. |
-| Shaped text? | Bundled licensed fonts → fallback/script/bidi runs → HarfBuzz → cached glyph runs/text blobs → Skia. |
-| SVG? | Hybrid compiled-static/constrained-runtime pipeline; Svg.Skia behind validation. |
+No access violation was observed. The OS does have .NET installed: this is
+framework-dependent deployment evidence, not a clean machine with no runtime.
 
 ## Required desktop completion checklist
 
-- Run restore/build/tests, headless self-test, all benchmark modes, paragraph timing, allocation and
-  resource soak; paste raw summary values into this document.
-- Exercise close/resize/minimize/restore/maximize/F11 and monitor moves at 100/125/150/200%.
-- Verify pointer hit alignment, buttons/wheel, scan codes/modifiers/repeat, UTF-8 text, Arabic/Greek,
-  and IME composition on an IME-equipped system.
-- Implement and benchmark the GPU-backed Skia branch at all four resolutions.
-- Render an Svg.Skia fixture covering path/fill/stroke/gradient/transform/viewBox.
-- Publish all three RIDs; copy and launch the primary publish in a fresh directory with no global SDL.
-- Run a missing-SDL failure and confirm the exact diagnostic.
-- Only then accept ADR 0015 and mark NR2 complete.
+- [x] Restore and Release build; standalone tests pass (1,690 total).
+- [x] Headless self-test; header-derived ABI and synthetic 100/125/150/200% DPI checks.
+- [x] Software and GPU scene benchmarks at all four drawable sizes.
+- [x] Paragraph shaping/layout/cached paint, allocation, decode and vsync modes.
+- [x] Svg.Skia path/fill/stroke/gradient/transform/viewBox fixture and inspected capture.
+- [x] Execute software/GPU resource soaks and retain samples.
+- [ ] Establish acceptable GPU resize resource plateau/lifetime behavior.
+- [x] Window launch, maximize/restore, minimize/restore, F11 fullscreen/back, F12 capture,
+  Escape exit; observed native dimensions changed coherently at scale 1.00.
+- [x] Pointer motion, click-to-focus, wheel, physical keys, modifier state and separate
+  Latin text event observed through the real SDL window.
+- [ ] Held-key repeat, native Arabic/Greek text entry, IME composition.
+  The automation's Unicode typing used Ctrl+V; the spike has no clipboard handler.
+- [ ] Monitor moves and actual 100/125/150/200% scale/input alignment. One monitor,
+  no IME available, confirmed by the user. Synthetic conversions do not replace these.
+- [x] Publish all three RIDs and inspect native payloads.
+- [x] Fresh-directory primary Windows launch/self-test and controlled missing-SDL failure.
+- [ ] Complete native SDL payloads/launch validation on Linux and macOS.
+- [x] Full solution format verification with the editor LF policy aligned to .gitattributes.
+- [ ] Accept ADR 0015 and mark NR2 complete **only after outstanding gate evidence**.
 
-## Ticket 4 recommendation
+## Repository verification and remaining work
 
-Do not start NR3 yet. Finish the checklist above, accept a narrow ADR 0015, then create production
-abstractions from the measured contracts—not by copying this disposable program. Promote the
-software renderer concept and tests intentionally; rewrite the SDL ABI generation, lifetime,
-input, accelerated surface, and text pipeline as production code.
+Commands and raw results are retained in the evidence directory. Restore/build/test,
+content validate/compile, deterministic assembly verification and spike-only format
+verification pass. Full solution `dotnet format --verify-no-changes` fails on existing
+source formatting. The simulation benchmark entry point ignores CLI arguments;
+`--job Dry` started its normal benchmark and was interrupted, not counted as a dry pass.
+
+Ticket 4 remains blocked by its prerequisite. Do not add production projects or mark
+NR3/NR3A complete from these results. Once the gate passes, implement its narrow
+platform/graphics/runtime contracts and permanent sandbox, preserve software as a
+first-class reference path, bundle a licensed font, and test event/lifetime/scheduling
+contracts with fake backends. NR3 is not split here because no portion is complete.

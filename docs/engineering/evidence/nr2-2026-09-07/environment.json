@@ -1,0 +1,13 @@
+{
+  "dateUtc": "2026-09-07T02:09:07.2038970Z",
+  "baseCommit": "dd215ed",
+  "sdk": "10.0.100",
+  "cpu": "AMD Ryzen 5 7520U with Radeon Graphics         ",
+  "logicalProcessors": 8,
+  "gpu": "AMD Radeon(TM) Graphics",
+  "gpuDriver": "32.0.21039.2003",
+  "ramBytes": 16368779264,
+  "os": "Microsoft Windows NT 10.0.26200.0",
+  "primaryRuntime": "10.0.11",
+  "monitorAndIme": "User confirmed single monitor, no IME"
+}
