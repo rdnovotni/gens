@@ -24,11 +24,10 @@ public readonly record struct InkBarViewModel(
 public sealed class InkBarAdapter : IProjectionAdapter<InkBarProjection, InkBarViewModel>
 {
     public InkBarViewModel Adapt(InkBarProjection projection) =>
-        new(
-            GensNameLabel: projection.GensName,
-            DateLabel: $"{projection.MonthOfYear:D2}/{projection.DisplayYear} {projection.Era}",
-            TreasuryLabel: $"{projection.Treasury.ToDisplayString()} denarii",
-            DignitasLabel: $"{projection.Dignitas} dignitas");
+        FromShared(global::Gens.Presentation.ProjectionMappers.InkBar(projection));
+
+    private static InkBarViewModel FromShared(global::Gens.Presentation.Models.InkBarModel model) =>
+        new(model.GensName, model.Date, model.Treasury, model.Dignitas);
 }
 
 /// <summary>Applies an <see cref="InkBarViewModel"/> to the named <see cref="Label"/>s inside an

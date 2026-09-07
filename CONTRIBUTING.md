@@ -46,6 +46,8 @@ Exercise the native foundation separately:
 ```sh
 dotnet run --project tools/Gens.EngineSandbox --configuration Release
 dotnet run --project tools/Gens.EngineSandbox --configuration Release -- --renderer=software
+dotnet run --project src/Gens.Client.Desktop --configuration Release
+dotnet test tests/Gens.Client.Desktop.Tests --configuration Release
 ./scripts/publish-engine-sandbox.ps1
 ```
 

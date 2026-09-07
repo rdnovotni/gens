@@ -39,5 +39,6 @@ public sealed class Toggle : Button
     public Toggle() { Semantics.Role = AccessibilityRole.CheckBox; }
     public bool IsChecked { get; private set; }
     public Action<bool>? Changed { get; set; }
-    protected override void Activate() { IsChecked = !IsChecked; Semantics.IsChecked = IsChecked; InvalidatePaint(); Changed?.Invoke(IsChecked); base.Activate(); }
+    public void SetChecked(bool value, bool notify = false) { if (IsChecked == value) return; IsChecked = value; Semantics.IsChecked = value; InvalidatePaint(); if (notify) Changed?.Invoke(value); }
+    protected override void Activate() { SetChecked(!IsChecked, notify: true); base.Activate(); }
 }

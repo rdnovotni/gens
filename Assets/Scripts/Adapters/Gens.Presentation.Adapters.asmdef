@@ -2,7 +2,8 @@
   "name": "Gens.Presentation.Adapters",
   "rootNamespace": "Gens.Presentation.Adapters",
   "references": [
-    "Gens.Simulation"
+    "Gens.Simulation",
+    "Gens.Presentation"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

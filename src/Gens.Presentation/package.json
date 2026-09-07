@@ -1,0 +1,6 @@
+{
+  "name": "com.gens.presentation",
+  "version": "0.1.0",
+  "displayName": "Gens Presentation",
+  "description": "Engine-neutral presentation models and projection mapping for Gens clients."
+}

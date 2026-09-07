@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Gens.Application.Campaign;
 using Gens.Presentation.Shell;
 using Gens.Presentation.Tests.Support;
 using Gens.Simulation.Campaign;
@@ -21,15 +22,28 @@ namespace Gens.Presentation.Tests.EditMode;
 public sealed class CampaignShellTests
 {
     [Test]
+    public void PlayableBootstrapAndCommandSequenceMatchApplicationClient()
+    {
+        var options = new CampaignStartOptions(73, "latium", "standard");
+        var unityClient = CampaignShell.BootstrapPlayable(options, out _);
+        var nativeClient = CampaignSession.CreateNew(options, out _);
+
+        Assert.That(unityClient.Session.ComputeStateHash(), Is.EqualTo(nativeClient.ComputeStateHash()));
+        Assert.That(unityClient.Session.SubmitAction(CampaignHouseholdAction.FundFestival).Accepted, Is.True);
+        Assert.That(nativeClient.SubmitAction(CampaignHouseholdAction.FundFestival).Accepted, Is.True);
+        Assert.That(unityClient.Session.ComputeStateHash(), Is.EqualTo(nativeClient.ComputeStateHash()));
+        unityClient.Session.AdvanceMonth();
+        nativeClient.AdvanceMonth();
+        Assert.That(unityClient.Session.ComputeStateHash(), Is.EqualTo(nativeClient.ComputeStateHash()));
+    }
+
+    [Test]
     public void FacadeReferencesTheSessionsSingleAuthoritativeStateAndRandomStreams()
     {
         var shell = CampaignTestFixtures.Bootstrap();
 
-        Assert.Multiple(() =>
-        {
-            Assert.That(shell.State, Is.SameAs(shell.Session.State));
-            Assert.That(shell.RandomStreams, Is.SameAs(shell.Session.RandomStreams));
-        });
+        Assert.That(shell.State, Is.SameAs(shell.Session.State));
+        Assert.That(shell.RandomStreams, Is.SameAs(shell.Session.RandomStreams));
     }
 
     [Test]

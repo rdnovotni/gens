@@ -1,0 +1,7 @@
+{
+  "name": "Gens.Presentation",
+  "rootNamespace": "Gens.Presentation",
+  "references": ["Gens.Application", "Gens.Simulation"],
+  "autoReferenced": true,
+  "noEngineReferences": true
+}

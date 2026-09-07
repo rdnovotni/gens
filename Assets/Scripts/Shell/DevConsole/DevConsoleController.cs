@@ -43,9 +43,9 @@ public sealed class DevConsoleController : MonoBehaviour
     private int _historyIndex;
     private bool _isOpen;
 
-    private void Awake() => Application.logMessageReceived += OnUnityLogMessage;
+    private void Awake() => UnityEngine.Application.logMessageReceived += OnUnityLogMessage;
 
-    private void OnDestroy() => Application.logMessageReceived -= OnUnityLogMessage;
+    private void OnDestroy() => UnityEngine.Application.logMessageReceived -= OnUnityLogMessage;
 
     private void Start()
     {
@@ -89,7 +89,7 @@ public sealed class DevConsoleController : MonoBehaviour
     /// shipped build, so a stray enabled pref left over from a development build can never surface it
     /// in a release build.</summary>
     private static bool IsAvailable() =>
-        PlayerPrefs.GetInt(EnabledPrefKey, 0) != 0 && (Debug.isDebugBuild || Application.isEditor);
+        PlayerPrefs.GetInt(EnabledPrefKey, 0) != 0 && (Debug.isDebugBuild || UnityEngine.Application.isEditor);
 
     private void Toggle()
     {

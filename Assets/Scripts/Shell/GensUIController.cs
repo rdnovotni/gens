@@ -383,7 +383,7 @@ public sealed class GensUIController : MonoBehaviour
 
     #region Phase 9 item 8 — save/load, deterministic replay diagnostics
 
-    private static string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
+    private static string SaveFilePath => Path.Combine(UnityEngine.Application.persistentDataPath, SaveFileName);
 
     private void WireSaveLoadDiagnosticsControls()
     {
@@ -403,7 +403,7 @@ public sealed class GensUIController : MonoBehaviour
     private void SaveNow()
     {
         var shell = RequireShell();
-        shell.Save(SaveFilePath, Application.version);
+        shell.Save(SaveFilePath, UnityEngine.Application.version);
         ShowMessage("Campaign Saved", $"Saved to {SaveFilePath}.");
     }
 
@@ -426,8 +426,8 @@ public sealed class GensUIController : MonoBehaviour
     private void RunReplayDiagnostics()
     {
         var shell = RequireShell();
-        var diagnosticsPath = Path.Combine(Application.temporaryCachePath, "replay-diagnostics.gens");
-        var result = shell.VerifyDeterministicReplay(diagnosticsPath, Application.version);
+        var diagnosticsPath = Path.Combine(UnityEngine.Application.temporaryCachePath, "replay-diagnostics.gens");
+        var result = shell.VerifyDeterministicReplay(diagnosticsPath, UnityEngine.Application.version);
         ShowMessage(
             result.Matches ? "Replay Diagnostics: OK" : "Replay Diagnostics: MISMATCH",
             result.Matches

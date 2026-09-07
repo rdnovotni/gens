@@ -41,7 +41,7 @@ public sealed class GensAppController : MonoBehaviour
 
     private const string SaveFileName = "quicksave.gens";
     private const string MasterVolumePrefKey = "MasterVolume";
-    private static string SaveFilePath => Path.Combine(Application.persistentDataPath, SaveFileName);
+    private static string SaveFilePath => Path.Combine(UnityEngine.Application.persistentDataPath, SaveFileName);
 
     private string _selectedRegion = "latium";
     private string _selectedDifficulty = "standard";
@@ -119,11 +119,11 @@ public sealed class GensAppController : MonoBehaviour
         if (volumeSlider != null)
         {
             var savedVolume = PlayerPrefs.GetFloat(MasterVolumePrefKey, 1f);
-            AudioListener.volume = savedVolume;
+            UnityEngine.AudioListener.volume = savedVolume;
             volumeSlider.value = savedVolume;
             volumeSlider.RegisterValueChangedCallback(evt =>
             {
-                AudioListener.volume = evt.newValue;
+                UnityEngine.AudioListener.volume = evt.newValue;
                 PlayerPrefs.SetFloat(MasterVolumePrefKey, evt.newValue);
             });
         }
@@ -283,7 +283,7 @@ public sealed class GensAppController : MonoBehaviour
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #else
-        Application.Quit();
+        UnityEngine.Application.Quit();
 #endif
     }
 }

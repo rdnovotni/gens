@@ -22,10 +22,10 @@ that ADR for the full 17-gate list before treating any later phase here as
 - [x] **Phase NR0** — Architecture contract
 - [x] **Phase NR1** — Extract `Gens.Application` / `CampaignSession`
 - [ ] **Phase NR2** — SDL3 + Skia rendering/platform spike
-- [ ] **Phase NR3** — Runtime and custom UI foundation
+- [x] **Phase NR3** — Runtime and custom UI foundation
   - [x] **NR3A** — Platform, graphics, runtime loop, and engine sandbox implementation
   - [x] **NR3B** — Retained-mode UI foundation (Ticket 5; gallery uses fake data)
-- [ ] **Phase NR4** — Native-client vertical-slice parity
+- [x] **Phase NR4** — Native-client vertical-slice parity
 - [ ] **Phase NR5** — Scene2D and procedural portrait pipeline
 - [ ] **Phase NR6** — AI art, audio, accessibility, packaging
 - [ ] **Phase NR7** — Cross-platform hardening and Unity retirement
@@ -168,6 +168,8 @@ art, audio, or packaging.
 ---
 
 ### Phase NR4 — Native-client vertical-slice parity
+
+**Completion update (2026-09-07):** Ticket 6 added the production `Gens.Client.Desktop` executable, shared `Gens.Presentation` mappings, the playable four-screen campaign shell, confirmations, settings, save/load, diagnostics console, deterministic native integration coverage, reference captures, and a Windows Release publish. Unity remains present and supported.
 
 **Outcome:** the native client reaches feature parity with the existing
 Unity vertical slice for the core playable loop.
