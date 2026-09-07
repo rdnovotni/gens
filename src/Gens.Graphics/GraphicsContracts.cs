@@ -42,7 +42,11 @@ public interface ICanvas2D
     void ClipRect(Rect rect); void ClipPath(IGraphicsPath path);
     void Clear(Color color); void DrawRect(Rect rect, FillStyle fill); void DrawRoundRect(Rect rect, float radiusX, float radiusY, FillStyle fill);
     void DrawLine(Point2 start, Point2 destination, StrokeStyle stroke); void DrawPath(IGraphicsPath path, FillStyle? fill, StrokeStyle? stroke = null);
-    void DrawImage(IGraphicsImage image, Rect destination, float opacity = 1); void DrawGlyphRun(GlyphRun run, Point2 origin, Color color, float opacity = 1);
+    void DrawImage(IGraphicsImage image, Rect destination, float opacity = 1);
+    void DrawImage(IGraphicsImage image, Rect source, Rect destination, float opacity = 1);
+    void DrawImage(IGraphicsImage image, Rect destination, Color tint, float opacity = 1);
+    void DrawImage(IGraphicsImage image, Rect source, Rect destination, Color tint, float opacity = 1);
+    void DrawGlyphRun(GlyphRun run, Point2 origin, Color color, float opacity = 1);
 }
 
 public interface IRenderFrame : IDisposable

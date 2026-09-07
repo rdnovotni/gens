@@ -41,6 +41,7 @@ public sealed class DesktopApplicationController
     public IReadOnlyList<string> Logs => logs;
     public bool HasSave => File.Exists(paths.Quicksave);
     public ulong? StateHash => CurrentCampaign?.ComputeStateHash();
+    public string PortraitCachePath => Path.Combine(paths.Cache, "visuals");
     private readonly List<string> logs = new();
 
     public void Navigate(ScreenId screen)

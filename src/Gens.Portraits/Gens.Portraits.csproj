@@ -1,7 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net10.0</TargetFramework></PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Gens.Assets/Gens.Assets.csproj" />
     <ProjectReference Include="../Gens.Graphics/Gens.Graphics.csproj" />
     <ProjectReference Include="../Gens.Scene2D/Gens.Scene2D.csproj" />
+    <ProjectReference Include="../Gens.Presentation/Gens.Presentation.csproj" />
   </ItemGroup>
 </Project>

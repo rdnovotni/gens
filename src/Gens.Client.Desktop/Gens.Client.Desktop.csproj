@@ -11,6 +11,8 @@
     <ProjectReference Include="../Gens.UI/Gens.UI.csproj" />
     <ProjectReference Include="../Gens.Application/Gens.Application.csproj" />
     <ProjectReference Include="../Gens.Presentation/Gens.Presentation.csproj" />
+    <ProjectReference Include="../Gens.Portraits/Gens.Portraits.csproj" />
+    <ProjectReference Include="../Gens.Scene2D/Gens.Scene2D.csproj" />
     <ProjectReference Include="../Gens.Platform.Sdl/Gens.Platform.Sdl.csproj" />
     <ProjectReference Include="../Gens.Graphics.Skia/Gens.Graphics.Skia.csproj" />
   </ItemGroup>

@@ -11,7 +11,10 @@ cross-platform, IME, DPI-monitor, or GPU-lifetime gates.
 Gens.Platform.Sdl  -> Gens.Platform
 Gens.Graphics.Skia -> Gens.Graphics -> Gens.Platform
 Gens.Runtime       -> Gens.Platform + Gens.Graphics
-Gens.EngineSandbox -> Gens.Runtime + both backend projects
+Gens.Scene2D       -> Gens.Graphics
+Gens.UI            -> Gens.Graphics + Gens.Scene2D
+Gens.Portraits     -> Gens.Assets + Gens.Graphics + Gens.Scene2D + Gens.Presentation
+Gens.EngineSandbox -> Gens.Runtime + UI/Scene2D/Portraits + both backend projects
 ```
 
 `Gens.Runtime` cannot see either concrete backend. `Gens.Simulation` and
@@ -92,7 +95,8 @@ and screenshot capture.
 Its default `--page=ui` gallery exercises the retained UI tree, responsive
 Diptych/WaxTablet layout, Gens controls, wrapping text, scrolling, Tab focus,
 pointer capture, a focus-trapping modal, the live hovered-node inspector, UI
-scaling, and layout outlines using fake presentation data. Use `--page=runtime`
+scaling, layout outlines, a deterministic portrait, and a UI-hosted animated
+Scene2D villa using fake presentation data. Use `--page=runtime`
 for the original low-level canvas/backend page.
 
 ```powershell
@@ -103,6 +107,7 @@ dotnet run --project tools/Gens.EngineSandbox -c Release -- --renderer=software
 dotnet run --project tools/Gens.EngineSandbox -c Release -- --renderer=gpu
 dotnet run --project tools/Gens.EngineSandbox -c Release -- --renderer=software --smoke-test
 dotnet run --project tools/Gens.EngineSandbox -c Release -- --reference-benchmark
+dotnet run --project benchmarks/Gens.Visual.Benchmarks -c Release
 ./scripts/publish-engine-sandbox.ps1
 ```
 
