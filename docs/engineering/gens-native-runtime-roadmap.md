@@ -20,7 +20,7 @@ that ADR for the full 17-gate list before treating any later phase here as
 ## Phase checklist
 
 - [x] **Phase NR0** — Architecture contract
-- [ ] **Phase NR1** — Extract `Gens.Application` / `CampaignSession`
+- [x] **Phase NR1** — Extract `Gens.Application` / `CampaignSession`
 - [ ] **Phase NR2** — SDL3 + Skia rendering/platform spike
 - [ ] **Phase NR3** — Runtime and custom UI foundation
 - [ ] **Phase NR4** — Native-client vertical-slice parity
@@ -61,7 +61,7 @@ HarfBuzz dependency; no change to `Gens.Simulation`, saves, or content.
 
 ---
 
-### Phase NR1 — Extract `Gens.Application` / `CampaignSession`
+### Phase NR1 — Extract `Gens.Application` / `CampaignSession` — ✅ COMPLETE
 
 **Outcome:** an engine-neutral application/orchestration layer exists between
 `Gens.Simulation` and any presentation host, so the eventual native client and

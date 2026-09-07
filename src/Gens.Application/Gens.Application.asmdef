@@ -1,11 +1,8 @@
 {
-  "name": "Gens.Presentation.Shell",
-  "rootNamespace": "Gens.Presentation.Shell",
+  "name": "Gens.Application",
+  "rootNamespace": "Gens.Application",
   "references": [
-    "Gens.Application",
-    "Gens.Simulation",
-    "Gens.Presentation.Adapters",
-    "Unity.InputSystem"
+    "Gens.Simulation"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],
@@ -15,5 +12,5 @@
   "autoReferenced": true,
   "defineConstraints": [],
   "versionDefines": [],
-  "noEngineReferences": false
+  "noEngineReferences": true
 }

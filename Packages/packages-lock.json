@@ -6,6 +6,14 @@
       "source": "local",
       "dependencies": {}
     },
+    "com.gens.application": {
+      "version": "file:../src/Gens.Application",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {
+        "com.gens.simulation": "0.1.0"
+      }
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 1,

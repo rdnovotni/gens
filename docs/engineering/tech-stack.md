@@ -12,6 +12,7 @@ platform, and do not assume Unity has already been removed — it has not.
 
 ```text
 Unity 6.3 LTS existing client
+Gens.Application netstandard2.1 campaign-session host
 Gens.Simulation netstandard2.1
 .NET 10 standalone tooling
 ```
@@ -44,6 +45,10 @@ pull request, which must also commit the regenerated `packages-lock.json`.
 Standalone tools and tests target .NET 10 LTS. Unity uses the .NET Standard 2.1
 API compatibility level, Mono for editor iteration, and IL2CPP for verified
 production release builds.
+
+## Application layer
+
+`Gens.Application` is the engine-neutral, `netstandard2.1` campaign host shared by the transitional Unity client and future .NET client. `CampaignSession` owns bootstrap, query/command dispatch, monthly advancement, save/load, and replay verification above `Gens.Simulation`. The compatible target is required because Unity consumes both projects as local source packages; clients choose platform paths and keep pause, settings, audio, and presentation concerns outside this layer. Mutable state and RNG access remain public only as a documented transitional escape hatch for existing Unity call sites.
 
 ## Boundaries (transitional)
 

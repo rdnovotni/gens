@@ -4,6 +4,7 @@
   "references": [
     "UnityEngine.TestRunner",
     "UnityEditor.TestRunner",
+    "Gens.Application",
     "Gens.Simulation",
     "Gens.Presentation.Adapters",
     "Gens.Presentation.Shell",
