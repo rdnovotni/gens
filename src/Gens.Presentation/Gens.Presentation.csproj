@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>Gens.Presentation</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Gens.Application/Gens.Application.csproj" />
+    <ProjectReference Include="../Gens.Simulation/Gens.Simulation.csproj" />
+  </ItemGroup>
+</Project>

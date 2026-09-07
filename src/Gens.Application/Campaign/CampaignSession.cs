@@ -80,6 +80,26 @@ public sealed class CampaignSession
             campaign.State, campaign.RandomStreams, campaign.HouseholdId, campaign.SettlementId, config.ContentPackHash);
     }
 
+    /// <summary>Creates the currently supported client campaign without exposing bootstrap internals.</summary>
+    public static CampaignSession CreateNew(CampaignStartOptions options, out IReadOnlyList<IDomainEvent> initialHistory) =>
+        CampaignClientActions.CreateNew(options, out initialHistory);
+
+    /// <summary>Returns the canonical deterministic hash for diagnostics and cross-client comparison.</summary>
+    public ulong ComputeStateHash() => StateHasher.Hash(State);
+
+    /// <summary>Projects report events at the session's authoritative current date.</summary>
+    public MonthlyReportProjection ProjectMonthlyReport(IReadOnlyList<IDomainEvent> events) =>
+        MonthlyReportProjector.Project(State.Date, events ?? throw new ArgumentNullException(nameof(events)));
+
+    /// <summary>Advances the normal playable monthly-system set on the application thread.</summary>
+    public IReadOnlyList<IDomainEvent> AdvanceMonth() => this.AdvancePlayableMonth();
+
+    /// <summary>Builds a non-mutating preview for an application-sanctioned household action.</summary>
+    public CampaignActionPreview PreviewAction(CampaignHouseholdAction action) => this.Preview(action);
+
+    /// <summary>Submits an application-sanctioned household action through its command pipeline.</summary>
+    public CommandResult SubmitAction(CampaignHouseholdAction action) => this.Submit(action);
+
     /// <summary>Loads a previously <see cref="Save"/>d campaign from <paramref name="path"/>, mirroring
     /// the console runner's <c>load</c> verb (<see cref="Gens.Simulation.Saves.SaveReader.Read"/>) but
     /// returning a ready-to-use session rather than just printing a summary. <paramref name="manifest"/>

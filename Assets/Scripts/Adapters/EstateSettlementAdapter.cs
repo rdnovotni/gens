@@ -30,20 +30,11 @@ public readonly record struct EstateSettlementViewModel(
 public sealed class EstateSettlementAdapter : IProjectionAdapter<EstateSettlementProjection, EstateSettlementViewModel>
 {
     public EstateSettlementViewModel Adapt(EstateSettlementProjection projection) =>
-        new(
-            SettlementStageLabel: projection.SettlementStage.ToString(),
-            Holdings: projection.Holdings.Select(Adapt).ToArray());
+        FromShared(global::Gens.Presentation.ProjectionMappers.EstateSettlement(projection));
 
-    private static EstateHoldingRowViewModel Adapt(EstateHoldingRow holding) =>
-        new(
-            HoldingId: holding.HoldingId,
-            Label: holding.VillaStage is { } stage
-                ? $"Villa ({stage}) · {holding.ResidentCapacity} residents"
-                : $"Holding · {holding.ResidentCapacity} residents",
-            Buildings: holding.Plots.SelectMany(plot => plot.Buildings).Select(Adapt).ToArray());
-
-    private static EstateBuildingRowViewModel Adapt(EstateBuildingRow building) =>
-        new(building.BuildingId, $"{building.DefinitionKey} ({building.Tier})", building.Condition.ToString());
+    private static EstateSettlementViewModel FromShared(global::Gens.Presentation.Models.EstateSettlementModel model) =>
+        new(model.SettlementStage, model.Holdings.Select(static h => new EstateHoldingRowViewModel(
+            h.HoldingId, h.Label, h.Buildings.Select(static b => new EstateBuildingRowViewModel(b.BuildingId, b.Label, b.Condition)).ToArray())).ToArray());
 }
 
 /// <summary>Populates the estate/settlement screen's holding container

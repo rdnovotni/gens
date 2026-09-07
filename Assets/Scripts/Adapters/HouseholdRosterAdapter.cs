@@ -20,15 +20,8 @@ public readonly record struct HouseholdRosterViewModel(IReadOnlyList<HouseholdRo
 public sealed class HouseholdRosterAdapter : IProjectionAdapter<HouseholdRosterProjection, HouseholdRosterViewModel>
 {
     public HouseholdRosterViewModel Adapt(HouseholdRosterProjection projection) =>
-        new(projection.Members.Select(Adapt).ToArray());
-
-    private static HouseholdRosterRowViewModel Adapt(HouseholdRosterRow row) =>
-        new(
-            CharacterId: row.CharacterId,
-            DisplayName: row.FullName,
-            DisplaySubtitle: row.DutySlot is { } duty
-                ? $"{row.AgeInYears} · {row.LegalStatus} · {duty}"
-                : $"{row.AgeInYears} · {row.LegalStatus}");
+        new(global::Gens.Presentation.ProjectionMappers.HouseholdRoster(projection).Rows
+            .Select(static row => new HouseholdRosterRowViewModel(row.CharacterId, row.Name, row.Subtitle)).ToArray());
 }
 
 /// <summary>Populates the roster screen's row container (<c>Assets/UI/HouseholdRosterScreen.uxml</c>)

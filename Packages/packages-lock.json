@@ -1,11 +1,5 @@
 {
   "dependencies": {
-    "com.gens.simulation": {
-      "version": "file:../src/Gens.Simulation",
-      "depth": 0,
-      "source": "local",
-      "dependencies": {}
-    },
     "com.gens.application": {
       "version": "file:../src/Gens.Application",
       "depth": 0,
@@ -13,6 +7,18 @@
       "dependencies": {
         "com.gens.simulation": "0.1.0"
       }
+    },
+    "com.gens.presentation": {
+      "version": "file:../src/Gens.Presentation",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
+    "com.gens.simulation": {
+      "version": "file:../src/Gens.Simulation",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
     },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
@@ -255,6 +261,12 @@
     "com.unity.modules.assetbundle": {
       "version": "1.0.0",
       "depth": 1,
+      "source": "builtin",
+      "dependencies": {}
+    },
+    "com.unity.modules.audio": {
+      "version": "1.0.0",
+      "depth": 0,
       "source": "builtin",
       "dependencies": {}
     },

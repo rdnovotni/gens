@@ -44,6 +44,10 @@ public sealed class CampaignShell
     public static CampaignShell Bootstrap(CampaignConfig config, out IReadOnlyList<IDomainEvent> initialHistory) =>
         new(CampaignSession.CreateNew(config, out initialHistory));
 
+    /// <summary>Creates the same seeded, playable vertical slice used by the native client.</summary>
+    public static CampaignShell BootstrapPlayable(CampaignStartOptions options, out IReadOnlyList<IDomainEvent> initialHistory) =>
+        new(CampaignSession.CreateNew(options, out initialHistory));
+
     public static CampaignShell Load(string path, out SaveManifest manifest) =>
         new(CampaignSession.Load(path, out manifest));
 

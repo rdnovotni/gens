@@ -2,6 +2,7 @@
   "dependencies": {
     "com.gens.simulation": "file:../src/Gens.Simulation",
     "com.gens.application": "file:../src/Gens.Application",
+    "com.gens.presentation": "file:../src/Gens.Presentation",
     "com.unity.addressables": "2.9.1",
     "com.unity.ai.assistant": "2.19.0-pre.2",
     "com.unity.ai.inference": "2.6.1",
@@ -11,6 +12,7 @@
     "com.unity.nuget.newtonsoft-json": "3.2.2",
     "com.unity.render-pipelines.universal": "17.3.0",
     "com.unity.test-framework": "1.6.0",
+    "com.unity.modules.audio": "1.0.0",
     "com.unity.modules.jsonserialize": "1.0.0",
     "com.unity.modules.physics2d": "1.0.0",
     "com.unity.modules.ui": "1.0.0",

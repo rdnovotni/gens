@@ -48,3 +48,17 @@ public sealed class InkBar : Border
     public InkBar() { Name = "InkBar"; Height = 58; Padding = new(16, 8); BorderThickness = 0; Semantics.Role = AccessibilityRole.Group; }
     protected override void PaintOverride(ICanvas2D canvas) { if (Root is not null) Background = Root.Theme.Color("Ink"); base.PaintOverride(canvas); }
 }
+
+/// <summary>Compact label/value row for dense ledgers and character statistics.</summary>
+public sealed class StatRow : Grid
+{
+    private readonly TextBlock label = new() { TypographyRole = TypographyRole.Ledger };
+    private readonly TextBlock value = new() { TypographyRole = TypographyRole.Ledger, HorizontalAlignment = HorizontalAlignment.End };
+    public StatRow()
+    {
+        Name = "StatRow"; Columns.Add(new(UiLength.Star(2))); Columns.Add(new(UiLength.Star()));
+        AddChild(label); SetPlacement(label, 0, 0); AddChild(value); SetPlacement(value, 0, 1);
+    }
+    public string Label { get => label.Text; set => label.Text = value; }
+    public string Value { get => this.value.Text; set => this.value.Text = value; }
+}

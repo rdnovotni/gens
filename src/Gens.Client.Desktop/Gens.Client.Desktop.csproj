@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>Gens.Client.Desktop</AssemblyName>
+    <RootNamespace>Gens.Client.Desktop</RootNamespace>
+    <Version>0.1.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Gens.Runtime/Gens.Runtime.csproj" />
+    <ProjectReference Include="../Gens.UI/Gens.UI.csproj" />
+    <ProjectReference Include="../Gens.Application/Gens.Application.csproj" />
+    <ProjectReference Include="../Gens.Presentation/Gens.Presentation.csproj" />
+    <ProjectReference Include="../Gens.Platform.Sdl/Gens.Platform.Sdl.csproj" />
+    <ProjectReference Include="../Gens.Graphics.Skia/Gens.Graphics.Skia.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="../../tools/Gens.EngineSandbox/Assets/NotoSans-Regular.ttf" Link="Assets/NotoSans-Regular.ttf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../../tools/Gens.EngineSandbox/Assets/OFL.txt" Link="Assets/OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

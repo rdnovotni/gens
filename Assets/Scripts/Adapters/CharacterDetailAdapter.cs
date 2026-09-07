@@ -1,6 +1,7 @@
 #nullable enable
 
 using System;
+using System.Linq;
 using Gens.Simulation.Queries;
 using UnityEngine.UIElements;
 
@@ -23,21 +24,12 @@ public sealed class CharacterDetailAdapter : IProjectionAdapter<CharacterDetailP
 {
     public CharacterDetailViewModel Adapt(CharacterDetailProjection projection)
     {
-        var status = projection.IsAlive ? projection.Stage.ToString() : "Deceased";
-        var subtitle = projection.DutySlot is { } duty
-            ? $"{projection.AgeInYears} · {status} · {projection.LegalStatus} · {duty}"
-            : $"{projection.AgeInYears} · {status} · {projection.LegalStatus}";
-
+        var shared = global::Gens.Presentation.ProjectionMappers.CharacterDetail(projection);
         return new CharacterDetailViewModel(
-            NameLabel: projection.FullName,
-            SubtitleLabel: subtitle,
-            AttributesLabel: $"Diplomacy {projection.Attributes.Diplomacy} · Martial {projection.Attributes.Martial} · " +
-                $"Stewardship {projection.Attributes.Stewardship} · Intrigue {projection.Attributes.Intrigue} · " +
-                $"Learning {projection.Attributes.Learning}",
-            SkillsLabel: $"Fieldwork {projection.Skills.Fieldwork} · Domestic {projection.Skills.DomesticService} · " +
-                $"Craft {projection.Skills.Craft} · Culinary {projection.Skills.Culinary} · Medicine {projection.Skills.Medicine}",
-            ConditionLabel: $"Health {projection.Condition.Health} · Fatigue {projection.Condition.Fatigue} · " +
-                $"Loyalty {projection.Condition.Loyalty}");
+            shared.Name, shared.Subtitle,
+            string.Join(" · ", shared.Attributes.Select(static x => $"{x.Label} {x.Value}")),
+            string.Join(" · ", shared.Skills.Select(static x => $"{x.Label} {x.Value}")),
+            string.Join(" · ", shared.Condition.Select(static x => $"{x.Label} {x.Value}")));
     }
 }
 

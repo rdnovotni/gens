@@ -1,8 +1,8 @@
 # Gens
 
 Gens is built around an engine-independent, deterministic C# simulation. It
-currently has a working, fully playable client built on Unity 6.3 LTS, but
-Unity is a transitional presentation platform, not the permanent one:
+has a playable native desktop client alongside the existing Unity 6.3 LTS client. Unity is a
+transitional presentation platform, not the permanent one:
 [ADR 0014](docs/engineering/adr/0014-custom-runtime-and-native-client.md)
 adopts a purpose-built native Gens runtime and desktop client as the
 long-term target, migrating away from Unity once explicit retirement gates
@@ -20,10 +20,9 @@ actually is and how it plays, see the [player manual](docs/manual/README.md).
 
 ## Prerequisites
 
-These are instructions for the current, transitional Unity client. The native
-runtime and retained UI foundations now exist, while the native desktop client
-and campaign-screen migration remain in progress — see the
-[native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md).
+The native desktop client is the primary target for presentation development;
+Unity remains supported during migration. See the
+[native client guide](docs/engineering/native-client.md).
 
 - Unity Hub with the editor version in `ProjectSettings/ProjectVersion.txt`
 - .NET 10 SDK (the expected feature band is in `global.json`)
@@ -34,6 +33,7 @@ Open the repository root as the Unity project. For standalone work, run:
 ```sh
 dotnet restore Gens.slnx
 dotnet test Gens.slnx
+dotnet run --project src/Gens.Client.Desktop --configuration Release
 ```
 
 ## Repository layout
@@ -47,6 +47,9 @@ dotnet test Gens.slnx
 | `src/Gens.Graphics/`, `src/Gens.Graphics.Skia/` | Backend-neutral 2D graphics contracts and Skia software/OpenGL implementation |
 | `src/Gens.Runtime/` | Native application loop, presentation clock, invalidation scheduling, lifecycle, and diagnostics |
 | `src/Gens.UI/` | Backend-neutral retained UI tree, layout, controls, input/focus, themes, accessibility semantics, and Gens design primitives |
+| `src/Gens.Presentation/` | Engine-neutral snapshot mapping shared by native and transitional Unity clients |
+| `src/Gens.Client.Desktop/` | Playable native desktop client and SDL/Skia composition root |
+| `tests/Gens.Client.Desktop.Tests/` | Native application-flow, lifecycle, save/load, determinism, and architecture tests |
 | `tests/Gens.Application.Tests/` | Standalone integration tests for the shared campaign session |
 | `tests/` | Standalone automated tests |
 | `benchmarks/` | Simulation performance benchmarks |

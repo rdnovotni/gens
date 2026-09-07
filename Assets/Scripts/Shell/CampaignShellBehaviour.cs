@@ -2,9 +2,8 @@
 
 using System;
 using System.Collections.Generic;
-using Gens.Simulation.Campaign;
+using Gens.Application.Campaign;
 using Gens.Simulation.Commands;
-using Gens.Simulation.Time;
 using UnityEngine;
 
 namespace Gens.Presentation.Shell;
@@ -83,18 +82,16 @@ public sealed class CampaignShellBehaviour : MonoBehaviour
     /// Campaign" after the first.</summary>
     public void Bootstrap()
     {
-        var config = new CampaignConfig
-        {
-            Seed = seed,
-            StartDate = new GameDate(startMonths),
-            RulesetId = rulesetId,
-            ContentPackHash = contentPackHash,
-            RegionId = regionId,
-            StartProfileId = startProfileId,
-            Difficulty = difficulty,
-        };
+        var options = new CampaignStartOptions(
+            seed,
+            regionId,
+            difficulty,
+            rulesetId,
+            string.IsNullOrWhiteSpace(contentPackHash) ? "development" : contentPackHash,
+            startProfileId,
+            startMonths);
 
-        Shell = CampaignShell.Bootstrap(config, out var initialHistory);
+        Shell = CampaignShell.BootstrapPlayable(options, out var initialHistory);
         InitialHistory = initialHistory;
         foreach (var domainEvent in initialHistory)
             Debug.Log($"[Gens] {domainEvent.Type}: {string.Join(", ", domainEvent.SubjectIds)}");
