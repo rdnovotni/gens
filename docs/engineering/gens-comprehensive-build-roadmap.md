@@ -4,6 +4,26 @@
 **Audit point:** commit [`bc8dfd5090c38727d9cecdb00317a5a3db74ead0`](https://github.com/rdnovotni/gens/tree/bc8dfd5090c38727d9cecdb00317a5a3db74ead0), 9 August 2026  
 **Purpose:** define the order in which Gens should be constructed from its present technical skeleton through a simulation-complete, content-rich release.
 
+> **Current-state note (post ADR 0014).** [ADR 0014](adr/0014-custom-runtime-and-native-client.md)
+> reopens and supersedes this document's original *platform* choice — the
+> "Stack selection | Settled ... Do not reopen the engine decision" line in
+> the audit table below is superseded; Gens is migrating its presentation/
+> runtime platform from Unity to a purpose-built native Gens runtime and
+> client. **ADR 0014 does not reopen or invalidate the deterministic
+> simulation/gameplay architecture this roadmap tracks.** Every phase marked
+> complete below (`WorldState`, saves, content, characters, production,
+> economy, delegation, dynasty continuity, institutions, and everything else
+> through Phase 15) remains built, valid, and does not need to be redone or
+> restarted. Future presentation/runtime work — the Unity shell, the eventual
+> native client, and everything in between — should follow the dedicated
+> [native-runtime migration roadmap](gens-native-runtime-roadmap.md) rather
+> than this document; this roadmap remains authoritative for gameplay/
+> simulation systems and continues to track Phase 16 onward for that work.
+> Historical audit text below (the original "Stack selection: Settled"
+> assessment included) is left intact as a record of what was true at the
+> original audit point; see the inline annotation at that line rather than
+> treating the audit table as still describing today's platform direction.
+
 ## Executive decision
 
 Gens should be built as a **headless deterministic simulation first, a playable vertical slice second, and a broad historical sandbox third**.
@@ -94,7 +114,7 @@ This table reflects the state at the original audit commit, not the current stat
 
 | Area | Status at audit | Assessment |
 | --- | --- | --- |
-| Stack selection | Settled | Keep Unity 6.3 LTS + pure C# simulation. Do not reopen the engine decision. |
+| Stack selection | Settled *(superseded — see current-state note above)* | Keep Unity 6.3 LTS + pure C# simulation. Do not reopen the engine decision. *(As of [ADR 0014](adr/0014-custom-runtime-and-native-client.md), the engine/presentation-platform decision has been reopened and Unity is a transitional client, not the permanent target; the "pure C# simulation" half of this assessment stands unchanged.)* |
 | Repository structure | Good early baseline | Source, tests, tools, content, benchmarks, design, and Unity paths are sensibly separated. |
 | CI | Red and incomplete | Fix the failing tests first; expand checks incrementally with the roadmap. |
 | Randomness | Useful primitive | Preserve PCG32, but formalize stream ownership, naming, derivation, versioning, and save compatibility. |

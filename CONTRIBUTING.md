@@ -6,6 +6,21 @@ Open an issue for substantial behavior or design changes so scope and dependenci
 can be discussed before implementation. Keep pull requests focused and avoid mixing
 unrelated refactors with functional changes.
 
+## Current Unity client vs. native runtime development
+
+Gens currently ships a working Unity 6.3 LTS client, but per
+[ADR 0014](docs/engineering/adr/0014-custom-runtime-and-native-client.md) it
+is migrating to a purpose-built native Gens runtime/client and will retire
+Unity once the ADR's retirement gates pass. Everything in this document below
+is **current Unity client and standalone-tooling development** — it remains
+accurate and Unity remains fully supported. **Native runtime development**
+has not started as implementation; it begins in the phases tracked by the
+[native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md),
+starting with extracting `Gens.Application`. There are no SDL/Skia setup
+instructions here yet because those dependencies do not exist in the
+repository yet — they will be added to this document once a phase actually
+introduces them.
+
 ## Local setup
 
 Install Git LFS, the exact .NET SDK identified by `global.json`, and the exact

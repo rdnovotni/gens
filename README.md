@@ -1,8 +1,17 @@
 # Gens
 
-Gens is a Unity 6.3 LTS project backed by an engine-independent, deterministic
-C# simulation. The repository's supported toolchain and architectural boundaries
-are recorded in [`docs/engineering/tech-stack.md`](docs/engineering/tech-stack.md).
+Gens is built around an engine-independent, deterministic C# simulation. It
+currently has a working, fully playable client built on Unity 6.3 LTS, but
+Unity is a transitional presentation platform, not the permanent one:
+[ADR 0014](docs/engineering/adr/0014-custom-runtime-and-native-client.md)
+adopts a purpose-built native Gens runtime and desktop client as the
+long-term target, migrating away from Unity once explicit retirement gates
+pass (see the [native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md)).
+The deterministic simulation itself is unaffected by this migration — it
+remains engine-independent regardless of which client presents it. The
+repository's supported toolchain and architectural boundaries, for both the
+current transitional stack and the target stack, are recorded in
+[`docs/engineering/tech-stack.md`](docs/engineering/tech-stack.md).
 
 The project is in early development. The consolidated [game-design index](docs/design/README.md)
 describes the intended systems and setting; implemented behavior is represented by
@@ -10,6 +19,10 @@ the source, content schemas, and tests. For a player-facing read of what the gam
 actually is and how it plays, see the [player manual](docs/manual/README.md).
 
 ## Prerequisites
+
+These are instructions for the current, transitional Unity client. Native
+runtime development has not started yet — see the
+[native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md).
 
 - Unity Hub with the editor version in `ProjectSettings/ProjectVersion.txt`
 - .NET 10 SDK (the expected feature band is in `global.json`)
