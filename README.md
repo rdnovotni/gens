@@ -41,6 +41,8 @@ dotnet test Gens.slnx
 | --- | --- |
 | `Assets/`, `Packages/`, `ProjectSettings/` | Unity project and package configuration |
 | `src/Gens.Simulation/` | Engine-independent deterministic simulation package |
+| `src/Gens.Application/` | Engine-neutral campaign lifecycle, query/command, save/load, and replay host |
+| `tests/Gens.Application.Tests/` | Standalone integration tests for the shared campaign session |
 | `tests/` | Standalone automated tests |
 | `benchmarks/` | Simulation performance benchmarks |
 | `content/source/` | Authored content inputs — typed definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation) validated against `content/schemas/` |

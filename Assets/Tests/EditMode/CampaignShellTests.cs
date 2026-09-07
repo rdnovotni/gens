@@ -21,6 +21,18 @@ namespace Gens.Presentation.Tests.EditMode;
 public sealed class CampaignShellTests
 {
     [Test]
+    public void FacadeReferencesTheSessionsSingleAuthoritativeStateAndRandomStreams()
+    {
+        var shell = CampaignTestFixtures.Bootstrap();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(shell.State, Is.SameAs(shell.Session.State));
+            Assert.That(shell.RandomStreams, Is.SameAs(shell.Session.RandomStreams));
+        });
+    }
+
+    [Test]
     public void BootstrapIssuesTheFirstHouseholdAndSettlementIds()
     {
         var shell = CampaignTestFixtures.Bootstrap();

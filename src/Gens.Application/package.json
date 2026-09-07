@@ -1,0 +1,10 @@
+{
+  "name": "com.gens.application",
+  "version": "0.1.0",
+  "displayName": "Gens Application",
+  "description": "Engine-independent campaign session orchestration for Gens.",
+  "unity": "6000.3",
+  "dependencies": {
+    "com.gens.simulation": "0.1.0"
+  }
+}

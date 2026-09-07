@@ -49,6 +49,10 @@ the CLI that validates/compiles content and drives headless campaigns
 the full command list); `docs/design/` and `docs/engineering/` hold game
 design and technical documentation respectively.
 
+## Application boundary
+
+`src/Gens.Application` depends on `Gens.Simulation` and owns campaign-host behavior: creation, queries, commands, month advancement, saves, loads, and replay verification. All clients, including Unity, must use `CampaignSession` for those responsibilities rather than bypassing it. The layer is engine-neutral and contains no platform paths, UI, rendering, audio, SDL, Skia, or AI-provider code.
+
 ## Architecture rules
 
 These are load-bearing, not stylistic — see the

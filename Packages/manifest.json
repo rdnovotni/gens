@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.gens.simulation": "file:../src/Gens.Simulation",
+    "com.gens.application": "file:../src/Gens.Application",
     "com.unity.addressables": "2.9.1",
     "com.unity.ai.assistant": "2.19.0-pre.2",
     "com.unity.ai.inference": "2.6.1",
