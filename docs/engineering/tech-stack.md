@@ -28,6 +28,11 @@ custom retained-mode Gens UI
 custom lightweight Scene2D
 ```
 
+The isolated NR2 evidence harness and its still-open desktop validation items
+are documented in [native-runtime-spike-results.md](native-runtime-spike-results.md).
+SDL/Skia remain conditional backend candidates until those measured exit-gate
+items are completed; the experiment is not a production dependency.
+
 The remainder of this document, unless a section says otherwise, describes
 the **current, transitional** baseline — the Unity client and the standalone
 tooling that exist and are exercised by CI today. See ADR 0014 for the full
@@ -106,4 +111,3 @@ invariants, save round trips, and migrations. Unity Test Framework covers EditMo
 and PlayMode, while UI Test Framework covers critical workflows. BenchmarkDotNet
 tracks monthly ticks. CI validates content, runs both test suites and migrations,
 and verifies a Unity build before merge.
-
