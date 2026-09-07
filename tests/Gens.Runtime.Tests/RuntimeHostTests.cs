@@ -197,6 +197,9 @@ internal sealed class FakeCanvas : ICanvas2D
     public void DrawLine(Point2 start, Point2 destination, StrokeStyle stroke) { }
     public void DrawPath(IGraphicsPath path, FillStyle? fill, StrokeStyle? stroke = null) { }
     public void DrawImage(IGraphicsImage image, Rect destination, float opacity = 1) { }
+    public void DrawImage(IGraphicsImage image, Rect source, Rect destination, float opacity = 1) { }
+    public void DrawImage(IGraphicsImage image, Rect destination, Color tint, float opacity = 1) { }
+    public void DrawImage(IGraphicsImage image, Rect source, Rect destination, Color tint, float opacity = 1) { }
     public void DrawGlyphRun(GlyphRun run, Point2 origin, Color color, float opacity = 1) { }
     private sealed class State : ICanvasState { public void Dispose() { } }
 }

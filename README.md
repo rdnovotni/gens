@@ -45,6 +45,8 @@ dotnet run --project src/Gens.Client.Desktop --configuration Release
 | `src/Gens.Application/` | Engine-neutral campaign lifecycle, query/command, save/load, and replay host |
 | `src/Gens.Platform/`, `src/Gens.Platform.Sdl/` | Engine-neutral desktop contracts and the isolated SDL3 backend |
 | `src/Gens.Graphics/`, `src/Gens.Graphics.Skia/` | Backend-neutral 2D graphics contracts and Skia software/OpenGL implementation |
+| `src/Gens.Scene2D/` | Lightweight retained 2D scenes, transforms, cameras, layers, sprites, vectors, text, culling, and animation |
+| `src/Gens.Assets/`, `src/Gens.Portraits/` | Stable/content-addressed assets and deterministic offline procedural portrait rendering |
 | `src/Gens.Runtime/` | Native application loop, presentation clock, invalidation scheduling, lifecycle, and diagnostics |
 | `src/Gens.UI/` | Backend-neutral retained UI tree, layout, controls, input/focus, themes, accessibility semantics, and Gens design primitives |
 | `src/Gens.Presentation/` | Engine-neutral snapshot mapping shared by native and transitional Unity clients |
@@ -52,7 +54,7 @@ dotnet run --project src/Gens.Client.Desktop --configuration Release
 | `tests/Gens.Client.Desktop.Tests/` | Native application-flow, lifecycle, save/load, determinism, and architecture tests |
 | `tests/Gens.Application.Tests/` | Standalone integration tests for the shared campaign session |
 | `tests/` | Standalone automated tests |
-| `benchmarks/` | Simulation performance benchmarks |
+| `benchmarks/` | Simulation and native visual performance benchmarks |
 | `content/source/` | Authored content inputs — typed definition families (goods, buildings, traits, policies, events, regions, cultures, religions, names, presentation) validated against `content/schemas/` |
 | `content/schemas/` | Content validation contracts (JSON Schema per definition family, plus cross-file reference/duplicate-ID checks in the content compiler) |
 | `tools/` | Standalone tooling, including `Gens.ContentCompiler` and the production-abstraction `Gens.EngineSandbox` native executable |

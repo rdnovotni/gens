@@ -26,7 +26,7 @@ that ADR for the full 17-gate list before treating any later phase here as
   - [x] **NR3A** — Platform, graphics, runtime loop, and engine sandbox implementation
   - [x] **NR3B** — Retained-mode UI foundation (Ticket 5; gallery uses fake data)
 - [x] **Phase NR4** — Native-client vertical-slice parity
-- [ ] **Phase NR5** — Scene2D and procedural portrait pipeline
+- [x] **Phase NR5** — Scene2D and procedural portrait pipeline
 - [ ] **Phase NR6** — AI art, audio, accessibility, packaging
 - [ ] **Phase NR7** — Cross-platform hardening and Unity retirement
 
@@ -193,6 +193,8 @@ are explicitly out of scope here.
 ---
 
 ### Phase NR5 — Scene2D and procedural portrait pipeline
+
+**Completion update (2026-09-07):** Ticket 7 added the backend-neutral Scene2D graph, camera, UI viewport bridge, finite presentation-clock animation, culling and visual benchmark; stable/content-addressed asset services; player-visible character visual projection, descriptions, versioned recipes, deterministic Scene2D portrait composition, memory/disk caching, fallback and snapshot models; native roster/detail portrait integration; and Scene/portrait gallery proofs. No external AI provider was added and Unity remains supported.
 
 **Outcome:** the native runtime gains the 2D scene capability ADR 0014
 anticipates, starting with procedural portraits as the first concrete

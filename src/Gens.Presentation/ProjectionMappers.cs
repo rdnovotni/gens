@@ -4,6 +4,7 @@ using System;
 using System.Linq;
 using Gens.Application.Campaign;
 using Gens.Presentation.Models;
+using Gens.Presentation.Visuals;
 using Gens.Simulation.Actions;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Queries;
@@ -15,11 +16,16 @@ public static class ProjectionMappers
 {
     private static readonly char[] WordSeparators = { ' ' };
     public static InkBarModel InkBar(InkBarProjection p) => new(p.GensName, $"{p.MonthOfYear:D2}/{p.DisplayYear} {p.Era}", $"{p.Treasury.ToDisplayString()} denarii", $"{p.Dignitas} dignitas");
-    public static HouseholdRosterModel HouseholdRoster(HouseholdRosterProjection p) => new(p.Members.Select(row => new RosterRowModel(row.CharacterId, row.FullName, row.DutySlot is { } duty ? $"{row.AgeInYears} · {row.LegalStatus} · {duty}" : $"{row.AgeInYears} · {row.LegalStatus}", Monogram(row.FullName))).ToArray());
+    public static HouseholdRosterModel HouseholdRoster(HouseholdRosterProjection p) => new(p.Members.Select(row =>
+    {
+        CharacterVisualState visual = CharacterVisualStateProjector.Project(row.CharacterId, row.Sex, row.AgeInYears, row.VisualProfile ?? throw new InvalidOperationException("Roster visual projection is missing."), row.LegalStatus, row.SocialClass, row.DutySlot);
+        return new RosterRowModel(row.CharacterId, row.FullName, row.DutySlot is { } duty ? $"{row.AgeInYears} · {row.LegalStatus} · {duty}" : $"{row.AgeInYears} · {row.LegalStatus}", Monogram(row.FullName), visual, AppearanceDescriptionBuilder.Build(visual));
+    }).ToArray());
     public static CharacterDetailModel CharacterDetail(CharacterDetailProjection p)
     {
         string status = p.IsAlive ? p.Stage.ToString() : "Deceased"; string subtitle = p.DutySlot is { } duty ? $"{p.AgeInYears} · {status} · {p.LegalStatus} · {duty}" : $"{p.AgeInYears} · {status} · {p.LegalStatus}";
-        return new(p.CharacterId, p.FullName, subtitle, Monogram(p.FullName),
+        CharacterVisualState visual = CharacterVisualStateProjector.Project(p.CharacterId, p.Sex, p.AgeInYears, p.VisualProfile, p.LegalStatus, p.SocialClass, p.DutySlot, p.IsAlive);
+        return new(p.CharacterId, p.FullName, subtitle, Monogram(p.FullName), visual, AppearanceDescriptionBuilder.Build(visual),
             new[] { Stat("Diplomacy", p.Attributes.Diplomacy), Stat("Martial", p.Attributes.Martial), Stat("Stewardship", p.Attributes.Stewardship), Stat("Intrigue", p.Attributes.Intrigue), Stat("Learning", p.Attributes.Learning) },
             new[] { Stat("Fieldwork", p.Skills.Fieldwork), Stat("Domestic", p.Skills.DomesticService), Stat("Craft", p.Skills.Craft), Stat("Culinary", p.Skills.Culinary), Stat("Medicine", p.Skills.Medicine) },
             new[] { Stat("Health", p.Condition.Health), Stat("Fatigue", p.Condition.Fatigue), Stat("Loyalty", p.Condition.Loyalty) });

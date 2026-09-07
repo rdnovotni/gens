@@ -164,3 +164,18 @@ The native desktop client is now the primary target for new presentation develop
   `UiSemantics` accessibility information.
 - Exercise new generic controls in the EngineSandbox UI gallery and add
   headless tests before campaign screens depend on them.
+
+## Scene2D and character portrait rules
+
+- `Gens.Scene2D` is presentation-only. It never owns or queries authoritative
+  campaign state; scenes consume projection or presentation models.
+- Authoritative structured appearance facts and renderer-specific portrait
+  recipes are separate. Recipes, images, caches, and historical portrait
+  references never become `WorldState` truth.
+- Visual seed derivation and portrait generation must not consume simulation
+  RNG. Rendering a portrait must never change campaign state or its hash.
+- Every named character must retain a deterministic offline procedural
+  portrait and an emergency fallback.
+- No AI-provider or vendor-specific image-generation logic belongs in
+  Simulation. Do not add such provider logic before Ticket 8, and keep it
+  optional when introduced.

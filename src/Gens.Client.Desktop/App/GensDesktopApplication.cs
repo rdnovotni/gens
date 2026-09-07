@@ -3,13 +3,15 @@ using Gens.Client.Desktop.Settings;
 using Gens.Graphics;
 using Gens.Platform;
 using Gens.Presentation.Models;
+using Gens.Portraits;
 using Gens.Runtime;
+using Gens.Scene2D;
 using Gens.UI;
 
 namespace Gens.Client.Desktop.App;
 
 /// <summary>Native presentation host. It never stores or reads WorldState.</summary>
-public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApplicationController controller, bool smokeTest = false, string? smokeCapturePath = null) : IRuntimeApplication
+public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApplicationController controller, bool smokeTest = false, string? smokeCapturePath = null) : IRuntimeApplication, IDisposable
 {
     private RuntimeContext context = null!;
     private UiRoot root = null!;
@@ -19,6 +21,9 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private bool gameplayMounted, consoleOpen;
     private string consoleInput = string.Empty;
     private bool smokeCaptured;
+    private bool smokeCapturePending;
+    private bool disposed;
+    private readonly PortraitService portraits = new(graphics, controller.PortraitCachePath);
     public Func<byte[]>? CapturePng { private get; set; }
 
     public UiRoot Root => root;
@@ -55,15 +60,21 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     public void Update(PresentationFrame frame)
     {
         if (!smokeTest || smokeCaptured || frame.Elapsed < TimeSpan.FromMilliseconds(200)) return;
+        smokeCapturePending = true;
+    }
+    public void Render(RenderContext context)
+    {
+        context.Canvas.Clear(new(25, 20, 17)); root.Layout(new(context.LogicalSize.Width, context.LogicalSize.Height)); root.Render(context.Canvas);
+        if (!smokeCapturePending || smokeCaptured) return;
         smokeCaptured = true;
         string path = string.IsNullOrWhiteSpace(smokeCapturePath) ? Path.Combine(Environment.CurrentDirectory, "native-client-smoke.png") : smokeCapturePath;
         string? directory = Path.GetDirectoryName(path); if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
         if (CapturePng is not null) File.WriteAllBytes(path, CapturePng());
         Console.WriteLine($"Native client smoke capture: {path}");
-        context.SetAnimating(false); context.RequestQuit();
+        this.context.SetAnimating(false); this.context.RequestQuit();
     }
-    public void Render(RenderContext context) { context.Canvas.Clear(new(25, 20, 17)); root.Layout(new(context.LogicalSize.Width, context.LogicalSize.Height)); root.Render(context.Canvas); }
-    public void Shutdown() { font.Dispose(); }
+    public void Shutdown() => Dispose();
+    public void Dispose() { if (disposed) return; portraits.Dispose(); font.Dispose(); disposed = true; }
 
     private void Rebuild()
     {
@@ -164,25 +175,48 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private ScrollView BuildRoster()
     {
         HouseholdRosterModel vm = controller.Roster(); var tablet = Tablet("HouseholdRoster", null, 610); var c = Content(tablet); c.AddChild(Text("Household Roster", TypographyRole.Title));
-        var rows = new Column { Spacing = 5 }; foreach (RosterRowModel member in vm.Rows) rows.AddChild(Button($"{member.Monogram}   {member.Name}\n      {member.Subtitle}", () => Run(() => controller.OpenCharacter(member.CharacterId)), $"Character-{member.CharacterId}"));
+        var rows = new Column { Spacing = 5 };
+        foreach (RosterRowModel member in vm.Rows)
+        {
+            ResolvedPortrait portrait = portraits.Resolve(member.Visual, 128);
+            var row = new Row { Spacing = 12 }; row.AddChild(new CharacterMedallion(portrait.Image) { Width = 58, Height = 58, Semantics = { Label = portrait.Appearance.AccessibilityDescription } });
+            var labels = new Column(); labels.AddChild(Text(member.Name, TypographyRole.Button, light: true)); labels.AddChild(Text(member.Subtitle, TypographyRole.SmallCaption, light: true)); row.AddChild(labels);
+            rows.AddChild(new Button { Name = $"Character-{member.CharacterId}", Content = row, Clicked = () => Run(() => controller.OpenCharacter(member.CharacterId)) });
+        }
         c.AddChild(new ScrollView { Name = "RosterScroll", Height = 500, Content = rows, IsFocusable = true }); return Screen(tablet);
     }
 
     private ScrollView BuildCharacter()
     {
         CharacterDetailModel vm = controller.Character(); var tablet = Tablet("CharacterDetail", null, 610); var c = Content(tablet); c.AddChild(Button("Back to Household", () => { controller.Back(); Rebuild(); }));
-        var header = new Row { Spacing = 18 }; var medal = new CharacterMedallion { Width = 96, Height = 96 }; medal.Child = Text(vm.Monogram, TypographyRole.Title); medal.Semantics.Label = $"Placeholder portrait for {vm.Name}"; header.AddChild(medal);
+        ResolvedPortrait portrait = portraits.Resolve(vm.Visual, 256);
+        var header = new Row { Spacing = 18 }; var medal = new CharacterMedallion(portrait.Image) { Width = 128, Height = 128 }; medal.Semantics.Label = portrait.Appearance.AccessibilityDescription; header.AddChild(medal);
         var identity = new Column(); identity.AddChild(Text(vm.Name, TypographyRole.Title)); identity.AddChild(Text(vm.Subtitle, TypographyRole.Caption)); header.AddChild(identity); c.AddChild(header);
-        c.AddChild(Stats("Attributes", vm.Attributes)); c.AddChild(Stats("Skills", vm.Skills)); c.AddChild(Stats("Condition", vm.Condition)); return Screen(tablet);
+        c.AddChild(Text(vm.Appearance.DetailedDescription, TypographyRole.Body)); c.AddChild(Stats("Attributes", vm.Attributes)); c.AddChild(Stats("Skills", vm.Skills)); c.AddChild(Stats("Condition", vm.Condition)); return Screen(tablet);
     }
 
     private ScrollView BuildEstate()
     {
         EstateSettlementModel vm = controller.Estate(); var tablet = Tablet("EstateSettlement", null, 610); var c = Content(tablet); c.AddChild(Text("Estate & Settlement", TypographyRole.Title)); c.AddChild(Text($"Settlement stage: {vm.SettlementStage}", TypographyRole.Heading));
+        c.AddChild(BuildEstateScene(vm));
         var actions = new Row { Spacing = 10 }; actions.AddChild(Button("Change Rites Budget", () => Run(() => controller.RequestAction(CampaignHouseholdAction.CycleRitesBudget)))); actions.AddChild(new WaxSealButton { Content = Text("Fête", TypographyRole.Button, light: true), Clicked = () => Run(() => controller.RequestAction(CampaignHouseholdAction.FundFestival)) }); c.AddChild(actions);
         var holdings = new Column { Spacing = 8 }; foreach (HoldingModel h in vm.Holdings) { holdings.AddChild(Text(h.Label, TypographyRole.Heading)); foreach (BuildingModel b in h.Buildings) holdings.AddChild(new StatRow { Label = b.Label, Value = b.Condition }); }
         if (vm.Holdings.Count == 0) holdings.AddChild(Text("No household holdings are recorded.", TypographyRole.Body));
         c.AddChild(new ScrollView { Name = "EstateScroll", Height = 430, Content = holdings, IsFocusable = true }); return Screen(tablet);
+    }
+
+    private static SceneView BuildEstateScene(EstateSettlementModel model)
+    {
+        var scene = new Scene2D.Scene2D(); scene.Camera.Position = new(300, 100);
+        Layer2D background = scene.AddLayer("Background", 0); background.AddChild(new RectangleNode2D { Rectangle = new(0, 0, 600, 200), Color = new(206, 184, 132) });
+        Layer2D environment = scene.AddLayer("Environment", 10); environment.AddChild(new RectangleNode2D { Rectangle = new(0, 145, 600, 55), Color = new(111, 119, 61) });
+        int holdingIndex = 0;
+        foreach (HoldingModel holding in model.Holdings)
+        {
+            float x = 40 + holdingIndex++ * 170; environment.AddChild(new RectangleNode2D { Rectangle = new(x, 70, 135, 78), Color = new(176, 139, 91), CornerRadius = 4 });
+            int buildingIndex = 0; foreach (BuildingModel _ in holding.Buildings.Take(4)) environment.AddChild(new RectangleNode2D { Rectangle = new(x + 12 + buildingIndex++ * 28, 115, 20, 30), Color = new(108, 67, 45) });
+        }
+        return new SceneView { Name = "EstateScenePreview", Scene = scene, Height = 200, Semantics = { Label = $"Non-authoritative estate preview with {model.Holdings.Count} holdings." } };
     }
 
     private ScrollView BuildReport()

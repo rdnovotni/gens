@@ -19,7 +19,8 @@ public readonly record struct HouseholdRosterRow(
     LifecycleStage Stage,
     LegalStatus LegalStatus,
     SocialClass? SocialClass,
-    DutySlot? DutySlot);
+    DutySlot? DutySlot,
+    CharacterVisualProfile? VisualProfile = null);
 
 /// <summary>The household roster screen's projection (Phase 9 item 6): every living member of one
 /// household, in ascending Character-ID (creation) order — <see cref="Identity.OrderedRegistry{TId,TEntity}"/>'s
@@ -60,7 +61,8 @@ public sealed class HouseholdRosterQuery : IWorldQuery<HouseholdRosterProjection
                 Stage: character.GetLifecycleStage(state.Date),
                 LegalStatus: character.LegalStatus,
                 SocialClass: character.SocialClass,
-                DutySlot: character.Duty?.Slot));
+                DutySlot: character.Duty?.Slot,
+                VisualProfile: character.VisualProfile));
         }
 
         return new HouseholdRosterProjection(_householdId.ToTaggedString(), rows);

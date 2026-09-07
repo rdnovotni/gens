@@ -41,6 +41,12 @@ in [ui-framework.md](ui-framework.md). It consumes only the engine-neutral
 graphics contracts; the desktop client and real campaign screens remain future
 work.
 
+The lightweight scene framework and deterministic offline portrait pipeline are
+implemented and documented in [scene2d.md](scene2d.md) and
+[character-visual-pipeline.md](character-visual-pipeline.md). Procedural portrait
+layers are original parametric vector primitives; no external AI provider is part
+of NR5.
+
 ## Native runtime versions and boundaries
 
 - Runtime/tool target: .NET 10.

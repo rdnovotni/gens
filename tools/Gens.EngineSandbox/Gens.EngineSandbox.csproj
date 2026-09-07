@@ -5,6 +5,7 @@
     <ProjectReference Include="../../src/Gens.Graphics.Skia/Gens.Graphics.Skia.csproj" />
     <ProjectReference Include="../../src/Gens.Runtime/Gens.Runtime.csproj" />
     <ProjectReference Include="../../src/Gens.UI/Gens.UI.csproj" />
+    <ProjectReference Include="../../src/Gens.Portraits/Gens.Portraits.csproj" />
   </ItemGroup>
   <ItemGroup><None Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
 </Project>

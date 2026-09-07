@@ -65,3 +65,12 @@ acceptance conditions.
 [ADR 0016](0016-retained-mode-ui-tree-and-layout.md) records the accepted
 retained-tree, measure/arrange, logical-unit, typed-theme, backend-neutral, and
 accessibility-semantics foundation implemented by Ticket 5.
+
+## ADR 0017 — character visual truth and portraits
+
+[ADR 0017](0017-character-visual-truth-and-portrait-boundary.md) records the
+accepted boundary implemented by Ticket 7: structured simulation appearance
+facts are authoritative, recipes and portrait bytes are presentation-only,
+visual randomness is isolated from simulation RNG, provenance is versioned,
+and a deterministic procedural fallback remains mandatory even after optional
+generated or custom sources are introduced.

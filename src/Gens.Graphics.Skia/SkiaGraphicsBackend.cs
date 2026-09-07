@@ -225,6 +225,24 @@ internal sealed class SkiaCanvas(SKCanvas canvas) : ICanvas2D, IDisposable
         if (image is not SkiaImage skia) throw new ArgumentException("Image belongs to a different graphics backend.", nameof(image));
         canvas.DrawBitmap(skia.Native, ToSk(destination), Paint(new Color(255, 255, 255, Alpha(opacity))));
     }
+
+    public void DrawImage(IGraphicsImage image, Rect source, Rect destination, float opacity = 1)
+    {
+        if (image is not SkiaImage skiaImage) throw new ArgumentException("Image belongs to another graphics backend.", nameof(image));
+        canvas.DrawBitmap(skiaImage.Native, ToSk(source), ToSk(destination), Paint(new Color(255, 255, 255, Alpha(opacity))));
+    }
+    public void DrawImage(IGraphicsImage image, Rect destination, Color tint, float opacity = 1)
+    {
+        if (image is not SkiaImage skia) throw new ArgumentException("Image belongs to a different graphics backend.", nameof(image));
+        using SKPaint paint = ImagePaint(tint, opacity);
+        canvas.DrawBitmap(skia.Native, ToSk(destination), paint);
+    }
+    public void DrawImage(IGraphicsImage image, Rect source, Rect destination, Color tint, float opacity = 1)
+    {
+        if (image is not SkiaImage skia) throw new ArgumentException("Image belongs to a different graphics backend.", nameof(image));
+        using SKPaint paint = ImagePaint(tint, opacity);
+        canvas.DrawBitmap(skia.Native, ToSk(source), ToSk(destination), paint);
+    }
     public void DrawGlyphRun(GlyphRun run, Point2 origin, Color color, float opacity = 1)
     {
         if (run.Font is not SkiaFontFace face) throw new ArgumentException("Font belongs to a different graphics backend.", nameof(run));
@@ -242,6 +260,11 @@ internal sealed class SkiaCanvas(SKCanvas canvas) : ICanvas2D, IDisposable
         canvas.DrawText(blob, origin.X, origin.Y, Paint(new Color(color.R, color.G, color.B, alpha)));
     }
     private SKPaint Paint(Color color) => Get((color, false, 0, LineCap.Butt, LineJoin.Miter));
+    private static SKPaint ImagePaint(Color tint, float opacity) => new()
+    {
+        Color = new SKColor(255, 255, 255, (byte)((tint.A * Alpha(opacity)) / 255)),
+        ColorFilter = SKColorFilter.CreateBlendMode(new SKColor(tint.R, tint.G, tint.B), SKBlendMode.Modulate),
+    };
     private SKPaint Paint(StrokeStyle stroke) => Get((stroke.Color, true, stroke.Width, stroke.Cap, stroke.Join));
     private SKPaint Get((Color color, bool stroke, float width, LineCap cap, LineJoin join) key)
     {
