@@ -183,14 +183,23 @@ consumer.
   `Camera2D`, layers, animation), explicitly non-authoritative per ADR 0014.
 - `Gens.Assets` (stable asset identity, manifests, loading, caching).
 - The existing procedural-portrait recipe pipeline rendered through
-  `Gens.Scene2D`/`Gens.Graphics` instead of Unity's `SpriteRenderer`/URP 2D
-  path, with no change to `CharacterVisualProfile`/`PortraitRecipe` inputs.
+  `Gens.Scene2D`/`Gens.Graphics`, with no change to
+  `CharacterVisualProfile`/`PortraitRecipe` inputs. Note: the current Unity
+  client (`PortraitAdapter`) does not render a raster/composited portrait
+  through `SpriteRenderer`/URP — it derives a monogram-and-tint medallion
+  from the recipe's layer tokens. NR5 is therefore not "port an existing
+  Unity rendering pipeline," it is the first real implementation of
+  recipe-to-image rendering, on the native side.
 
 **Prerequisites:** Phase NR4.
 
-**Exit gate:** procedural portraits render identically (same recipe, same
-seed, same renderer-version contract) through the native client as they do
-in Unity today.
+**Exit gate:** procedural portraits render deterministically and
+reproducibly from a `CharacterVisualProfile`/`PortraitRecipe`, a seed, and a
+declared renderer version — the same recipe and seed always produce the same
+output image, and a renderer-version bump is the only thing allowed to change
+that output. Parity is defined against these golden recipe/seed/output
+fixtures, not against the Unity client's current monogram placeholder, which
+is not a real rendering baseline to match.
 
 **Non-goals:** AI-generated art integration (NR6); illustrated events/estate
 visualization beyond portraits; particle/weather effects.
