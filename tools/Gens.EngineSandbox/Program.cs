@@ -3,6 +3,7 @@ using Gens.Graphics.Skia;
 using Gens.Platform;
 using Gens.Platform.Sdl;
 using Gens.Runtime;
+using Gens.UI;
 using System.Diagnostics;
 
 namespace Gens.EngineSandbox;
@@ -17,10 +18,14 @@ internal static class Program
             RendererMode mode = ParseRenderer(args);
             using var platform = new SdlPlatform();
             using var graphics = new SkiaGraphicsBackend();
-            var application = new SandboxApplication(graphics, args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase));
+            bool runtimePage = args.Any(static x => string.Equals(x, "--page=runtime", StringComparison.OrdinalIgnoreCase));
+            IRuntimeApplication application = runtimePage
+                ? new SandboxApplication(graphics, args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase))
+                : new UiSandboxApplication(graphics, args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase));
             using var host = new RuntimeHost(platform, graphics, application,
                 new WindowOptions("Gens Engine Sandbox", 1280, 720, Resizable: true, HighDpi: true, MinWidth: 640, MinHeight: 360), mode);
-            application.CapturePng = host.CapturePng;
+            if (application is SandboxApplication runtimeApplication) runtimeApplication.CapturePng = host.CapturePng;
+            if (application is UiSandboxApplication uiApplication) uiApplication.CapturePng = host.CapturePng;
             host.Run();
             RuntimeDiagnostics d = host.Diagnostics;
             Console.WriteLine($"Stopped cleanly. frames={d.FramesPresented}; events={d.EventsDispatched}; waits={d.WaitCount}; last_frame_ms={d.LastFrameDuration.TotalMilliseconds:F3}");
@@ -38,6 +43,108 @@ internal static class Program
         string? value = args.FirstOrDefault(static x => x.StartsWith("--renderer=", StringComparison.OrdinalIgnoreCase))?.Split('=', 2)[1];
         return value?.ToLowerInvariant() switch { null or "default" => RendererMode.Default, "gpu" => RendererMode.Gpu, "software" => RendererMode.Software, _ => throw new ArgumentException("Renderer must be default, gpu, or software.") };
     }
+}
+
+internal sealed class UiSandboxApplication(IGraphicsBackend graphics, bool smokeTest) : IRuntimeApplication
+{
+    private RuntimeContext context = null!;
+    private UiRoot root = null!;
+    private IFontFace font = null!;
+    private TextBlock inspectorText = null!;
+    private bool fullscreen, smokeCaptured;
+    private bool treePrinted;
+    public Func<byte[]> CapturePng { private get; set; } = null!;
+
+    public void Initialize(RuntimeContext runtimeContext)
+    {
+        context = runtimeContext;
+        using (FileStream stream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Assets", "NotoSans-Regular.ttf"))) font = graphics.LoadFont(stream);
+        root = new(GensTheme.Create(graphics, font)) { Name = "UiGallery" };
+        root.AttachInvalidation(context.Invalidate);
+        root.AddChild(BuildGallery());
+        Console.WriteLine("UI gallery: F1 bounds, F2 tree, F3 UI scale, F11 fullscreen, F12 capture, Escape quit. Use Tab/Shift+Tab and wheel; click Open Modal.");
+        if (smokeTest) context.SetAnimating(true);
+    }
+
+    public void HandleEvent(PlatformEvent platformEvent)
+    {
+        root.HandleEvent(platformEvent);
+        if (platformEvent is PointerMovedEvent)
+        {
+            UiNode? node = root.HoveredNode; inspectorText.Text = node is null ? "Inspector: no node" : Format(UiInspector.Inspect(node));
+        }
+        if (platformEvent is KeyboardEvent { IsDown: true, IsRepeat: false } key) HandleKey(key.Key);
+    }
+
+    public void Update(PresentationFrame frame)
+    {
+        if (!smokeTest || smokeCaptured || frame.Elapsed < TimeSpan.FromMilliseconds(250)) return;
+        smokeCaptured = true; string path = Path.Combine(Environment.CurrentDirectory, $"engine-sandbox-ui-smoke-{DateTime.UtcNow:yyyyMMdd-HHmmss}.png"); File.WriteAllBytes(path, CapturePng()); Console.WriteLine($"UI smoke capture: {path}"); context.SetAnimating(false); context.RequestQuit();
+    }
+
+    public void Render(RenderContext render)
+    {
+        render.Canvas.Clear(new(25, 20, 17)); root.Layout(new(render.LogicalSize.Width, render.LogicalSize.Height)); if (smokeTest && !treePrinted) { treePrinted = true; Console.WriteLine(UiInspector.Tree(root)); }
+        root.Render(render.Canvas);
+    }
+
+    public void Shutdown() => font.Dispose();
+
+    private Column BuildGallery()
+    {
+        var shell = new Column { Name = "GalleryShell" };
+        var bar = new InkBar();
+        var barRow = new Row { Spacing = 18 };
+        barRow.AddChild(new TextBlock { Text = "GENS · UI FOUNDATION", TypographyRole = TypographyRole.Inscription, Foreground = new Color(245, 229, 195) });
+        barRow.AddChild(new TextBlock { Text = "Retained tree  ·  Logical units  ·  Backend neutral", TypographyRole = TypographyRole.Caption, Foreground = new Color(190, 142, 54), VerticalAlignment = VerticalAlignment.Center });
+        bar.Child = barRow; shell.AddChild(bar);
+
+        var diptych = new Diptych { Margin = new(18), Height = 570 };
+        var left = new WaxTablet { Margin = new(0, 0, 9, 0) };
+        var leftContent = new StackPanel { Spacing = 12 };
+        leftContent.AddChild(new TextBlock { Text = "The House of Aemilius", TypographyRole = TypographyRole.Heading });
+        leftContent.AddChild(new TextBlock { Text = "A design-system study using invented presentation data. Long inscriptions wrap within their tablet without touching authoritative campaign state.", Wrapping = TextWrapping.Wrap });
+        var actions = new Row { Spacing = 10 };
+        actions.AddChild(ActionButton("Open Modal", OpenModal));
+        actions.AddChild(new Toggle { Name = "ShowLineageToggle", Content = new TextBlock { Text = "Lineage", TypographyRole = TypographyRole.Button, Foreground = new Color(245, 229, 195) } });
+        actions.AddChild(new WaxSealButton { Name = "AdvanceSeal", Content = new TextBlock { Text = "+", TypographyRole = TypographyRole.Heading, Foreground = Color.White }, Clicked = () => Console.WriteLine("Wax seal activated.") });
+        leftContent.AddChild(actions);
+        leftContent.AddChild(new CharacterMedallion { Semantics = { Label = "Placeholder portrait for Livia Aemilia" } });
+        left.Child = leftContent; diptych.SetLeft(left);
+
+        var right = new WaxTablet { Margin = new(9, 0, 0, 0) };
+        var rightContent = new Column { Spacing = 8 };
+        rightContent.AddChild(new TextBlock { Text = "Ledger Preview", TypographyRole = TypographyRole.Heading });
+        var list = new Column { Spacing = 4 };
+        for (int i = 1; i <= 40; i++) list.AddChild(new TextBlock { Name = $"LedgerRow{i}", Text = $"{i:00}  ·  Estate entry {1000 + i} denarii", TypographyRole = TypographyRole.Ledger });
+        rightContent.AddChild(new ScrollView { Name = "LedgerScroll", Height = 410, Content = list, IsFocusable = true });
+        right.Child = rightContent; diptych.SetRight(right); shell.AddChild(diptych);
+        inspectorText = new TextBlock { Name = "InspectorReadout", Text = "Inspector: move the pointer across the retained tree", TypographyRole = TypographyRole.SmallCaption, Foreground = new Color(245, 229, 195), Margin = new(20, 0) };
+        shell.AddChild(inspectorText); return shell;
+    }
+
+    private static Button ActionButton(string text, Action action) => new() { Name = text.Replace(" ", string.Empty, StringComparison.Ordinal), Content = new TextBlock { Text = text, TypographyRole = TypographyRole.Button, Foreground = new Color(245, 229, 195) }, Clicked = action };
+
+    private void OpenModal()
+    {
+        var dialog = new Border { Name = "ModalDialog", Width = 430, Height = 230, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Background = new(245, 229, 195), BorderBrush = new(133, 48, 39), BorderThickness = 4, Padding = new(24), Semantics = { Role = AccessibilityRole.Dialog, Label = "Demonstration dialog" } };
+        var content = new Column { Spacing = 14 }; content.AddChild(new TextBlock { Text = "Modal Focus", TypographyRole = TypographyRole.Heading }); content.AddChild(new TextBlock { Text = "Background input is blocked. Tab remains in this focus scope; closing restores the previous focus.", Wrapping = TextWrapping.Wrap }); content.AddChild(ActionButton("Close", root.CloseModal)); dialog.Child = content; root.ShowModal(dialog);
+    }
+
+    private void HandleKey(PhysicalKey key)
+    {
+        switch (key.ScanCode)
+        {
+            case 41: context.RequestQuit(); break;
+            case 58: root.DrawLayoutOutlines = !root.DrawLayoutOutlines; context.Invalidate(); break;
+            case 59: Console.WriteLine(UiInspector.Tree(root)); break;
+            case 60: root.UiScale = root.UiScale >= 1.5f ? 1 : root.UiScale + .25f; root.InvalidateMeasure(); Console.WriteLine($"UI scale: {root.UiScale:P0}"); break;
+            case 68: fullscreen = !fullscreen; context.Window.SetFullscreen(fullscreen); context.Invalidate(); break;
+            case 69: string directory = Path.Combine(Environment.CurrentDirectory, "captures"); Directory.CreateDirectory(directory); string path = Path.Combine(directory, $"engine-sandbox-ui-{DateTime.UtcNow:yyyyMMdd-HHmmss}.png"); File.WriteAllBytes(path, CapturePng()); Console.WriteLine($"Captured {path}"); break;
+        }
+    }
+
+    private static string Format(UiInspection i) => $"{i.Type}{(i.Name is null ? string.Empty : " #" + i.Name)}  bounds {i.Bounds.X:F0},{i.Bounds.Y:F0} {i.Bounds.Width:F0}×{i.Bounds.Height:F0}  desired {i.DesiredSize.Width:F0}×{i.DesiredSize.Height:F0}  {(i.Focused ? "focused " : string.Empty)}{(i.Hovered ? "hovered " : string.Empty)}children {i.ChildrenCount}  invalid M:{!i.MeasureValid} A:{!i.ArrangeValid} P:{!i.PaintValid}";
 }
 
 internal static class SandboxBenchmark

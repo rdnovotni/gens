@@ -144,3 +144,17 @@ CONTRIBUTING.md's ["Connecting an AI coding agent to the Editor"](CONTRIBUTING.m
 section documents wiring the Unity CLI's MCP server (via `.mcp.json`) so an
 agent can read the Unity console, compilation results, test runs, and scene/
 asset state through a running Editor session. It only works locally.
+
+## Native UI rules
+
+- Generic retained controls belong in `src/Gens.UI`; that project must not
+  reference Simulation, Application, SDL, SkiaSharp, or Unity.
+- Use logical units and the shared measure/arrange lifecycle. Invalidate the
+  narrowest phase: paint for visual state, arrange for placement, and measure
+  only when desired size may change.
+- Paint only through `Gens.Graphics`; never use Skia types in UI code.
+- Prefer typed theme tokens and typography roles to raw colors/font details.
+- Interactive controls must be keyboard focusable and carry appropriate
+  `UiSemantics` accessibility information.
+- Exercise new generic controls in the EngineSandbox UI gallery and add
+  headless tests before campaign screens depend on them.

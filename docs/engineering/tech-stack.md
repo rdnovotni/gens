@@ -36,6 +36,11 @@ remain a conditional backend decision until those measured exit-gate items are
 completed. Ticket 4 implementation proceeded under an explicit override; the
 experiment remains separate and is not a production dependency.
 
+The retained-mode UI foundation is now implemented in `Gens.UI` and documented
+in [ui-framework.md](ui-framework.md). It consumes only the engine-neutral
+graphics contracts; the desktop client and real campaign screens remain future
+work.
+
 ## Native runtime versions and boundaries
 
 - Runtime/tool target: .NET 10.

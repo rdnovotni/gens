@@ -24,7 +24,7 @@ that ADR for the full 17-gate list before treating any later phase here as
 - [ ] **Phase NR2** — SDL3 + Skia rendering/platform spike
 - [ ] **Phase NR3** — Runtime and custom UI foundation
   - [x] **NR3A** — Platform, graphics, runtime loop, and engine sandbox implementation
-  - [ ] **NR3B** — Retained-mode UI and first real presentation screen
+  - [x] **NR3B** — Retained-mode UI foundation (Ticket 5; gallery uses fake data)
 - [ ] **Phase NR4** — Native-client vertical-slice parity
 - [ ] **Phase NR5** — Scene2D and procedural portrait pipeline
 - [ ] **Phase NR6** — AI art, audio, accessibility, packaging
@@ -133,8 +133,10 @@ spike code is not expected to be production-quality or kept as-is.
 ### Phase NR3 — Runtime and custom UI foundation
 
 NR3 is split into NR3A (Ticket 4: platform/graphics/runtime foundation) and
-NR3B (Ticket 5: retained-mode UI foundation). NR3A code and automated tests are
-present, but overall NR3 remains open until NR3B and the phase exit gate pass.
+NR3B (Ticket 5: retained-mode UI foundation). Both foundations and their
+automated tests are present. Overall NR3 remains open because its exit gate
+requires a real projection-backed presentation screen; Ticket 5 explicitly
+limited its gallery to fake data and deferred campaign screens to Ticket 6.
 This split does not waive the still-open NR2 evidence.
 
 **Outcome:** the minimum `Gens.Runtime` + `Gens.UI` foundation needed to

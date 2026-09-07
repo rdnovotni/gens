@@ -89,8 +89,16 @@ transforms, generated raster-image decode/draw, bundled-font shaped text, input,
 resize/DPI metrics, a finite animation that returns to idle waiting, fullscreen,
 and screenshot capture.
 
+Its default `--page=ui` gallery exercises the retained UI tree, responsive
+Diptych/WaxTablet layout, Gens controls, wrapping text, scrolling, Tab focus,
+pointer capture, a focus-trapping modal, the live hovered-node inspector, UI
+scaling, and layout outlines using fake presentation data. Use `--page=runtime`
+for the original low-level canvas/backend page.
+
 ```powershell
 dotnet run --project tools/Gens.EngineSandbox -c Release
+dotnet run --project tools/Gens.EngineSandbox -c Release -- --page=ui
+dotnet run --project tools/Gens.EngineSandbox -c Release -- --page=runtime
 dotnet run --project tools/Gens.EngineSandbox -c Release -- --renderer=software
 dotnet run --project tools/Gens.EngineSandbox -c Release -- --renderer=gpu
 dotnet run --project tools/Gens.EngineSandbox -c Release -- --renderer=software --smoke-test
