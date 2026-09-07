@@ -1,13 +1,18 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
     <Style src="MainMenuScreen.uss" />
     <ui:VisualElement name="main-menu-screen" class="main-menu-root">
-        <ui:VisualElement class="main-menu-card">
+        <ui:VisualElement class="main-menu-vignette-outer" />
+        <ui:VisualElement class="main-menu-vignette-inner" />
+        <ui:VisualElement class="main-menu-card papyrus-background">
+            <ui:VisualElement class="main-menu-card__frame" />
             <ui:VisualElement name="main-menu-seal" class="wax-seal main-menu-seal">
-                <ui:Label text="&#10003;" class="wax-seal__glyph" />
+                <ui:Label text="&#10003;" class="wax-seal__glyph main-menu-seal__glyph" />
             </ui:VisualElement>
-            <ui:Label text="GENS" class="main-menu-title" />
-            <ui:Label text="A Dynastic Simulation of Ancient Rome" class="main-menu-subtitle" />
-            <ui:VisualElement class="main-menu-divider" />
+            <ui:Label text="GENS" class="main-menu-title display-face ink-text" />
+            <ui:Label text="A Dynastic Simulation of Ancient Rome" class="main-menu-subtitle body-face authority-text" />
+            <ui:VisualElement class="main-menu-divider">
+                <ui:Label text="&#10022;" class="main-menu-divider__glyph prestige-text" />
+            </ui:VisualElement>
             <ui:VisualElement class="main-menu-buttons">
                 <ui:Button name="main-menu-new-game" text="New Campaign" class="main-menu-button main-menu-button--primary" />
                 <ui:Button name="main-menu-load-game" text="Load Campaign" class="main-menu-button" />
@@ -15,8 +20,8 @@
                 <ui:Button name="main-menu-credits" text="Credits" class="main-menu-button" />
                 <ui:Button name="main-menu-quit" text="Exit to Desktop" class="main-menu-button" />
             </ui:VisualElement>
-            <ui:Label name="main-menu-status" text="" class="main-menu-status" />
-            <ui:Label text="v0.1.0 • Built with Unity" class="main-menu-version" />
+            <ui:Label name="main-menu-status" text="" class="main-menu-status utility-face crisis-text" />
+            <ui:Label text="v0.1.0 • Built with Unity" class="main-menu-version utility-face chrome-text" />
         </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>

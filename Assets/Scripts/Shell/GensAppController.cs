@@ -85,6 +85,22 @@ public sealed class GensAppController : MonoBehaviour
         var creditsBtn = root.Q<Button>("main-menu-credits");
         var quitBtn = root.Q<Button>("main-menu-quit");
 
+        // The buttons start at opacity:0/translate-down in MainMenuScreen.uss and settle into place
+        // one after another, echoing the card's own fade-in — the menu "arriving" rather than a bare
+        // decorative loop (gens-core-design.md §7.7: motion should represent something happening).
+        const long StaggerStartDelayMs = 260;
+        const long StaggerStepMs = 70;
+        Button?[] menuButtons = new[] { newGameBtn, loadGameBtn, settingsBtn, creditsBtn, quitBtn };
+        for (int i = 0; i < menuButtons.Length; i++)
+        {
+            var button = menuButtons[i];
+            if (button == null)
+                continue;
+
+            long delay = StaggerStartDelayMs + (i * StaggerStepMs);
+            button.schedule.Execute(() => button.AddToClassList("main-menu-button--visible")).StartingIn(delay);
+        }
+
         bool hasSave = File.Exists(SaveFilePath);
         if (loadGameBtn != null)
         {

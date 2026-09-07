@@ -1,27 +1,63 @@
 @import url("Palette.uss");
 @import url("WaxSeal.uss");
 
+/*
+ * The main menu is the one screen allowed to spend a little more composition on atmosphere than
+ * the in-game diptych screens (gens-core-design.md §7.1/§7.6): a layered backdrop and an enlarged
+ * masthead wax seal, while everything else — borders, dividers, buttons — stays quiet and reuses
+ * the shared Palette.uss tokens rather than introducing new color or iconography.
+ */
+
 .main-menu-root {
     flex-grow: 1;
     width: 100%;
     height: 100%;
-    background-color: #2A231B;
+    background-color: #201A14; /* Iron-gall Ink, darkened for the backdrop */
     justify-content: center;
     align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Two oversized, low-opacity circles behind the card fake a soft vignette/glow without gradient
+   or image support in USS — a wash of authority-purple further out, a hint of gold leaf nearer
+   the card, both far too faint to compete with the card or the seal for attention. */
+.main-menu-vignette-outer {
+    position: absolute;
+    width: 900px;
+    height: 900px;
+    left: 50%;
+    top: 50%;
+    margin-left: -450px;
+    margin-top: -450px;
+    border-radius: 450px;
+    background-color: rgba(92, 51, 80, 0.10);
+}
+
+.main-menu-vignette-inner {
+    position: absolute;
+    width: 560px;
+    height: 560px;
+    left: 50%;
+    top: 50%;
+    margin-left: -280px;
+    margin-top: -280px;
+    border-radius: 280px;
+    background-color: rgba(185, 146, 46, 0.06);
 }
 
 .main-menu-card {
-    width: 480px;
-    background-color: #E9DFC4;
-    border-width: 3px;
-    border-color: #B9922E;
-    border-radius: 4px;
-    padding: 36px 32px;
+    width: 500px;
+    border-width: 2px;
+    border-color: #6E8272;
+    border-radius: 3px;
+    padding: 40px 36px;
     align-items: center;
+    position: relative;
     scale: 0.96 0.96;
     opacity: 0;
     transition-property: scale, opacity;
-    transition-duration: 220ms;
+    transition-duration: 240ms;
     transition-timing-function: ease-out;
 }
 
@@ -30,30 +66,57 @@
     opacity: 1;
 }
 
+/* An inset gold hairline a few pixels inside the card's bronze border, so the card reads as a
+   framed document rather than a plain dialog panel (gens-core-design.md §7.1). */
+.main-menu-card__frame {
+    position: absolute;
+    left: 6px;
+    right: 6px;
+    top: 6px;
+    bottom: 6px;
+    border-width: 1px;
+    border-color: #B9922E;
+}
+
+/* The masthead crest: the same wax-seal-press motif every consequential decision uses elsewhere
+   (WaxSeal.uss, §7.6), sized up as the one signature ornamental element this screen earns. */
 .main-menu-seal {
-    margin-bottom: 12px;
+    width: 92px;
+    height: 92px;
+    border-radius: 46px;
+    border-width: 4px;
+    margin-bottom: 16px;
+}
+
+.main-menu-seal__glyph {
+    font-size: 32px;
 }
 
 .main-menu-title {
-    font-size: 44px;
-    color: #2A231B;
-    -unity-font-style: bold;
-    letter-spacing: 4px;
-    margin-bottom: 4px;
+    font-size: 42px;
+    letter-spacing: 6px;
+    margin-bottom: 6px;
 }
 
 .main-menu-subtitle {
-    font-size: 13px;
-    color: #5C3350;
-    -unity-font-style: italic;
-    margin-bottom: 20px;
+    font-size: 14px;
+    margin-bottom: 22px;
 }
 
 .main-menu-divider {
     width: 100%;
-    height: 2px;
-    background-color: #B9922E;
-    margin-bottom: 24px;
+    height: 1px;
+    background-color: #6E8272;
+    margin-bottom: 26px;
+    align-items: center;
+    justify-content: center;
+}
+
+.main-menu-divider__glyph {
+    font-size: 13px;
+    background-color: #E9DFC4;
+    padding: 0 10px;
+    translate: 0 -8px;
 }
 
 .main-menu-buttons {
@@ -63,22 +126,33 @@
 
 .main-menu-button {
     width: 100%;
-    height: 42px;
+    height: 44px;
     margin-bottom: 12px;
     background-color: #2A231B;
     color: #E9DFC4;
-    font-size: 14px;
+    font-size: 15px;
     -unity-font-style: bold;
+    letter-spacing: 1px;
     border-width: 1px;
-    border-color: #B9922E;
+    border-color: #6E8272;
     border-radius: 3px;
     justify-content: center;
     align-items: center;
+    opacity: 0;
+    translate: 0 8px;
+    transition-property: opacity, translate, background-color, border-color, scale;
+    transition-duration: 180ms;
+    transition-timing-function: ease-out;
+}
+
+.main-menu-button--visible {
+    opacity: 1;
+    translate: 0 0;
 }
 
 .main-menu-button:hover {
     background-color: #3D3328;
-    border-color: #E9DFC4;
+    border-color: #B9922E;
 }
 
 .main-menu-button:active {
@@ -89,13 +163,13 @@
 .main-menu-button:disabled {
     background-color: #4A423B;
     color: #8C8276;
-    border-color: #6E8272;
-    opacity: 0.6;
+    border-color: #4A423B;
 }
 
 .main-menu-button--primary {
     background-color: #5C3350;
     border-color: #B9922E;
+    border-width: 2px;
 }
 
 .main-menu-button--primary:hover {
@@ -108,13 +182,11 @@
 
 .main-menu-status {
     font-size: 12px;
-    color: #7A2E1F;
     margin-top: 8px;
     min-height: 16px;
 }
 
 .main-menu-version {
     font-size: 11px;
-    color: #6E8272;
-    margin-top: 16px;
+    margin-top: 18px;
 }
