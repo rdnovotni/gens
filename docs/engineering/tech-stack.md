@@ -1,6 +1,42 @@
 # Technical baseline
 
-## Version policy
+## Transitional stack vs. target stack
+
+Per [ADR 0014](adr/0014-custom-runtime-and-native-client.md), Gens is
+migrating its presentation/runtime platform from Unity to a purpose-built
+native Gens runtime and desktop client. This document describes both states;
+do not read the presence of Unity below as meaning it is the permanent
+platform, and do not assume Unity has already been removed — it has not.
+
+**Transitional stack (current, in active use):**
+
+```text
+Unity 6.3 LTS existing client
+Gens.Simulation netstandard2.1
+.NET 10 standalone tooling
+```
+
+**Target stack (adopted direction, not yet implemented):**
+
+```text
+.NET 10
+Custom Gens runtime/client (Gens.Runtime, Gens.UI, Gens.Scene2D, Gens.Client.Desktop, ...)
+SDL3 backend (Gens.Platform.Sdl)
+SkiaSharp backend (Gens.Graphics.Skia)
+custom retained-mode Gens UI
+custom lightweight Scene2D
+```
+
+The remainder of this document, unless a section says otherwise, describes
+the **current, transitional** baseline — the Unity client and the standalone
+tooling that exist and are exercised by CI today. See ADR 0014 for the full
+target-stack layering, dependency rules, and Unity retirement gates, and the
+[native-runtime migration roadmap](gens-native-runtime-roadmap.md) for the
+phased plan to get from here to there. Unity remains fully supported and is
+not degraded, disconnected, or deprioritized by this migration until the
+retirement gates in ADR 0014 pass.
+
+## Version policy (transitional Unity client)
 
 The project is pinned to Unity 6.3 LTS by `ProjectVersion.txt`; Unity Hub must
 install that exact editor. Editor changes are made only in a dedicated upgrade
@@ -9,10 +45,14 @@ Standalone tools and tests target .NET 10 LTS. Unity uses the .NET Standard 2.1
 API compatibility level, Mono for editor iteration, and IL2CPP for verified
 production release builds.
 
-## Boundaries
+## Boundaries (transitional)
 
 - `Gens.Simulation` is a `netstandard2.1` library and a local Unity package with
-  `noEngineReferences`. It must not reference Unity, presentation, or asset APIs.
+  `noEngineReferences`. It must not reference Unity, presentation, or asset APIs
+  — generalized by ADR 0014 to: no platform, rendering, UI, external AI, or
+  networking dependency of any kind, Unity included. `Gens.Simulation` stays
+  `netstandard2.1` through the migration; retargeting it is a distinct future
+  decision made only after Unity retirement (ADR 0014).
 - Simulation outcomes use integer values and named, persisted PCG32 streams.
   Commands are validated before mutation and produce domain events. Monthly ticks
   are deterministic and target 250 ms normally and one second at maximum scale.

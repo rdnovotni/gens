@@ -1,6 +1,6 @@
 # Gens — Architecture Decision Records
 
-This index closes Phase 1, Item 3 of the [Comprehensive Build Roadmap](../gens-comprehensive-build-roadmap.md): "Create architecture decision records for IDs, fixed-point arithmetic, time/epoch, tick phases, event envelopes, command atomicity, deterministic collection ordering, visibility/knowledge, fidelity tiers, save serialization, migrations, content versioning, and UI projection boundaries." All 13 named topics are covered, one ADR each.
+This index closes Phase 1, Item 3 of the [Comprehensive Build Roadmap](../gens-comprehensive-build-roadmap.md): "Create architecture decision records for IDs, fixed-point arithmetic, time/epoch, tick phases, event envelopes, command atomicity, deterministic collection ordering, visibility/knowledge, fidelity tiers, save serialization, migrations, content versioning, and UI projection boundaries." All 13 named topics are covered, one ADR each. A 14th ADR was added later to adopt the custom runtime/native-client migration; see below.
 
 ## Numbering and status convention
 
@@ -26,6 +26,26 @@ This index closes Phase 1, Item 3 of the [Comprehensive Build Roadmap](../gens-c
 | [0011](0011-migrations.md) | Save Migrations | A migration registry of pure JSON-DOM functions, chained strictly sequentially by version, each with a permanent golden-save fixture verified in CI as a merge gate; additive-only changes need no migration. |
 | [0012](0012-content-versioning.md) | Content Versioning and Validation | One authoring location per content family with hard duplicate-`DefinitionId` failures across it — the concrete, automatable fix for the still-live Buildings/Estate & Settlement goods-list contradiction the design authority registry flags; retirement tombstones definitions, never deletes them. |
 | [0013](0013-ui-projection-boundaries.md) | UI Projection Boundaries | UI touches the simulation only through read-only query projections (filtered through ADR 0008's `KnowledgeState`) and command submission (ADR 0006); no mutable domain object is ever exposed to Unity/UI Toolkit code. |
+
+## ADR 0014 — a platform decision, not a boundary change
+
+[ADR 0014](0014-custom-runtime-and-native-client.md) formally adopts a
+purpose-built Gens runtime and native desktop client as the long-term
+presentation platform, replacing Unity once explicit retirement gates pass.
+It is numbered and indexed separately from the 13 ADRs above because it
+answers a different kind of question: the 13 above are simulation-kernel and
+persistence contracts that became Accepted only once real code and tests
+existed behind them, while ADR 0014 is a forward-looking platform decision
+recorded Accepted immediately so it can govern implementation from the start
+(see its own Status section for why).
+
+**ADR 0014 changes the concrete presentation/runtime platform. It does not
+change, reopen, or supersede ADR 0013.** ADR 0013's rule — UI touches the
+simulation only through query projections and command submission, never a
+mutable domain reference — is generalized in ADR 0014's terminology from
+"Unity/UI Toolkit" to "any presentation host," but the rule itself, and its
+Accepted status, are unchanged. The future native client is bound by the same
+boundary Unity is bound by today.
 
 ## Relationship to the other Phase 1 artifacts
 
