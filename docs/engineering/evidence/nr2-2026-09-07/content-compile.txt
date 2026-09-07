@@ -1,0 +1,1 @@
+Compiled 59 definitions to 'artifacts/content/catalog.json' (schemaVersion=1, dependencyOrder=[goods, cultures, religions, names, presentation, policies, events, traits, buildings, regions]).

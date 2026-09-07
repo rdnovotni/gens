@@ -51,3 +51,8 @@ boundary Unity is bound by today.
 
 - The [design authority registry](../../gens-design-authority-registry.md) is the map these ADRs were built from — each ADR's Context section cites the specific registry cluster or design-document section it grounds a decision in.
 - The [cross-system field ledger](../gens-field-ledger.md) is this index's sibling deliverable (Phase 1, Item 4): it applies these ADRs' vocabulary (typed IDs, `Fixed64` rates, fidelity tiers, visibility) to the actual fields the vertical-slice design documents define, system by system.
+
+## ADR 0015 — proposed backend selection
+
+[ADR 0015](0015-native-backend-selection.md) records the measured Windows candidate.
+It remains **Proposed** while the NR2 desktop exit checklist is incomplete.

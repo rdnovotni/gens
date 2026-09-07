@@ -1,0 +1,7 @@
+SDL 3.2.22 x64 event ABI and synthetic 100/125/150/200% DPI checks passed (not monitor/IME validation)
+.NET 10.0.11; Microsoft Windows 10.0.26200; X64; SkiaSharp 3.119.0.0; renderer=software/headless
+reference=C4C40A8F756881132440730E25A40CF39FA74030A84BFAC8148DC9F19D0BE889
+repeat=C4C40A8F756881132440730E25A40CF39FA74030A84BFAC8148DC9F19D0BE889
+PNG=captures\reference-tablet.png
+shaping: Latin glyphs=29, Arabic glyphs=7, direction=RightToLeft
+DPI round-trip=(100,80) scale=1.5

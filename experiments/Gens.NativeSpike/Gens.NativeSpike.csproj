@@ -8,8 +8,10 @@
   <ItemGroup>
     <PackageReference Include="SkiaSharp" Version="3.119.1" />
     <PackageReference Include="SkiaSharp.HarfBuzz" Version="3.119.1" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="8.3.1.2" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.1" />
     <PackageReference Include="SkiaSharp.NativeAssets.Win32" Version="3.119.1" />
     <PackageReference Include="Svg.Skia" Version="3.2.1" />
   </ItemGroup>
+  <ItemGroup><None Update="Fixtures/**/*" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>

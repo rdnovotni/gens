@@ -1,0 +1,4 @@
+  Determining projects to restore...
+  Restored <worktree>\experiments\Gens.NativeSpike\Gens.NativeSpike.csproj (in 338 ms).
+  Gens.NativeSpike -> <worktree>\experiments\Gens.NativeSpike\bin\Release\net10.0\osx-arm64\Gens.NativeSpike.dll
+  Gens.NativeSpike -> <worktree>\artifacts\native-spike\osx-arm64\

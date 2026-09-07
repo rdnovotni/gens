@@ -19,6 +19,12 @@ internal static unsafe class Program
     {
         try
         {
+            if (args.Contains("--allocations", StringComparer.Ordinal)) return ValidationModes.Allocations();
+            if (args.Contains("--vsync", StringComparer.Ordinal)) return ValidationModes.Vsync();
+            if (args.Contains("--gpu-benchmark", StringComparer.Ordinal)) return ValidationModes.BenchmarkGpu();
+            if (args.Contains("--text-benchmark", StringComparer.Ordinal)) return ValidationModes.Text();
+            if (args.Contains("--svg", StringComparer.Ordinal)) return ValidationModes.Svg();
+            if (args.Contains("--soak", StringComparer.Ordinal)) return ValidationModes.Soak(args.Contains("--gpu", StringComparer.Ordinal));
             if (args.Contains("--benchmark", StringComparer.Ordinal)) return RunBenchmarks();
             if (args.Contains("--headless", StringComparer.Ordinal)) return RunHeadless(args.Contains("--self-test", StringComparer.Ordinal));
             return RunWindow();
@@ -32,6 +38,7 @@ internal static unsafe class Program
 
     private static int RunHeadless(bool selfTest)
     {
+        ValidationModes.CheckAbiAndDpi();
         LogEnvironment("software/headless", null);
         using var assets = new ProceduralAssets();
         using var a = new SoftwareRenderer(1280, 720); using var b = new SoftwareRenderer(1280, 720);
@@ -54,16 +61,16 @@ internal static unsafe class Program
         using var assets = new ProceduralAssets();
         Console.WriteLine("scene,resolution,avg_ms,p95_ms,p99_ms,approx_fps,allocated_bytes_frame,gc0,gc1,gc2,working_set_mib");
         foreach ((int width, int height) in new[] { (1280, 720), (1920, 1080), (2560, 1440), (3840, 2160) })
-        foreach ((string name, Action<SKCanvas, int, int, double> draw) in new (string, Action<SKCanvas, int, int, double>)[]
-        {
+            foreach ((string name, Action<SKCanvas, int, int, double> draw) in new (string, Action<SKCanvas, int, int, double>)[]
+            {
             ("basic", (c,w,h,t) => SpikeScenes.DrawBasicBenchmark(c,w,h,t,assets)),
             ("dense", (c,w,h,t) => { c.Save(); c.Scale(w / 1280f, h / 720f); SpikeScenes.DrawTablet(c,assets,t); c.Restore(); }),
             ("visual", (c,w,h,t) => { c.Save(); c.Scale(w / 1280f, h / 720f); SpikeScenes.DrawStress(c,assets,t); c.Restore(); }),
-        })
-        {
-            BenchmarkSample x = SoftwareRenderer.Measure(width, height, draw, 120);
-            Console.WriteLine($"{name},{width}x{height},{x.AverageMs:F3},{x.P95Ms:F3},{x.P99Ms:F3},{1000/x.AverageMs:F1},{x.AllocatedBytesPerFrame},{x.Collections[0]},{x.Collections[1]},{x.Collections[2]},{x.WorkingSetBytes/1048576d:F1}");
-        }
+            })
+            {
+                BenchmarkSample x = SoftwareRenderer.Measure(width, height, draw, 120);
+                Console.WriteLine($"{name},{width}x{height},{x.AverageMs:F3},{x.P95Ms:F3},{x.P99Ms:F3},{1000 / x.AverageMs:F1},{x.AllocatedBytesPerFrame},{x.Collections[0]},{x.Collections[1]},{x.Collections[2]},{x.WorkingSetBytes / 1048576d:F1}");
+            }
         return 0;
     }
 
@@ -111,14 +118,15 @@ internal static unsafe class Program
                 if (e.Type >= SdlNative.EventWindowFirst && e.Type <= SdlNative.EventWindowLast) return;
                 if (e.Type is SdlNative.EventKeyDown or SdlNative.EventKeyUp)
                 {
-                    lastKey = e.Key.Scancode; mods = e.Key.Mod; repeat = e.Key.Repeat != 0;
+                    lastKey = e.Key.Scancode; mods = e.Key.Mod; repeat = e.Key.Repeat != 0; Console.WriteLine($"key={lastKey} modifiers={mods} repeat={repeat}");
                     if (e.Type == SdlNative.EventKeyUp) return;
                     switch (e.Key.Key) { case KeyEscape: running = false; break; case (uint)'1': scene = 0; break; case (uint)'2': scene = 1; break; case (uint)'3': scene = 2; break; case KeyF1: overlay = !overlay; break; case KeyF2: continuous = !continuous; break; case KeyF3: animate = !animate; break; case KeyF11: fullscreen = !fullscreen; _ = SdlNative.SDL_SetWindowFullscreen(window, fullscreen); break; case KeyF12: Console.WriteLine($"Captured {software.SavePng(Path.Combine("captures", $"frame-{DateTime.UtcNow:yyyyMMdd-HHmmss}.png"))}"); break; case KeyBackspace when editing && input.Length > 0: input = input[..^1]; break; }
                 }
                 else if (e.Type == SdlNative.EventMouseMotion) { mouseX = e.Motion.X; mouseY = e.Motion.Y; }
                 else if (e.Type == SdlNative.EventMouseWheel) wheel = e.Wheel.Y;
                 else if (e.Type == SdlNative.EventMouseButtonDown) { mouseX = e.Button.X; mouseY = e.Button.Y; editing = mouseY > 620; _ = editing ? SdlNative.SDL_StartTextInput(window) : SdlNative.SDL_StopTextInput(window); }
-                else if (e.Type == SdlNative.EventTextInput) { fixed (byte* text = e.Text.Text) input += Marshal.PtrToStringUTF8((IntPtr)text) ?? string.Empty; }
+                else if (e.Type == SdlNative.EventTextEditing) { Console.WriteLine($"composition={Marshal.PtrToStringUTF8(e.Edit.Text)} start={e.Edit.Start} length={e.Edit.Length}"); }
+                else if (e.Type == SdlNative.EventTextInput) { string text = Marshal.PtrToStringUTF8(e.Text.Text) ?? string.Empty; input += text; Console.WriteLine($"text={text}"); }
             }
         }
         finally { if (texture != IntPtr.Zero) SdlNative.SDL_DestroyTexture(texture); if (renderer != IntPtr.Zero) SdlNative.SDL_DestroyRenderer(renderer); if (window != IntPtr.Zero) SdlNative.SDL_DestroyWindow(window); SdlNative.SDL_Quit(); }

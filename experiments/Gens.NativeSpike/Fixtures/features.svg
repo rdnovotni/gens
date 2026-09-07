@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 320 180">
+<defs><linearGradient id="gold"><stop stop-color="#e7ca82"/><stop offset="1" stop-color="#855028"/></linearGradient></defs>
+<rect width="320" height="180" fill="#241c18"/>
+<g transform="translate(40 25) rotate(8 100 60)"><path d="M0 0 H240 V120 H0 Z M20 20 Q120 75 220 20 L220 100 C160 65 80 145 20 100 Z" fill="url(#gold)" fill-rule="evenodd" stroke="#f9e8b0" stroke-width="3"/></g>
+</svg>

@@ -1,0 +1,9 @@
+  Determining projects to restore...
+  Restored <worktree>\experiments\Gens.NativeSpike\Gens.NativeSpike.csproj (in 1 sec).
+  Restored <worktree>\tools\Gens.ContentCompiler\Gens.ContentCompiler.csproj (in 8.72 sec).
+  Restored <worktree>\src\Gens.Application\Gens.Application.csproj (in 12.84 sec).
+  Restored <worktree>\src\Gens.Simulation\Gens.Simulation.csproj (in 12.84 sec).
+  Restored <worktree>\tests\Gens.ContentCompiler.Tests\Gens.ContentCompiler.Tests.csproj (in 24.96 sec).
+  Restored <worktree>\tests\Gens.Application.Tests\Gens.Application.Tests.csproj (in 24.96 sec).
+  Restored <worktree>\tests\Gens.Simulation.Tests\Gens.Simulation.Tests.csproj (in 24.97 sec).
+  Restored <worktree>\benchmarks\Gens.Simulation.Benchmarks\Gens.Simulation.Benchmarks.csproj (in 36.71 sec).

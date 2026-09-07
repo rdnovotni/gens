@@ -92,6 +92,12 @@ dependency; no change to `Gens.Simulation`'s public contract beyond what
 
 ### Phase NR2 — SDL3 + Skia rendering/platform spike
 
+**Desktop validation update (2026-09-07):** Windows measurements and captures are
+recorded in [the spike results](native-runtime-spike-results.md). NR2 remains
+incomplete: actual monitor/IME checks, cross-platform SDL packaging and GPU
+resource-lifetime evidence are outstanding. [ADR 0015](adr/0015-native-backend-selection.md)
+remains Proposed; Ticket 4 production implementation has not started.
+
 **Outcome:** a throwaway-quality technical spike validates (or disqualifies)
 SDL3 and SkiaSharp as the initial platform/rendering backends before any
 production commitment, per ADR 0014's "subject to a dedicated technical

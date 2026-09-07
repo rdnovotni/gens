@@ -11,9 +11,10 @@ internal static class ShapingProbe
         using SKStreamAsset stream = typeface.OpenStream(out int faceIndex) ?? throw new InvalidOperationException("Default typeface data is unavailable.");
         byte[] bytes = new byte[checked((int)stream.Length)];
         _ = stream.Read(bytes, bytes.Length);
-        using var blob = new Blob(bytes);
+        using var blob = Blob.FromStream(new MemoryStream(bytes));
         using var face = new Face(blob, (uint)faceIndex);
         using var font = new HarfBuzzSharp.Font(face);
+        font.SetFunctionsOpenType();
         font.SetScale(face.UnitsPerEm, face.UnitsPerEm);
         using var buffer = new HarfBuzzSharp.Buffer();
         buffer.AddUtf16(text);

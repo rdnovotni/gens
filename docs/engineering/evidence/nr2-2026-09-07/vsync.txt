@@ -1,0 +1,5 @@
+GL renderer=AMD Radeon(TM) Graphics; version=3.3.0 Core Profile Context 25.10.39.02.260118
+swap_interval_zero=True
+scene,pixels,avg_ms,p95_ms,p99_ms,allocated_bytes_frame,working_set_mib
+vsync_False,1280x720,1.288,3.989,6.070,0,81.1
+vsync_True,1280x720,16.671,17.812,17.922,0,82.6
