@@ -7,6 +7,16 @@ namespace Gens.UI.Tests;
 public sealed class SceneViewTests : UiTestFixture
 {
     [Test]
+    public void DecorativeSceneAnimationStopsUnderReducedMotion()
+    {
+        float value = 0; var scene = new Scene2D.Scene2D(); var player = new AnimationPlayer();
+        scene.AddAnimation(player); player.Play(new("ambient", [AnimationPlayer.Scalar([new(TimeSpan.Zero, 0), new(TimeSpan.FromSeconds(1), 1)], updated => value = updated)]));
+        UiRoot root = Root(); var view = new SceneView { Scene = scene }; root.AddChild(view); root.MotionPolicy = new(MotionMode.Reduced); view.Advance(TimeSpan.FromMilliseconds(500));
+        Assert.Multiple(() => { Assert.That(value, Is.Zero); Assert.That(view.HasActiveAnimations, Is.False); });
+        root.MotionPolicy = new(MotionMode.Full); view.Advance(TimeSpan.FromMilliseconds(500)); Assert.That(value, Is.EqualTo(.5f).Within(.001));
+    }
+
+    [Test]
     public void SceneViewClipsMapsPointerResizesAndInvalidatesPaint()
     {
         UiRoot root = Root();

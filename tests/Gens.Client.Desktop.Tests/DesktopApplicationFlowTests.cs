@@ -1,6 +1,8 @@
 using Gens.Application.Campaign;
 using Gens.Client.Desktop.App;
 using Gens.Client.Desktop.Platform;
+using Gens.Client.Desktop.Settings;
+using Gens.UI;
 using NUnit.Framework;
 
 namespace Gens.Client.Desktop.Tests;
@@ -86,7 +88,27 @@ public sealed class DesktopApplicationFlowTests
         Assert.That(app.Settings.Art.AiGenerationEnabled, Is.False);
         app.SetUiScale(1.75f); app.SetReducedMotion(true); app.SetConsoleEnabled(true); app.SetAiArtEnabled(true);
         var loaded = new DesktopApplicationController(new DesktopApplicationPaths(directory));
-        Assert.Multiple(() => { Assert.That(loaded.Settings.Version, Is.EqualTo(1)); Assert.That(loaded.Settings.Display.UiScale, Is.EqualTo(1.75f)); Assert.That(loaded.Settings.Accessibility.ReducedMotion, Is.True); Assert.That(loaded.Settings.Developer.ConsoleEnabled, Is.True); Assert.That(loaded.Settings.Art.AiGenerationEnabled, Is.True); Assert.That(loaded.Settings.Art.Provider, Is.EqualTo("mock")); });
+        Assert.Multiple(() => { Assert.That(loaded.Settings.Version, Is.EqualTo(DesktopSettings.CurrentVersion)); Assert.That(loaded.Settings.Display.UiScale, Is.EqualTo(1.75f)); Assert.That(loaded.Settings.Accessibility.ReducedMotion, Is.True); Assert.That(loaded.Settings.Developer.ConsoleEnabled, Is.True); Assert.That(loaded.Settings.Art.AiGenerationEnabled, Is.True); Assert.That(loaded.Settings.Art.Provider, Is.EqualTo("mock")); });
+    }
+
+    [Test]
+    public void VersionOneSettingsMigrateAndCorruptSettingsArePreserved()
+    {
+        string settingsDirectory = Path.Combine(directory, "settings"); Directory.CreateDirectory(settingsDirectory);
+        File.WriteAllText(Path.Combine(settingsDirectory, "settings.json"), "{\"version\":1,\"display\":{\"uiScale\":1.5},\"accessibility\":{\"reducedMotion\":true}}");
+        var migrated = new DesktopApplicationController(new DesktopApplicationPaths(directory));
+        Assert.Multiple(() => { Assert.That(migrated.Settings.Version, Is.EqualTo(2)); Assert.That(migrated.Settings.Accessibility.Motion, Is.EqualTo(MotionMode.Reduced)); });
+        File.WriteAllText(Path.Combine(settingsDirectory, "settings.json"), "{broken");
+        var recovered = new DesktopApplicationController(new DesktopApplicationPaths(directory));
+        Assert.Multiple(() => { Assert.That(recovered.Settings, Is.EqualTo(new DesktopSettings())); Assert.That(Directory.GetFiles(settingsDirectory, "*.corrupt-*").Length, Is.EqualTo(1)); });
+    }
+
+    [Test]
+    public void UnicodeApplicationPathsRoundTripAndTraversalIsRejected()
+    {
+        string unicodeRoot = Path.Combine(directory, "用户-δοκιμή"); var paths = new DesktopApplicationPaths(unicodeRoot); paths.EnsureRequiredDirectories();
+        var service = new SettingsService(paths); service.Update(new DesktopSettings { Display = new() { UiScale = 1.25f } }, "Display");
+        Assert.Multiple(() => { Assert.That(new SettingsService(paths).Current.Display.UiScale, Is.EqualTo(1.25f)); Assert.That(paths.ResolveSafePath(paths.Screenshots, "capture.png"), Does.StartWith(paths.Screenshots)); Assert.Throws<InvalidOperationException>(() => paths.ResolveSafePath(paths.Cache, "../escape")); });
     }
 
     [Test]

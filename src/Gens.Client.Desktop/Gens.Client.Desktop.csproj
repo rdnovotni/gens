@@ -5,9 +5,19 @@
     <AssemblyName>Gens.Client.Desktop</AssemblyName>
     <RootNamespace>Gens.Client.Desktop</RootNamespace>
     <Version>0.1.0</Version>
+    <AssemblyTitle>Gens</AssemblyTitle>
+    <Product>Gens Native Client</Product>
+    <Company>Gens contributors</Company>
+    <Description>Native desktop client for the deterministic Gens household simulation.</Description>
+    <FileVersion>0.1.0.0</FileVersion>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../Gens.Runtime/Gens.Runtime.csproj" />
+    <ProjectReference Include="../Gens.Audio/Gens.Audio.csproj" />
+    <ProjectReference Include="../Gens.Localization/Gens.Localization.csproj" />
+    <ProjectReference Include="../Gens.Accessibility/Gens.Accessibility.csproj" />
+    <ProjectReference Include="../Gens.Accessibility.Windows/Gens.Accessibility.Windows.csproj" />
     <ProjectReference Include="../Gens.UI/Gens.UI.csproj" />
     <ProjectReference Include="../Gens.Application/Gens.Application.csproj" />
     <ProjectReference Include="../Gens.Presentation/Gens.Presentation.csproj" />
@@ -20,5 +30,7 @@
   <ItemGroup>
     <None Include="../../tools/Gens.EngineSandbox/Assets/NotoSans-Regular.ttf" Link="Assets/NotoSans-Regular.ttf" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="../../tools/Gens.EngineSandbox/Assets/OFL.txt" Link="Assets/OFL.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="Assets/Localization/*.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../Gens.Platform.Sdl/runtimes/win-x64/native/*" Condition="'$(RuntimeIdentifier)' == '' Or '$(RuntimeIdentifier)' == 'win-x64'" Link="runtimes/win-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

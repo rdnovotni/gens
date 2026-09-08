@@ -36,7 +36,7 @@ public class Button : UiNode
 
 public sealed class Toggle : Button
 {
-    public Toggle() { Semantics.Role = AccessibilityRole.CheckBox; }
+    public Toggle() { Semantics.Role = AccessibilityRole.Toggle; }
     public bool IsChecked { get; private set; }
     public Action<bool>? Changed { get; set; }
     public void SetChecked(bool value, bool notify = false) { if (IsChecked == value) return; IsChecked = value; Semantics.IsChecked = value; InvalidatePaint(); if (notify) Changed?.Invoke(value); }

@@ -54,3 +54,37 @@ jobs:
           dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- \
             replay artifacts/saves/smoke.gens
       - run: ./scripts/check-clean-worktree.sh
+
+  native-packages:
+    name: Native package (${{ matrix.runtime }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            runtime: win-x64
+          - os: ubuntu-latest
+            runtime: linux-x64
+          - os: macos-latest
+            runtime: osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+      - run: dotnet restore Gens.slnx
+      - run: dotnet build Gens.slnx --no-restore --configuration Release
+      - run: dotnet test Gens.slnx --no-restore --no-build --configuration Release
+      - shell: pwsh
+        run: ./scripts/publish-native-client.ps1 -Runtime ${{ matrix.runtime }}
+      - name: Windows packaged smoke test
+        if: matrix.runtime == 'win-x64'
+        shell: pwsh
+        run: ./artifacts/native/win-x64/Gens.Client.Desktop.exe --renderer=software --smoke-test --screen=settings --developer --locale=qps-ploc --reduced-motion --high-contrast --user-data=artifacts/smoke-user
+      - uses: actions/upload-artifact@v7
+        with:
+          name: gens-${{ matrix.runtime }}
+          path: artifacts/native/${{ matrix.runtime }}*

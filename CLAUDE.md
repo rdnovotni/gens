@@ -170,6 +170,16 @@ The native desktop client is now the primary target for new presentation develop
 - Exercise new generic controls in the EngineSandbox UI gallery and add
   headless tests before campaign screens depend on them.
 
+## Native production-service rules
+
+- Audio is presentation-only and must never gate simulation or be the sole carrier of gameplay information.
+- User-facing native strings use stable localization keys; proper names and authoritative content are not localization keys.
+- Interactive controls require semantic roles and useful accessibility names. Accessibility regressions require semantic/focus tests.
+- Settings are versioned, migrated, atomically written, and separate from campaign saves.
+- User-data, save, cache, generated-art, screenshot, log, crash, and mod paths come from `IApplicationPaths`; reject traversal from external filenames.
+- Platform-specific implementations stay in platform-specific projects. Generic audio/localization/UI code cannot expose SDL or OS-native types.
+- Player packages are self-contained, bundle native dependencies, and must not rely on the SDK, PATH, a NuGet cache, Unity, or developer-installed SDL/Skia libraries.
+
 ## Scene2D and character portrait rules
 
 - `Gens.Scene2D` is presentation-only. It never owns or queries authoritative

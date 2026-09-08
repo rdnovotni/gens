@@ -21,9 +21,14 @@ public sealed class SceneView : UiNode
         }
     }
 
-    public bool HasActiveAnimations => Scene?.HasActiveAnimations == true;
+    public MotionCategory MotionCategory { get; set; } = MotionCategory.Decorative;
+    public bool HasActiveAnimations => Scene?.HasActiveAnimations == true && (Root?.MotionPolicy ?? new(MotionMode.Full)).Allows(MotionCategory);
     public Point2 PointerToWorld(Point2 screenPosition) => Scene?.Camera.ScreenToWorld(screenPosition) ?? screenPosition;
-    public void Advance(TimeSpan delta) { Scene?.Update(delta); }
+    public void Advance(TimeSpan delta)
+    {
+        TimeSpan adjusted = (Root?.MotionPolicy ?? new(MotionMode.Full)).Adjust(delta, MotionCategory);
+        if (adjusted > TimeSpan.Zero) Scene?.Update(adjusted);
+    }
     protected override Size2 MeasureOverride(Size2 availableSize) => new(Width ?? availableSize.Width, Height ?? availableSize.Height);
     protected override void PaintOverride(ICanvas2D canvas) => Scene?.Render(canvas, Bounds);
     private void OnSceneInvalidated() => InvalidatePaint();

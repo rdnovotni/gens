@@ -1,8 +1,13 @@
 using Gens.Application.Campaign;
+using System.Globalization;
+using Gens.Accessibility;
+using Gens.Accessibility.Windows;
 using Gens.Art.Portraits;
 using Gens.Art.Diagnostics;
+using Gens.Audio;
 using System.Collections.Concurrent;
 using Gens.Client.Desktop.Settings;
+using Gens.Localization;
 using Gens.Graphics;
 using Gens.Platform;
 using Gens.Presentation.Models;
@@ -26,7 +31,11 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private string consoleInput = string.Empty;
     private bool smokeCaptured;
     private bool smokeCapturePending;
+    private bool smokeSemanticsValidated;
     private bool disposed;
+    private LocalizationService localization = null!;
+    private IAccessibilityBridge accessibilityBridge = null!;
+    private AccessibilityCoordinator accessibility = null!;
     private readonly DesktopArtServices artServices = new(graphics, controller);
     private readonly Dictionary<string, List<(CharacterMedallion Medallion, CharacterVisualState Visual, int Size)>> portraitBindings = new(StringComparer.Ordinal);
     private readonly ConcurrentDictionary<string, byte> generatingPortraits = new(StringComparer.Ordinal);
@@ -41,8 +50,14 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         this.context = context;
         using FileStream stream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Assets", "NotoSans-Regular.ttf"));
         font = graphics.LoadFont(stream);
-        root = new(GensTheme.Create(graphics, font)) { Name = "DesktopRoot", UiScale = controller.Settings.Display.UiScale };
+        localization = new("en", controller.Settings.Developer.ConsoleEnabled);
+        using (FileStream catalog = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Assets", "Localization", "en.json"))) localization.AddJson("en", catalog);
+        localization.SetLocale(controller.Settings.Language.Locale);
+        root = new(GensTheme.Create(graphics, font, highContrast: controller.Settings.Accessibility.HighContrast)) { Name = "DesktopRoot", UiScale = controller.Settings.Display.UiScale, MotionPolicy = new(controller.Settings.Accessibility.Motion) };
         root.AttachInvalidation(context.Invalidate);
+        controller.Audio.ActivityChanged += OnAudioActivityChanged;
+        accessibilityBridge = OperatingSystem.IsWindows() ? new WindowsAccessibilityBridge() : new NullAccessibilityBridge();
+        accessibility = new(accessibilityBridge);
         artServices.Coordinator.PortraitUpdated += OnPortraitUpdated;
         Rebuild();
         if (smokeTest) context.SetAnimating(true);
@@ -67,13 +82,21 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
 
     public void Update(PresentationFrame frame)
     {
+        controller.Audio.Update(frame.Delta);
         while (uiActions.TryDequeue(out Action? action)) action();
         if (!smokeTest || smokeCaptured || frame.Elapsed < TimeSpan.FromMilliseconds(200)) return;
         smokeCapturePending = true;
     }
     public void Render(RenderContext context)
     {
-        context.Canvas.Clear(new(25, 20, 17)); root.Layout(new(context.LogicalSize.Width, context.LogicalSize.Height)); root.Render(context.Canvas);
+        context.Canvas.Clear(new(25, 20, 17)); root.Layout(new(context.LogicalSize.Width, context.LogicalSize.Height));
+        if (smokeTest && !smokeSemanticsValidated)
+        {
+            IReadOnlyList<string> semanticErrors = root.ValidateSemantics();
+            if (semanticErrors.Count > 0) throw new InvalidOperationException("Accessibility semantic validation failed: " + string.Join("; ", semanticErrors));
+            smokeSemanticsValidated = true;
+        }
+        accessibility.Synchronize(root); root.Render(context.Canvas);
         if (!smokeCapturePending || smokeCaptured) return;
         smokeCaptured = true;
         string path = string.IsNullOrWhiteSpace(smokeCapturePath) ? Path.Combine(Environment.CurrentDirectory, "native-client-smoke.png") : smokeCapturePath;
@@ -83,7 +106,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         this.context.SetAnimating(false); this.context.RequestQuit();
     }
     public void Shutdown() => Dispose();
-    public void Dispose() { if (disposed) return; artServices.Coordinator.PortraitUpdated -= OnPortraitUpdated; artServices.Dispose(); font.Dispose(); disposed = true; }
+    public void Dispose() { if (disposed) return; artServices.Coordinator.PortraitUpdated -= OnPortraitUpdated; controller.Audio.ActivityChanged -= OnAudioActivityChanged; artServices.Dispose(); accessibilityBridge.Dispose(); font.Dispose(); disposed = true; }
 
     private void Rebuild()
     {
@@ -117,8 +140,8 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         inkTreasury = Text("", TypographyRole.Caption, light: true); inkTreasury.Width = 160;
         inkDignitas = Text("", TypographyRole.Caption, light: true); inkDignitas.Width = 100;
         row.AddChild(inkName); row.AddChild(inkDate); row.AddChild(inkTreasury); row.AddChild(inkDignitas);
-        row.AddChild(NavButton("Household", ScreenId.HouseholdRoster)); row.AddChild(NavButton("Estate", ScreenId.EstateSettlement)); row.AddChild(NavButton("Report", ScreenId.MonthlyReport));
-        row.AddChild(Button("Advance", () => Run(controller.AdvanceMonth))); row.AddChild(Button("Save", () => Run(controller.Save))); row.AddChild(Button("Menu", () => Run(controller.RequestMainMenu)));
+        row.AddChild(NavButton(L("nav.household"), ScreenId.HouseholdRoster)); row.AddChild(NavButton(L("nav.estate"), ScreenId.EstateSettlement)); row.AddChild(NavButton(L("nav.report"), ScreenId.MonthlyReport));
+        row.AddChild(Button(L("campaign.advance"), () => Run(controller.AdvanceMonth))); row.AddChild(Button(L("common.save"), () => Run(controller.Save))); row.AddChild(Button(L("common.menu"), () => Run(controller.RequestMainMenu)));
         bar.Child = row; shell.AddChild(bar);
         screenHost = new Border { Name = "ScreenHost", Margin = new(18), Padding = new(2), Height = Math.Max(250, 620 / root.UiScale - 20), Background = new(41, 31, 25), ClipToBounds = true };
         shell.AddChild(screenHost); root.AddChild(shell); gameplayMounted = true;
@@ -136,10 +159,10 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private ScrollView BuildMainMenu()
     {
         var tablet = Tablet("MainMenu", 540, 580); var c = Content(tablet);
-        c.AddChild(Text("GENS", TypographyRole.Title)); c.AddChild(Text("A household through the ages", TypographyRole.Inscription)); c.AddChild(new Spacer(height: 24));
-        c.AddChild(Button("New Game", () => Navigate(ScreenId.NewGameSetup), "MainMenuNewGame"));
-        Button load = Button("Load Game", () => Run(controller.Load), "MainMenuLoad"); load.IsEnabled = controller.HasSave; c.AddChild(load);
-        c.AddChild(Button("Settings", () => Navigate(ScreenId.Settings))); c.AddChild(Button("Credits", () => Navigate(ScreenId.Credits))); c.AddChild(Button("Quit", () => Run(controller.RequestQuit)));
+        c.AddChild(Text(L("app.title").ToUpperInvariant(), TypographyRole.Title)); c.AddChild(Text(L("app.tagline"), TypographyRole.Inscription)); c.AddChild(new Spacer(height: 24));
+        c.AddChild(Button(L("menu.new_game"), () => Navigate(ScreenId.NewGameSetup), "MainMenuNewGame"));
+        Button load = Button(L("menu.load_game"), () => Run(controller.Load), "MainMenuLoad"); load.IsEnabled = controller.HasSave; c.AddChild(load);
+        c.AddChild(Button(L("menu.settings"), () => Navigate(ScreenId.Settings))); c.AddChild(Button(L("menu.credits"), () => Navigate(ScreenId.Credits))); c.AddChild(Button(L("menu.quit"), () => Run(controller.RequestQuit)));
         return Center(tablet);
     }
 
@@ -147,38 +170,47 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     {
         string region = "latium", difficulty = "standard";
         var tablet = Tablet("NewGameSetup", 760, 620); var c = Content(tablet);
-        c.AddChild(Text("New Campaign", TypographyRole.Title)); c.AddChild(Text("Region", TypographyRole.Heading));
+        c.AddChild(Text(L("campaign.new"), TypographyRole.Title)); c.AddChild(Text(L("campaign.region"), TypographyRole.Heading));
         var regions = new Row { Spacing = 8 }; regions.AddChild(Button("Latium", () => region = "latium")); regions.AddChild(Button("Campania", () => region = "campania")); regions.AddChild(Button("Cisalpina", () => region = "cisalpina")); c.AddChild(regions);
-        c.AddChild(Text("Difficulty", TypographyRole.Heading)); var diffs = new Row { Spacing = 8 }; diffs.AddChild(Button("Standard", () => difficulty = "standard")); diffs.AddChild(Button("Hard", () => difficulty = "hard")); diffs.AddChild(Button("Relaxed", () => difficulty = "relaxed")); c.AddChild(diffs);
-        c.AddChild(Text("Campaign seed: 1 · deterministic bootstrap", TypographyRole.Caption));
-        c.AddChild(Button("Begin Campaign", () => Run(() => controller.StartNew(region, difficulty)), "BeginCampaign")); c.AddChild(Button("Back", () => Navigate(ScreenId.MainMenu)));
+        c.AddChild(Text(L("campaign.difficulty"), TypographyRole.Heading)); var diffs = new Row { Spacing = 8 }; diffs.AddChild(Button(L("campaign.difficulty.standard"), () => difficulty = "standard")); diffs.AddChild(Button(L("campaign.difficulty.hard"), () => difficulty = "hard")); diffs.AddChild(Button(L("campaign.difficulty.relaxed"), () => difficulty = "relaxed")); c.AddChild(diffs);
+        c.AddChild(Text(L("campaign.seed"), TypographyRole.Caption));
+        c.AddChild(Button(L("campaign.begin"), () => Run(() => controller.StartNew(region, difficulty)), "BeginCampaign")); c.AddChild(Button(L("common.back"), () => Navigate(ScreenId.MainMenu)));
         return Center(tablet);
     }
 
     private ScrollView BuildSettings()
     {
         var tablet = Tablet("Settings", 650, 610); var c = Content(tablet); DesktopSettings s = controller.Settings;
-        c.AddChild(Text("Settings", TypographyRole.Title)); c.AddChild(Text($"UI scale: {s.Display.UiScale:P0}", TypographyRole.Heading));
+        c.AddChild(Text(L("settings.title"), TypographyRole.Title)); c.AddChild(Text(L("settings.display"), TypographyRole.Heading)); c.AddChild(Text(L("settings.ui_scale", ("scale", s.Display.UiScale.ToString("P0", CultureInfo.CurrentCulture))), TypographyRole.Body));
         var scales = new Row { Spacing = 6 }; foreach (float scale in new[] { 1f, 1.25f, 1.5f, 1.75f, 2f }) scales.AddChild(Button($"{scale:P0}", () => { controller.SetUiScale(scale); root.UiScale = scale; Rebuild(); })); c.AddChild(scales);
-        c.AddChild(Toggle("Reduced motion", s.Accessibility.ReducedMotion, controller.SetReducedMotion));
-        c.AddChild(Toggle("Developer console (backquote)", s.Developer.ConsoleEnabled, controller.SetConsoleEnabled));
-        c.AddChild(Text("Optional generated portraits", TypographyRole.Heading));
-        c.AddChild(Toggle("Enable AI artwork (Mock provider)", s.Art.AiGenerationEnabled, value => { controller.SetAiArtEnabled(value); Rebuild(); }));
-        c.AddChild(Text("Generated art is optional. Portrait descriptions are sent only when you request generation; deterministic procedural portraits always remain available.", TypographyRole.Caption));
+        c.AddChild(Text(L("settings.audio"), TypographyRole.Heading));
+        foreach ((AudioBus bus, float value, string key) in new[] { (AudioBus.Master, s.Audio.MasterVolume, "settings.master"), (AudioBus.Music, s.Audio.MusicVolume, "settings.music"), (AudioBus.Ambience, s.Audio.AmbienceVolume, "settings.ambience"), (AudioBus.Effects, s.Audio.EffectsVolume, "settings.effects"), (AudioBus.UI, s.Audio.UiVolume, "settings.ui") })
+        { var audioRow = new Row { Spacing = 6 }; string busName = L(key); audioRow.AddChild(Text($"{busName}: {value:P0}", TypographyRole.Body)); Button down = Button("−", () => { controller.SetAudioVolume(bus, value - .1f); Rebuild(); }, $"{bus}Down"); down.Semantics.Label = $"Decrease {busName} volume"; audioRow.AddChild(down); Button up = Button("+", () => { controller.SetAudioVolume(bus, value + .1f); Rebuild(); }, $"{bus}Up"); up.Semantics.Label = $"Increase {busName} volume"; audioRow.AddChild(up); c.AddChild(audioRow); }
+        c.AddChild(Toggle(L("settings.mute"), s.Audio.Muted, controller.SetAudioMuted));
+        c.AddChild(Text(L("settings.accessibility"), TypographyRole.Heading));
+        c.AddChild(Toggle(L("settings.reduced_motion"), s.Accessibility.ReducedMotion, value => { controller.SetReducedMotion(value); root.MotionPolicy = new(controller.Settings.Accessibility.Motion); }));
+        c.AddChild(Toggle(L("settings.high_contrast"), s.Accessibility.HighContrast, value => { controller.SetHighContrast(value); root.ApplyTheme(GensTheme.Create(graphics, font, highContrast: value)); Rebuild(); }));
+        c.AddChild(Text(L("settings.language"), TypographyRole.Heading));
+        c.AddChild(Button(L("settings.english"), () => { controller.SetLocale("en"); localization.SetLocale("en"); Rebuild(); }));
+        if (s.Developer.ConsoleEnabled) c.AddChild(Button(L("settings.pseudo"), () => { controller.SetLocale("qps-ploc"); localization.SetLocale("qps-ploc"); Rebuild(); }));
+        c.AddChild(Toggle(L("settings.developer_console"), s.Developer.ConsoleEnabled, controller.SetConsoleEnabled));
+        c.AddChild(Text(L("settings.art"), TypographyRole.Heading));
+        c.AddChild(Toggle(L("settings.art_enable"), s.Art.AiGenerationEnabled, value => { controller.SetAiArtEnabled(value); Rebuild(); }));
+        c.AddChild(Text(L("settings.art_notice"), TypographyRole.Caption));
         if (s.Developer.ConsoleEnabled)
         {
             ArtDiagnosticsSnapshot diagnostics = artServices.Diagnostics.Capture(s.Art);
             c.AddChild(Text($"Art diagnostics · provider={diagnostics.SelectedProvider} available={diagnostics.ProviderAvailable} queued={diagnostics.Queue.Queued} running={diagnostics.Queue.Running} completed={diagnostics.Queue.Completed} failed={diagnostics.Queue.Failed} cache hits={diagnostics.Cache.Hits} misses={diagnostics.Cache.Misses} bytes={diagnostics.Cache.ObjectBytes}", TypographyRole.SmallCaption));
         }
-        c.AddChild(Text("Audio is not yet implemented; no inert volume control is shown.", TypographyRole.Caption)); c.AddChild(Button("Back", () => Navigate(ScreenId.MainMenu)));
+        c.AddChild(Text(L("settings.audio_backend", ("backend", controller.Audio.BackendName + (controller.Audio.IsOutputAvailable ? string.Empty : " (silent fallback)"))), TypographyRole.Caption)); c.AddChild(Button(L("common.back"), () => Navigate(ScreenId.MainMenu)));
         return Center(tablet);
     }
 
     private ScrollView BuildCredits()
     {
-        var tablet = Tablet("Credits", 620, 500); var c = Content(tablet); c.AddChild(Text("Credits", TypographyRole.Title));
-        c.AddChild(Text("Gens\nDesign and development: the Gens contributors\nNative runtime: SDL3, SkiaSharp, HarfBuzz\nFont: Noto Sans (SIL Open Font License)", TypographyRole.Body));
-        c.AddChild(Button("Back", () => Navigate(ScreenId.MainMenu))); return Center(tablet);
+        var tablet = Tablet("Credits", 620, 500); var c = Content(tablet); c.AddChild(Text(L("credits.title"), TypographyRole.Title));
+        c.AddChild(Text($"Gens\nVersion: {Gens.Client.Desktop.Diagnostics.ReleaseMetadata.Current.Display}\nDesign and development: the Gens contributors\nNative runtime: SDL3, SkiaSharp, HarfBuzz\nFont: Noto Sans (SIL Open Font License)", TypographyRole.Body));
+        c.AddChild(Button(L("common.back"), () => Navigate(ScreenId.MainMenu))); return Center(tablet);
     }
 
     private ScrollView BuildGameplayScreen() => controller.CurrentScreen switch
@@ -192,33 +224,33 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
 
     private ScrollView BuildRoster()
     {
-        HouseholdRosterModel vm = controller.Roster(); var tablet = Tablet("HouseholdRoster", null, 610); var c = Content(tablet); c.AddChild(Text("Household Roster", TypographyRole.Title));
+        HouseholdRosterModel vm = controller.Roster(); var tablet = Tablet("HouseholdRoster", null, 610); var c = Content(tablet); c.AddChild(Heading(L("screen.household"), TypographyRole.Title));
         var rows = new Column { Spacing = 5 };
         foreach (RosterRowModel member in vm.Rows)
         {
             ResolvedPortrait portrait = artServices.Portraits.Resolve(member.Visual, 128);
-            var medallion = new CharacterMedallion(portrait.Image) { Width = 58, Height = 58, Semantics = { Label = portrait.Appearance.AccessibilityDescription } }; BindPortrait(member.CharacterId, medallion, member.Visual, 128);
+            var medallion = new CharacterMedallion(portrait.Image) { Width = 58, Height = 58, Semantics = { Label = $"Portrait of {member.Name}", Description = portrait.Appearance.AccessibilityDescription } }; BindPortrait(member.CharacterId, medallion, member.Visual, 128);
             var row = new Row { Spacing = 12 }; row.AddChild(medallion);
             var labels = new Column(); labels.AddChild(Text(member.Name, TypographyRole.Button, light: true)); labels.AddChild(Text(member.Subtitle, TypographyRole.SmallCaption, light: true)); row.AddChild(labels);
-            rows.AddChild(new Button { Name = $"Character-{member.CharacterId}", Content = row, Clicked = () => Run(() => controller.OpenCharacter(member.CharacterId)) });
+            rows.AddChild(new Button { Name = $"Character-{member.CharacterId}", Content = row, Clicked = () => Run(() => controller.OpenCharacter(member.CharacterId)), Semantics = { Label = $"Open details for {member.Name}" } });
         }
         c.AddChild(new ScrollView { Name = "RosterScroll", Height = 500, Content = rows, IsFocusable = true }); return Screen(tablet);
     }
 
     private ScrollView BuildCharacter()
     {
-        CharacterDetailModel vm = controller.Character(); var tablet = Tablet("CharacterDetail", null, 610); var c = Content(tablet); c.AddChild(Button("Back to Household", () => { controller.Back(); Rebuild(); }));
+        CharacterDetailModel vm = controller.Character(); var tablet = Tablet("CharacterDetail", null, 610); var c = Content(tablet); c.AddChild(Button(L("screen.character_back"), () => { controller.Back(); Rebuild(); }));
         ResolvedPortrait portrait = artServices.Portraits.Resolve(vm.Visual, 256);
-        var header = new Row { Spacing = 18 }; var medal = new CharacterMedallion(portrait.Image) { Width = 128, Height = 128 }; medal.Semantics.Label = portrait.Appearance.AccessibilityDescription; BindPortrait(vm.CharacterId, medal, vm.Visual, 256); header.AddChild(medal);
+        var header = new Row { Spacing = 18 }; var medal = new CharacterMedallion(portrait.Image) { Width = 128, Height = 128 }; medal.Semantics.Label = $"Portrait of {vm.Name}"; medal.Semantics.Description = portrait.Appearance.AccessibilityDescription; BindPortrait(vm.CharacterId, medal, vm.Visual, 256); header.AddChild(medal);
         var identity = new Column(); identity.AddChild(Text(vm.Name, TypographyRole.Title)); identity.AddChild(Text(vm.Subtitle, TypographyRole.Caption)); header.AddChild(identity); c.AddChild(header);
         c.AddChild(Text(vm.Appearance.DetailedDescription, TypographyRole.Body));
         if (controller.Settings.Art.AiGenerationEnabled)
         {
             var artActions = new Row { Spacing = 8 };
             GeneratedPortraitSelection? selected = artServices.Coordinator.GetCurrent(vm.Visual);
-            artActions.AddChild(Button(selected is null ? "Generate AI Portrait" : "Regenerate AI Portrait", () => _ = GeneratePortraitAsync(vm, selected is not null)));
-            if (selected is not null) artActions.AddChild(Button("Use Procedural", () => artServices.Coordinator.UseProcedural(vm.CharacterId)));
-            if (generatingPortraits.ContainsKey(vm.CharacterId)) artActions.AddChild(Button("Cancel", () => artServices.Coordinator.Cancel(vm.CharacterId)));
+            artActions.AddChild(Button(selected is null ? L("portrait.generate") : L("portrait.regenerate"), () => _ = GeneratePortraitAsync(vm, selected is not null)));
+            if (selected is not null) artActions.AddChild(Button(L("portrait.procedural"), () => artServices.Coordinator.UseProcedural(vm.CharacterId)));
+            if (generatingPortraits.ContainsKey(vm.CharacterId)) artActions.AddChild(Button(L("common.cancel"), () => artServices.Coordinator.Cancel(vm.CharacterId)));
             c.AddChild(artActions);
         }
         c.AddChild(Stats("Attributes", vm.Attributes)); c.AddChild(Stats("Skills", vm.Skills)); c.AddChild(Stats("Condition", vm.Condition)); return Screen(tablet);
@@ -226,11 +258,11 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
 
     private ScrollView BuildEstate()
     {
-        EstateSettlementModel vm = controller.Estate(); var tablet = Tablet("EstateSettlement", null, 610); var c = Content(tablet); c.AddChild(Text("Estate & Settlement", TypographyRole.Title)); c.AddChild(Text($"Settlement stage: {vm.SettlementStage}", TypographyRole.Heading));
+        EstateSettlementModel vm = controller.Estate(); var tablet = Tablet("EstateSettlement", null, 610); var c = Content(tablet); c.AddChild(Heading(L("screen.estate"), TypographyRole.Title)); c.AddChild(Text($"Settlement stage: {vm.SettlementStage}", TypographyRole.Heading));
         c.AddChild(BuildEstateScene(vm));
-        var actions = new Row { Spacing = 10 }; actions.AddChild(Button("Change Rites Budget", () => Run(() => controller.RequestAction(CampaignHouseholdAction.CycleRitesBudget)))); actions.AddChild(new WaxSealButton { Content = Text("Fête", TypographyRole.Button, light: true), Clicked = () => Run(() => controller.RequestAction(CampaignHouseholdAction.FundFestival)) }); c.AddChild(actions);
+        var actions = new Row { Spacing = 10 }; actions.AddChild(Button(L("estate.change_rites"), () => Run(() => controller.RequestAction(CampaignHouseholdAction.CycleRitesBudget)))); string festival = L("estate.festival"); actions.AddChild(new WaxSealButton { Content = Text(festival, TypographyRole.Button, light: true), Clicked = () => Run(() => controller.RequestAction(CampaignHouseholdAction.FundFestival)), Semantics = { Label = festival } }); c.AddChild(actions);
         var holdings = new Column { Spacing = 8 }; foreach (HoldingModel h in vm.Holdings) { holdings.AddChild(Text(h.Label, TypographyRole.Heading)); foreach (BuildingModel b in h.Buildings) holdings.AddChild(new StatRow { Label = b.Label, Value = b.Condition }); }
-        if (vm.Holdings.Count == 0) holdings.AddChild(Text("No household holdings are recorded.", TypographyRole.Body));
+        if (vm.Holdings.Count == 0) holdings.AddChild(Text(L("estate.no_holdings"), TypographyRole.Body));
         c.AddChild(new ScrollView { Name = "EstateScroll", Height = 430, Content = holdings, IsFocusable = true }); return Screen(tablet);
     }
 
@@ -250,9 +282,9 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
 
     private ScrollView BuildReport()
     {
-        MonthlyReportModel vm = controller.Report(); var tablet = Tablet("MonthlyReport", null, 610); var c = Content(tablet); c.AddChild(Text($"Monthly Report · {vm.Date}", TypographyRole.Title));
+        MonthlyReportModel vm = controller.Report(); var tablet = Tablet("MonthlyReport", null, 610); var c = Content(tablet); c.AddChild(Heading(L("screen.report", ("date", vm.Date)), TypographyRole.Title));
         var summary = new Row { Spacing = 20 }; summary.AddChild(Text($"Income  {vm.Income}", TypographyRole.Ledger)); summary.AddChild(Text($"Expenses  {vm.Expenses}", TypographyRole.Ledger)); summary.AddChild(Text($"Net  {vm.Net}", TypographyRole.Ledger)); c.AddChild(summary);
-        var lines = new Column { Spacing = 8 }; foreach (string s in vm.AutomationSummaries) lines.AddChild(Text(s, TypographyRole.Body)); foreach (ReportHeadlineModel h in vm.Headlines) lines.AddChild(Text(h.Label, TypographyRole.Body)); if (vm.Headlines.Count + vm.AutomationSummaries.Count == 0) lines.AddChild(Text("No notable events were recorded this month.", TypographyRole.Body));
+        var lines = new Column { Spacing = 8 }; foreach (string s in vm.AutomationSummaries) lines.AddChild(Text(s, TypographyRole.Body)); foreach (ReportHeadlineModel h in vm.Headlines) lines.AddChild(Text(h.Label, TypographyRole.Body)); if (vm.Headlines.Count + vm.AutomationSummaries.Count == 0) lines.AddChild(Text(L("report.no_events"), TypographyRole.Body));
         c.AddChild(new ScrollView { Name = "ReportScroll", Height = 470, Content = lines, IsFocusable = true }); return Screen(tablet);
     }
 
@@ -260,9 +292,9 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     {
         ModalState modal = controller.Modal!; var dialog = new Border { Name = modal.Kind == ModalKind.WaxSeal ? "WaxSealConfirmation" : "ConfirmationDialog", Width = 520, Height = 300, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Background = new(245, 229, 195), BorderBrush = new(133, 48, 39), BorderThickness = 4, Padding = new(24), Semantics = { Role = AccessibilityRole.Dialog, Label = modal.Title } };
         var c = new Column { Spacing = 14 }; c.AddChild(Text(modal.Title, TypographyRole.Heading)); c.AddChild(Text(modal.Body, TypographyRole.Body)); var actions = new Row { Spacing = 12 };
-        if (modal.Kind == ModalKind.WaxSeal) actions.AddChild(new WaxSealButton { Content = Text("Seal", TypographyRole.Button, light: true), Clicked = () => { controller.ConfirmModal(); Rebuild(); } });
-        else actions.AddChild(Button(modal.Kind == ModalKind.Information ? "OK" : "Confirm", () => { controller.ConfirmModal(); Rebuild(); }));
-        if (modal.Kind != ModalKind.Information) actions.AddChild(Button("Cancel", () => { controller.CancelModal(); root.CloseModal(); context.Invalidate(); })); c.AddChild(actions); dialog.Child = c; root.ShowModal(dialog);
+        if (modal.Kind == ModalKind.WaxSeal) { string seal = L("dialog.seal"); actions.AddChild(new WaxSealButton { Content = Text(seal, TypographyRole.Button, light: true), Clicked = () => { controller.ConfirmModal(); Rebuild(); }, Semantics = { Label = seal } }); }
+        else actions.AddChild(Button(modal.Kind == ModalKind.Information ? "OK" : L("common.confirm"), () => { controller.ConfirmModal(); Rebuild(); }));
+        if (modal.Kind != ModalKind.Information) actions.AddChild(Button(L("common.cancel"), () => { controller.CancelModal(); root.CloseModal(); context.Invalidate(); })); c.AddChild(actions); dialog.Child = c; root.ShowModal(dialog);
     }
 
     private void ToggleConsole()
@@ -275,7 +307,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     {
         if (root.Modal is not null) root.CloseModal();
         var panel = new Border { Name = "DeveloperConsole", Width = 920, Height = 520, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Background = new(20, 18, 16), BorderBrush = new(190, 142, 54), BorderThickness = 2, Padding = new(18), Semantics = { Role = AccessibilityRole.Dialog, Label = "Developer console" } };
-        var c = new Column { Spacing = 8 }; c.AddChild(Text("GENS DEVELOPER CONSOLE · help for commands · ` to close", TypographyRole.Inscription, light: true));
+        var c = new Column { Spacing = 8 }; c.AddChild(Text(L("developer.console_title"), TypographyRole.Inscription, light: true));
         var output = new Column { Spacing = 3 }; foreach (string line in controller.Logs.TakeLast(18)) output.AddChild(Text(line, TypographyRole.SmallCaption, light: true)); c.AddChild(new ScrollView { Height = 400, Content = output }); c.AddChild(Text($"> {consoleInput}▌", TypographyRole.Ledger, light: true)); panel.Child = c; root.ShowModal(panel); context.Invalidate();
     }
 
@@ -294,6 +326,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         });
         context.Invalidate();
     }
+    private void OnAudioActivityChanged(bool active) => context.SetAnimating(active || smokeTest || !generatingPortraits.IsEmpty);
     private async Task GeneratePortraitAsync(CharacterDetailModel model, bool regenerate)
     {
         if (!generatingPortraits.TryAdd(model.CharacterId, 0)) return;
@@ -310,9 +343,11 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private void Navigate(ScreenId id) { controller.Navigate(id); Rebuild(); }
     private void Run(Action action) { action(); Rebuild(); }
     private Button NavButton(string label, ScreenId id) => Button(label, () => Navigate(id), $"Nav{id}");
-    private static Button Button(string label, Action click, string? name = null) => new() { Name = name ?? label.Replace(" ", string.Empty, StringComparison.Ordinal), Content = Text(label, TypographyRole.Button, light: true), Clicked = click };
-    private static Toggle Toggle(string label, bool value, Action<bool> changed) { var t = new Toggle { Content = Text(label, TypographyRole.Button, light: true), Changed = changed }; t.SetChecked(value); return t; }
+    private static Button Button(string label, Action click, string? name = null) => new() { Name = name ?? label.Replace(" ", string.Empty, StringComparison.Ordinal), Content = Text(label, TypographyRole.Button, light: true), Clicked = click, Semantics = { Label = label } };
+    private static Toggle Toggle(string label, bool value, Action<bool> changed) { var t = new Toggle { Content = Text(label, TypographyRole.Button, light: true), Changed = changed, Semantics = { Label = label } }; t.SetChecked(value); return t; }
     private static TextBlock Text(string value, TypographyRole role, bool light = false) => new() { Text = value, TypographyRole = role, Wrapping = TextWrapping.Wrap, Foreground = light ? new Color(245, 229, 195) : null };
+    private static TextBlock Heading(string value, TypographyRole role) { TextBlock text = Text(value, role); text.Semantics.Role = AccessibilityRole.Heading; text.Semantics.Label = value; return text; }
+    private string L(string key, params (string Key, object? Value)[] arguments) => localization.Get(key, arguments.Length == 0 ? null : arguments.ToDictionary(static item => item.Key, static item => item.Value, StringComparer.Ordinal));
     private static WaxTablet Tablet(string name, float? width, float height) => new() { Name = name, Width = width, Height = height, Margin = new(18), HorizontalAlignment = width is null ? HorizontalAlignment.Stretch : HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
     private static Column Content(WaxTablet tablet) { var c = new Column { Spacing = 12 }; tablet.Child = c; return c; }
     private static ScrollView Center(UiNode child) { var overlay = new Overlay(); overlay.AddChild(child); return new ScrollView { Content = overlay, IsFocusable = true }; }

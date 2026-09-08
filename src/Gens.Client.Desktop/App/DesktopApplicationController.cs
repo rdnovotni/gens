@@ -1,11 +1,13 @@
 using Gens.Application.Campaign;
 using Gens.Art;
+using Gens.Audio;
 using Gens.Client.Desktop.Platform;
 using Gens.Client.Desktop.Settings;
 using Gens.Presentation;
 using Gens.Presentation.Models;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Commands;
+using Gens.UI;
 
 namespace Gens.Client.Desktop.App;
 
@@ -16,18 +18,20 @@ public sealed record ModalState(ModalKind Kind, string Title, string Body, Campa
 /// <summary>Testable application/navigation coordinator. It owns exactly one session and only snapshot view models.</summary>
 public sealed class DesktopApplicationController
 {
-    private readonly DesktopApplicationPaths paths;
-    private readonly DesktopSettingsStore settingsStore;
+    private readonly IApplicationPaths paths;
+    private readonly SettingsService settingsService;
     private IReadOnlyList<IDomainEvent> lastReportEvents = Array.Empty<IDomainEvent>();
     private ScreenId? backScreen;
     private bool returnToMenuPending;
 
-    public DesktopApplicationController(DesktopApplicationPaths paths)
+    public DesktopApplicationController(IApplicationPaths paths, AudioEngine? audio = null, Action<string, Exception?>? settingsLog = null)
     {
         this.paths = paths;
         paths.EnsureRequiredDirectories();
-        settingsStore = new(paths);
-        Settings = settingsStore.Load();
+        settingsService = new(paths, settingsLog);
+        Settings = settingsService.Current;
+        Audio = audio ?? new AudioEngine(new NullAudioBackend("Native audio backend is unavailable; continuing silently."));
+        ApplyAudioSettings();
         CurrentScreen = ScreenId.MainMenu;
         Log("Native client initialized.");
     }
@@ -35,6 +39,8 @@ public sealed class DesktopApplicationController
     public CampaignSession? CurrentCampaign { get; private set; }
     public CampaignPresentation? Presentation { get; private set; }
     public DesktopSettings Settings { get; private set; }
+    public AudioEngine Audio { get; }
+    public event EventHandler<SettingsChangedEventArgs>? SettingsChanged;
     public ScreenId CurrentScreen { get; private set; }
     public ModalState? Modal { get; private set; }
     public bool QuitRequested { get; private set; }
@@ -112,12 +118,28 @@ public sealed class DesktopApplicationController
     {
         CurrentCampaign = null; Presentation = null; SelectedCharacterId = null; lastReportEvents = Array.Empty<IDomainEvent>(); Modal = null; CurrentScreen = ScreenId.MainMenu; Log("Campaign session cleared; returned to main menu.");
     }
-    public void RequestQuit() { QuitRequested = true; settingsStore.Save(Settings); Log("Clean shutdown requested."); }
-    public void SetUiScale(float scale) { Settings = Settings with { Display = Settings.Display with { UiScale = Math.Clamp(scale, 1f, 2f) } }; settingsStore.Save(Settings); }
-    public void SetReducedMotion(bool value) { Settings = Settings with { Accessibility = Settings.Accessibility with { ReducedMotion = value } }; settingsStore.Save(Settings); }
-    public void SetConsoleEnabled(bool value) { Settings = Settings with { Developer = Settings.Developer with { ConsoleEnabled = value } }; settingsStore.Save(Settings); }
-    public void SetAiArtEnabled(bool value) { Settings = Settings with { Art = Settings.Art with { AiGenerationEnabled = value, Provider = value ? "mock" : "none" } }; settingsStore.Save(Settings); }
-    public void SetExternalArtConsent(bool value) { Settings = Settings with { Art = Settings.Art with { ExternalGenerationConsent = value } }; settingsStore.Save(Settings); }
+    public void RequestQuit() { QuitRequested = true; settingsService.Save(Settings); Log("Clean shutdown requested."); }
+    public void SetUiScale(float scale) => UpdateSettings(Settings with { Display = Settings.Display with { UiScale = scale } }, "Display");
+    public void SetReducedMotion(bool value) => UpdateSettings(Settings with { Accessibility = Settings.Accessibility with { ReducedMotion = value, Motion = value ? MotionMode.Reduced : MotionMode.Full } }, "Accessibility");
+    public void SetHighContrast(bool value) => UpdateSettings(Settings with { Accessibility = Settings.Accessibility with { HighContrast = value } }, "Accessibility");
+    public void SetLocale(string locale) => UpdateSettings(Settings with { Language = Settings.Language with { Locale = locale } }, "Language");
+    public void SetConsoleEnabled(bool value) => UpdateSettings(Settings with { Developer = Settings.Developer with { ConsoleEnabled = value } }, "Developer");
+    public void SetAiArtEnabled(bool value) => UpdateSettings(Settings with { Art = Settings.Art with { AiGenerationEnabled = value, Provider = value ? "mock" : "none" } }, "Art");
+    public void SetExternalArtConsent(bool value) => UpdateSettings(Settings with { Art = Settings.Art with { ExternalGenerationConsent = value } }, "Art");
+    public void SetAudioVolume(AudioBus bus, float value)
+    {
+        AudioSettings audio = bus switch
+        {
+            AudioBus.Master => Settings.Audio with { MasterVolume = value },
+            AudioBus.Music => Settings.Audio with { MusicVolume = value },
+            AudioBus.Ambience => Settings.Audio with { AmbienceVolume = value },
+            AudioBus.Effects => Settings.Audio with { EffectsVolume = value },
+            AudioBus.UI => Settings.Audio with { UiVolume = value },
+            _ => Settings.Audio,
+        };
+        UpdateSettings(Settings with { Audio = audio }, "Audio"); ApplyAudioSettings();
+    }
+    public void SetAudioMuted(bool value) { UpdateSettings(Settings with { Audio = Settings.Audio with { Muted = value } }, "Audio"); ApplyAudioSettings(); }
 
     public InkBarModel InkBar() => RequirePresentation().InkBar();
     public HouseholdRosterModel Roster() => RequirePresentation().HouseholdRoster();
@@ -172,6 +194,13 @@ public sealed class DesktopApplicationController
             : $"Replay mismatch: {result.HashBeforeSave:x16} != {result.HashAfterReload:x16}.";
     }
     private string ClearConsole() { logs.Clear(); return string.Empty; }
+    private void UpdateSettings(DesktopSettings value, string domain) { settingsService.Update(value, domain); DesktopSettings previous = Settings; Settings = settingsService.Current; SettingsChanged?.Invoke(this, new(previous, Settings, domain)); }
+    private void ApplyAudioSettings()
+    {
+        Audio.SetBusVolume(AudioBus.Master, Settings.Audio.MasterVolume); Audio.SetMuted(AudioBus.Master, Settings.Audio.Muted);
+        Audio.SetBusVolume(AudioBus.Music, Settings.Audio.MusicVolume); Audio.SetBusVolume(AudioBus.Ambience, Settings.Audio.AmbienceVolume);
+        Audio.SetBusVolume(AudioBus.Effects, Settings.Audio.EffectsVolume); Audio.SetBusVolume(AudioBus.UI, Settings.Audio.UiVolume);
+    }
     private static string RunConsole(Action action, string response) { action(); return response; }
     private void ReplaceCampaign(CampaignSession session) { CurrentCampaign = session; Presentation = new(session); SelectedCharacterId = null; }
     private CampaignSession RequireCampaign() => CurrentCampaign ?? throw new InvalidOperationException("No active campaign.");

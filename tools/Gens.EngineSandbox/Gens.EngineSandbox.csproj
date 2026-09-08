@@ -7,5 +7,8 @@
     <ProjectReference Include="../../src/Gens.UI/Gens.UI.csproj" />
     <ProjectReference Include="../../src/Gens.Portraits/Gens.Portraits.csproj" />
   </ItemGroup>
-  <ItemGroup><None Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup>
+    <None Include="Assets/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../../src/Gens.Platform.Sdl/runtimes/win-x64/native/*" Condition="'$(RuntimeIdentifier)' == '' Or '$(RuntimeIdentifier)' == 'win-x64'" Link="runtimes/win-x64/native/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
