@@ -9,6 +9,9 @@ internal static class SdlNative
 {
     private const string Library = "SDL3";
     internal const uint InitVideo = 0x20;
+    internal const uint InitAudio = 0x10;
+    internal const uint DefaultPlaybackDevice = 0xffffffff;
+    internal const ushort AudioS16LittleEndian = 0x8010;
     internal const ulong WindowOpenGl = 0x2, WindowResizable = 0x20, WindowHighPixelDensity = 0x2000;
     internal const uint PixelFormatArgb8888 = 0x16362004;
     internal const int TextureAccessStreaming = 1;
@@ -58,6 +61,7 @@ internal static class SdlNative
     [StructLayout(LayoutKind.Sequential)] internal struct MouseWheelEvent { internal uint Type; internal uint Reserved; internal ulong Timestamp; internal uint WindowId; internal uint Which; internal float X; internal float Y; internal uint Direction; internal float MouseX; internal float MouseY; internal int IntegerX; internal int IntegerY; }
 
     [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_Init(uint flags);
+    [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_InitSubSystem(uint flags);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern void SDL_Quit();
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_GetError();
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern int SDL_GetVersion();
@@ -76,6 +80,12 @@ internal static class SdlNative
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_GetClipboardText();
     [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_SetClipboardText([MarshalAs(UnmanagedType.LPUTF8Str)] string text);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern void SDL_free(IntPtr memory);
+    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_OpenAudioDeviceStream(uint device, ref AudioSpec spec, IntPtr callback, IntPtr userData);
+    [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_PutAudioStreamData(IntPtr stream, IntPtr buffer, int length);
+    [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_SetAudioStreamGain(IntPtr stream, float gain);
+    [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_PauseAudioStreamDevice(IntPtr stream);
+    [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_ResumeAudioStreamDevice(IntPtr stream);
+    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern void SDL_DestroyAudioStream(IntPtr stream);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_CreateRenderer(IntPtr window, [MarshalAs(UnmanagedType.LPUTF8Str)] string? name);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern void SDL_DestroyRenderer(IntPtr renderer);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_CreateTexture(IntPtr renderer, uint format, int access, int width, int height);
@@ -90,4 +100,5 @@ internal static class SdlNative
     [return: MarshalAs(UnmanagedType.I1)][DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern bool SDL_GL_SetSwapInterval(int interval);
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_GL_GetProcAddress([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
     internal static string Error => Marshal.PtrToStringUTF8(SDL_GetError()) ?? "unknown SDL error";
+    [StructLayout(LayoutKind.Sequential)] internal struct AudioSpec { internal ushort Format; internal int Channels; internal int Frequency; }
 }

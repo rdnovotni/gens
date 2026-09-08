@@ -7,7 +7,9 @@ public enum HorizontalAlignment { Start, Center, End, Stretch }
 public enum VerticalAlignment { Start, Center, End, Stretch }
 public enum Orientation { Horizontal, Vertical }
 public enum UiLengthKind { Auto, Fixed, Star }
-public enum AccessibilityRole { None, Group, Text, Image, Button, CheckBox, ScrollView, Dialog }
+public enum AccessibilityRole { None, Group, Text, Image, Button, CheckBox, Toggle, Heading, List, ListItem, ScrollView, Dialog }
+public enum MotionMode { Full, Reduced, None }
+public enum MotionCategory { Essential, Informational, Decorative }
 public enum TextWrapping { NoWrap, Wrap }
 public enum TextTrimming { None, Ellipsis }
 public enum ImageStretch { None, Contain, Cover, Fill }
@@ -40,7 +42,26 @@ public sealed class UiSemantics
     public string? Description { get; set; }
     public string? Value { get; set; }
     public bool IsChecked { get; set; }
+    public bool IsDecorative { get; set; }
 }
+
+public readonly record struct MotionPolicy(MotionMode Mode)
+{
+    public bool Allows(MotionCategory category) => Mode switch
+    {
+        MotionMode.Full => true,
+        MotionMode.Reduced => category != MotionCategory.Decorative,
+        MotionMode.None => category == MotionCategory.Essential,
+        _ => false,
+    };
+
+    public TimeSpan Adjust(TimeSpan duration, MotionCategory category) => Allows(category)
+        ? Mode == MotionMode.Reduced && category == MotionCategory.Informational ? TimeSpan.FromTicks(Math.Min(duration.Ticks, TimeSpan.FromMilliseconds(120).Ticks)) : duration
+        : TimeSpan.Zero;
+}
+
+public sealed record SemanticNodeSnapshot(string Id, AccessibilityRole Role, string? Name, string? Description, string? Value, bool IsEnabled, bool IsFocused, bool IsChecked, IReadOnlyList<SemanticNodeSnapshot> Children);
+public sealed record SemanticTreeSnapshot(SemanticNodeSnapshot Root, SemanticNodeSnapshot? FocusedNode);
 
 internal static class UiGeometry
 {

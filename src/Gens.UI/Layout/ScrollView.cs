@@ -6,7 +6,7 @@ public sealed class ScrollView : UiNode
 {
     private UiNode? content;
     private float horizontalOffset, verticalOffset;
-    public ScrollView() { ClipToBounds = true; Semantics.Role = AccessibilityRole.ScrollView; }
+    public ScrollView() { ClipToBounds = true; Semantics.Role = AccessibilityRole.ScrollView; Semantics.Label = "Scrollable content"; }
     public UiNode? Content { get => content; set { if (content == value) return; ClearChildren(); content = value; if (value is not null) AddChild(value); } }
     public float HorizontalOffset { get => horizontalOffset; set { float next = Math.Clamp(value, 0, MaxHorizontalOffset); if (horizontalOffset == next) return; horizontalOffset = next; InvalidateArrange(); } }
     public float VerticalOffset { get => verticalOffset; set { float next = Math.Clamp(value, 0, MaxVerticalOffset); if (verticalOffset == next) return; verticalOffset = next; InvalidateArrange(); } }

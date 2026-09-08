@@ -23,10 +23,15 @@ public sealed class UiTheme(IGraphicsBackend graphics)
 
 public static class GensTheme
 {
-    public static UiTheme Create(IGraphicsBackend graphics, IFontFace bodyFont, IFontFace? displayFont = null)
+    public static UiTheme Create(IGraphicsBackend graphics, IFontFace bodyFont, IFontFace? displayFont = null, bool highContrast = false)
     {
         displayFont ??= bodyFont;
         var theme = new UiTheme(graphics);
+        if (highContrast)
+        {
+            theme.Button = new(new(0, 0, 0), new(255, 255, 255), new(255, 255, 255), new(35, 35, 35), new(70, 70, 70), new(90, 90, 90), new(255, 221, 0), 2, 3, new(12, 7));
+            theme.Panel = new(new(255, 255, 255), new(0, 0, 0), new(0, 0, 0), new(255, 255, 255), new(255, 255, 255), new(110, 110, 110), new(0, 70, 255), 2, 3, new(12));
+        }
         theme.SetColor("Ink", new(46, 35, 28)); theme.SetColor("Parchment", new(226, 205, 164)); theme.SetColor("ParchmentLight", new(245, 229, 195));
         theme.SetColor("Wax", new(133, 48, 39)); theme.SetColor("WaxHover", new(160, 59, 46)); theme.SetColor("Gold", new(190, 142, 54)); theme.SetColor("MutedInk", new(105, 91, 74));
         theme.SetTypography(TypographyRole.Body, new(bodyFont, 17, 23));

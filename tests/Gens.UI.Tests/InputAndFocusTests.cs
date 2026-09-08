@@ -8,6 +8,22 @@ namespace Gens.UI.Tests;
 public sealed class InputAndFocusTests : UiTestFixture
 {
     [Test]
+    public void SemanticSnapshotTracksFocusAndRejectsUnnamedInteractiveControls()
+    {
+        UiRoot root = Root(); var named = new Button { Name = "save", Semantics = { Label = "Save campaign" } }; root.AddChild(named); root.Layout(new(200, 100)); root.Focus.RequestFocus(named);
+        SemanticTreeSnapshot snapshot = root.CaptureSemantics();
+        Assert.Multiple(() => { Assert.That(snapshot.FocusedNode?.Name, Is.EqualTo("Save campaign")); Assert.That(root.ValidateSemantics(), Is.Empty); });
+        root.AddChild(new Button { Name = "unnamed" }); Assert.That(root.ValidateSemantics(), Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void MotionPolicyDisablesDecorativeAndShortensInformationalMotion()
+    {
+        var reduced = new MotionPolicy(MotionMode.Reduced); var none = new MotionPolicy(MotionMode.None);
+        Assert.Multiple(() => { Assert.That(reduced.Allows(MotionCategory.Decorative), Is.False); Assert.That(reduced.Adjust(TimeSpan.FromSeconds(1), MotionCategory.Informational), Is.EqualTo(TimeSpan.FromMilliseconds(120))); Assert.That(none.Allows(MotionCategory.Informational), Is.False); Assert.That(none.Allows(MotionCategory.Essential), Is.True); });
+    }
+
+    [Test]
     public void HitTestingRespectsNestingOverlayVisibilityClippingAndDisabledPolicy()
     {
         UiRoot root = Root(); var clipped = new Panel { Width = 50, Height = 50, HorizontalAlignment = HorizontalAlignment.Start, VerticalAlignment = VerticalAlignment.Start, ClipToBounds = true }; var lower = new FixedNode(50, 50) { Name = "lower" }; var upper = new FixedNode(50, 50) { Name = "upper", ZIndex = 2 }; clipped.AddChild(lower); clipped.AddChild(upper); root.AddChild(clipped); root.Layout(new(100, 100));

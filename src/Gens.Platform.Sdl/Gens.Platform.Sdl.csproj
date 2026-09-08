@@ -3,9 +3,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="../Gens.Platform/Gens.Platform.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../Gens.Platform/Gens.Platform.csproj" /><ProjectReference Include="../Gens.Audio/Gens.Audio.csproj" /></ItemGroup>
   <ItemGroup>
-    <None Include="runtimes/**/*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Remove="runtimes/**/*" />
+    <Content Remove="runtimes/**/*" />
+    <None Include="runtimes/**/*" Condition="'$(RuntimeIdentifier)' == 'win-x64'" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

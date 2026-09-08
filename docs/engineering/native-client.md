@@ -46,9 +46,9 @@ The console supports `help`, `state`, `hash`, `replay`, `query`, `submit`, `save
 
 ## User data
 
-Windows uses `%LOCALAPPDATA%/Gens` by default. Startup establishes `saves`, `logs`, and `cache`; `settings.json` is a separate versioned, atomic settings file. The current save frontend uses `saves/quicksave.gens` and the shared `.gens` reader/writer.
+Windows uses `%LOCALAPPDATA%/Gens`, macOS uses `~/Library/Application Support/Gens`, and Linux uses `$XDG_DATA_HOME/gens` (or `~/.local/share/gens`). Startup establishes centralized save, settings, logs, cache, generated-art, screenshots, crash-report, and mod paths; traversal derived from external input is rejected. `settings/settings.json` is separate, versioned, migrated, atomically replaced, and preserved with a `.corrupt-*` suffix when invalid. The current save frontend uses `saves/quicksave.gens` and the shared `.gens` reader/writer.
 
-Implemented settings are UI scale (100–200%), reduced motion policy, and explicit developer-console enablement. Audio is not implemented, so no inert volume control is presented.
+Implemented settings are UI scale (100–200%), Master/Music/Ambience/Effects/UI audio levels and mute, reduced motion, high contrast, runtime locale selection, generated-art policy, and explicit developer-console enablement. The engine-neutral mixer uses an isolated SDL3 PCM16 push-stream backend and falls back silently when the subsystem or default device is unavailable; WAV/OGG asset decoding remains outstanding.
 
 ## Native parity checklist
 
@@ -69,4 +69,4 @@ Implemented settings are UI scale (100–200%), reduced motion policy, and expli
 - [x] Return to Main Menu with session clearing
 - [x] Developer console and hash/replay diagnostics
 
-Procedural raster portraits, Scene2D, audio, OS screen-reader adapters, installers, and Unity retirement remain later roadmap work.
+Procedural raster portraits, Scene2D, production service foundations, and self-contained package automation are present. A real audio device/codec backend, full Windows UI Automation provider, macOS/Linux accessibility bridges, packaged universal font fallback, cross-platform SDL payload validation, signing, and Unity retirement remain later roadmap work.

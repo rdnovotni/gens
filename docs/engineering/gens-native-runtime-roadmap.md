@@ -28,6 +28,8 @@ that ADR for the full 17-gate list before treating any later phase here as
 - [x] **Phase NR4** — Native-client vertical-slice parity
 - [x] **Phase NR5** — Scene2D and procedural portrait pipeline
 - [ ] **Phase NR6** — AI art, audio, accessibility, packaging
+  - [x] engine-neutral audio/settings/localization foundations and package automation (Ticket 9)
+  - [ ] WAV/OGG asset decoding, full Windows UIA provider, fallback font pack, and runnable Linux/macOS native payloads
 - [ ] **Phase NR7** — Cross-platform hardening and Unity retirement
 
 ---
@@ -230,6 +232,8 @@ visualization beyond portraits; particle/weather effects.
 ---
 
 ### Phase NR6 — AI art, audio, accessibility, packaging
+
+**Ticket 9 update (2026-09-07):** versioned settings, platform paths, audio mixing/streaming contracts with an SDL3 PCM16 backend and null-device fallback, JSON/pseudo localization, semantic snapshots, Windows accessibility event signaling, motion/high-contrast policy, structured logs/crash reports, release metadata, and cross-platform self-contained publish automation are present. NR6 remains open because WAV/OGG asset decoding is not wired, Windows does not yet host a full UI Automation provider, a universal font fallback pack is absent, and Linux/macOS SDL packages have not been validated as runnable. Per the exit-gate rule, these honest release blockers prevent marking NR6 complete.
 
 **Outcome:** the native client closes the remaining gaps needed for it to
 be a real production release candidate rather than a development-only build.

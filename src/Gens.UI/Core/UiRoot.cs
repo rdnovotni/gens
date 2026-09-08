@@ -13,15 +13,17 @@ public sealed class UiRoot : UiNode
     private float uiScale = 1;
     private Action? invalidate;
     public UiRoot(UiTheme theme) { Theme = theme; Focus = new(this); Name = "UiRoot"; Semantics.Role = AccessibilityRole.Group; }
-    public UiTheme Theme { get; }
+    public UiTheme Theme { get; private set; }
     public FocusManager Focus { get; }
     public UiDiagnostics Diagnostics { get; } = new();
+    public MotionPolicy MotionPolicy { get; set; } = new(MotionMode.Full);
     public float UiScale { get => uiScale; set { if (value <= 0 || !float.IsFinite(value)) throw new ArgumentOutOfRangeException(nameof(value)); if (uiScale == value) return; uiScale = value; InvalidateMeasure(); } }
     public bool DrawLayoutOutlines { get; set; }
     public UiNode? HoveredNode => hovered;
     public UiNode? CapturedNode => captured;
     public UiNode? Modal => modal;
     public void AttachInvalidation(Action requestFrame) => invalidate = requestFrame;
+    public void ApplyTheme(UiTheme theme) { Theme = theme ?? throw new ArgumentNullException(nameof(theme)); InvalidateMeasure(); }
     internal void RequestFrame() => invalidate?.Invoke();
 
     public void Layout(Size2 logicalSize)
@@ -99,6 +101,24 @@ public sealed class UiRoot : UiNode
         if (modal is null) return; UiNode closing = modal; modal = null; RemoveChild(closing);
         if (!Focus.RequestFocus(preModalFocus)) Focus.Move(false); preModalFocus = null;
     }
+    public SemanticTreeSnapshot CaptureSemantics()
+    {
+        UiNode scope = modal ?? this;
+        SemanticNodeSnapshot root = Snapshot(scope);
+        return new(root, FindFocused(root));
+    }
+    public IReadOnlyList<string> ValidateSemantics()
+    {
+        var errors = new List<string>();
+        foreach (UiNode node in Traverse(modal ?? this))
+        {
+            if (node.Semantics.IsDecorative) continue;
+            bool interactive = node.IsFocusable || node.Semantics.Role is AccessibilityRole.Button or AccessibilityRole.CheckBox or AccessibilityRole.Toggle;
+            if (interactive && string.IsNullOrWhiteSpace(node.Semantics.Label)) errors.Add($"{node.DebugPath}: interactive node has no accessible name.");
+            if (interactive && node.Semantics.Role == AccessibilityRole.None) errors.Add($"{node.DebugPath}: interactive node has no accessibility role.");
+        }
+        return errors;
+    }
     internal void ValidateFocus() { if (Focus.FocusedNode is UiNode focused && (!focused.IsEnabled || focused.Visibility != UiVisibility.Visible || focused.Root != this || !IsInActiveFocusScope(focused))) Focus.Clear(); }
     internal bool IsInActiveFocusScope(UiNode node) => modal is null || node == modal || node.IsDescendantOf(modal);
     internal IEnumerable<UiNode> EnumerateActiveScope() => Traverse(modal ?? this);
@@ -108,6 +128,12 @@ public sealed class UiRoot : UiNode
     internal void AssertTreeMutationAllowed() { if (treeMutationGuard) throw new InvalidOperationException("The UI tree cannot be mutated during measure, arrange, or paint."); }
     private UiNode? HitTarget(Point2 position) { UiNode scope = modal ?? this; return scope.HitTest(position); }
     private static IEnumerable<UiNode> Traverse(UiNode start) { var stack = new Stack<UiNode>(); stack.Push(start); while (stack.TryPop(out UiNode? node)) { yield return node; for (int i = node.Children.Count - 1; i >= 0; i--) stack.Push(node.Children[i]); } }
+    private static SemanticNodeSnapshot Snapshot(UiNode node)
+    {
+        IReadOnlyList<SemanticNodeSnapshot> children = node.Children.Where(static child => !child.Semantics.IsDecorative && child.Visibility == UiVisibility.Visible).Select(Snapshot).ToArray();
+        return new(node.Name ?? node.GetType().Name, node.Semantics.Role, node.Semantics.Label, node.Semantics.Description, node.Semantics.Value, node.IsEnabled, node.IsFocused, node.Semantics.IsChecked, children);
+    }
+    private static SemanticNodeSnapshot? FindFocused(SemanticNodeSnapshot node) => node.IsFocused ? node : node.Children.Select(FindFocused).FirstOrDefault(static candidate => candidate is not null);
     private static void Route(UiNode? target, UiPointerEvent evt)
     {
         if (target is null) return; evt.OriginalTarget = target;

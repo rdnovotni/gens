@@ -1,0 +1,7 @@
+# Native accessibility
+
+Every retained node has role, name, description, value, checked state, and decorative status. `UiRoot.CaptureSemantics` exports only the active modal scope, omits decorative nodes, and identifies the focused node. `ValidateSemantics` reports unnamed interactive controls. Buttons, toggles, headings, dialogs, scroll regions, portraits, and the estate preview carry explicit semantics; portraits expose structured appearance text as descriptions. Modal focus remains trapped and restored by `UiRoot`.
+
+The Windows bridge publishes semantic snapshots and emits native focus-change events through `NotifyWinEvent`, keeping Gens focus visible to assistive technology. Full UI Automation fragment-provider hosting, bounds/hit-test actions, and screen-reader certification are not complete. macOS NSAccessibility and Linux AT-SPI currently use the explicit null bridge. These are release gaps, not supported features.
+
+Keyboard navigation uses Tab/Shift+Tab, Enter/Space, Escape, and scroll keys. Tests cover focus, modal trapping, semantic names, and snapshot focus. `MotionPolicy` classifies Essential, Informational, and Decorative motion: Reduced disables Decorative SceneView updates and caps Informational transitions at 120 ms; None permits only Essential motion. The estate preview is static today. High contrast replaces control surfaces with black/white, thicker borders, and a yellow/blue focus treatment; statuses retain text, not color alone.
