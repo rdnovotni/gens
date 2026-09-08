@@ -74,3 +74,9 @@ facts are authoritative, recipes and portrait bytes are presentation-only,
 visual randomness is isolated from simulation RNG, provenance is versioned,
 and a deterministic procedural fallback remains mandatory even after optional
 generated or custom sources are introduced.
+
+## ADR 0018 — optional generated artwork
+
+[ADR 0018](0018-optional-generated-artwork.md) establishes provider isolation,
+versioned deterministic prompt compilation, asynchronous queueing, content-addressed
+assets and permanent procedural fallback for optional generated artwork.

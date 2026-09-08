@@ -6,9 +6,10 @@
     <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Gens.Client.Desktop/Gens.Client.Desktop.csproj" />
-    <ProjectReference Include="../../src/Gens.Presentation/Gens.Presentation.csproj" />
     <ProjectReference Include="../../src/Gens.Art/Gens.Art.csproj" />
+    <ProjectReference Include="../../src/Gens.Application/Gens.Application.csproj" />
+    <ProjectReference Include="../../src/Gens.Portraits/Gens.Portraits.csproj" />
+    <ProjectReference Include="../../src/Gens.Graphics.Skia/Gens.Graphics.Skia.csproj" />
+    <ProjectReference Include="../../src/Gens.Graphics/Gens.Graphics.csproj" />
   </ItemGroup>
-  <ItemGroup><None Include="Goldens/*.png" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>

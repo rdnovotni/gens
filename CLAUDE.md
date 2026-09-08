@@ -71,6 +71,11 @@ These are load-bearing, not stylistic — see the
   future native-client/runtime code, and external AI art providers. The rule
   is engine-agnostic, not Unity-specific: no presentation host, past, current,
   or future, gets a dependency from the simulation.
+- **Generated artwork stays optional and outside Simulation.** External art-provider
+  contracts belong in `Gens.Art`; prompts derive deterministically from structured visual data,
+  screens request work through `ArtGenerationQueue`, and procedural portraits remain the immediate
+  fallback. Provider failure must never block gameplay, credentials must never be embedded or
+  logged, and generated assets/references must never enter authoritative campaign hashes.
 - **UI touches simulation only through query projections and commands.**
   UI code reads via `IWorldQuery<TProjection>` implementations under
   `src/Gens.Simulation/Queries/` and writes only by submitting an `ICommand`

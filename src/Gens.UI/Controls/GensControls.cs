@@ -35,11 +35,13 @@ public sealed class WaxSealButton : Button
 
 public sealed class CharacterMedallion : Border
 {
+    private readonly Image image;
     public CharacterMedallion(IGraphicsImage? portrait = null)
     {
         Name = "CharacterMedallion"; Width = Height = 112; CornerRadius = new(56); BorderThickness = 4; Padding = new(5);
-        Child = new Image { Source = portrait, Stretch = ImageStretch.Cover, Semantics = { Label = "Character portrait" } };
+        image = new Image { Source = portrait, Stretch = ImageStretch.Cover, Semantics = { Label = "Character portrait" } }; Child = image;
     }
+    public IGraphicsImage? Portrait { get => image.Source; set => image.Source = value; }
     protected override void PaintOverride(ICanvas2D canvas) { if (Root is not null) { Background = Root.Theme.Color("MutedInk"); BorderBrush = Root.Theme.Color("Gold"); } base.PaintOverride(canvas); }
 }
 

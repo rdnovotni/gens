@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Gens.Art;
 using Gens.Client.Desktop.Platform;
 
 namespace Gens.Client.Desktop.Settings;
@@ -9,6 +10,7 @@ public sealed record DesktopSettings
     public DisplaySettings Display { get; init; } = new();
     public AccessibilitySettings Accessibility { get; init; } = new();
     public DeveloperSettings Developer { get; init; } = new();
+    public ArtSettings Art { get; init; } = new();
 }
 public sealed record DisplaySettings { public float UiScale { get; init; } = 1f; }
 public sealed record AccessibilitySettings { public bool ReducedMotion { get; init; } }

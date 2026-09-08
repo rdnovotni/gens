@@ -83,9 +83,10 @@ public sealed class DesktopApplicationFlowTests
     [Test]
     public void SettingsAreVersionedAndPersisted()
     {
-        app.SetUiScale(1.75f); app.SetReducedMotion(true); app.SetConsoleEnabled(true);
+        Assert.That(app.Settings.Art.AiGenerationEnabled, Is.False);
+        app.SetUiScale(1.75f); app.SetReducedMotion(true); app.SetConsoleEnabled(true); app.SetAiArtEnabled(true);
         var loaded = new DesktopApplicationController(new DesktopApplicationPaths(directory));
-        Assert.Multiple(() => { Assert.That(loaded.Settings.Version, Is.EqualTo(1)); Assert.That(loaded.Settings.Display.UiScale, Is.EqualTo(1.75f)); Assert.That(loaded.Settings.Accessibility.ReducedMotion, Is.True); Assert.That(loaded.Settings.Developer.ConsoleEnabled, Is.True); });
+        Assert.Multiple(() => { Assert.That(loaded.Settings.Version, Is.EqualTo(1)); Assert.That(loaded.Settings.Display.UiScale, Is.EqualTo(1.75f)); Assert.That(loaded.Settings.Accessibility.ReducedMotion, Is.True); Assert.That(loaded.Settings.Developer.ConsoleEnabled, Is.True); Assert.That(loaded.Settings.Art.AiGenerationEnabled, Is.True); Assert.That(loaded.Settings.Art.Provider, Is.EqualTo("mock")); });
     }
 
     [Test]

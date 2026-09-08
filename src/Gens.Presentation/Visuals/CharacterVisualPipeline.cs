@@ -139,6 +139,9 @@ public static class PortraitRecipeBuilder
 
 public sealed record PortraitReference(PortraitSourceKind SourceKind, string ContentId, PortraitStyleId StyleId, string VisualStateHash, int RecipeVersion, string RendererVersion, int PixelSize);
 public sealed record PortraitSnapshot(string SubjectId, string CampaignDate, string VisualStateHash, PortraitReference Portrait, int RecipeVersion);
+public enum GeneratedPortraitStaleness { Current, StaleMinor, StaleMajor, Historical }
+public sealed record GeneratedPortraitAsset(string SubjectId, string AssetHash, string ObjectPath, PortraitStyleId StyleId, string VisualStateHash, string ProviderVersion, int PixelSize, GeneratedPortraitStaleness Staleness);
+public interface IGeneratedPortraitSource { GeneratedPortraitAsset? GetCurrent(CharacterVisualState visual); }
 
 public static class PortraitSourcePriority
 {

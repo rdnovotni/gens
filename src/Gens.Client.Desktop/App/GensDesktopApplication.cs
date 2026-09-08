@@ -1,8 +1,12 @@
 using Gens.Application.Campaign;
+using Gens.Art.Portraits;
+using Gens.Art.Diagnostics;
+using System.Collections.Concurrent;
 using Gens.Client.Desktop.Settings;
 using Gens.Graphics;
 using Gens.Platform;
 using Gens.Presentation.Models;
+using Gens.Presentation.Visuals;
 using Gens.Portraits;
 using Gens.Runtime;
 using Gens.Scene2D;
@@ -23,7 +27,10 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private bool smokeCaptured;
     private bool smokeCapturePending;
     private bool disposed;
-    private readonly PortraitService portraits = new(graphics, controller.PortraitCachePath);
+    private readonly DesktopArtServices artServices = new(graphics, controller);
+    private readonly Dictionary<string, List<(CharacterMedallion Medallion, CharacterVisualState Visual, int Size)>> portraitBindings = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, byte> generatingPortraits = new(StringComparer.Ordinal);
+    private readonly ConcurrentQueue<Action> uiActions = new();
     public Func<byte[]>? CapturePng { private get; set; }
 
     public UiRoot Root => root;
@@ -36,6 +43,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         font = graphics.LoadFont(stream);
         root = new(GensTheme.Create(graphics, font)) { Name = "DesktopRoot", UiScale = controller.Settings.Display.UiScale };
         root.AttachInvalidation(context.Invalidate);
+        artServices.Coordinator.PortraitUpdated += OnPortraitUpdated;
         Rebuild();
         if (smokeTest) context.SetAnimating(true);
     }
@@ -59,6 +67,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
 
     public void Update(PresentationFrame frame)
     {
+        while (uiActions.TryDequeue(out Action? action)) action();
         if (!smokeTest || smokeCaptured || frame.Elapsed < TimeSpan.FromMilliseconds(200)) return;
         smokeCapturePending = true;
     }
@@ -74,10 +83,11 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         this.context.SetAnimating(false); this.context.RequestQuit();
     }
     public void Shutdown() => Dispose();
-    public void Dispose() { if (disposed) return; portraits.Dispose(); font.Dispose(); disposed = true; }
+    public void Dispose() { if (disposed) return; artServices.Coordinator.PortraitUpdated -= OnPortraitUpdated; artServices.Dispose(); font.Dispose(); disposed = true; }
 
     private void Rebuild()
     {
+        portraitBindings.Clear();
         if (root.Modal is not null) root.CloseModal();
         if (IsGameplay(controller.CurrentScreen))
         {
@@ -152,6 +162,14 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         var scales = new Row { Spacing = 6 }; foreach (float scale in new[] { 1f, 1.25f, 1.5f, 1.75f, 2f }) scales.AddChild(Button($"{scale:P0}", () => { controller.SetUiScale(scale); root.UiScale = scale; Rebuild(); })); c.AddChild(scales);
         c.AddChild(Toggle("Reduced motion", s.Accessibility.ReducedMotion, controller.SetReducedMotion));
         c.AddChild(Toggle("Developer console (backquote)", s.Developer.ConsoleEnabled, controller.SetConsoleEnabled));
+        c.AddChild(Text("Optional generated portraits", TypographyRole.Heading));
+        c.AddChild(Toggle("Enable AI artwork (Mock provider)", s.Art.AiGenerationEnabled, value => { controller.SetAiArtEnabled(value); Rebuild(); }));
+        c.AddChild(Text("Generated art is optional. Portrait descriptions are sent only when you request generation; deterministic procedural portraits always remain available.", TypographyRole.Caption));
+        if (s.Developer.ConsoleEnabled)
+        {
+            ArtDiagnosticsSnapshot diagnostics = artServices.Diagnostics.Capture(s.Art);
+            c.AddChild(Text($"Art diagnostics · provider={diagnostics.SelectedProvider} available={diagnostics.ProviderAvailable} queued={diagnostics.Queue.Queued} running={diagnostics.Queue.Running} completed={diagnostics.Queue.Completed} failed={diagnostics.Queue.Failed} cache hits={diagnostics.Cache.Hits} misses={diagnostics.Cache.Misses} bytes={diagnostics.Cache.ObjectBytes}", TypographyRole.SmallCaption));
+        }
         c.AddChild(Text("Audio is not yet implemented; no inert volume control is shown.", TypographyRole.Caption)); c.AddChild(Button("Back", () => Navigate(ScreenId.MainMenu)));
         return Center(tablet);
     }
@@ -178,8 +196,9 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         var rows = new Column { Spacing = 5 };
         foreach (RosterRowModel member in vm.Rows)
         {
-            ResolvedPortrait portrait = portraits.Resolve(member.Visual, 128);
-            var row = new Row { Spacing = 12 }; row.AddChild(new CharacterMedallion(portrait.Image) { Width = 58, Height = 58, Semantics = { Label = portrait.Appearance.AccessibilityDescription } });
+            ResolvedPortrait portrait = artServices.Portraits.Resolve(member.Visual, 128);
+            var medallion = new CharacterMedallion(portrait.Image) { Width = 58, Height = 58, Semantics = { Label = portrait.Appearance.AccessibilityDescription } }; BindPortrait(member.CharacterId, medallion, member.Visual, 128);
+            var row = new Row { Spacing = 12 }; row.AddChild(medallion);
             var labels = new Column(); labels.AddChild(Text(member.Name, TypographyRole.Button, light: true)); labels.AddChild(Text(member.Subtitle, TypographyRole.SmallCaption, light: true)); row.AddChild(labels);
             rows.AddChild(new Button { Name = $"Character-{member.CharacterId}", Content = row, Clicked = () => Run(() => controller.OpenCharacter(member.CharacterId)) });
         }
@@ -189,10 +208,20 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private ScrollView BuildCharacter()
     {
         CharacterDetailModel vm = controller.Character(); var tablet = Tablet("CharacterDetail", null, 610); var c = Content(tablet); c.AddChild(Button("Back to Household", () => { controller.Back(); Rebuild(); }));
-        ResolvedPortrait portrait = portraits.Resolve(vm.Visual, 256);
-        var header = new Row { Spacing = 18 }; var medal = new CharacterMedallion(portrait.Image) { Width = 128, Height = 128 }; medal.Semantics.Label = portrait.Appearance.AccessibilityDescription; header.AddChild(medal);
+        ResolvedPortrait portrait = artServices.Portraits.Resolve(vm.Visual, 256);
+        var header = new Row { Spacing = 18 }; var medal = new CharacterMedallion(portrait.Image) { Width = 128, Height = 128 }; medal.Semantics.Label = portrait.Appearance.AccessibilityDescription; BindPortrait(vm.CharacterId, medal, vm.Visual, 256); header.AddChild(medal);
         var identity = new Column(); identity.AddChild(Text(vm.Name, TypographyRole.Title)); identity.AddChild(Text(vm.Subtitle, TypographyRole.Caption)); header.AddChild(identity); c.AddChild(header);
-        c.AddChild(Text(vm.Appearance.DetailedDescription, TypographyRole.Body)); c.AddChild(Stats("Attributes", vm.Attributes)); c.AddChild(Stats("Skills", vm.Skills)); c.AddChild(Stats("Condition", vm.Condition)); return Screen(tablet);
+        c.AddChild(Text(vm.Appearance.DetailedDescription, TypographyRole.Body));
+        if (controller.Settings.Art.AiGenerationEnabled)
+        {
+            var artActions = new Row { Spacing = 8 };
+            GeneratedPortraitSelection? selected = artServices.Coordinator.GetCurrent(vm.Visual);
+            artActions.AddChild(Button(selected is null ? "Generate AI Portrait" : "Regenerate AI Portrait", () => _ = GeneratePortraitAsync(vm, selected is not null)));
+            if (selected is not null) artActions.AddChild(Button("Use Procedural", () => artServices.Coordinator.UseProcedural(vm.CharacterId)));
+            if (generatingPortraits.ContainsKey(vm.CharacterId)) artActions.AddChild(Button("Cancel", () => artServices.Coordinator.Cancel(vm.CharacterId)));
+            c.AddChild(artActions);
+        }
+        c.AddChild(Stats("Attributes", vm.Attributes)); c.AddChild(Stats("Skills", vm.Skills)); c.AddChild(Stats("Condition", vm.Condition)); return Screen(tablet);
     }
 
     private ScrollView BuildEstate()
@@ -251,6 +280,33 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     }
 
     private void RefreshInkBar() { InkBarModel vm = controller.InkBar(); inkName!.Text = vm.GensName; inkDate!.Text = vm.Date; inkTreasury!.Text = vm.Treasury; inkDignitas!.Text = vm.Dignitas; }
+    private void BindPortrait(string subjectId, CharacterMedallion medallion, CharacterVisualState visual, int size)
+    {
+        if (!portraitBindings.TryGetValue(subjectId, out List<(CharacterMedallion, CharacterVisualState, int)>? bindings)) { bindings = []; portraitBindings.Add(subjectId, bindings); }
+        bindings.Add((medallion, visual, size));
+    }
+    private void OnPortraitUpdated(object? sender, GeneratedPortraitUpdatedEventArgs args)
+    {
+        uiActions.Enqueue(() =>
+        {
+            if (portraitBindings.TryGetValue(args.SubjectId, out List<(CharacterMedallion Medallion, CharacterVisualState Visual, int Size)>? bindings))
+                foreach ((CharacterMedallion medallion, CharacterVisualState visual, int size) in bindings) medallion.Portrait = artServices.Portraits.Resolve(visual, size).Image;
+        });
+        context.Invalidate();
+    }
+    private async Task GeneratePortraitAsync(CharacterDetailModel model, bool regenerate)
+    {
+        if (!generatingPortraits.TryAdd(model.CharacterId, 0)) return;
+        context.SetAnimating(true);
+        Rebuild();
+        try { await artServices.Coordinator.RequestAsync(model.Visual, model.Appearance, controller.Settings.Art, regenerate: regenerate).ConfigureAwait(false); }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            uiActions.Enqueue(() => { generatingPortraits.TryRemove(model.CharacterId, out _); if (generatingPortraits.IsEmpty && !smokeTest) context.SetAnimating(false); });
+            context.Invalidate();
+        }
+    }
     private void Navigate(ScreenId id) { controller.Navigate(id); Rebuild(); }
     private void Run(Action action) { action(); Rebuild(); }
     private Button NavButton(string label, ScreenId id) => Button(label, () => Navigate(id), $"Nav{id}");
