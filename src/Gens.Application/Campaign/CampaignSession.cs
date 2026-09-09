@@ -137,7 +137,9 @@ public sealed class CampaignSession
     /// <paramref name="diagnosticsPath"/>, reloads it, and compares <see cref="StateHasher"/> hashes
     /// before and after — the same "load reproduces the exact same state hash it was saved with" check
     /// the console runner's <c>replay</c>/<c>compare-hashes</c> verbs make, surfaced here so the Unity
-    /// shell can run it on demand without shelling out.</summary>
+    /// shell can run it on demand without shelling out. This save/reload hash-equality check, plus
+    /// independent continuation parity, is the full "replay diagnostics" contract per ADR 0019
+    /// (Unity retirement UR-01) — not a persisted command log.</summary>
     public ReplayDiagnosticsResult VerifyDeterministicReplay(string diagnosticsPath, string gameVersion)
     {
 #if !UNITY_2021_1_OR_NEWER

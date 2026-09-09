@@ -80,3 +80,13 @@ generated or custom sources are introduced.
 [ADR 0018](0018-optional-generated-artwork.md) establishes provider isolation,
 versioned deterministic prompt compilation, asynchronous queueing, content-addressed
 assets and permanent procedural fallback for optional generated artwork.
+
+## ADR 0019 — replay diagnostics and save fixture contract
+
+[ADR 0019](0019-replay-diagnostics-and-save-fixture-contract.md) records, as part of
+Unity retirement blocker ticket UR-01, that the replay diagnostics gate is satisfied
+by save/reload hash equality plus independent continuation parity rather than
+persisted command-log replay, and that the save fixture matrix can only honestly
+include current-native, legacy-shaped, and identity-migrated fixtures — never a
+fabricated Unity-era or multi-version-migrated fixture — since Unity has never had a
+working save/load path.

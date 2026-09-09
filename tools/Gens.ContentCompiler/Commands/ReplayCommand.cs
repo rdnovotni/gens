@@ -4,12 +4,14 @@ using Gens.Simulation.State;
 namespace Gens.ContentCompiler.Commands;
 
 /// <summary>
-/// <c>replay &lt;save&gt;</c>: reloads a save and recomputes its state hash. This is a deliberately
-/// narrow "replay" — Phase 4 has not yet built a persisted command log or scheduler to actually re-run
-/// commands against, so there is nothing to replay *from* yet. What this command proves today is the
-/// exit gate's weaker but still real claim: loading a save reproduces the exact same state hash it was
-/// saved with, every time. Once Phase 4 adds a command log, this command is the natural place to
-/// extend into full command replay.
+/// <c>replay &lt;save&gt;</c>: reloads a save and recomputes its state hash. Per
+/// <see href="../../docs/engineering/adr/0019-replay-diagnostics-and-save-fixture-contract.md">ADR
+/// 0019</see>, this — save/reload hash equality, plus the independent continuation parity
+/// <c>Ur01SharedScenarioFixtureTests</c> exercises — is the supported "replay diagnostics" contract,
+/// not re-running a persisted command log: no command log exists, and none is required for this gate.
+/// A real command log remains legitimate future work if a concrete consumer (crash recovery,
+/// spectator replay) ever needs one; this command is the natural place to extend into full command
+/// replay if that happens.
 /// </summary>
 public static class ReplayCommand
 {

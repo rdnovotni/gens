@@ -1,0 +1,21 @@
+{
+  "seed": 1,
+  "region": "latium",
+  "ruleset": "default",
+  "difficulty": "standard",
+  "startProfileId": null,
+  "startMonths": 0,
+  "months": 12,
+  "commands": [
+    {
+      "actorId": "system",
+      "type": "ur01.sharedScenario.ledgerTouch",
+      "payload": "{\"note\":\"UR-01 shared scenario — ledger checkpoint\"}"
+    },
+    {
+      "actorId": "system",
+      "type": "ur01.sharedScenario.stewardshipTouch",
+      "payload": "{\"note\":\"UR-01 shared scenario — stewardship checkpoint\"}"
+    }
+  ]
+}
