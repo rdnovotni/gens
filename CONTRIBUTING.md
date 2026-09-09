@@ -17,6 +17,9 @@ accurate and Unity remains fully supported. **Native runtime development** has
 begun with its platform, graphics, and runtime foundation; subsequent UI/client
 work follows the phases tracked by the
 [native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md).
+The 2026-09-08 [formal retirement audit](docs/engineering/unity-retirement-audit.md)
+is **BLOCKED**; do not remove Unity or its compatibility surface until every
+mandatory follow-up ticket passes.
 See [`native-runtime-architecture.md`](docs/engineering/native-runtime-architecture.md)
 for dependency and lifetime rules. Windows x64 SDL is app-local; no system SDL
 installation or PATH entry is required.
