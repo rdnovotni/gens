@@ -17,6 +17,8 @@ public sealed class ScreenGoldenTests
     [TestCaseSource(nameof(Names))]
     public void ScreenFixtureMatchesReviewedGolden(string name)
     {
+        bool updateGoldens = string.Equals(Environment.GetEnvironmentVariable("GENS_UPDATE_DESKTOP_GOLDENS"), "1", StringComparison.Ordinal);
+        string expectedPath = Path.Combine(FindRepositoryRoot(), "tests", "Gens.Client.Desktop.Tests", "Goldens", name + ".png");
         string root = Path.Combine(Path.GetTempPath(), "gens-desktop-golden-tests", Guid.NewGuid().ToString("N"));
         string capturePath = Path.Combine(root, "capture", name + ".png");
         Directory.CreateDirectory(root);
@@ -26,13 +28,21 @@ public sealed class ScreenGoldenTests
             using var platform = new DeterministicPlatform();
             var controller = new DesktopApplicationController(new DesktopApplicationPaths(root));
             ConfigureFixture(controller, name);
-            using var app = new GensDesktopApplication(graphics, controller, smokeTest: true, smokeCapturePath: capturePath);
-            using var host = new RuntimeHost(platform, graphics, app, new WindowOptions("Golden Test", 1280, 720), RendererMode.Software, vsync: false);
-            app.CapturePng = host.CapturePng;
-            while (host.IsRunning) host.Step(TimeSpan.FromMilliseconds(16));
+            var app = new GensDesktopApplication(graphics, controller, smokeTest: true, smokeCapturePath: capturePath);
+            using (var host = new RuntimeHost(platform, graphics, app, new WindowOptions("Golden Test", 1280, 720), RendererMode.Software, vsync: false))
+            {
+                app.CapturePng = host.CapturePng;
+                while (host.IsRunning) host.Step(TimeSpan.FromMilliseconds(16));
+            }
 
-            byte[] expected = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "Goldens", name + ".png"));
             byte[] actual = File.ReadAllBytes(capturePath);
+            if (updateGoldens)
+            {
+                File.WriteAllBytes(expectedPath, actual);
+                Assert.Pass($"Updated desktop golden: {name}");
+            }
+
+            byte[] expected = File.ReadAllBytes(expectedPath);
             Assert.That(Convert.ToHexString(SHA256.HashData(actual)), Is.EqualTo(Convert.ToHexString(SHA256.HashData(expected))), $"Screen fixture '{name}' no longer matches the reviewed golden.");
         }
         finally
@@ -74,6 +84,13 @@ public sealed class ScreenGoldenTests
                 throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown screen fixture.");
         }
     }
+
+    private static string FindRepositoryRoot()
+    {
+        DirectoryInfo? directory = new(TestContext.CurrentContext.TestDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Gens.slnx"))) directory = directory.Parent;
+        return directory?.FullName ?? throw new DirectoryNotFoundException("Repository root not found.");
+    }
 }
 
 internal sealed class DeterministicPlatform : IPlatform
@@ -103,13 +120,14 @@ internal sealed class DeterministicPlatform : IPlatform
     }
 }
 
-internal sealed class DeterministicWindow : IWindow
+internal sealed class DeterministicWindow : IPixelBufferWindow
 {
     public WindowId Id => new(1);
     public LogicalSize LogicalSize => new(1280, 720);
     public PixelSize PixelSize => new(1280, 720);
     public DisplayScale DisplayScale => DisplayScale.Identity;
     public WindowState State => WindowState.Normal;
+    public void PresentPixels(ReadOnlySpan<byte> pixels, PixelSize size, int rowBytes) { }
     public void StartTextInput() { }
     public void StopTextInput() { }
     public void SetFullscreen(bool fullscreen) { }
