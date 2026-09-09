@@ -36,7 +36,8 @@ public sealed class DesktopApplicationController
         Log("Native client initialized.");
     }
 
-    public CampaignSession? CurrentCampaign { get; private set; }
+    private CampaignSession? CurrentCampaign { get; set; }
+    public bool HasActiveCampaign => CurrentCampaign is not null;
     public CampaignPresentation? Presentation { get; private set; }
     public DesktopSettings Settings { get; private set; }
     public AudioEngine Audio { get; }
@@ -118,7 +119,13 @@ public sealed class DesktopApplicationController
     {
         CurrentCampaign = null; Presentation = null; SelectedCharacterId = null; lastReportEvents = Array.Empty<IDomainEvent>(); Modal = null; CurrentScreen = ScreenId.MainMenu; Log("Campaign session cleared; returned to main menu.");
     }
-    public void RequestQuit() { QuitRequested = true; settingsService.Save(Settings); Log("Clean shutdown requested."); }
+    public void RequestQuit()
+    {
+        QuitRequested = true;
+        try { settingsService.Save(Settings); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Log($"Settings could not be saved on quit: {ex.Message}"); }
+        Log("Clean shutdown requested.");
+    }
     public void SetUiScale(float scale) => UpdateSettings(Settings with { Display = Settings.Display with { UiScale = scale } }, "Display");
     public void SetReducedMotion(bool value) => UpdateSettings(Settings with { Accessibility = Settings.Accessibility with { ReducedMotion = value, Motion = value ? MotionMode.Reduced : MotionMode.Full } }, "Accessibility");
     public void SetHighContrast(bool value) => UpdateSettings(Settings with { Accessibility = Settings.Accessibility with { HighContrast = value } }, "Accessibility");
