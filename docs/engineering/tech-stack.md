@@ -1,31 +1,23 @@
 # Technical baseline
 
-## Transitional stack vs. target stack
+## Native stack
 
-Per [ADR 0014](adr/0014-custom-runtime-and-native-client.md), Gens is
-migrating its presentation/runtime platform from Unity to a purpose-built
-native Gens runtime and desktop client. This document describes both states;
-do not read the presence of Unity below as meaning it is the permanent
-platform, and do not assume Unity has already been removed — it has not.
-
-**Transitional stack (current, in active use):**
-
-```text
-Unity 6.3 LTS existing client
-Gens.Application netstandard2.1 campaign-session host
-Gens.Simulation netstandard2.1
-.NET 10 standalone tooling
-```
-
-**Native foundation now implemented (client/UI migration still in progress):**
+Per [ADR 0014](adr/0014-custom-runtime-and-native-client.md), Gens migrated
+its presentation/runtime platform from Unity to a purpose-built native Gens
+runtime and desktop client. That migration is complete: Unity has been fully
+retired and removed from the repository. This document describes the current
+native stack.
 
 ```text
 .NET 10
 Custom Gens runtime/client (Gens.Runtime, Gens.UI, Gens.Scene2D, Gens.Client.Desktop, ...)
+Gens.Application netstandard2.1 campaign-session host
+Gens.Simulation netstandard2.1
 SDL3 backend (Gens.Platform.Sdl)
 SkiaSharp backend (Gens.Graphics.Skia)
 custom retained-mode Gens UI
 custom lightweight Scene2D
+.NET 10 standalone tooling
 ```
 
 The production-shaped foundation is documented in
@@ -58,63 +50,49 @@ of NR5.
 Only backend projects reference these native packages or types. `Gens.Runtime`,
 `Gens.Application`, and `Gens.Simulation` do not.
 
-The remainder of this document, unless a section says otherwise, describes
-the **current, transitional** baseline — the Unity client and the standalone
-tooling that exist and are exercised by CI today. See ADR 0014 for the full
-target-stack layering, dependency rules, and Unity retirement gates, and the
+The remainder of this document describes the current native baseline. See
+ADR 0014 for the full target-stack layering and dependency rules, and the
 [native-runtime migration roadmap](gens-native-runtime-roadmap.md) for the
-phased plan to get from here to there. Unity remains fully supported and is
-not degraded, disconnected, or deprioritized by this migration until the
-retirement gates in ADR 0014 pass.
-
-## Version policy (transitional Unity client)
-
-The project is pinned to Unity 6.3 LTS by `ProjectVersion.txt`; Unity Hub must
-install that exact editor. Editor changes are made only in a dedicated upgrade
-pull request, which must also commit the regenerated `packages-lock.json`.
-Standalone tools and tests target .NET 10 LTS. Unity uses the .NET Standard 2.1
-API compatibility level, Mono for editor iteration, and IL2CPP for verified
-production release builds.
+history of how the migration off Unity proceeded.
 
 ## Application layer
 
-`Gens.Application` is the engine-neutral, `netstandard2.1` campaign host shared by the transitional Unity client and future .NET client. `CampaignSession` owns bootstrap, query/command dispatch, monthly advancement, save/load, and replay verification above `Gens.Simulation`. The compatible target is required because Unity consumes both projects as local source packages; clients choose platform paths and keep pause, settings, audio, and presentation concerns outside this layer. Mutable state and RNG access remain public only as a documented transitional escape hatch for existing Unity call sites.
+`Gens.Application` is the engine-neutral, `netstandard2.1` campaign host used by the native client. `CampaignSession` owns bootstrap, query/command dispatch, monthly advancement, save/load, and replay verification above `Gens.Simulation`. Clients choose platform paths and keep pause, settings, audio, and presentation concerns outside this layer. Mutable state and RNG access remain public only as a documented transitional escape hatch retained from the legacy Unity client's call sites.
 
-## Boundaries (transitional)
+## Boundaries
 
-- `Gens.Simulation` is a `netstandard2.1` library and a local Unity package with
-  `noEngineReferences`. It must not reference Unity, presentation, or asset APIs
-  — generalized by ADR 0014 to: no platform, rendering, UI, external AI, or
-  networking dependency of any kind, Unity included. `Gens.Simulation` stays
-  `netstandard2.1` through the migration; retargeting it is a distinct future
-  decision made only after Unity retirement (ADR 0014).
+- `Gens.Simulation` is a `netstandard2.1` library with no engine references.
+  It must not reference presentation or asset APIs — generalized by ADR 0014
+  to: no platform, rendering, UI, external AI, or networking dependency of
+  any kind. Retargeting its target framework is a separate future decision.
 - Simulation outcomes use integer values and named, persisted PCG32 streams.
   Commands are validated before mutation and produce domain events. Monthly ticks
   are deterministic and target 250 ms normally and one second at maximum scale.
-- UI is UI Toolkit (UXML/USS, VectorImage and Painter2D). Scene-like cutaways use
-  SpriteRenderer and the URP 2D Renderer. uGUI requires a documented exception.
-- Begin with ordinary managed collections. Jobs, Burst, Mathematics, and native
-  collections require profiling evidence; Entities, ECS, NetCode, Havok, and a
-  full DOTS architecture are excluded from the baseline.
+- UI is the custom retained-mode `Gens.UI` tree, painted through `Gens.Graphics`
+  (backed by SkiaSharp) with SDL3 windowing/input. `Gens.Scene2D` provides the
+  lightweight scene framework for cutaways and visualization.
+- Begin with ordinary managed collections. Native collections and low-level
+  performance work require profiling evidence.
 
 ## Data, saves, and assets
 
 Authored JSON and CSV are inputs to the .NET content compiler. JSON Schema,
 stable string IDs, uniqueness, and references are validated before normalized
-runtime JSON is emitted. ScriptableObjects are presentation configuration only.
+runtime JSON is emitted.
 
 Save files use the `.gens` extension and are atomic ZIP containers with
 `manifest.json`, `world.json`, optional `history.json`, generated-asset references,
 an explicit version, and all deterministic RNG states. Breaking changes require a
 migration and a permanent fixture. Artwork recipes and metadata are persisted,
-but generated images live once in a SHA-256-addressed cache under
-`Application.persistentDataPath` with separate thumbnails and a versioned manifest.
+but generated images live once in a SHA-256-addressed cache under the platform's
+application data path (see `IApplicationPaths`) with separate thumbnails and a
+versioned manifest.
 
-Shipped artwork and optional packs use Addressables. SVG icons have a 64x64
-viewBox, stable semantic IDs, supported vector primitives, outlined text, semantic
-palette tokens, and deterministic placeholders. Procedural layered SVG portraits
-are the required baseline and are reproducible from `CharacterVisualProfile`,
-`PortraitRecipe`, seed, and renderer version.
+SVG icons have a 64x64 viewBox, stable semantic IDs, supported vector
+primitives, outlined text, semantic palette tokens, and deterministic
+placeholders. Procedural layered SVG portraits are the required baseline and
+are reproducible from `CharacterVisualProfile`, `PortraitRecipe`, seed, and
+renderer version.
 
 AI art is optional, asynchronous, and never blocks a campaign. Client code uses
 `IArtGenerationProvider`, initially with null and mock providers. Production cloud
@@ -124,15 +102,14 @@ providers belong behind a controlled backend; local models run out of process.
 
 A Settings-gated in-app dev/debug console (backquote to toggle) lets a
 developer or tester query and submit commands against a running campaign
-without leaving the Editor/build — see
-[`docs/engineering/dev-console.md`](dev-console.md). It reaches the campaign
-exclusively through the same `CampaignShell.Query`/`Submit` boundary as the
-rest of the UI (ADR 0013).
+without leaving the build — see the Input section of
+[`docs/engineering/native-client.md`](native-client.md). It reaches the
+campaign exclusively through the same `CampaignShell.Query`/`Submit` boundary
+as the rest of the UI (ADR 0013).
 
 ## Verification
 
 NUnit and FsCheck cover the standalone simulation, including golden seeds,
-invariants, save round trips, and migrations. Unity Test Framework covers EditMode
-and PlayMode, while UI Test Framework covers critical workflows. BenchmarkDotNet
-tracks monthly ticks. CI validates content, runs both test suites and migrations,
-and verifies a Unity build before merge.
+invariants, save round trips, and migrations. BenchmarkDotNet tracks monthly
+ticks. CI validates content, runs the full test suite and migrations, and
+builds the native client across platforms before merge.

@@ -20,8 +20,8 @@ namespace Gens.ContentCompiler.Commands;
 /// immediately (mirroring <c>submit-command --due-in-months 0</c>), then advances month-by-month —
 /// capturing a <see cref="StateHasher"/> checkpoint at bootstrap, after every command, at every month
 /// boundary, and at the end. Writes a legacy-shaped fixture (state before any command runs) and the
-/// current-native fixture (final state), plus the full hash transcript a human can later compare
-/// against a manually reproduced Unity-side run.
+/// current-native fixture (final state), plus the full hash transcript that, during the Unity
+/// retirement migration, a human could compare against a manually reproduced Unity-side run.
 /// </summary>
 public static class RunSharedScenarioCommand
 {

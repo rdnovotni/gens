@@ -4,8 +4,8 @@ namespace Gens.ContentCompiler.Content;
 
 /// <summary>The UR-01 shared scenario spec (<c>shared-scenario.json</c>): a fixed seed, region,
 /// ruleset, difficulty, ordered command sequence, and month count that <c>run-shared-scenario</c>
-/// runs natively and a human can reproduce manually inside the Unity Editor (ADR 0019), so both
-/// clients can be compared against the exact same inputs.</summary>
+/// runs natively; during the Unity retirement migration a human could reproduce the same inputs
+/// manually inside the (now-retired) Unity Editor (ADR 0019) to compare the two clients.</summary>
 public sealed record SharedScenarioSpec
 {
     public required ulong Seed { get; init; }

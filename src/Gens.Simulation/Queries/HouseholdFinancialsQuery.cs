@@ -12,9 +12,9 @@ namespace Gens.Simulation.Queries;
 /// cref="WorldState.HouseholdStatements"/> (Phase 8 item 5). The report's event-derived headlines are
 /// deliberately not this query's job — <see cref="Gens.Simulation.Campaign.MonthlyReportProjector"/> already builds
 /// those entirely from the month's domain events (Phase 9 item 4), and that projector takes the raw
-/// event list the Unity application shell's month-advance call returns rather than reading <see
+/// event list the application shell's month-advance call returns rather than reading <see
 /// cref="WorldState"/>, so it sits outside the <see cref="IWorldQuery{TProjection}"/> shape this file
-/// uses; the Unity presentation layer composes both into one screen view model.</summary>
+/// uses; the presentation layer composes both into one screen view model.</summary>
 public readonly record struct HouseholdFinancialsProjection(
     string HouseholdId,
     Money Income,

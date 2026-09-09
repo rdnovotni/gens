@@ -39,7 +39,7 @@ public readonly record struct EstateHoldingRow(
 /// growth stage plus every holding the caller-specified household occupies within it, each with its
 /// plots and buildings. <c>gens-core-design.md</c> §7.4 assigns this screen the diptych's tile-map
 /// left leaf and grouped-building-chains right leaf; this projection carries the right leaf's data —
-/// a tile-coordinate map layer is presentation-only and belongs to the Unity adapter, not this
+/// a tile-coordinate map layer is presentation-only and belongs to the presentation adapter, not this
 /// projection.</summary>
 public readonly record struct EstateSettlementProjection(
     string SettlementId,

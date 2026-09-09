@@ -11,7 +11,7 @@ using Gens.Simulation.Queries;
 
 namespace Gens.Presentation;
 
-/// <summary>Pure display mapping shared by native and transitional Unity clients.</summary>
+/// <summary>Pure display mapping shared by native clients.</summary>
 public static class ProjectionMappers
 {
     private static readonly char[] WordSeparators = { ' ' };
