@@ -1,3 +1,4 @@
+using System.Linq;
 using Gens.Graphics;
 using Gens.Platform;
 using Gens.UI.Testing;
@@ -14,6 +15,32 @@ public sealed class InputAndFocusTests : UiTestFixture
         SemanticTreeSnapshot snapshot = root.CaptureSemantics();
         Assert.Multiple(() => { Assert.That(snapshot.FocusedNode?.Name, Is.EqualTo("Save campaign")); Assert.That(root.ValidateSemantics(), Is.Empty); });
         root.AddChild(new Button { Name = "unnamed" }); Assert.That(root.ValidateSemantics(), Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public void SemanticSnapshotCarriesRootRelativeBoundsForNestedNodes()
+    {
+        UiRoot root = Root();
+        var row = new Row { Name = "row" };
+        var first = new Button { Name = "first", Width = 30, Height = 10, Semantics = { Label = "First" } };
+        var second = new Button { Name = "second", Width = 20, Height = 10, Semantics = { Label = "Second" } };
+        row.AddChild(first); row.AddChild(second); root.AddChild(row);
+        root.Layout(new(200, 100));
+
+        SemanticTreeSnapshot snapshot = root.CaptureSemantics();
+        SemanticNodeSnapshot rowSnapshot = snapshot.Root.Children.Single(static c => c.Id == "row");
+        SemanticNodeSnapshot firstSnapshot = rowSnapshot.Children.Single(static c => c.Name == "First");
+        SemanticNodeSnapshot secondSnapshot = rowSnapshot.Children.Single(static c => c.Name == "Second");
+
+        // A Row lays children out left-to-right, so the second child's bounds must be offset from the
+        // first by the first child's width; both must match the live UiNode.Bounds (root-relative, not
+        // re-zeroed per parent), confirming the snapshot doesn't need a separate coordinate accumulation pass.
+        Assert.Multiple(() =>
+        {
+            Assert.That(firstSnapshot.Bounds, Is.EqualTo(first.Bounds));
+            Assert.That(secondSnapshot.Bounds, Is.EqualTo(second.Bounds));
+            Assert.That(secondSnapshot.Bounds.X, Is.EqualTo(firstSnapshot.Bounds.X + firstSnapshot.Bounds.Width));
+        });
     }
 
     [Test]

@@ -40,6 +40,8 @@
     <Project Path="tests/Gens.Client.Desktop.Tests/Gens.Client.Desktop.Tests.csproj" />
     <Project Path="tests/Gens.Art.Tests/Gens.Art.Tests.csproj" />
     <Project Path="tests/Gens.Audio.Tests/Gens.Audio.Tests.csproj" />
+    <Project Path="tests/Gens.Platform.Sdl.Tests/Gens.Platform.Sdl.Tests.csproj" />
+    <Project Path="tests/Gens.Accessibility.Windows.Tests/Gens.Accessibility.Windows.Tests.csproj" />
     <Project Path="tests/Gens.Localization.Tests/Gens.Localization.Tests.csproj" />
   </Folder>
 </Solution>

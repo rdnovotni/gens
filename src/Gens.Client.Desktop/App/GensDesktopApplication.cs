@@ -10,6 +10,7 @@ using Gens.Client.Desktop.Settings;
 using Gens.Localization;
 using Gens.Graphics;
 using Gens.Platform;
+using Gens.Platform.Sdl;
 using Gens.Presentation.Models;
 using Gens.Presentation.Visuals;
 using Gens.Portraits;
@@ -56,7 +57,13 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         root = new(GensTheme.Create(graphics, font, highContrast: controller.Settings.Accessibility.HighContrast)) { Name = "DesktopRoot", UiScale = controller.Settings.Display.UiScale, MotionPolicy = new(controller.Settings.Accessibility.Motion) };
         root.AttachInvalidation(context.Invalidate);
         controller.Audio.ActivityChanged += OnAudioActivityChanged;
-        accessibilityBridge = OperatingSystem.IsWindows() ? new WindowsAccessibilityBridge() : new NullAccessibilityBridge();
+        if (OperatingSystem.IsWindows())
+        {
+            var windowsBridge = new WindowsAccessibilityBridge(() => (context.Window as SdlWindow) is { } sdlWindow ? SdlWindowsMessageHook.GetHwnd(sdlWindow.NativeSdlWindowHandle) : IntPtr.Zero);
+            accessibilityBridge = windowsBridge;
+            SdlWindowsMessageHook.SetSubscriber(windowsBridge.HandleWindowsMessage);
+        }
+        else accessibilityBridge = new NullAccessibilityBridge();
         accessibility = new(accessibilityBridge);
         artServices.Coordinator.PortraitUpdated += OnPortraitUpdated;
         Rebuild();
@@ -113,7 +120,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         this.context.SetAnimating(false); this.context.RequestQuit();
     }
     public void Shutdown() => Dispose();
-    public void Dispose() { if (disposed) return; artServices.Coordinator.PortraitUpdated -= OnPortraitUpdated; controller.Audio.ActivityChanged -= OnAudioActivityChanged; artServices.Dispose(); accessibilityBridge.Dispose(); font.Dispose(); disposed = true; }
+    public void Dispose() { if (disposed) return; artServices.Coordinator.PortraitUpdated -= OnPortraitUpdated; controller.Audio.ActivityChanged -= OnAudioActivityChanged; if (OperatingSystem.IsWindows()) SdlWindowsMessageHook.SetSubscriber(null); artServices.Dispose(); accessibilityBridge.Dispose(); font.Dispose(); disposed = true; }
 
     private void Rebuild()
     {
