@@ -36,7 +36,7 @@ internal static class Program
             if (args.Contains("--reduced-motion", StringComparer.OrdinalIgnoreCase)) controller.SetReducedMotion(true);
             if (args.Contains("--high-contrast", StringComparer.OrdinalIgnoreCase)) controller.SetHighContrast(true);
             if (args.Contains("--new-game", StringComparer.OrdinalIgnoreCase)) controller.StartNew("latium", "standard");
-            if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase) && Option(args, "--screen=") is null && controller.CurrentCampaign is null) controller.StartNew("latium", "standard");
+            if (args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase) && Option(args, "--screen=") is null && !controller.HasActiveCampaign) controller.StartNew("latium", "standard");
             ConfigureScreenFixture(controller, args);
             using var graphics = new SkiaGraphicsBackend();
             var application = new GensDesktopApplication(graphics, controller, args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase), Option(args, "--capture="));
@@ -60,7 +60,7 @@ internal static class Program
         string? screen = Option(args, "--screen=")?.ToLowerInvariant(); if (screen is null) return;
         if (screen == "main-menu") return;
         if (screen is "new-game" or "settings" or "credits") { controller.Navigate(screen switch { "new-game" => ScreenId.NewGameSetup, "settings" => ScreenId.Settings, _ => ScreenId.Credits }); return; }
-        if (controller.CurrentCampaign is null) controller.StartNew("latium", "standard");
+        if (!controller.HasActiveCampaign) controller.StartNew("latium", "standard");
         switch (screen)
         {
             case "roster": break;

@@ -70,7 +70,7 @@ Every mandatory `FAIL` and `PARTIAL` below blocks retirement.
 | ---: | --- | --- | --- | --- |
 | 4 | Simulation independence | Mandatory | PASS | E1: `Gens.Simulation` references only `System.Text.Json`; no Unity, SDL, Skia, UI, runtime, or client project reference. |
 | 5 | Application independence | Mandatory | PASS | E1/E2: `Gens.Application -> Gens.Simulation`; 5 headless `CampaignSessionTests` pass. |
-| 6 | Query/command boundary | Mandatory | PARTIAL | E1/E2: native screens use presentation/session APIs, but public `DesktopApplicationController.CurrentCampaign -> CampaignSession.State` remains an indirect mutable escape hatch. |
+| 6 | Query/command boundary | Mandatory | PASS | E1/E2: native screens use presentation/session APIs. UR-06 removed the indirect escape hatch — `DesktopApplicationController.CurrentCampaign` is now private, exposed to callers only as a `bool HasActiveCampaign`, and `ArchitectureBoundaryTests.DesktopControllerDoesNotExposeCampaignSessionOrWorldState` fails the build if any public property or method return type on the controller is, or embeds as a generic argument, `CampaignSession` or `WorldState`. |
 | 7 | Unity-only authoritative logic | Mandatory | PASS | E9: no unique authoritative gameplay rule found; Unity scripts are classified below. Unity-only master-volume persistence is presentation-only and has a native replacement. |
 | 8 | Application startup | Mandatory | PARTIAL | E7/E11: the extracted Release package launches and exits cleanly in software smoke, but an interactive main-menu/quit package test is absent. |
 | 9 | New Game | Mandatory | PASS | E2: region, difficulty, seed, bootstrap, and deterministic first-month behavior use shared `CampaignStartOptions`/`CampaignSession`. |
@@ -121,7 +121,7 @@ Every mandatory `FAIL` and `PARTIAL` below blocks retirement.
 | 54 | Corrupt settings | Mandatory | PASS | E10: corrupt JSON is preserved as `.corrupt-*`, safe defaults load, and the client wires the store warning callback to logging. |
 | 55 | Settings migration | Advisory | PASS | E10: schema v1 is upgraded to v2 with defaulted audio settings and fixture coverage. |
 | 56 | Unicode paths | Mandatory | PARTIAL | E7/E10/E11: settings/path tests and an extracted-package smoke pass under a Unicode user root; the full save/load/log/cache/screenshot matrix is incomplete. |
-| 57 | Read-only/failure paths | Advisory | PARTIAL | Save/load catches useful I/O failures; settings/log/cache/screenshot paths are not comprehensively tested. |
+| 57 | Read-only/failure paths | Advisory | PARTIAL | Save/load catches useful I/O failures. UR-06 added corrupt-settings recovery, v1-to-v2 migration, atomic-save round-trip, and unwritable-settings-root tests, and made `SettingsService.Save` fail without throwing or losing the prior in-memory value; log/cache/screenshot paths are still not comprehensively tested. |
 | 58 | Windows package | Mandatory | PARTIAL | E7/E11: a 46.5 MB self-contained extracted package passes pseudo/reduced/high-contrast/Unicode smoke; the required full player-facing save/relaunch/load/audio feature matrix is absent. |
 | 59 | Linux package | Advisory | FAIL | E7: CI produces a 43.2 MB archive, but Linux is not a declared release target and the package lacks repository-owned SDL and real-host validation. |
 | 60 | macOS package | Advisory | FAIL | E7: CI produces a 43.2 MB archive, but macOS is not a declared release target and SDL/Skia/HarfBuzz plus real-host validation remain incomplete. |
@@ -149,8 +149,8 @@ Every mandatory `FAIL` and `PARTIAL` below blocks retirement.
 
 | Measure | Result |
 | --- | --- |
-| Mandatory gates | **38/61 PASS** |
-| Mandatory partial | **18** |
+| Mandatory gates | **39/61 PASS** |
+| Mandatory partial | **17** |
 | Mandatory fail | **5** |
 | Advisory gates | **5/15 PASS** |
 | Advisory partial | **6** |
@@ -158,8 +158,8 @@ Every mandatory `FAIL` and `PARTIAL` below blocks retirement.
 | Retirement decision | **BLOCKED** |
 
 Mandatory failed gates: 10, 22, 27, 38, and 42. Mandatory partial gates:
-6, 8, 13, 19, 20, 26, 28, 29, 34, 35, 37, 39, 44, 50, 56, 58, 69,
-and 71.
+8, 13, 19, 20, 26, 28, 29, 34, 35, 37, 39, 44, 50, 56, 58, 69,
+and 71. (Gate 6 moved from partial to pass — see UR-06.)
 
 ## Blockers
 

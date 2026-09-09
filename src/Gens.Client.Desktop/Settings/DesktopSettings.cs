@@ -65,7 +65,13 @@ public sealed class SettingsService
     public void Update(DesktopSettings value, string domain)
     {
         DesktopSettings validated = Validate(value with { Version = DesktopSettings.CurrentVersion });
-        DesktopSettings previous = Current; Current = validated; Save(validated); Changed?.Invoke(this, new(previous, validated, domain));
+        DesktopSettings previous = Current; Current = validated;
+        try { Save(validated); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            log($"Settings could not be saved to {paths.SettingsFile}; the change was not persisted.", ex); Current = previous; return;
+        }
+        Changed?.Invoke(this, new(previous, validated, domain));
     }
 
     public void Save(DesktopSettings settings)

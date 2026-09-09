@@ -28,7 +28,7 @@ public sealed class DesktopApplicationFlowTests
     {
         Assert.That(app.CurrentScreen, Is.EqualTo(ScreenId.MainMenu));
         app.Navigate(ScreenId.NewGameSetup); app.StartNew("latium", "standard");
-        Assert.Multiple(() => { Assert.That(app.CurrentCampaign, Is.Not.Null); Assert.That(app.CurrentScreen, Is.EqualTo(ScreenId.HouseholdRoster)); Assert.That(app.Roster().Rows, Is.Not.Empty); });
+        Assert.Multiple(() => { Assert.That(app.HasActiveCampaign, Is.True); Assert.That(app.CurrentScreen, Is.EqualTo(ScreenId.HouseholdRoster)); Assert.That(app.Roster().Rows, Is.Not.Empty); });
     }
 
     [Test]
@@ -78,8 +78,8 @@ public sealed class DesktopApplicationFlowTests
     public void RepeatedCampaignLifecycleDropsStalePresentation()
     {
         app.StartNew("latium", "standard", 1); string first = app.Roster().Rows[0].CharacterId; app.RequestMainMenu(); app.ConfirmModal();
-        Assert.That(app.CurrentCampaign, Is.Null); app.StartNew("campania", "hard", 2);
-        Assert.Multiple(() => { Assert.That(app.CurrentCampaign, Is.Not.Null); Assert.That(app.Presentation, Is.Not.Null); Assert.That(app.SelectedCharacterId, Is.Null); Assert.That(app.Roster().Rows[0].CharacterId, Is.EqualTo(first)); });
+        Assert.That(app.HasActiveCampaign, Is.False); app.StartNew("campania", "hard", 2);
+        Assert.Multiple(() => { Assert.That(app.HasActiveCampaign, Is.True); Assert.That(app.Presentation, Is.Not.Null); Assert.That(app.SelectedCharacterId, Is.Null); Assert.That(app.Roster().Rows[0].CharacterId, Is.EqualTo(first)); });
     }
 
     [Test]

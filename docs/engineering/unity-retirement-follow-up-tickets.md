@@ -161,11 +161,35 @@ data failures are explicit, recoverable, and tested.
 
 **Acceptance criteria:**
 
-- Remove or hide the native controller's public path to `CampaignSession.State` and
-  strengthen architecture tests against indirect exposure.
-- Retain corrupt-settings warning/default and v1-to-v2 migration coverage.
-- Test save/load/settings/log/cache/screenshot behavior under non-ASCII paths.
-- Test unwritable roots and atomic-write failures without silent crashes.
+- [x] Remove or hide the native controller's public path to `CampaignSession.State` and
+      strengthen architecture tests against indirect exposure.
+      `DesktopApplicationController.CurrentCampaign` is now private (exposed only as
+      `bool HasActiveCampaign`), and `ArchitectureBoundaryTests` fails the build if any
+      public member of the controller is, or embeds as a generic argument,
+      `CampaignSession` or `WorldState` (gate 6, now PASS).
+- [x] Retain corrupt-settings warning/default and v1-to-v2 migration coverage.
+      Covered by new `SettingsAndPathsTests` (`CorruptSettingsFileFallsBackToDefaultsAndIsPreserved`,
+      `V1SettingsMigrateReducedMotionIntoMotionModeAndVersion`); the underlying logic in
+      `SettingsService`/`DesktopSettings.Migrate` was already present but untested.
+- [ ] Test save/load/settings/log/cache/screenshot behavior under non-ASCII paths.
+      Settings already had Unicode-root coverage (`DesktopApplicationFlowTests.UnicodeApplicationPathsRoundTripAndTraversalIsRejected`).
+      Save/load, log, cache, and screenshot paths under non-ASCII roots remain untested —
+      out of scope for this pass.
+- [x] Test unwritable roots and atomic-write failures without silent crashes (for settings).
+      `SettingsService.Save` had no exception handling at all — an unwritable settings
+      directory would throw out of any `Set*` call on `DesktopApplicationController`,
+      including `RequestQuit`. Both call sites now catch `IOException`/`UnauthorizedAccessException`,
+      log, and roll back to the last-known-good in-memory settings; new
+      `SaveTwiceRoundTripsAndLeavesNoTemporaryFile` and
+      `UnwritableSettingsRootFailsSaveWithoutThrowingOrLosingPriorState` cover this.
+      Campaign save/load already had equivalent handling. Unwritable-root/atomic-write
+      behavior for log/cache/crash-report/screenshot paths remains untested.
+
+**Status: partially closed.** Gate 6 (mandatory) is closed. The settings-specific slice of
+gates 56/57 (advisory) now has real test coverage and a real fix (settings save no longer
+throws on an unwritable root). The full non-ASCII/unwritable-root matrix across
+save/load/log/cache/screenshot paths (gate 20's repeated-lifecycle observation included)
+remains open for a future pass — see this ticket's remaining unchecked item above.
 
 ## UR-07 — Finish declared cross-platform backend validation
 
