@@ -21,7 +21,9 @@ actually is and how it plays, see the [player manual](docs/manual/README.md).
 ## Prerequisites
 
 The native desktop client is the primary target for presentation development;
-Unity remains supported during migration. See the
+Unity remains supported during migration. The 2026-09-08
+[formal retirement audit](docs/engineering/unity-retirement-audit.md) is **BLOCKED**;
+Unity must remain until its linked mandatory follow-up tickets pass. See the
 [native client guide](docs/engineering/native-client.md).
 
 - Unity Hub with the editor version in `ProjectSettings/ProjectVersion.txt`

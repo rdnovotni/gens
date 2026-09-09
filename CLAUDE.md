@@ -153,6 +153,9 @@ asset state through a running Editor session. It only works locally.
 ## Native UI rules
 
 The native desktop client is now the primary target for new presentation development. Unity remains supported during migration until the documented retirement gates pass.
+The 2026-09-08 formal audit in `docs/engineering/unity-retirement-audit.md`
+is **BLOCKED**. Its linked follow-up tickets are mandatory before Unity removal,
+compatibility cleanup, or Simulation retargeting.
 
 - Desktop screens query only through `CampaignSession`-backed presenters and submit commands only through `CampaignSession` application operations.
 - Presentation DTOs are snapshots: refresh them after relevant commands or lifecycle events; never mutate them as a proxy for simulation state and never query the simulation per frame.

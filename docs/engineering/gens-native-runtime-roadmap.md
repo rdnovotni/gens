@@ -30,7 +30,9 @@ that ADR for the full 17-gate list before treating any later phase here as
 - [ ] **Phase NR6** — AI art, audio, accessibility, packaging
   - [x] engine-neutral audio/settings/localization foundations and package automation (Ticket 9)
   - [ ] WAV/OGG asset decoding, full Windows UIA provider, fallback font pack, and runnable Linux/macOS native payloads
-- [ ] **Phase NR7** — Cross-platform hardening and Unity retirement
+- [ ] **Phase NR7** — Cross-platform hardening and Unity retirement — **BLOCKED**
+  by the [formal retirement audit](unity-retirement-audit.md); see the
+  [follow-up tickets](unity-retirement-follow-up-tickets.md)
 
 ---
 
@@ -263,6 +265,12 @@ Unity removal (NR7).
 ---
 
 ### Phase NR7 — Cross-platform hardening and Unity retirement
+
+**Retirement audit update (2026-09-08): BLOCKED.** The formal
+[Unity retirement readiness audit](unity-retirement-audit.md) passed 38 of 61
+mandatory gates. Unity remains intact. Complete the linked
+[blocker tickets](unity-retirement-follow-up-tickets.md) and repeat the audit before
+performing any removal, compatibility cleanup, or framework retargeting.
 
 **Outcome:** the native client is production-ready across the project's
 target platforms and Unity is retired per ADR 0014's gates — the final phase,
