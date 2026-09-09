@@ -101,4 +101,12 @@ internal static class SdlNative
     [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_GL_GetProcAddress([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
     internal static string Error => Marshal.PtrToStringUTF8(SDL_GetError()) ?? "unknown SDL error";
     [StructLayout(LayoutKind.Sequential)] internal struct AudioSpec { internal ushort Format; internal int Channels; internal int Frequency; }
+
+    // Windows-only: exposes each window's native HWND and its Win32 message stream, used by
+    // Gens.Accessibility.Windows to host a UI Automation fragment provider. No UIA types appear here.
+    internal const string PropertyWindowWin32Hwnd = "SDL.window.win32.hwnd";
+    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern uint SDL_GetWindowProperties(IntPtr window);
+    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern IntPtr SDL_GetPointerProperty(uint props, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, IntPtr defaultValue);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)][return: MarshalAs(UnmanagedType.I1)] internal delegate bool WindowsMessageHookCallback(IntPtr userdata, IntPtr msg);
+    [DllImport(Library, CallingConvention = CallingConvention.Cdecl)] internal static extern void SDL_SetWindowsMessageHook(WindowsMessageHookCallback callback, IntPtr userdata);
 }

@@ -136,6 +136,8 @@ internal sealed class SdlWindow : IGraphicsWindow, IPixelBufferWindow
 
     internal SdlWindow(SdlPlatform owner, IntPtr handle) { this.owner = owner; this.handle = handle; Id = new(SdlNative.SDL_GetWindowID(handle)); }
     public WindowId Id { get; }
+    /// <summary>The raw native SDL window handle, for platform-specific glue (e.g. Windows UI Automation hosting) that needs it. Not part of the engine-neutral <c>IGraphicsWindow</c>/<c>IPixelBufferWindow</c> surface.</summary>
+    internal IntPtr NativeSdlWindowHandle => handle;
     public LogicalSize LogicalSize { get { Verify(); SdlPlatform.Check(SdlNative.SDL_GetWindowSize(handle, out int w, out int h), "SDL_GetWindowSize"); return new(w, h); } }
     public PixelSize PixelSize { get { Verify(); SdlPlatform.Check(SdlNative.SDL_GetWindowSizeInPixels(handle, out int w, out int h), "SDL_GetWindowSizeInPixels"); return new(w, h); } }
     public DisplayScale DisplayScale { get { Verify(); float scale = SdlNative.SDL_GetWindowDisplayScale(handle); return new(scale, scale); } }

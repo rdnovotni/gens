@@ -131,7 +131,7 @@ public sealed class UiRoot : UiNode
     private static SemanticNodeSnapshot Snapshot(UiNode node)
     {
         IReadOnlyList<SemanticNodeSnapshot> children = node.Children.Where(static child => !child.Semantics.IsDecorative && child.Visibility == UiVisibility.Visible).Select(Snapshot).ToArray();
-        return new(node.Name ?? node.GetType().Name, node.Semantics.Role, node.Semantics.Label, node.Semantics.Description, node.Semantics.Value, node.IsEnabled, node.IsFocused, node.Semantics.IsChecked, children);
+        return new(node.Name ?? node.GetType().Name, node.Semantics.Role, node.Semantics.Label, node.Semantics.Description, node.Semantics.Value, node.IsEnabled, node.IsFocused, node.Semantics.IsChecked, node.Bounds, children);
     }
     private static SemanticNodeSnapshot? FindFocused(SemanticNodeSnapshot node) => node.IsFocused ? node : node.Children.Select(FindFocused).FirstOrDefault(static candidate => candidate is not null);
     private static void Route(UiNode? target, UiPointerEvent evt)

@@ -60,7 +60,8 @@ public readonly record struct MotionPolicy(MotionMode Mode)
         : TimeSpan.Zero;
 }
 
-public sealed record SemanticNodeSnapshot(string Id, AccessibilityRole Role, string? Name, string? Description, string? Value, bool IsEnabled, bool IsFocused, bool IsChecked, IReadOnlyList<SemanticNodeSnapshot> Children);
+/// <summary><c>Bounds</c> is in root-relative logical units (matching <c>UiNode.Bounds</c>), not screen pixels.</summary>
+public sealed record SemanticNodeSnapshot(string Id, AccessibilityRole Role, string? Name, string? Description, string? Value, bool IsEnabled, bool IsFocused, bool IsChecked, Rect Bounds, IReadOnlyList<SemanticNodeSnapshot> Children);
 public sealed record SemanticTreeSnapshot(SemanticNodeSnapshot Root, SemanticNodeSnapshot? FocusedNode);
 
 internal static class UiGeometry

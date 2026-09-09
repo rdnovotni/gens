@@ -15,11 +15,14 @@ Nothing in this roadmap changes `Gens.Simulation` behavior, save format,
 content schemas, or any already-shipped gameplay system.
 
 **Status (2026-09-08): Unity has been retired and removed from the
-repository.** The formal retirement audit had 38 of 61 mandatory gates
+repository.** The formal retirement audit had 39 of 61 mandatory gates
 passing and was still BLOCKED on outstanding follow-up tickets; the project
 owner made an explicit decision to override that block and complete Unity
 removal immediately rather than wait for the remaining gates. See ADR 0014
-for the full gate list this override superseded.
+for the full gate list this override superseded. The audit and follow-up
+ticket documents themselves were deleted in the retirement commit; this
+roadmap is the ongoing record of what remains open (see the Phase NR6 note
+below for the audio/accessibility items closed since).
 
 ## Phase checklist
 
@@ -33,7 +36,11 @@ for the full gate list this override superseded.
 - [x] **Phase NR5** — Scene2D and procedural portrait pipeline
 - [ ] **Phase NR6** — AI art, audio, accessibility, packaging
   - [x] engine-neutral audio/settings/localization foundations and package automation (Ticket 9)
-  - [ ] WAV/OGG asset decoding, full Windows UIA provider, fallback font pack, and runnable Linux/macOS native payloads
+  - [x] WAV/OGG asset decoding (`Gens.Audio.Decoding`) and SDL default-audio-device-change recovery
+  - [x] Windows UIA fragment-provider bridge (`Gens.Accessibility.Windows.Uia`) — real tree/roles/bounds/focus;
+    control activation (Invoke/Toggle) and live screen-reader certification remain open, see
+    `docs/engineering/accessibility.md`
+  - [ ] fallback font pack and runnable Linux/macOS native payloads
 - [x] **Phase NR7** — Cross-platform hardening and Unity retirement — Unity
   removed by explicit project-owner override on 2026-09-08 ahead of full
   gate completion; see the phase note below
