@@ -26,11 +26,14 @@ public sealed class StructuredFileLogger : IRuntimeLogger, IDisposable
     private readonly long maxBytes;
     private readonly int retainedFiles;
     private readonly Queue<string> recent = new();
-    private StreamWriter writer;
+    private StreamWriter? writer;
+    private bool writeDisabled;
 
     public StructuredFileLogger(IApplicationPaths paths, long maxBytes = 2 * 1024 * 1024, int retainedFiles = 7)
     {
-        directory = paths.Logs; this.maxBytes = maxBytes; this.retainedFiles = retainedFiles; Directory.CreateDirectory(directory); writer = Open();
+        directory = paths.Logs; this.maxBytes = maxBytes; this.retainedFiles = retainedFiles;
+        try { Directory.CreateDirectory(directory); writer = Open(); }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException) { writeDisabled = true; }
     }
     public IReadOnlyList<string> Recent { get { lock (gate) return recent.ToArray(); } }
     public void Log(RuntimeLogLevel level, string message, Exception? exception = null) => Log(AppLogCategory.Runtime, level, message, exception);
@@ -38,18 +41,24 @@ public sealed class StructuredFileLogger : IRuntimeLogger, IDisposable
     {
         lock (gate)
         {
-            if (writer.BaseStream.Length >= maxBytes) Rotate();
             string safeMessage = Redact(message);
             string line = JsonSerializer.Serialize(new { timestamp = DateTimeOffset.UtcNow, level = level.ToString(), category = category.ToString(), message = safeMessage, exception = exception is null ? null : Redact(exception.ToString()) });
-            writer.WriteLine(line); writer.Flush(); recent.Enqueue(line); while (recent.Count > 200) recent.Dequeue();
+            recent.Enqueue(line); while (recent.Count > 200) recent.Dequeue();
+            if (writeDisabled) return;
+            try
+            {
+                if (writer!.BaseStream.Length >= maxBytes) Rotate();
+                writer!.WriteLine(line); writer.Flush();
+            }
+            catch (Exception exception2) when (exception2 is IOException or UnauthorizedAccessException) { writeDisabled = true; }
         }
     }
-    public void Dispose() { lock (gate) writer.Dispose(); }
+    public void Dispose() { lock (gate) writer?.Dispose(); }
     public static string Redact(string value) => Sensitive.Replace(value, "$1$2[REDACTED]");
     private StreamWriter Open() => new(new FileStream(Path.Combine(directory, "gens.log"), FileMode.Append, FileAccess.Write, FileShare.ReadWrite)) { AutoFlush = true };
     private void Rotate()
     {
-        writer.Dispose(); string archived = Path.Combine(directory, $"gens-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmssfff}.log"); File.Move(Path.Combine(directory, "gens.log"), archived, true);
+        writer!.Dispose(); string archived = Path.Combine(directory, $"gens-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmssfff}.log"); File.Move(Path.Combine(directory, "gens.log"), archived, true);
         foreach (FileInfo stale in new DirectoryInfo(directory).GetFiles("gens-*.log").OrderByDescending(static file => file.CreationTimeUtc).Skip(retainedFiles - 1)) stale.Delete(); writer = Open();
     }
 }
@@ -57,9 +66,8 @@ public sealed class StructuredFileLogger : IRuntimeLogger, IDisposable
 public sealed class CrashReporter(IApplicationPaths paths, StructuredFileLogger logger)
 {
     private static readonly JsonSerializerOptions ReportJsonOptions = new() { WriteIndented = true };
-    public string Capture(Exception exception, string activeScreen, string platformBackend, string graphicsBackend, string audioBackend, string rendererMode)
+    public string? Capture(Exception exception, string activeScreen, string platformBackend, string graphicsBackend, string audioBackend, string rendererMode)
     {
-        Directory.CreateDirectory(paths.CrashReports);
         string id = $"crash-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}";
         string path = Path.Combine(paths.CrashReports, id + ".json");
         var report = new
@@ -79,6 +87,12 @@ public sealed class CrashReporter(IApplicationPaths paths, StructuredFileLogger 
             recentLogs = logger.Recent,
             exception = StructuredFileLogger.Redact(exception.ToString()),
         };
-        File.WriteAllText(path, JsonSerializer.Serialize(report, ReportJsonOptions)); return path;
+        try
+        {
+            Directory.CreateDirectory(paths.CrashReports);
+            File.WriteAllText(path, JsonSerializer.Serialize(report, ReportJsonOptions));
+            return path;
+        }
+        catch (Exception writeException) when (writeException is IOException or UnauthorizedAccessException) { return null; }
     }
 }

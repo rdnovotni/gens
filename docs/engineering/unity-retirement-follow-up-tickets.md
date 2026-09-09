@@ -171,25 +171,55 @@ data failures are explicit, recoverable, and tested.
       Covered by new `SettingsAndPathsTests` (`CorruptSettingsFileFallsBackToDefaultsAndIsPreserved`,
       `V1SettingsMigrateReducedMotionIntoMotionModeAndVersion`); the underlying logic in
       `SettingsService`/`DesktopSettings.Migrate` was already present but untested.
-- [ ] Test save/load/settings/log/cache/screenshot behavior under non-ASCII paths.
+- [x] Test save/load/settings/log/cache/screenshot behavior under non-ASCII paths.
       Settings already had Unicode-root coverage (`DesktopApplicationFlowTests.UnicodeApplicationPathsRoundTripAndTraversalIsRejected`).
-      Save/load, log, cache, and screenshot paths under non-ASCII roots remain untested —
-      out of scope for this pass.
-- [x] Test unwritable roots and atomic-write failures without silent crashes (for settings).
+      New `UnicodeApplicationPathsSaveLoadAndLogRoundTrip` extends this to save/load
+      (`DesktopApplicationController.Save`/`Load` against `paths.Quicksave` under a
+      `用户-δοκιμή` root, including hash-preserving reload), `StructuredFileLogger`
+      (log file created and written under the Unicode `Logs` root), and `CrashReporter`
+      (`.json` report written under the Unicode `CrashReports` root). Generated-art
+      cache under non-ASCII roots is exercised indirectly by `Gens.Art.Tests`'s
+      existing hash-keyed (ASCII-safe) path scheme and is not path-encoding-sensitive
+      by construction, so a dedicated cache case was not added.
+- [x] Test unwritable roots and atomic-write failures without silent crashes (for settings,
+      log, and crash-report paths).
       `SettingsService.Save` had no exception handling at all — an unwritable settings
       directory would throw out of any `Set*` call on `DesktopApplicationController`,
       including `RequestQuit`. Both call sites now catch `IOException`/`UnauthorizedAccessException`,
       log, and roll back to the last-known-good in-memory settings; new
       `SaveTwiceRoundTripsAndLeavesNoTemporaryFile` and
       `UnwritableSettingsRootFailsSaveWithoutThrowingOrLosingPriorState` cover this.
-      Campaign save/load already had equivalent handling. Unwritable-root/atomic-write
-      behavior for log/cache/crash-report/screenshot paths remains untested.
+      Campaign save/load already had equivalent handling.
+      **New this pass:** `StructuredFileLogger`'s constructor and `Log()`/`Rotate()` had
+      no exception handling — an unwritable `Logs` root, or an `IOException` mid-session
+      (disk full, permission revoked), threw uncaught. It now degrades to an in-memory-only
+      `Recent` buffer instead of throwing, covered by
+      `DiagnosticsTests.UnwritableLogsRootDoesNotThrowOnConstructOrLog`. More seriously,
+      `CrashReporter.Capture` — the one writer invoked specifically during failure
+      handling in `Program.Main`'s outer `catch` — had zero exception handling and no
+      guard at its call site either: an unwritable `CrashReports` root would throw a
+      *second*, fully unhandled exception out of the exception handler itself, turning a
+      graceful "Gens failed to start" message into a raw crash. `Capture` now returns
+      `string?` and catches `IOException`/`UnauthorizedAccessException` internally,
+      covered by `DiagnosticsTests.UnwritableCrashReportsRootDoesNotThrowAndReturnsNull`.
+      The `--capture=` smoke-test screenshot write in `GensDesktopApplication.Render`
+      was also unguarded and now catches the same exception set, logging to stderr
+      instead of throwing. Generated-art cache writes (`GeneratedArtCache.StoreAsync`)
+      remain unguarded at that layer, but its only caller, `ArtGenerationQueue`, already
+      catches `IOException`/`HttpRequestException` around the call and reports a
+      structured `ArtFailureKind.InvalidOutput`/provider failure instead of propagating,
+      so gameplay is not blocked; `GeneratedArtCache.PinAsync`/`ClearUnpinnedAsync` (used
+      for cache-retention housekeeping, not the gameplay-blocking store path) remain
+      unguarded and are noted as a smaller residual gap.
 
 **Status: partially closed.** Gate 6 (mandatory) is closed. The settings-specific slice of
-gates 56/57 (advisory) now has real test coverage and a real fix (settings save no longer
-throws on an unwritable root). The full non-ASCII/unwritable-root matrix across
-save/load/log/cache/screenshot paths (gate 20's repeated-lifecycle observation included)
-remains open for a future pass — see this ticket's remaining unchecked item above.
+gates 56/57 (advisory) has real test coverage and a real fix (settings save no longer
+throws on an unwritable root). This pass closes the non-ASCII path matrix for
+save/load/settings/log/crash-report writers and the unwritable-root/atomic-write gap for
+log and crash-report writers, including fixing a real crash-in-crash-handler bug in
+`CrashReporter.Capture`. Remaining open items: gate 20's repeated-lifecycle resource-count
+observation, non-ASCII coverage for the generated-art cache specifically, and unwritable-root
+guards for `GeneratedArtCache.PinAsync`/`ClearUnpinnedAsync`.
 
 ## UR-07 — Finish declared cross-platform backend validation
 

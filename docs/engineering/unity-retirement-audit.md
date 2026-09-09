@@ -372,3 +372,32 @@ UR-01, made without access to a Unity Editor, per
 
 See [UR-01](unity-retirement-follow-up-tickets.md#ur-01--establish-unitynative-deterministic-and-save-compatibility-evidence)
 for the itemized acceptance-criteria status.
+
+## UR-06 progress update — 2026-09-08
+
+Addendum, not a rewrite, per the same convention as the UR-01 update above: the gate
+table and decision recorded on 2026-09-08 stand unchanged.
+
+- **Gate 57** (read-only/failure paths, advisory) — new evidence, still **PARTIAL**:
+  `StructuredFileLogger` (logs) and `CrashReporter` (crash reports) previously had no
+  exception handling at all around their file writes. In particular, `CrashReporter.Capture`
+  is invoked from inside `Program.Main`'s single top-level `catch` block specifically to
+  record a failure — an unwritable `CrashReports` root threw a *second*, fully unhandled
+  exception out of the exception handler itself, so a real startup failure could present as
+  a raw unhandled-exception crash instead of the intended graceful
+  "Gens failed to start" message. Both writers, plus the `--capture=` smoke-test screenshot
+  write in `GensDesktopApplication.Render`, now catch `IOException`/`UnauthorizedAccessException`
+  and degrade (in-memory-only logging; a `null` crash-report path; a stderr message) instead of
+  throwing, with coverage in `tests/Gens.Client.Desktop.Tests/DiagnosticsTests.cs`. Save/load
+  and settings already had this handling (UR-06's original pass). Still open: the same
+  hardening for `GeneratedArtCache.PinAsync`/`ClearUnpinnedAsync` (its gameplay-blocking
+  `StoreAsync` path is already protected indirectly by `ArtGenerationQueue`'s catch around
+  the call).
+- **Gate 56** (Unicode paths, mandatory) — new evidence, still **PARTIAL**: save/load,
+  logging, and crash-report writing are now exercised under a `用户-δοκιμή` root in
+  `DesktopApplicationFlowTests.UnicodeApplicationPathsSaveLoadAndLogRoundTrip`, alongside
+  the pre-existing settings coverage. Not yet covered: the generated-art cache and the
+  `--capture=` screenshot path under a non-ASCII root.
+
+See [UR-06](unity-retirement-follow-up-tickets.md#ur-06--close-session-settings-and-application-data-escape-hatches)
+for the itemized acceptance-criteria status.
