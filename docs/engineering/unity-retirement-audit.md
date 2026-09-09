@@ -401,3 +401,28 @@ table and decision recorded on 2026-09-08 stand unchanged.
 
 See [UR-06](unity-retirement-follow-up-tickets.md#ur-06--close-session-settings-and-application-data-escape-hatches)
 for the itemized acceptance-criteria status.
+
+## UR-02 progress update — 2026-09-08
+
+Addendum, not a rewrite, per the same convention as the UR-01/UR-06 updates above:
+the gate table and BLOCKED decision recorded on 2026-09-08 stand unchanged.
+
+- **Gate 38** (keyboard-only vertical slice, mandatory) — new evidence, still
+  **FAIL** for this snapshot but see the ticket update below: the generic
+  Tab/modal/button primitives were already tested, but no test drove the
+  required launch-through-load application workflow. New
+  `KeyboardOnlyWorkflowTests.FullCampaignVerticalSliceCompletesKeyboardOnly`
+  (`tests/Gens.Client.Desktop.Tests/KeyboardOnlyWorkflowTests.cs`) closes that
+  specific gap: it drives a real `GensDesktopApplication` end to end — launch,
+  new game, household roster, character detail, back, estate, a wax-seal
+  command (Fête/Seal), month advance, monthly report, save, return to main
+  menu, and load — using only Tab/Shift+Tab focus traversal, Enter activation,
+  and Escape, dispatched as the same `KeyboardEvent`/`PlatformEvent` values
+  `RuntimeHost` routes in production. This gate is not flipped to PASS by this
+  update alone because UI scaling verification (gate 34), the full Windows UIA
+  provider (gate 42), and reviewed golden-pixel comparison (gate 37) remain
+  open per UR-02's other acceptance criteria; those are still required before
+  the accessible/keyboard-first slice as a whole can be marked complete.
+
+See [UR-02](unity-retirement-follow-up-tickets.md#ur-02--complete-accessible-keyboard-first-native-ui-hardening)
+for the itemized acceptance-criteria status.
