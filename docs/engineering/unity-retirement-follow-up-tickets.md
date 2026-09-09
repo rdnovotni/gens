@@ -208,18 +208,27 @@ data failures are explicit, recoverable, and tested.
       remain unguarded at that layer, but its only caller, `ArtGenerationQueue`, already
       catches `IOException`/`HttpRequestException` around the call and reports a
       structured `ArtFailureKind.InvalidOutput`/provider failure instead of propagating,
-      so gameplay is not blocked; `GeneratedArtCache.PinAsync`/`ClearUnpinnedAsync` (used
-      for cache-retention housekeeping, not the gameplay-blocking store path) remain
-      unguarded and are noted as a smaller residual gap.
+      so gameplay is not blocked.
+      **New this pass:** `GeneratedArtCache.PinAsync`/`ClearUnpinnedAsync` (cache-retention
+      housekeeping, not the gameplay-blocking store path) had no exception handling at
+      all — a corrupted index entry or an unwritable/locked index file would throw out of
+      housekeeping calls made outside the gameplay-blocking path. Both now accept an
+      optional `Action<string, Exception?> log` (mirroring `SettingsService`) and catch
+      `IOException`/`UnauthorizedAccessException`/`JsonException` around their bodies,
+      logging and returning instead of throwing; covered by
+      `ArtPipelineTests.CorruptIndexEntryDoesNotThrowOnPinOrClearUnpinned`. Non-ASCII cache
+      roots are now covered directly (not just indirectly via the hash-keyed path scheme)
+      by `ArtPipelineTests.NonAsciiCacheRootRoundTripsStoreFindPinAndClear`, which exercises
+      store/find/pin/clear under a `用户-δοκιμή` root.
 
 **Status: partially closed.** Gate 6 (mandatory) is closed. The settings-specific slice of
 gates 56/57 (advisory) has real test coverage and a real fix (settings save no longer
 throws on an unwritable root). This pass closes the non-ASCII path matrix for
 save/load/settings/log/crash-report writers and the unwritable-root/atomic-write gap for
 log and crash-report writers, including fixing a real crash-in-crash-handler bug in
-`CrashReporter.Capture`. Remaining open items: gate 20's repeated-lifecycle resource-count
-observation, non-ASCII coverage for the generated-art cache specifically, and unwritable-root
-guards for `GeneratedArtCache.PinAsync`/`ClearUnpinnedAsync`.
+`CrashReporter.Capture`; a follow-up pass closes the generated-art cache's non-ASCII
+coverage and adds unwritable-root guards for `GeneratedArtCache.PinAsync`/`ClearUnpinnedAsync`.
+Remaining open item: gate 20's repeated-lifecycle resource-count observation.
 
 ## UR-07 — Finish declared cross-platform backend validation
 

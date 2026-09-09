@@ -97,6 +97,44 @@ public sealed class ArtPipelineTests
     }
 
     [Test]
+    public async Task NonAsciiCacheRootRoundTripsStoreFindPinAndClear()
+    {
+        string unicodeRoot = Path.Combine(cacheRoot, "用户-δοκιμή");
+        var cache = new GeneratedArtCache(unicodeRoot); await using var queue = new ArtGenerationQueue(new MockArtProvider(), cache);
+        ArtGenerationRequest request = Request();
+        CachedArtAsset stored = (await queue.EnqueueAsync(request, ArtPriority.VisiblePortrait))!;
+        await cache.PinAsync(stored.Record.AssetHash);
+        await cache.ClearUnpinnedAsync();
+        CachedArtAsset? found = await cache.FindAsync(request.RequestFingerprint);
+        Assert.Multiple(() =>
+        {
+            Assert.That(found, Is.Not.Null);
+            Assert.That(File.Exists(stored.ObjectPath), Is.True);
+        });
+    }
+
+    // Simulating an unwritable directory via permission bits is unreliable here (this suite may run
+    // as root, which bypasses DAC checks, and Windows ACL denial needs elevation to set up). A
+    // corrupted index entry is a structural failure that reproduces identically on every platform
+    // and exercises the same catch clause an unwritable/locked index file would hit.
+    [Test]
+    public async Task CorruptIndexEntryDoesNotThrowOnPinOrClearUnpinned()
+    {
+        var provider = new MockArtProvider(); var cache = new GeneratedArtCache(cacheRoot); await using var queue = new ArtGenerationQueue(provider, cache);
+        CachedArtAsset stored = (await queue.EnqueueAsync(Request(), ArtPriority.VisiblePortrait))!;
+        string indexPath = Path.Combine(cacheRoot, "index", stored.Record.RequestFingerprint[..2], stored.Record.RequestFingerprint + ".json");
+        File.WriteAllText(indexPath, "{ not valid json");
+
+        string? loggedMessage = null;
+        var guardedCache = new GeneratedArtCache(cacheRoot, (message, _) => loggedMessage = message);
+        Assert.DoesNotThrowAsync(() => guardedCache.PinAsync(stored.Record.AssetHash).AsTask());
+        Assert.That(loggedMessage, Is.Not.Null);
+        loggedMessage = null;
+        Assert.DoesNotThrowAsync(() => guardedCache.ClearUnpinnedAsync().AsTask());
+        Assert.That(loggedMessage, Is.Not.Null);
+    }
+
+    [Test]
     public async Task PortraitAlwaysReturnsProceduralAndPublishesGeneratedReplacement()
     {
         var provider = new MockArtProvider(new(TimeSpan.FromMilliseconds(20))); var cache = new GeneratedArtCache(cacheRoot); await using var queue = new ArtGenerationQueue(provider, cache); var service = new GeneratedPortraitCoordinator(queue, cache); CharacterPortraitSubject subject = Subject();

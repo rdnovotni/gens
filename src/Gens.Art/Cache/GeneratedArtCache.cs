@@ -48,11 +48,12 @@ public sealed class GeneratedArtCache : IGeneratedArtCache, IDisposable
     public const int MaximumDimension = 4096;
     public const long MaximumPixels = 16_777_216;
     private readonly string root;
+    private readonly Action<string, Exception?> log;
     private readonly SemaphoreSlim gate = new(1, 1);
     private long hits, misses, corruptions;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true, PropertyNameCaseInsensitive = true };
 
-    public GeneratedArtCache(string root) { ArgumentException.ThrowIfNullOrWhiteSpace(root); this.root = Path.GetFullPath(root); }
+    public GeneratedArtCache(string root, Action<string, Exception?>? log = null) { ArgumentException.ThrowIfNullOrWhiteSpace(root); this.root = Path.GetFullPath(root); this.log = log ?? ((_, _) => { }); }
 
     public async ValueTask<CachedArtAsset?> FindAsync(string requestFingerprint, CancellationToken cancellationToken = default)
     {
@@ -122,6 +123,10 @@ public sealed class GeneratedArtCache : IGeneratedArtCache, IDisposable
                 if (record?.AssetHash == assetHash) await AtomicWriteAsync(index, JsonSerializer.SerializeToUtf8Bytes(record with { Pinned = true }, JsonOptions), cancellationToken).ConfigureAwait(false);
             }
         }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            log($"Generated-art asset {assetHash} could not be pinned; cache retention may reclaim it later.", exception);
+        }
         finally { gate.Release(); }
     }
 
@@ -138,6 +143,10 @@ public sealed class GeneratedArtCache : IGeneratedArtCache, IDisposable
             }
             string objects = Path.Combine(root, "objects");
             if (Directory.Exists(objects)) foreach (string file in Directory.EnumerateFiles(objects, "*", SearchOption.AllDirectories)) if (!keep.Contains(Path.GetFileNameWithoutExtension(file))) File.Delete(file);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            log("Generated-art cache retention pass could not complete; unpinned assets may remain on disk.", exception);
         }
         finally { gate.Release(); }
     }
