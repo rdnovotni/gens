@@ -80,6 +80,33 @@ lengths.
 - Verify 100%, 125%, 150%, and 200% scaling plus focus visibility/trapping/restore.
 - Compare current screen renders against reviewed golden pixels, not only PNG headers.
 
+**UR-02 progress update — 2026-09-08:** Addendum, not a rewrite, per the same
+convention as the UR-01/UR-06 updates: the audit's gate table and BLOCKED decision
+stand unchanged; this only records what closed against the acceptance criteria above.
+
+- **Keyboard-only workflow (first bullet)** — closed with real evidence:
+  `tests/Gens.Client.Desktop.Tests/KeyboardOnlyWorkflowTests.cs` drives a real
+  `GensDesktopApplication` (real `SkiaGraphicsBackend`, headless `IPlatform`/
+  `IPixelBufferWindow` fakes, and a real `RuntimeHost` for initialization) through
+  the exact launch -> new -> roster -> character -> back -> estate -> command
+  (wax-seal Fête, Seal) -> advance -> report -> save -> menu -> load sequence,
+  using only `KeyboardEvent`s (Tab/Shift+Tab focus traversal, Enter activation,
+  Escape for Back) dispatched through `GensDesktopApplication.HandleEvent` — the
+  same `PlatformEvent` path `RuntimeHost` uses in production. No pointer event is
+  used anywhere in the test. Prior coverage (`DesktopApplicationFlowTests`) proved
+  the underlying state machine but never pressed a key or asserted on focus;
+  prior `Gens.UI.Tests` focus coverage never touched a real Gens screen. This
+  closes the specific gap both left open.
+- **Still open:** the Windows UI Automation fragment-provider bridge and a real
+  inspector/screen-reader workflow (no fragment/provider hosting exists yet —
+  `WindowsAccessibilityBridge` is a bare `NotifyWinEvent` focus-event call);
+  Reduced Motion coverage against the actual (currently inert) estate
+  `SceneView` rather than only the generic engine primitive; pseudo-locale and
+  long-content fixtures exercised through real screens; 100/125/150/200% UI
+  scaling layout/focus-visibility verification (today only settings
+  persistence is tested); and reviewed golden-pixel comparison (tracked
+  primarily under UR-05). None of these are closed by this update.
+
 ## UR-03 — Produce and verify the Windows player package
 
 **Severity:** Critical
