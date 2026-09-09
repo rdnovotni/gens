@@ -20,13 +20,39 @@ saves load natively and continue deterministically.
 
 **Acceptance criteria:**
 
-- Add named permanent current-native, legacy, Unity-era, and migrated `.gens` fixtures.
-- Prevent Unity package import from consuming generated `.NET bin/obj` files.
-- Record initial, post-command, every-month, and final hashes from both clients.
-- Prove the hash series matches exactly.
-- Prove save -> load -> advance continuation matches for every supported fixture.
-- Upgrade replay diagnostics to re-run a persisted command log or explicitly revise
-  the gate through an ADR if replay-from-log is not the supported contract.
+- [x] Add named permanent current-native, legacy, and migrated `.gens` fixtures.
+      **Not done, and cannot be done honestly:** a Unity-era fixture — see
+      [ADR 0019](adr/0019-replay-diagnostics-and-save-fixture-contract.md), which
+      documents that Unity has never had a working save/load path to have produced
+      one.
+- [x] Prevent Unity package import from consuming generated `.NET bin/obj` files.
+      `Directory.Build.props` redirects build output for the three Unity-imported
+      packages to `artifacts/dotnet-build/`; `scripts/check-no-package-build-output.sh`
+      enforces it in CI. **Still open:** a human with Unity installed must confirm
+      this actually resolves the EditMode CS1704 failure — not verifiable without
+      a Unity Editor.
+- [x] Record initial, post-command, every-month, and final hashes — done for the
+      native client (`ur01-hash-transcript-native.json`, produced by the new
+      `run-shared-scenario` command against the fixed scenario in
+      `unity-retirement-shared-scenario.md`). **Not done:** the matching Unity-side
+      transcript — see ADR 0019's manual follow-up checklist.
+- [ ] Prove the hash series matches exactly — blocked on the Unity-side transcript
+      above; cannot be claimed until that manual step runs.
+- [x] Prove save -> load -> advance continuation matches for every supported
+      fixture — `Ur01SharedScenarioFixtureTests` covers all three native fixtures.
+- [x] Upgrade replay diagnostics to re-run a persisted command log or explicitly
+      revise the gate through an ADR if replay-from-log is not the supported
+      contract. **Done via the ADR path:**
+      [ADR 0019](adr/0019-replay-diagnostics-and-save-fixture-contract.md) revises
+      the gate to save/reload hash equality plus independent continuation parity;
+      no command log was built (see that ADR's Alternatives Considered for why).
+
+**Status: partially closed.** Everything achievable without a live Unity Editor is
+done. The sole remaining item is the manual Unity-side hash transcript run — see
+ADR 0019's "Manual follow-up: Unity-side hash transcript" section for the exact
+checklist. Do not re-close this ticket, and do not remove the Unity CI merge gate
+(UR-05), until that run completes and its transcript matches the checked-in native
+one.
 
 ## UR-02 — Complete accessible keyboard-first native UI hardening
 

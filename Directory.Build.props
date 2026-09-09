@@ -10,4 +10,16 @@
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
+
+  <!-- Gens.Simulation/Gens.Application/Gens.Presentation are imported into the Unity project as
+       local file-path packages (Packages/manifest.json points straight at their src/ folders).
+       Unity's package resolver scans that exact folder, so a normal dotnet build/test leaving
+       bin/obj inside it produces duplicate generated assembly attributes and a CS1704 duplicate
+       assembly import once Unity also compiles the same sources via its asmdef (see UR-01 in
+       docs/engineering/unity-retirement-follow-up-tickets.md). Redirect their build output
+       outside the package folder so Unity never sees it, regardless of build order. -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)'=='Gens.Simulation' OR '$(MSBuildProjectName)'=='Gens.Application' OR '$(MSBuildProjectName)'=='Gens.Presentation'">
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)artifacts/dotnet-build/$(MSBuildProjectName)/obj/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)artifacts/dotnet-build/$(MSBuildProjectName)/bin/</BaseOutputPath>
+  </PropertyGroup>
 </Project>

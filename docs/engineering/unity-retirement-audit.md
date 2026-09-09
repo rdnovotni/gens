@@ -317,3 +317,58 @@ roadmap or retarget Simulation as part of blocker work; first prove Unity is tru
 redundant. When the audit eventually passes, the next major phase should return to
 the main gameplay/content roadmap while treating the native runtime as ordinary Gens
 infrastructure, not a standalone general-purpose engine.
+
+## UR-01 progress update — 2026-09-09
+
+This is an addendum, not a rewrite: the gate table and decision above remain exactly
+as recorded on 2026-09-08, since this document is a point-in-time snapshot ("Re-run
+this audit only after all mandatory rows have executable evidence" — the audit is
+not yet re-run). This addendum records concrete, native-side-only progress against
+UR-01, made without access to a Unity Editor, per
+[ADR 0019](adr/0019-replay-diagnostics-and-save-fixture-contract.md).
+
+- **Gate 71** (no stale Unity bin/obj CI pollution) — new evidence:
+  `Directory.Build.props` now redirects `Gens.Simulation`/`Gens.Application`/
+  `Gens.Presentation` build output to `artifacts/dotnet-build/`, outside the folders
+  `Packages/manifest.json` imports into Unity as local packages, and
+  `scripts/check-no-package-build-output.sh` (wired into the `standalone` CI job)
+  fails the build if that ever regresses. Confirmed locally: `dotnet build
+  Gens.slnx` no longer leaves any `bin`/`obj` under `src/Gens.Simulation`,
+  `src/Gens.Application`, or `src/Gens.Presentation`. **Still open:** a human with
+  Unity installed must confirm this actually resolves the audit's observed CS1704
+  duplicate-assembly failure in the Editor — that check cannot run without one.
+- **Gate 29** (replay diagnostics) — ADR 0019 now defines the gate's contract as
+  save/reload hash equality plus independent continuation parity, both of which have
+  real test evidence (existing `VerifyDeterministicReplay`/gate 25, plus this
+  update's new fixture-continuation tests below). No persisted command log was
+  built; ADR 0019 explains why that is not required for this gate.
+- **Gate 10** (save fixture matrix) — new permanent fixtures exist under
+  `tests/Gens.Simulation.Tests/Saves/Fixtures/`: `ur01-current-native.gens`,
+  `ur01-legacy.gens` (state before the shared scenario's commands run), and
+  `ur01-migrated.gens` (the current-native fixture run through `migrate-save`,
+  confirmed byte-identical — today's only possible migration, since
+  `SaveMigrationRegistry.Empty` means v1 is the only schema version that has ever
+  shipped). A recorded hash transcript
+  (`ur01-hash-transcript-native.json`) covers bootstrap, every submitted command,
+  every month boundary, and the final state of a fixed shared scenario (documented
+  in `unity-retirement-shared-scenario.md`). `Ur01SharedScenarioFixtureTests`
+  proves each fixture's hash matches its recorded checkpoint and that each
+  continues deterministically after an independent reload. This remains **PARTIAL**,
+  not PASS — no Unity-era fixture exists, per gate 22 below.
+- **Gate 22** (Unity-era save fixtures) — remains **FAIL**. ADR 0019 documents why:
+  `SaveReader`/`SaveWriter`/`CampaignSession.Save`/`Load` are all
+  `#if !UNITY_2021_1_OR_NEWER`-excluded because `Gens.Simulation.asmdef` has no
+  `System.Text.Json` reference Unity's asmdef compiler can see, so Unity has never
+  been able to independently produce a `.gens` file. No fixture was fabricated to
+  flip this gate; it stays honestly FAIL until either that asmdef gap is separately
+  closed and a real Unity-produced save is captured, or the audit's maintainer
+  amends the gate to acknowledge Unity never had this capability.
+- **Gate 27** (cross-client parity) — remains **FAIL**. The native half of the
+  comparison this gate needs is now ready and checked in
+  (`ur01-hash-transcript-native.json`); ADR 0019's manual follow-up checklist
+  defines exactly what a human with Unity installed must run to produce the
+  matching Unity-side transcript and complete the comparison. This gate is not
+  flipped until that comparison actually runs and passes.
+
+See [UR-01](unity-retirement-follow-up-tickets.md#ur-01--establish-unitynative-deterministic-and-save-compatibility-evidence)
+for the itemized acceptance-criteria status.

@@ -59,6 +59,11 @@ static int Dispatch(string[] args)
                 RequirePositional(args, 1, "pathA"),
                 RequirePositional(args, 2, "pathB")),
             "inspect-state" => InspectStateCommand.Run(RequirePositional(args, 1, "savePath")),
+            "run-shared-scenario" => RunSharedScenarioCommand.Run(
+                RequirePositional(args, 1, "scenarioSpecPath"),
+                RequireOption(args, "--content") ?? throw new ArgumentException("--content is required."),
+                RequireOption(args, "--fixtures-out") ?? throw new ArgumentException("--fixtures-out is required."),
+                RequireOption(args, "--transcript-out") ?? throw new ArgumentException("--transcript-out is required.")),
             "help" or "--help" or "-h" => PrintUsageAndReturnZero(),
             _ => UnknownCommand(args[0]),
         };
@@ -129,5 +134,9 @@ static void PrintUsage()
           load <savePath>
           compare-hashes <pathA> <pathB>
           inspect-state <savePath>
+
+        Unity retirement UR-01 tooling (ADR 0019):
+          run-shared-scenario <scenarioSpecPath> --content <compiledPackPath>
+                              --fixtures-out <pathPrefix> --transcript-out <path>
         """);
 }

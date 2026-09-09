@@ -22,6 +22,7 @@ jobs:
       - run: dotnet format Gens.slnx --no-restore --verify-no-changes
       - run: dotnet build Gens.slnx --no-restore --configuration Release
       - run: dotnet test Gens.slnx --no-restore --no-build --configuration Release
+      - run: ./scripts/check-no-package-build-output.sh
       - name: Run skeleton benchmark
         run: dotnet run --project benchmarks/Gens.Simulation.Benchmarks --no-restore --configuration Release -- --job Dry
       - run: ./scripts/verify-deterministic-build.sh
@@ -53,6 +54,15 @@ jobs:
             migrate-save artifacts/saves/smoke.gens --out artifacts/saves/smoke-migrated.gens
           dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- \
             replay artifacts/saves/smoke.gens
+      - name: UR-01 shared scenario — reproduce and diff the checked-in native hash transcript
+        run: |
+          set -euo pipefail
+          dotnet run --project tools/Gens.ContentCompiler --no-restore --configuration Release -- \
+            run-shared-scenario tests/Gens.Simulation.Tests/Saves/Fixtures/shared-scenario.json \
+            --content artifacts/content/catalog.json \
+            --fixtures-out artifacts/ur01-ci/ur01 \
+            --transcript-out artifacts/ur01-ci/hash-transcript.json
+          diff tests/Gens.Simulation.Tests/Saves/Fixtures/ur01-hash-transcript-native.json artifacts/ur01-ci/hash-transcript.json
       - run: ./scripts/check-clean-worktree.sh
 
   native-packages:
