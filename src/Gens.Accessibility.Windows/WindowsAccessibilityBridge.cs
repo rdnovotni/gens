@@ -37,9 +37,9 @@ public sealed class WindowsAccessibilityBridge : Gens.Accessibility.IAccessibili
     {
         if (!IsAvailable) return;
         NotifyWinEvent(EventObjectFocus, IntPtr.Zero, ObjIdClient, 0);
-        if (node is null || rootProvider is null) return;
-        string nodeId = node.Id;
-        var provider = new UiaFragmentProvider(() => latestIndex, index => index.Find(nodeId), LogicalToScreen, rootProvider);
+        if (node is null || rootProvider is null || latestIndex is null) return;
+        string nodeKey = latestIndex.KeyOf(node);
+        var provider = new UiaFragmentProvider(() => latestIndex, index => index.Find(nodeKey), LogicalToScreen, rootProvider);
         _ = UiaNative.UiaRaiseAutomationEvent(provider, UiaConstants.AutomationFocusChangedEventId);
     }
 
@@ -53,7 +53,9 @@ public sealed class WindowsAccessibilityBridge : Gens.Accessibility.IAccessibili
     /// </summary>
     public bool HandleWindowsMessage(IntPtr hwnd, uint message, IntPtr wParam, IntPtr lParam)
     {
-        if (!IsAvailable || message != UiaConstants.WM_GETOBJECT || wParam.ToInt64() != UiaConstants.OBJID_CLIENT || rootProvider is null) return true;
+        // WM_GETOBJECT carries the requested object id in lParam (OBJID_CLIENT for a raw-element provider);
+        // wParam is an unrelated child-window handle/zero and must simply be forwarded, not checked.
+        if (!IsAvailable || message != UiaConstants.WM_GETOBJECT || lParam.ToInt64() != UiaConstants.OBJID_CLIENT || rootProvider is null) return true;
         UiaNative.UiaReturnRawElementProvider(hwnd, wParam, lParam, rootProvider);
         return false;
     }

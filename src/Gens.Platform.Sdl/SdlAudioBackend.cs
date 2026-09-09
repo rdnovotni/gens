@@ -38,10 +38,11 @@ public sealed class SdlAudioBackend : IAudioBackend
         private IntPtr stream = stream;
         private Task? feeder;
         private bool disposed;
+        private float gain = 1f;
         public bool IsPlaying { get; private set; }
         public bool IsDisposed => disposed;
         public void Start() { IsPlaying = true; feeder = Task.Run(FeedAsync); SdlNative.SDL_ResumeAudioStreamDevice(stream); }
-        public void SetGain(float gain) { lock (gate) if (!disposed) SdlNative.SDL_SetAudioStreamGain(stream, Math.Clamp(gain, 0, 1)); }
+        public void SetGain(float value) { float clamped = Math.Clamp(value, 0, 1); lock (gate) { gain = clamped; if (!disposed) SdlNative.SDL_SetAudioStreamGain(stream, clamped); } }
         public void Pause() { lock (gate) if (!disposed && SdlNative.SDL_PauseAudioStreamDevice(stream)) IsPlaying = false; }
         public void ResumePlayback() { lock (gate) if (!disposed && SdlNative.SDL_ResumeAudioStreamDevice(stream)) IsPlaying = true; }
         public void StopPlayback() => Dispose();
@@ -88,6 +89,9 @@ public sealed class SdlAudioBackend : IAudioBackend
             {
                 if (disposed) { SdlNative.SDL_DestroyAudioStream(reopened); return false; }
                 stream = reopened;
+                // The replacement stream starts at SDL's default gain (1.0); reapply whatever this voice was
+                // last set to (master/bus/fade/per-voice volume) so recovery doesn't cause an audible jump.
+                SdlNative.SDL_SetAudioStreamGain(stream, gain);
                 SdlNative.SDL_ResumeAudioStreamDevice(stream);
             }
             return TryWrite(buffer, length);

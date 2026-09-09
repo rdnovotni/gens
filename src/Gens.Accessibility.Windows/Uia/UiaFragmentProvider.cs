@@ -32,18 +32,24 @@ internal class UiaFragmentProvider : IRawElementProviderSimple, IRawElementProvi
     }
 
     protected UiaFragmentRootProvider RootProvider => root ?? (UiaFragmentRootProvider)this;
-    protected SemanticFragmentIndex? Index => ResolveIndex();
     protected Func<SemanticFragmentIndex?> ResolveIndex { get; }
     protected Func<Rect, UiaRect> LogicalToScreen { get; }
 
-    private SemanticNodeSnapshot? Node
+    /// <summary>The current index and the node this provider designates within it, resolved together so callers
+    /// can derive the node's structural key (<see cref="SemanticFragmentIndex.KeyOf"/>) without a second,
+    /// possibly-inconsistent resolution pass.</summary>
+    private (SemanticFragmentIndex Index, SemanticNodeSnapshot Node)? Resolved
     {
         get
         {
-            SemanticFragmentIndex? index = Index;
-            return index is null ? null : selectNode(index);
+            SemanticFragmentIndex? index = ResolveIndex();
+            if (index is null) return null;
+            SemanticNodeSnapshot? node = selectNode(index);
+            return node is null ? null : (index, node);
         }
     }
+
+    private SemanticNodeSnapshot? Node => Resolved?.Node;
 
     public UiaProviderOptions ProviderOptions => UiaProviderOptions.ServerSideProvider;
 
@@ -59,8 +65,9 @@ internal class UiaFragmentProvider : IRawElementProviderSimple, IRawElementProvi
 
     public object? GetPropertyValue(int propertyId)
     {
-        SemanticNodeSnapshot? node = Node;
-        if (node is null) return null;
+        (SemanticFragmentIndex Index, SemanticNodeSnapshot Node)? resolved = Resolved;
+        if (resolved is null) return null;
+        (SemanticFragmentIndex index, SemanticNodeSnapshot node) = resolved.Value;
         return propertyId switch
         {
             UiaConstants.NamePropertyId => (object?)(node.Name ?? node.Id),
@@ -68,7 +75,7 @@ internal class UiaFragmentProvider : IRawElementProviderSimple, IRawElementProvi
             UiaConstants.IsEnabledPropertyId => node.IsEnabled,
             UiaConstants.HasKeyboardFocusPropertyId => node.IsFocused,
             UiaConstants.IsKeyboardFocusablePropertyId => node.IsFocused || UiaRoleMapping.SupportsInvoke(node.Role) || UiaRoleMapping.SupportsToggle(node.Role),
-            UiaConstants.AutomationIdPropertyId => node.Id,
+            UiaConstants.AutomationIdPropertyId => index.KeyOf(node),
             UiaConstants.IsContentElementPropertyId => true,
             UiaConstants.IsControlElementPropertyId => true,
             _ => null,
@@ -79,27 +86,29 @@ internal class UiaFragmentProvider : IRawElementProviderSimple, IRawElementProvi
 
     public IRawElementProviderFragment? Navigate(NavigateDirection direction)
     {
-        SemanticFragmentIndex? index = Index;
-        SemanticNodeSnapshot? current = Node;
-        if (index is null || current is null) return null;
+        (SemanticFragmentIndex Index, SemanticNodeSnapshot Node)? resolved = Resolved;
+        if (resolved is null) return null;
+        (SemanticFragmentIndex index, SemanticNodeSnapshot current) = resolved.Value;
+        string currentKey = index.KeyOf(current);
         SemanticNodeSnapshot? target = direction switch
         {
-            NavigateDirection.Parent => index.Parent(current.Id),
-            NavigateDirection.NextSibling => index.NextSibling(current.Id),
-            NavigateDirection.PreviousSibling => index.PreviousSibling(current.Id),
-            NavigateDirection.FirstChild => index.FirstChild(current.Id),
-            NavigateDirection.LastChild => index.LastChild(current.Id),
+            NavigateDirection.Parent => index.Parent(currentKey),
+            NavigateDirection.NextSibling => index.NextSibling(currentKey),
+            NavigateDirection.PreviousSibling => index.PreviousSibling(currentKey),
+            NavigateDirection.FirstChild => index.FirstChild(currentKey),
+            NavigateDirection.LastChild => index.LastChild(currentKey),
             _ => null,
         };
         if (target is null) return null;
-        if (target.Id == index.Root.Id) return RootProvider;
-        string targetId = target.Id;
-        return new UiaFragmentProvider(ResolveIndex, idx => idx.Find(targetId), LogicalToScreen, RootProvider);
+        if (ReferenceEquals(target, index.Root)) return RootProvider;
+        string targetKey = index.KeyOf(target);
+        return new UiaFragmentProvider(ResolveIndex, idx => idx.Find(targetKey), LogicalToScreen, RootProvider);
     }
 
     // The leading "3" is the documented UiaAppendRuntimeId marker; the rest need only be stable and unique
-    // enough for this-session equality checks, which SemanticNodeSnapshot.Id already provides.
-    public int[]? GetRuntimeId() => Node is { } node ? [3, node.Id.GetHashCode()] : null;
+    // enough for this-session equality checks. The structural key (not SemanticNodeSnapshot.Id, which is
+    // routinely duplicated by controls that fall back to their type name) guarantees per-node uniqueness.
+    public int[]? GetRuntimeId() => Resolved is { } resolved ? [3, resolved.Index.KeyOf(resolved.Node).GetHashCode(StringComparison.Ordinal)] : null;
 
     public UiaRect BoundingRectangle => Node is { } node ? LogicalToScreen(node.Bounds) : default;
 

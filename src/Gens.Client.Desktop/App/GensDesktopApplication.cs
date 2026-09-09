@@ -59,7 +59,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         controller.Audio.ActivityChanged += OnAudioActivityChanged;
         if (OperatingSystem.IsWindows())
         {
-            var windowsBridge = new WindowsAccessibilityBridge(() => (context.Window as SdlWindow)?.NativeSdlWindowHandle ?? IntPtr.Zero);
+            var windowsBridge = new WindowsAccessibilityBridge(() => (context.Window as SdlWindow) is { } sdlWindow ? SdlWindowsMessageHook.GetHwnd(sdlWindow.NativeSdlWindowHandle) : IntPtr.Zero);
             accessibilityBridge = windowsBridge;
             SdlWindowsMessageHook.SetSubscriber(windowsBridge.HandleWindowsMessage);
         }

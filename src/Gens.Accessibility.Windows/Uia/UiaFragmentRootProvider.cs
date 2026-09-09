@@ -21,10 +21,12 @@ internal sealed class UiaFragmentRootProvider : UiaFragmentProvider, IRawElement
 
     public IRawElementProviderFragment? GetFocus()
     {
-        SemanticFragmentIndex? index = Index;
+        SemanticFragmentIndex? index = ResolveIndex();
         SemanticNodeSnapshot? focused = index?.Root is null ? null : FindFocused(index.Root);
-        if (focused is null) return null;
-        return focused.Id == index!.Root.Id ? this : new UiaFragmentProvider(ResolveIndex, idx => idx.Find(focused.Id), LogicalToScreen, this);
+        if (focused is null || index is null) return null;
+        if (ReferenceEquals(focused, index.Root)) return this;
+        string focusedKey = index.KeyOf(focused);
+        return new UiaFragmentProvider(ResolveIndex, idx => idx.Find(focusedKey), LogicalToScreen, this);
     }
 
     private static SemanticNodeSnapshot? FindFocused(SemanticNodeSnapshot node)
