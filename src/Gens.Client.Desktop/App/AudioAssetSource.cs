@@ -30,7 +30,10 @@ public sealed class AudioAssetSource
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(untrustedRelativePath);
         string fullRoot = root + Path.DirectorySeparatorChar;
-        string candidate = Path.GetFullPath(Path.Combine(root, untrustedRelativePath));
+        // Normalize to '/' first: a literal '\' is just an ordinary filename character on Linux/macOS, so an
+        // un-normalized "..\escape.wav" would pass straight through Path.Combine/GetFullPath without ever being
+        // treated as a parent-directory segment there, defeating the prefix check below.
+        string candidate = Path.GetFullPath(Path.Combine(root, untrustedRelativePath.Replace('\\', '/')));
         StringComparison comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!candidate.StartsWith(fullRoot, comparison)) throw new InvalidOperationException("The requested audio asset path escapes the audio asset directory.");
         return candidate;
