@@ -4,7 +4,7 @@
 
 | Field | Value |
 | --- | --- |
-| Audit record commit | Recorded by the follow-up metadata commit after evidence is finalized |
+| Audit record commit | `befd55cc328a2def484389fc3b4fcb6bfeddab4c` |
 | Audit baseline commit | `f6d4c92f8b2af0c1b065a4418d51a34c8d67c6c6` |
 | Audit date | 2026-09-08 |
 | Native build version | `Gens.Client.Desktop` 0.1.0, .NET 10 |
