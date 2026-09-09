@@ -27,8 +27,9 @@ public sealed class ProductionServiceTests
     {
         var paths = new DesktopApplicationPaths(directory); paths.EnsureRequiredDirectories(); using var logger = new StructuredFileLogger(paths);
         logger.Log(AppLogCategory.Client, RuntimeLogLevel.Error, "authorization=Bearer-secret");
-        string reportPath = new CrashReporter(paths, logger).Capture(new InvalidOperationException("controlled"), "Settings", "SDL3", "Skia", "Null", "software");
-        using JsonDocument report = JsonDocument.Parse(File.ReadAllText(reportPath)); string text = report.RootElement.GetRawText();
+        string? reportPath = new CrashReporter(paths, logger).Capture(new InvalidOperationException("controlled"), "Settings", "SDL3", "Skia", "Null", "software");
+        Assert.That(reportPath, Is.Not.Null);
+        using JsonDocument report = JsonDocument.Parse(File.ReadAllText(reportPath!)); string text = report.RootElement.GetRawText();
         Assert.Multiple(() => { Assert.That(text, Does.Contain("controlled")); Assert.That(text, Does.Contain("saveFormatVersion")); Assert.That(text, Does.Not.Contain("Bearer-secret")); Assert.That(text, Does.Not.Contain("world.json")); });
     }
 }

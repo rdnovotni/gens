@@ -100,9 +100,16 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         if (!smokeCapturePending || smokeCaptured) return;
         smokeCaptured = true;
         string path = string.IsNullOrWhiteSpace(smokeCapturePath) ? Path.Combine(Environment.CurrentDirectory, "native-client-smoke.png") : smokeCapturePath;
-        string? directory = Path.GetDirectoryName(path); if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-        if (CapturePng is not null) File.WriteAllBytes(path, CapturePng());
-        Console.WriteLine($"Native client smoke capture: {path}");
+        try
+        {
+            string? directory = Path.GetDirectoryName(path); if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            if (CapturePng is not null) File.WriteAllBytes(path, CapturePng());
+            Console.WriteLine($"Native client smoke capture: {path}");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            Console.Error.WriteLine($"Native client smoke capture failed: {exception.Message}");
+        }
         this.context.SetAnimating(false); this.context.RequestQuit();
     }
     public void Shutdown() => Dispose();

@@ -112,6 +112,30 @@ public sealed class DesktopApplicationFlowTests
     }
 
     [Test]
+    public void UnicodeApplicationPathsSaveLoadAndLogRoundTrip()
+    {
+        string unicodeRoot = Path.Combine(directory, "用户-δοκιμή"); var paths = new DesktopApplicationPaths(unicodeRoot); paths.EnsureRequiredDirectories();
+        var native = new DesktopApplicationController(paths); native.StartNew("latium", "standard");
+        ulong hashBeforeSave = native.ExecuteConsoleCommand("hash") is { } h ? Convert.ToUInt64(h, 16) : 0;
+        native.Save();
+        var reloaded = new DesktopApplicationController(paths); reloaded.Load();
+        Assert.Multiple(() =>
+        {
+            Assert.That(reloaded.HasActiveCampaign, Is.True);
+            Assert.That(Convert.ToUInt64(reloaded.ExecuteConsoleCommand("hash"), 16), Is.EqualTo(hashBeforeSave));
+            Assert.That(File.Exists(paths.Quicksave), Is.True);
+        });
+
+        using var logger = new Gens.Client.Desktop.Diagnostics.StructuredFileLogger(paths);
+        logger.Log(Gens.Client.Desktop.Diagnostics.AppLogCategory.Client, Gens.Runtime.RuntimeLogLevel.Information, "unicode root logging round trip");
+        Assert.That(File.Exists(Path.Combine(paths.Logs, "gens.log")), Is.True);
+
+        string? report = new Gens.Client.Desktop.Diagnostics.CrashReporter(paths, logger).Capture(new InvalidOperationException("test"), "roster", "SDL3", "SkiaSharp", "null", "software");
+        Assert.That(report, Is.Not.Null.And.Matches(@"^.*crash-.*\.json$"));
+        Assert.That(File.Exists(report), Is.True);
+    }
+
+    [Test]
     public void DeveloperConsoleUsesSessionDiagnosticsAndCommands()
     {
         app.StartNew("latium", "standard"); string hash = app.ExecuteConsoleCommand("hash"); string replay = app.ExecuteConsoleCommand("replay"); string query = app.ExecuteConsoleCommand("query roster"); string submit = app.ExecuteConsoleCommand("submit rites");
