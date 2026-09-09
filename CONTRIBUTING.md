@@ -6,29 +6,20 @@ Open an issue for substantial behavior or design changes so scope and dependenci
 can be discussed before implementation. Keep pull requests focused and avoid mixing
 unrelated refactors with functional changes.
 
-## Current Unity client vs. native runtime development
+## Native runtime development
 
-Gens currently ships a working Unity 6.3 LTS client, but per
-[ADR 0014](docs/engineering/adr/0014-custom-runtime-and-native-client.md) it
-is migrating to a purpose-built native Gens runtime/client and will retire
-Unity once the ADR's retirement gates pass. Everything in this document below
-is **current Unity client and standalone-tooling development** — it remains
-accurate and Unity remains fully supported. **Native runtime development** has
-begun with its platform, graphics, and runtime foundation; subsequent UI/client
-work follows the phases tracked by the
-[native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md).
-The 2026-09-08 [formal retirement audit](docs/engineering/unity-retirement-audit.md)
-is **BLOCKED**; do not remove Unity or its compatibility surface until every
-mandatory follow-up ticket passes.
-See [`native-runtime-architecture.md`](docs/engineering/native-runtime-architecture.md)
+Gens ships a purpose-built native Gens runtime/client, adopted per
+[ADR 0014](docs/engineering/adr/0014-custom-runtime-and-native-client.md).
+The project previously shipped a Unity 6.3 LTS client during the migration
+to this native runtime; Unity has since been fully retired and removed from
+the repository. See [`native-runtime-architecture.md`](docs/engineering/native-runtime-architecture.md)
 for dependency and lifetime rules. Windows x64 SDL is app-local; no system SDL
 installation or PATH entry is required.
 
 ## Local setup
 
-Install Git LFS, the exact .NET SDK identified by `global.json`, and the exact
-Unity editor identified by `ProjectSettings/ProjectVersion.txt` (including Linux
-Build Support when working on Linux). Then validate the toolchain and repository:
+Install Git LFS and the exact .NET SDK identified by `global.json`. Then
+validate the toolchain and repository:
 
 ```sh
 ./scripts/check-sdk.sh
@@ -60,37 +51,12 @@ Phase 4 headless shell commands `new-campaign`, `advance`, `submit-command`,
 `report`, `save`, `load`, `compare-hashes`, `inspect-state`). Run
 `dotnet run --project tools/Gens.ContentCompiler -- --help` for the full list.
 
-For Unity changes, open the root in Unity Hub or run the assembly compilation smoke
-check with an already activated editor:
-
-```sh
-UNITY_EDITOR_PATH=/absolute/path/to/Unity ./scripts/unity-smoke.sh
-```
-
-Licensed Unity tests and builds are deferred until CI credential and runner policy
-is approved. Do not commit generated directories such as `Library`, `Temp`, or
-`Logs`.
-
-### Connecting an AI coding agent to the Editor
-
-The repository's `.mcp.json` registers the Unity CLI's built-in MCP server
-(`unity mcp`) as a project-scoped MCP server. To use it from Claude Code:
-
-1. Install the Unity CLI (offered by Unity Hub during editor install, or see
-   [Unity's CLI docs](https://unity.com/blog/meet-the-unity-cli)) and confirm
-   `unity --version` runs from a terminal.
-2. Open the Unity Editor on this project so a live Editor session exists.
-3. Open Claude Code in the repository root; it will detect `.mcp.json` and
-   offer to start the `unity-editor-mcp` server. Approve it, then verify with
-   a prompt like "read the Unity console and summarize any errors."
-
-This gives the agent access to console logs, compilation results, test runs,
-and scene/asset inspection through the live Editor session. It only works
-locally, where both the Unity CLI and a running Editor are present.
+Do not commit generated directories such as `bin`, `obj`, or `artifacts`.
 
 ## Repository conventions
 
-- Keep simulation code in `src/Gens.Simulation` independent of Unity APIs.
+- Keep simulation code in `src/Gens.Simulation` independent of any
+  presentation/engine platform.
 - Add or update tests for behavior changes.
 - Treat `content/source` as authored input and `content/schemas` as its contract.
 - Put game-design documents in `docs/design` and engineering guidance in
@@ -113,11 +79,6 @@ locally, where both the Unity CLI and a running Editor are present.
     references, localization), compiles the golden content pack, then runs
     the exit-gate smoke test: bootstrap a campaign, save, verify, migrate,
     and replay it, comparing state hashes throughout.
-- **`unity-smoke.yml`** is manual (`workflow_dispatch`) only and requires a
-  self-hosted runner with the pinned Unity editor. Licensed Unity EditMode/
-  PlayMode test and build jobs are deferred until CI credential and runner
-  policy is approved; until then, use `scripts/unity-smoke.sh` locally (see
-  above) to check assembly compilation.
 
 ## Pull requests
 

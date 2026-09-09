@@ -1,16 +1,15 @@
 # Gens
 
 Gens is built around an engine-independent, deterministic C# simulation. It
-has a playable native desktop client alongside the existing Unity 6.3 LTS client. Unity is a
-transitional presentation platform, not the permanent one:
-[ADR 0014](docs/engineering/adr/0014-custom-runtime-and-native-client.md)
-adopts a purpose-built native Gens runtime and desktop client as the
-long-term target, migrating away from Unity once explicit retirement gates
-pass (see the [native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md)).
-The deterministic simulation itself is unaffected by this migration — it
-remains engine-independent regardless of which client presents it. The
-repository's supported toolchain and architectural boundaries, for both the
-current transitional stack and the target stack, are recorded in
+has a playable, purpose-built native Gens runtime and desktop client
+([ADR 0014](docs/engineering/adr/0014-custom-runtime-and-native-client.md)
+records the architecture decision). The project previously shipped a Unity
+6.3 LTS client; Unity has since been fully retired (see the
+[native-runtime migration roadmap](docs/engineering/gens-native-runtime-roadmap.md)
+for how that migration proceeded). The deterministic simulation itself is
+unaffected by this history — it remains engine-independent regardless of
+which client presents it. The repository's supported toolchain and
+architectural boundaries are recorded in
 [`docs/engineering/tech-stack.md`](docs/engineering/tech-stack.md).
 
 The project is in early development. The consolidated [game-design index](docs/design/README.md)
@@ -20,17 +19,11 @@ actually is and how it plays, see the [player manual](docs/manual/README.md).
 
 ## Prerequisites
 
-The native desktop client is the primary target for presentation development;
-Unity remains supported during migration. The 2026-09-08
-[formal retirement audit](docs/engineering/unity-retirement-audit.md) is **BLOCKED**;
-Unity must remain until its linked mandatory follow-up tickets pass. See the
-[native client guide](docs/engineering/native-client.md).
+The native desktop client is the primary and only target for presentation
+development. See the [native client guide](docs/engineering/native-client.md).
 
-- Unity Hub with the editor version in `ProjectSettings/ProjectVersion.txt`
 - .NET 10 SDK (the expected feature band is in `global.json`)
 - Git LFS
-
-Open the repository root as the Unity project. For standalone work, run:
 
 ```sh
 dotnet restore Gens.slnx
@@ -42,7 +35,6 @@ dotnet run --project src/Gens.Client.Desktop --configuration Release
 
 | Path | Purpose |
 | --- | --- |
-| `Assets/`, `Packages/`, `ProjectSettings/` | Unity project and package configuration |
 | `src/Gens.Simulation/` | Engine-independent deterministic simulation package |
 | `src/Gens.Application/` | Engine-neutral campaign lifecycle, query/command, save/load, and replay host |
 | `src/Gens.Platform/`, `src/Gens.Platform.Sdl/` | Engine-neutral desktop contracts and the isolated SDL3 backend |
@@ -51,7 +43,7 @@ dotnet run --project src/Gens.Client.Desktop --configuration Release
 | `src/Gens.Assets/`, `src/Gens.Portraits/` | Stable/content-addressed assets and deterministic offline procedural portrait rendering |
 | `src/Gens.Runtime/` | Native application loop, presentation clock, invalidation scheduling, lifecycle, and diagnostics |
 | `src/Gens.UI/` | Backend-neutral retained UI tree, layout, controls, input/focus, themes, accessibility semantics, and Gens design primitives |
-| `src/Gens.Presentation/` | Engine-neutral snapshot mapping shared by native and transitional Unity clients |
+| `src/Gens.Presentation/` | Engine-neutral snapshot mapping shared by native clients |
 | `src/Gens.Client.Desktop/` | Playable native desktop client and SDL/Skia composition root |
 | `tests/Gens.Client.Desktop.Tests/` | Native application-flow, lifecycle, save/load, determinism, and architecture tests |
 | `tests/Gens.Application.Tests/` | Standalone integration tests for the shared campaign session |
@@ -72,7 +64,7 @@ On top of that foundation, characters and Familia households; land, goods,
 buildings, villas, and labor with a production network; background
 population groups and employment; the household ledger, market, and debt/
 contract system; the action/standing-policy layer and event/report
-projections; a Unity application shell and adapters exposing a playable
+projections; an application shell and adapters exposing a playable
 loop (household roster, estate/settlement, monthly report, and character
 detail screens, with confirmations, pause/advance, save/load, and
 deterministic-replay diagnostics); autonomous rival houses and steward/

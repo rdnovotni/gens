@@ -21,7 +21,7 @@ namespace Gens.Simulation.Epithets;
 /// Agnomen and a Dynastic Epithet both key off <em>this same month's own newly-recorded</em> <see
 /// cref="ChronicleEntry"/> records, which only exist once <see cref="ChronicleGenerationSystem.Generate"/>
 /// has already run — so this is invoked immediately after it, at the same call sites (the
-/// content-compiler CLI's <c>AdvanceCommand</c> and the Unity shell's own <c>CampaignShell.Submit</c>/
+/// content-compiler CLI's <c>AdvanceCommand</c> and the application shell's own <c>CampaignShell.Submit</c>/
 /// <c>CampaignShell.AdvanceMonth</c>), over the concatenation of the tick's own events and the Chronicle
 /// events they produced.
 ///

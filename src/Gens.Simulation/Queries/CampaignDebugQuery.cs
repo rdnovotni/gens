@@ -33,7 +33,7 @@ public sealed record CampaignDebugSnapshot(
     ulong StateHash);
 
 /// <summary>Worked debug-inspector example (ADR 0013's read-boundary discipline, applied even in a
-/// console/CLI context rather than Unity UI): every field is read from <see cref="WorldState"/>'s
+/// console/CLI context rather than the graphical UI): every field is read from <see cref="WorldState"/>'s
 /// existing public partitions, never a bespoke traversal.</summary>
 public sealed class CampaignDebugQuery : IWorldQuery<CampaignDebugSnapshot>
 {

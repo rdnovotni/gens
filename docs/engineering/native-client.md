@@ -1,8 +1,8 @@
 # Gens native desktop client
 
-`src/Gens.Client.Desktop` is the primary target for new presentation development. It is a .NET 10 native executable composed from the production SDL platform backend, Skia graphics backend, runtime host, retained UI, engine-neutral presentation layer, and `Gens.Application`.
+`src/Gens.Client.Desktop` is the primary and only client for presentation development. It is a .NET 10 native executable composed from the production SDL platform backend, Skia graphics backend, runtime host, retained UI, engine-neutral presentation layer, and `Gens.Application`.
 
-Unity remains a supported transitional client until every retirement gate in ADR 0014 passes.
+Gens previously shipped a Unity 6.3 LTS client during the migration to this native runtime; Unity has since been fully retired, per [ADR 0014](adr/0014-custom-runtime-and-native-client.md).
 
 ## Architecture
 
@@ -19,7 +19,7 @@ composition root only:
 
 `Program.cs` creates paths, controller, SDL, Skia, the desktop application, and `RuntimeHost`. `DesktopApplicationController` owns navigation and at most one `CampaignSession`. Replacing or abandoning a campaign drops the old presentation gateway and its snapshots. Screens never retain domain objects.
 
-`CampaignPresentation` performs query-to-view-model mapping for the Ink Bar, roster, character detail, estate, monthly report, and action confirmations. Pure mapping lives in `ProjectionMappers`; the transitional Unity adapters delegate to it. Presentation references no Unity, SDL, Skia, or concrete UI control.
+`CampaignPresentation` performs query-to-view-model mapping for the Ink Bar, roster, character detail, estate, monthly report, and action confirmations. Pure mapping lives in `ProjectionMappers`. Presentation references no SDL, Skia, or concrete UI control.
 
 Screens refresh only when entered or after a command, month advance, save/load lifecycle event, or settings change. Rendering consumes retained snapshots and never queries the simulation per frame. The gameplay shell retains one Ink Bar while the screen host changes. Runtime dirty rendering returns to event wait after each change.
 
@@ -69,4 +69,4 @@ Implemented settings are UI scale (100–200%), Master/Music/Ambience/Effects/UI
 - [x] Return to Main Menu with session clearing
 - [x] Developer console and hash/replay diagnostics
 
-Procedural raster portraits, Scene2D, production service foundations, and self-contained package automation are present. A real audio device/codec backend, full Windows UI Automation provider, macOS/Linux accessibility bridges, packaged universal font fallback, cross-platform SDL payload validation, signing, and Unity retirement remain later roadmap work.
+Procedural raster portraits, Scene2D, production service foundations, and self-contained package automation are present. A real audio device/codec backend, full Windows UI Automation provider, macOS/Linux accessibility bridges, packaged universal font fallback, cross-platform SDL payload validation, and signing remain later roadmap work.

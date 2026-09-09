@@ -31,7 +31,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: OS, Unity version, .NET version, and any other relevant details.
+      description: OS, .NET version, and any other relevant details.
   - type: textarea
     id: logs
     attributes:

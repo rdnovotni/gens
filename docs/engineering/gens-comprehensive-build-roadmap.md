@@ -14,10 +14,13 @@
 > complete below (`WorldState`, saves, content, characters, production,
 > economy, delegation, dynasty continuity, institutions, and everything else
 > through Phase 15) remains built, valid, and does not need to be redone or
-> restarted. Future presentation/runtime work — the Unity shell, the eventual
-> native client, and everything in between — should follow the dedicated
-> [native-runtime migration roadmap](gens-native-runtime-roadmap.md) rather
-> than this document; this roadmap remains authoritative for gameplay/
+> restarted. **Update (2026-09-08): the Unity migration is complete — Unity
+> has been fully retired and removed from the repository; the native client
+> is now the sole supported client.** Historical mentions of Unity below
+> describe the state at the original audit point and during the migration,
+> not the current state. Future presentation/runtime work should follow the
+> dedicated [native-runtime migration roadmap](gens-native-runtime-roadmap.md)
+> rather than this document; this roadmap remains authoritative for gameplay/
 > simulation systems and continues to track Phase 16 onward for that work.
 > Historical audit text below (the original "Stack selection: Settled"
 > assessment included) is left intact as a record of what was true at the
