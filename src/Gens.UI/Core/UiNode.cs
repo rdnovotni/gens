@@ -155,6 +155,7 @@ public abstract class UiNode
 
     internal void RaisePointer(UiPointerEvent evt) { evt.CurrentTarget = this; OnPointerEvent(evt); PointerEvent?.Invoke(evt); }
     internal void RaiseKey(UiKeyEvent evt) { OnKeyEvent(evt); KeyEvent?.Invoke(evt); }
+    internal void RaiseTextInput(string text) { if (IsEnabled) OnTextInput(text); }
     internal IEnumerable<UiNode> AncestorsAndSelf() { for (UiNode? current = this; current is not null; current = current.Parent) yield return current; }
     internal bool IsDescendantOf(UiNode possibleAncestor) { for (UiNode? current = Parent; current is not null; current = current.Parent) if (current == possibleAncestor) return true; return false; }
     internal string DebugPath => string.Join("/", AncestorsAndSelf().Reverse().Select(static n => n.Name ?? n.GetType().Name));
@@ -169,6 +170,7 @@ public abstract class UiNode
     protected virtual void PaintOverride(ICanvas2D canvas) { }
     protected virtual void OnPointerEvent(UiPointerEvent evt) { }
     protected virtual void OnKeyEvent(UiKeyEvent evt) { }
+    protected virtual void OnTextInput(string text) { }
     private Size2 LastMeasureConstraint { get; set; }
     private Rect LastArrangeRect { get; set; }
     private IReadOnlyList<UiNode> OrderedChildren

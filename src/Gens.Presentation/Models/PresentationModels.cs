@@ -21,3 +21,5 @@ public sealed record MonthlyReportModel(
     string Date, string Income, string Expenses, string Net,
     IReadOnlyList<ReportHeadlineModel> Headlines, IReadOnlyList<string> AutomationSummaries);
 public sealed record ConfirmationModel(CampaignHouseholdAction Action, string Title, string Body, bool IsWaxSeal, bool IsAvailable, string? ErrorCode);
+public sealed record SaveSlotRowModel(string SlotId, string DisplayName, bool IsQuicksave, bool Exists, string LastSavedDisplay, string PlaytimeDisplay);
+public sealed record SaveBrowserModel(IReadOnlyList<SaveSlotRowModel> Slots);

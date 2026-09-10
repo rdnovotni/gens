@@ -136,6 +136,63 @@ public sealed class DesktopApplicationFlowTests
     }
 
     [Test]
+    public void SaveAsCreatesAnIndependentlyLoadableSlotDistinctFromQuicksave()
+    {
+        app.StartNew("latium", "standard", 31); app.AdvanceMonth(); ulong saved = app.StateHash!.Value;
+        app.SaveAs("The Aemilii"); app.ConfirmModal();
+        Gens.Client.Desktop.Saves.SaveSlotMetadata namedSlot = app.SaveSlots.Single(s => !s.IsQuicksave);
+        Assert.Multiple(() => { Assert.That(namedSlot.DisplayName, Is.EqualTo("The Aemilii")); Assert.That(namedSlot.FileName, Is.Not.EqualTo("quicksave.gens")); });
+
+        app.RequestMainMenu(); app.ConfirmModal(); app.LoadSlot(namedSlot.SlotId);
+        Assert.Multiple(() => { Assert.That(app.HasActiveCampaign, Is.True); Assert.That(app.StateHash, Is.EqualTo(saved)); });
+    }
+
+    [Test]
+    public void DeleteSlotRemovesFileAndIndexEntryButRefusesOnQuicksave()
+    {
+        app.StartNew("latium", "standard", 32); app.SaveAs("Temporary"); app.ConfirmModal();
+        Gens.Client.Desktop.Saves.SaveSlotMetadata namedSlot = app.SaveSlots.Single(s => !s.IsQuicksave);
+        app.DeleteSlot(namedSlot.SlotId);
+        Assert.That(app.SaveSlots.Any(s => s.SlotId == namedSlot.SlotId), Is.False);
+
+        app.Save(); app.ConfirmModal();
+        Gens.Client.Desktop.Saves.SaveSlotMetadata quicksave = app.SaveSlots.Single(s => s.IsQuicksave);
+        app.DeleteSlot(quicksave.SlotId);
+        Assert.That(app.SaveSlots.Any(s => s.IsQuicksave), Is.True);
+    }
+
+    [Test]
+    public void LoadingAChecksumCorruptedSaveSurfacesRecoveryModalInsteadOfCrashing()
+    {
+        app.StartNew("latium", "standard", 33); app.SaveAs("Corruptible"); app.ConfirmModal();
+        Gens.Client.Desktop.Saves.SaveSlotMetadata namedSlot = app.SaveSlots.Single(s => !s.IsQuicksave);
+        string path = Path.Combine(directory, "saves", namedSlot.FileName);
+        using (var archive = System.IO.Compression.ZipFile.Open(path, System.IO.Compression.ZipArchiveMode.Update))
+        {
+            var entry = archive.GetEntry(Gens.Simulation.Saves.SaveFormat.WorldEntry)!;
+            using var stream = entry.Open(); stream.SetLength(0);
+            byte[] corrupted = System.Text.Encoding.UTF8.GetBytes("{\"corrupted\":true}");
+            stream.Write(corrupted, 0, corrupted.Length);
+        }
+
+        app.LoadSlot(namedSlot.SlotId);
+        Assert.That(app.Modal?.Kind, Is.EqualTo(ModalKind.SaveRecovery));
+    }
+
+    [Test]
+    public void PlaytimeAccumulatesAcrossSavesAndAttributesOnlyUnaccountedTime()
+    {
+        app.StartNew("latium", "standard", 34);
+        app.AccumulatePlaytime(TimeSpan.FromMinutes(2)); app.SaveAs("First"); app.ConfirmModal();
+        Gens.Client.Desktop.Saves.SaveSlotMetadata first = app.SaveSlots.Single(s => !s.IsQuicksave);
+        Assert.That(first.PlaytimeSeconds, Is.EqualTo(120));
+
+        app.AccumulatePlaytime(TimeSpan.FromMinutes(3)); app.Save(); app.ConfirmModal();
+        Gens.Client.Desktop.Saves.SaveSlotMetadata quicksave = app.SaveSlots.Single(s => s.IsQuicksave);
+        Assert.That(quicksave.PlaytimeSeconds, Is.EqualTo(180));
+    }
+
+    [Test]
     public void DeveloperConsoleUsesSessionDiagnosticsAndCommands()
     {
         app.StartNew("latium", "standard"); string hash = app.ExecuteConsoleCommand("hash"); string replay = app.ExecuteConsoleCommand("replay"); string query = app.ExecuteConsoleCommand("query roster"); string submit = app.ExecuteConsoleCommand("submit rites");

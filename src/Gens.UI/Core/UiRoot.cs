@@ -49,6 +49,7 @@ public sealed class UiRoot : UiNode
             case PointerButtonEvent button when button.Button == PointerButton.Primary: ReleasePointer(new(button.Position.X / UiScale, button.Position.Y / UiScale)); break;
             case WheelEvent wheel: Route(HitTarget(new(wheel.Position.X / UiScale, wheel.Position.Y / UiScale)), new(UiPointerEventType.Wheel, new(wheel.Position.X / UiScale, wheel.Position.Y / UiScale), delta: wheel.Delta)); break;
             case KeyboardEvent key when key.IsDown: HandleKey(new(key.Key, key.Modifiers, key.IsRepeat)); break;
+            case TextInputEvent text: HandleTextInput(text.Text); break;
         }
     }
 
@@ -89,6 +90,7 @@ public sealed class UiRoot : UiNode
         }
     }
 
+    public void HandleTextInput(string text) { if (Focus.FocusedNode is UiNode focused) { try { focused.RaiseTextInput(text); } catch (Exception ex) { throw new UiInputException($"Text input handler failed for {focused.DebugPath}.", ex); } } }
     public void CapturePointer(UiNode node) { if (node.Root != this) throw new InvalidOperationException("Pointer capture target must belong to this root."); captured = node; }
     public void ReleasePointerCapture(UiNode node) { if (captured == node) captured = null; }
     public void ShowModal(UiNode node)

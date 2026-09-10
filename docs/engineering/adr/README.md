@@ -47,6 +47,14 @@ mutable domain reference — is generalized in ADR 0014's terminology from
 Accepted status, are unchanged. The future native client is bound by the same
 boundary Unity is bound by today.
 
+## ADR 0020 — save slot metadata storage
+
+[ADR 0020](0020-save-slot-metadata.md) records where player-facing save-slot
+metadata (display name, last-saved time, playtime) lives: a single
+versioned, atomically-written `saves/index.json` owned by the desktop
+client, reconciled against the saves directory on every load, entirely
+outside the checksummed `.gens` archive ADR 0010 governs.
+
 ## Relationship to the other Phase 1 artifacts
 
 - The [design authority registry](../../gens-design-authority-registry.md) is the map these ADRs were built from — each ADR's Context section cites the specific registry cluster or design-document section it grounds a decision in.

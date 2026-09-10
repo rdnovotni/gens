@@ -197,6 +197,15 @@ vertical slice for the core playable loop.
   month advancement — mirroring ADR 0014 retirement gates 6–13.
 - Save/load through the native client against existing `.gens` saves.
 
+**Completion update (save UX):** the native client's save/load surfaced only
+a single hardcoded quicksave slot. It now supports multiple named save
+slots, a save browser (name, last-saved time, playtime per slot), manual
+"Save As" naming, save deletion, and migration/corrupted-save recovery UX —
+see [ADR 0020](adr/0020-save-slot-metadata.md) for where slot metadata is
+stored. Cloud synchronization remains explicitly out of scope: there is no
+platform-SDK or cloud-provider abstraction anywhere in the client, and
+adding one is a separate future epic, not part of this slice.
+
 **Prerequisites:** Phase NR3.
 
 **Exit gate:** ADR 0014 retirement gates 1–13 pass for the native client.

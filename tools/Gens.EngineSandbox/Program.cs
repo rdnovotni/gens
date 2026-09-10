@@ -127,6 +127,11 @@ internal sealed class UiSandboxApplication(IGraphicsBackend graphics, bool smoke
         actions.AddChild(new Toggle { Name = "ShowLineageToggle", Content = new TextBlock { Text = "Lineage", TypographyRole = TypographyRole.Button, Foreground = new Color(245, 229, 195) } });
         actions.AddChild(new WaxSealButton { Name = "AdvanceSeal", Content = new TextBlock { Text = "+", TypographyRole = TypographyRole.Heading, Foreground = Color.White }, Clicked = () => Console.WriteLine("Wax seal activated.") });
         leftContent.AddChild(actions);
+        var textFields = new Row { Name = "TextFieldGallery", Spacing = 10 };
+        textFields.AddChild(new TextField { Name = "TextFieldEmpty", Width = 160, Placeholder = "Save name…", Semantics = { Label = "Empty text field with placeholder" } });
+        textFields.AddChild(new TextField { Name = "TextFieldTyped", Width = 160, Text = "The Aemilii", Semantics = { Label = "Text field with typed content" } });
+        textFields.AddChild(new TextField { Name = "TextFieldDisabled", Width = 160, Text = "Locked", IsEnabled = false, Semantics = { Label = "Disabled text field" } });
+        leftContent.AddChild(textFields);
         ResolvedPortrait portrait = portraits.Resolve(SampleVisual(), 128);
         var gallery = new Row { Name = "PortraitGallery", Spacing = 8 };
         for (int variant = 0; variant < 4; variant++)

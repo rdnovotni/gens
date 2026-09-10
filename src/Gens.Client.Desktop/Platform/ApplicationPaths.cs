@@ -13,6 +13,7 @@ public interface IApplicationPaths
     string Mods { get; }
     string SettingsFile { get; }
     string Quicksave { get; }
+    string SaveIndexFile { get; }
     void EnsureRequiredDirectories();
     string ResolveSafePath(string root, string untrustedRelativePath);
 }
@@ -25,6 +26,7 @@ public sealed class DesktopApplicationPaths : IApplicationPaths
         Saves = Child("saves"); Settings = Child("settings"); Logs = Child("logs"); Cache = Child("cache");
         GeneratedArt = Child("generated-art"); Screenshots = Child("screenshots"); CrashReports = Child("crash-reports"); Mods = Child("mods");
         SettingsFile = Path.Combine(Settings, "settings.json"); Quicksave = Path.Combine(Saves, "quicksave.gens");
+        SaveIndexFile = Path.Combine(Saves, "index.json");
     }
 
     public string UserData { get; }
@@ -38,6 +40,7 @@ public sealed class DesktopApplicationPaths : IApplicationPaths
     public string Mods { get; }
     public string SettingsFile { get; }
     public string Quicksave { get; }
+    public string SaveIndexFile { get; }
 
     public void EnsureRequiredDirectories()
     {
