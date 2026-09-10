@@ -24,18 +24,31 @@ public sealed class UiTheme(IGraphicsBackend graphics)
 
 public static class GensTheme
 {
-    public static UiTheme Create(IGraphicsBackend graphics, IFontFace bodyFont, IFontFace? displayFont = null, bool highContrast = false)
+    public static UiTheme Create(IGraphicsBackend graphics, IFontFace bodyFont, IFontFace? displayFont = null, bool highContrast = false, bool colorblindSafe = false)
     {
         displayFont ??= bodyFont;
         var theme = new UiTheme(graphics);
         if (highContrast)
         {
+            // The high-contrast palette's black/white/yellow/blue extremes are already colorblind-safe by
+            // construction, so colorblindSafe is intentionally ignored when highContrast is also set.
             theme.Button = new(new(0, 0, 0), new(255, 255, 255), new(255, 255, 255), new(35, 35, 35), new(70, 70, 70), new(90, 90, 90), new(255, 221, 0), 2, 3, new(12, 7));
             theme.Panel = new(new(255, 255, 255), new(0, 0, 0), new(0, 0, 0), new(255, 255, 255), new(255, 255, 255), new(110, 110, 110), new(0, 70, 255), 2, 3, new(12));
             theme.TextField = new(new(0, 0, 0), new(255, 255, 255), new(255, 255, 255), new(35, 35, 35), new(35, 35, 35), new(90, 90, 90), new(255, 221, 0), 2, 3, new(10, 6));
         }
+        else if (colorblindSafe)
+        {
+            // Okabe-Ito blue/orange in place of the default red-brown wax/gold pairing, which is a weak
+            // distinction under red-green color-vision deficiency. Structure (luminance, roles) mirrors the
+            // default palette below; only the hue-coded wax/gold/focus colors change.
+            theme.Button = new(new(45, 62, 80), new(255, 244, 224), new(23, 34, 46), new(64, 88, 112), new(34, 48, 63), new(95, 88, 78), new(230, 159, 0), 1, 5, new(12, 7));
+            theme.Panel = new(new(226, 205, 164), new(46, 35, 28), new(95, 67, 44), new(226, 205, 164), new(226, 205, 164), new(150, 140, 125), new(230, 159, 0), 1, 6, new(12));
+            theme.TextField = new(new(20, 18, 16), new(245, 229, 195), new(95, 67, 44), new(30, 27, 24), new(30, 27, 24), new(60, 55, 48), new(230, 159, 0), 1, 4, new(10, 6));
+        }
         theme.SetColor("Ink", new(46, 35, 28)); theme.SetColor("Parchment", new(226, 205, 164)); theme.SetColor("ParchmentLight", new(245, 229, 195));
-        theme.SetColor("Wax", new(133, 48, 39)); theme.SetColor("WaxHover", new(160, 59, 46)); theme.SetColor("Gold", new(190, 142, 54)); theme.SetColor("MutedInk", new(105, 91, 74));
+        if (colorblindSafe && !highContrast) { theme.SetColor("Wax", new(0, 114, 178)); theme.SetColor("WaxHover", new(26, 140, 204)); theme.SetColor("Gold", new(230, 159, 0)); }
+        else { theme.SetColor("Wax", new(133, 48, 39)); theme.SetColor("WaxHover", new(160, 59, 46)); theme.SetColor("Gold", new(190, 142, 54)); }
+        theme.SetColor("MutedInk", new(105, 91, 74));
         theme.SetTypography(TypographyRole.Body, new(bodyFont, 17, 23));
         theme.SetTypography(TypographyRole.Caption, new(bodyFont, 14, 19));
         theme.SetTypography(TypographyRole.SmallCaption, new(bodyFont, 12, 16));

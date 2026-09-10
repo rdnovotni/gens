@@ -158,7 +158,7 @@ public sealed class DesktopApplicationController
     {
         SaveSlotMetadata? slot = saveIndex.Current.Slots.FirstOrDefault(s => string.Equals(s.SlotId, slotId, StringComparison.Ordinal));
         if (slot is null || slot.IsQuicksave) return;
-        Modal = new(ModalKind.Confirmation, "Delete Save", $"Permanently delete '{slot.DisplayName}'? This cannot be undone.", SlotId: slotId);
+        Modal = new(ModalKind.WaxSeal, "Delete Save", $"Permanently delete '{slot.DisplayName}'? This cannot be undone.", SlotId: slotId);
     }
 
     public void DeleteSlot(string slotId)
@@ -202,7 +202,7 @@ public sealed class DesktopApplicationController
         ModalState? pending = Modal; Modal = null;
         if (pending?.Kind is ModalKind.PrivacyConsent or ModalKind.CrashRecovery) return;
         if (returnToMenuPending) { returnToMenuPending = false; ConfirmMainMenu(); return; }
-        if (pending is { Kind: ModalKind.Confirmation, SlotId: { } deleteSlotId, Action: null }) { DeleteSlot(deleteSlotId); return; }
+        if (pending is { Kind: ModalKind.WaxSeal, SlotId: { } deleteSlotId, Action: null }) { DeleteSlot(deleteSlotId); return; }
         if (pending?.Action is not { } action) return;
         CommandResult result = RequireCampaign().SubmitAction(action);
         telemetry.Record(result.Accepted ? BalanceMetric.CommandAccepted : BalanceMetric.CommandRejected);
@@ -212,7 +212,7 @@ public sealed class DesktopApplicationController
     }
 
     public void CancelModal() { Modal = null; returnToMenuPending = false; }
-    public void RequestMainMenu() { returnToMenuPending = true; Modal = new(ModalKind.Confirmation, "Return to Main Menu", "Unsaved progress will be lost unless you save first."); }
+    public void RequestMainMenu() { returnToMenuPending = true; Modal = new(ModalKind.WaxSeal, "Return to Main Menu", "Unsaved progress will be lost unless you save first."); }
     public void ConfirmMainMenu()
     {
         CurrentCampaign = null; Presentation = null; SelectedCharacterId = null; lastReportEvents = Array.Empty<IDomainEvent>(); Modal = null; CurrentScreen = ScreenId.MainMenu; Log("Campaign session cleared; returned to main menu.");
@@ -227,6 +227,7 @@ public sealed class DesktopApplicationController
     public void SetUiScale(float scale) => UpdateSettings(Settings with { Display = Settings.Display with { UiScale = scale } }, "Display");
     public void SetReducedMotion(bool value) => UpdateSettings(Settings with { Accessibility = Settings.Accessibility with { ReducedMotion = value, Motion = value ? MotionMode.Reduced : MotionMode.Full } }, "Accessibility");
     public void SetHighContrast(bool value) => UpdateSettings(Settings with { Accessibility = Settings.Accessibility with { HighContrast = value } }, "Accessibility");
+    public void SetColorblindSafe(bool value) => UpdateSettings(Settings with { Accessibility = Settings.Accessibility with { ColorblindSafe = value } }, "Accessibility");
     public void SetLocale(string locale) => UpdateSettings(Settings with { Language = Settings.Language with { Locale = locale } }, "Language");
     public void SetConsoleEnabled(bool value) => UpdateSettings(Settings with { Developer = Settings.Developer with { ConsoleEnabled = value } }, "Developer");
     public void SetAiArtEnabled(bool value) => UpdateSettings(Settings with { Art = Settings.Art with { AiGenerationEnabled = value, Provider = value ? "mock" : "none" } }, "Art");

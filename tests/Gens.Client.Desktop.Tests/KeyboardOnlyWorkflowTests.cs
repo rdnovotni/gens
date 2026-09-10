@@ -96,8 +96,12 @@ public sealed class KeyboardOnlyWorkflowTests : IDisposable
         TabTo("OK"); Activate();
 
         TabTo("Menu"); Activate();
-        Assert.That(controller.Modal?.Title, Is.EqualTo("Return to Main Menu"));
-        TabTo("Confirm"); Activate();
+        Assert.Multiple(() =>
+        {
+            Assert.That(controller.Modal?.Title, Is.EqualTo("Return to Main Menu"));
+            Assert.That(controller.Modal?.Kind, Is.EqualTo(ModalKind.WaxSeal));
+        });
+        TabTo("Seal"); Activate();
         Assert.Multiple(() =>
         {
             Assert.That(controller.HasActiveCampaign, Is.False);

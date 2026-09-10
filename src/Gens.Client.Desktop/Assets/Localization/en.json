@@ -34,6 +34,7 @@
   "settings.accessibility": "Accessibility",
   "settings.reduced_motion": "Reduced motion",
   "settings.high_contrast": "High contrast",
+  "settings.colorblind_safe": "Colorblind-safe palette",
   "settings.language": "Language",
   "settings.english": "English",
   "settings.pseudo": "Pseudo-localization",
