@@ -104,6 +104,17 @@ public static class CampaignBootstrapper
     /// and discovery-risk advancement themselves are deterministic formulas and draw no random numbers.</summary>
     public const string SchemeProgressStreamName = "interactions.schemeProgress";
 
+    /// <summary>The named random stream <see cref="Interactions.SpyPlacementProgressSystem"/> reserves
+    /// for its monthly resolution rolls (Discovery, then Traceability once discovered — Phase 16 item
+    /// 1), kept distinct from every other stream here for the same rule-8 reason. Discovery-risk
+    /// advancement itself is a deterministic formula and draws no random numbers.</summary>
+    public const string SpyPlacementProgressStreamName = "interactions.spyPlacementProgress";
+
+    /// <summary>The named random stream <see cref="Interactions.CounterEspionageSweepCommands"/>
+    /// reserves for its own catch roll (Phase 16 item 1), kept distinct from <see
+    /// cref="SpyPlacementProgressStreamName"/> for the same rule-8 reason.</summary>
+    public const string CounterEspionageSweepStreamName = "interactions.counterEspionageSweep";
+
     /// <summary>The named random stream <see cref="Stewardship.StewardAutonomousDecisionSystem"/>
     /// reserves for its monthly steward/Council Loyalty-risk and incident-type rolls (Phase 10 package
     /// 13; <c>gens-steward-council-auto-management-design.md</c> §6), kept distinct from every other
@@ -209,6 +220,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(RivalAmbitionStreamName, config.Seed);
         streams.AddDerived(ActorExtinctionStreamName, config.Seed);
         streams.AddDerived(SchemeProgressStreamName, config.Seed);
+        streams.AddDerived(SpyPlacementProgressStreamName, config.Seed);
+        streams.AddDerived(CounterEspionageSweepStreamName, config.Seed);
         streams.AddDerived(StewardLoyaltyRiskStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeTriggerStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeScoringStreamName, config.Seed);

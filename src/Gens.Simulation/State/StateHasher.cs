@@ -71,6 +71,7 @@ public static class StateHasher
         hash = MixLong(hash, state.HoldingIds.Peek);
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
         hash = MixLong(hash, state.SchemeIds.Peek);
+        hash = MixLong(hash, state.SpyPlacementIds.Peek);
         hash = MixLong(hash, state.SuccessionDisputeIds.Peek);
         hash = MixLong(hash, state.FuneralRecordIds.Peek);
         hash = MixLong(hash, state.AgnomenIds.Peek);
@@ -317,6 +318,10 @@ public static class StateHasher
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.Schemes.InAscendingOrder())
             hash = MixScheme(hash, entry.Value);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.SpyPlacements.InAscendingOrder())
+            hash = MixSpyPlacement(hash, entry.Value);
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.ReturnReports.InAscendingOrder())
@@ -1315,6 +1320,24 @@ public static class StateHasher
         hash = MixLong(hash, scheme.DiscoveryRisk);
         hash = MixLong(hash, scheme.InitiatedDate.TotalMonths);
         hash = MixLong(hash, scheme.LastProgressedDate.TotalMonths);
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="Interactions.SpyPlacement"/>'s full state, in field-declaration
+    /// order (Phase 16 item 1).</summary>
+    private static ulong MixSpyPlacement(ulong hash, SpyPlacement placement)
+    {
+        hash = MixLong(hash, placement.PlacementId.Value);
+        hash = MixLong(hash, placement.SpyCharacterId.Value);
+        hash = MixLong(hash, placement.SponsoringCharacterId.Value);
+        hash = MixLong(hash, placement.TargetActorId.Value);
+        hash = MixLong(hash, (long)placement.Type);
+        hash = MixLong(hash, (long)placement.Status);
+        hash = MixLong(hash, placement.ConcealmentQuality);
+        hash = MixLong(hash, placement.DiscoveryRisk);
+        hash = MixLong(hash, placement.MonthsActive);
+        hash = MixLong(hash, placement.PlacedDate.TotalMonths);
+        hash = MixLong(hash, placement.LastProgressedDate.TotalMonths);
         return hash;
     }
 

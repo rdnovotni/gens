@@ -752,6 +752,13 @@ public sealed record WorldSaveDocument
     /// cref="AggregateDemandReadings"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(117)]
     public IReadOnlyList<BusinessViabilityCheckDto> BusinessViabilityChecks { get; init; } = Array.Empty<BusinessViabilityCheckDto>();
+
+    /// <summary>Every <see cref="Interactions.SpyPlacement"/>, in-progress or resolved (Phase 16 item
+    /// 1), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and
+    /// defaults to empty, for the same additive-only reason as <see cref="BusinessViabilityChecks"/>
+    /// above.</summary>
+    [JsonPropertyOrder(118)]
+    public IReadOnlyList<SpyPlacementDto> SpyPlacements { get; init; } = Array.Empty<SpyPlacementDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -842,6 +849,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(19)]
     public long SchemeIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-16-item-1 save has no
+    /// SpyPlacements. Additive-only per ADR 0011's policy, matching <see cref="SchemeIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(63)]
+    public long SpyPlacementIds { get; init; }
 
     /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10-package-13 save has no Return
     /// Reports. Additive-only per ADR 0011's policy, matching <see cref="SchemeIds"/>'s identical
@@ -2375,6 +2388,43 @@ public sealed record SchemeDto
     public required int InitiatedDateTotalMonths { get; init; }
 
     [JsonPropertyOrder(8)]
+    public required int LastProgressedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Interactions.SpyPlacement"/> (Phase 16 item 1).</summary>
+public sealed record SpyPlacementDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PlacementId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string SpyCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string SponsoringCharacterId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string TargetActorId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string Type { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string Status { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int ConcealmentQuality { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int DiscoveryRisk { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int MonthsActive { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required int PlacedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(10)]
     public required int LastProgressedDateTotalMonths { get; init; }
 }
 

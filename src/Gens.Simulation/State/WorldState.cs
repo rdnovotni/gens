@@ -94,6 +94,7 @@ public sealed class WorldState
         RuntimeIdCounter<StewardshipAssignment> stewardshipAssignmentIds,
         RuntimeIdCounter<AutonomousDecisionLog> autonomousDecisionLogIds,
         RuntimeIdCounter<Scheme> schemeIds,
+        RuntimeIdCounter<SpyPlacement> spyPlacementIds,
         RuntimeIdCounter<ReturnReport> returnReportIds,
         RuntimeIdCounter<SuccessionDispute> successionDisputeIds,
         RuntimeIdCounter<ChronicleEntry> chronicleEntryIds,
@@ -166,6 +167,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<StewardshipAssignment>, StewardshipAssignment> stewardshipAssignments,
         OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> autonomousDecisionLogs,
         OrderedRegistry<RuntimeId<Scheme>, Scheme> schemes,
+        OrderedRegistry<RuntimeId<SpyPlacement>, SpyPlacement> spyPlacements,
         OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport> returnReports,
         OrderedRegistry<RuntimeId<Household>, HouseholdHeadship> householdHeadships,
         OrderedRegistry<RuntimeId<Household>, HeirDesignation> heirDesignations,
@@ -274,6 +276,7 @@ public sealed class WorldState
         StewardshipAssignmentIds = stewardshipAssignmentIds;
         AutonomousDecisionLogIds = autonomousDecisionLogIds;
         SchemeIds = schemeIds;
+        SpyPlacementIds = spyPlacementIds;
         ReturnReportIds = returnReportIds;
         SuccessionDisputeIds = successionDisputeIds;
         ChronicleEntryIds = chronicleEntryIds;
@@ -346,6 +349,7 @@ public sealed class WorldState
         StewardshipAssignments = stewardshipAssignments;
         AutonomousDecisionLogs = autonomousDecisionLogs;
         Schemes = schemes;
+        SpyPlacements = spyPlacements;
         ReturnReports = returnReports;
         HouseholdHeadships = householdHeadships;
         HeirDesignations = heirDesignations;
@@ -468,6 +472,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Interactions.Scheme"/> (Phase 10 item 6).</summary>
     public RuntimeIdCounter<Scheme> SchemeIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Interactions.SpyPlacement"/> (Phase 16 item 1).</summary>
+    public RuntimeIdCounter<SpyPlacement> SpyPlacementIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Stewardship.ReturnReport"/> (Phase 10 package 13).</summary>
     public RuntimeIdCounter<ReturnReport> ReturnReportIds { get; } = new();
@@ -765,6 +772,12 @@ public sealed class WorldState
     /// matching <see cref="EventInstances"/>' identical "resolved or not, kept for the campaign's
     /// lifetime" convention.</summary>
     public OrderedRegistry<RuntimeId<Scheme>, Scheme> Schemes { get; } = new();
+
+    /// <summary>Every <see cref="Interactions.SpyPlacement"/>, in-progress or resolved (Phase 16 item
+    /// 1), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once resolved rather than
+    /// removed, matching <see cref="Schemes"/>' identical "resolved or not, kept for the campaign's
+    /// lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<SpyPlacement>, SpyPlacement> SpyPlacements { get; } = new();
 
     /// <summary>Every <see cref="Stewardship.ReturnReport"/> ever produced when a <see
     /// cref="StewardshipAssignment"/> ended (Phase 10 package 13; design doc §10), in ascending-<see
@@ -1294,6 +1307,7 @@ public sealed class WorldState
         ["stewardshipAssignmentIds"] = StewardshipAssignmentIds.Peek,
         ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["schemeIds"] = SchemeIds.Peek,
+        ["spyPlacementIds"] = SpyPlacementIds.Peek,
         ["returnReportIds"] = ReturnReportIds.Peek,
         ["successionDisputeIds"] = SuccessionDisputeIds.Peek,
         ["chronicleEntryIds"] = ChronicleEntryIds.Peek,
@@ -1352,6 +1366,7 @@ public sealed class WorldState
         ["stewardshipAssignments"] = StewardshipAssignments.Version,
         ["autonomousDecisionLogs"] = AutonomousDecisionLogs.Version,
         ["schemes"] = Schemes.Version,
+        ["spyPlacements"] = SpyPlacements.Version,
         ["returnReports"] = ReturnReports.Version,
         ["householdHeadships"] = HouseholdHeadships.Version,
         ["heirDesignations"] = HeirDesignations.Version,

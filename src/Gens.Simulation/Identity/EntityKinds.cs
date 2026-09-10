@@ -330,6 +330,9 @@ internal static class RuntimeIdTagRegistry
         // SenateEntryInvestmentLog's identical exemption above.
         [typeof(PublicWork)] = "publicwork",
         [typeof(CompetitiveEuergetismEvent)] = "competitiveeuergetismevent",
+        // Phase 16 item 1 — Gens.Simulation.Interactions.SpyPlacement, same "real record as its own
+        // tag" convention as CompetitiveEuergetismEvent/PublicWork above.
+        [typeof(SpyPlacement)] = "spyplacement",
     };
 
     public static string Resolve(Type type) =>

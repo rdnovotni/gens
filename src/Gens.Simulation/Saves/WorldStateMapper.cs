@@ -92,6 +92,7 @@ public static class WorldStateMapper
                 StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
                 SchemeIds = state.SchemeIds.Peek,
+                SpyPlacementIds = state.SpyPlacementIds.Peek,
                 ReturnReportIds = state.ReturnReportIds.Peek,
                 SuccessionDisputeIds = state.SuccessionDisputeIds.Peek,
                 ChronicleEntryIds = state.ChronicleEntryIds.Peek,
@@ -192,6 +193,8 @@ public static class WorldStateMapper
             AutonomousDecisionLogs = state.AutonomousDecisionLogs.InAscendingOrder().Select(entry => ToAutonomousDecisionLogDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             Schemes = state.Schemes.InAscendingOrder().Select(entry => ToSchemeDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            SpyPlacements = state.SpyPlacements.InAscendingOrder().Select(entry => ToSpyPlacementDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ReturnReports = state.ReturnReports.InAscendingOrder().Select(entry => ToReturnReportDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
@@ -564,6 +567,13 @@ public static class WorldStateMapper
             {
                 var scheme = FromSchemeDto(s);
                 return new KeyValuePair<RuntimeId<Scheme>, Scheme>(scheme.SchemeId, scheme);
+            }));
+
+        var spyPlacements = OrderedRegistry<RuntimeId<SpyPlacement>, SpyPlacement>.Restore(
+            dto.SpyPlacements.Select(s =>
+            {
+                var placement = FromSpyPlacementDto(s);
+                return new KeyValuePair<RuntimeId<SpyPlacement>, SpyPlacement>(placement.PlacementId, placement);
             }));
 
         var returnReports = OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport>.Restore(
@@ -1166,6 +1176,7 @@ public static class WorldStateMapper
             stewardshipAssignmentIds: RuntimeIdCounter<StewardshipAssignment>.Restore(dto.Counters.StewardshipAssignmentIds),
             autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
             schemeIds: RuntimeIdCounter<Scheme>.Restore(dto.Counters.SchemeIds),
+            spyPlacementIds: RuntimeIdCounter<SpyPlacement>.Restore(dto.Counters.SpyPlacementIds),
             returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
             successionDisputeIds: RuntimeIdCounter<SuccessionDispute>.Restore(dto.Counters.SuccessionDisputeIds),
             chronicleEntryIds: RuntimeIdCounter<ChronicleEntry>.Restore(dto.Counters.ChronicleEntryIds),
@@ -1238,6 +1249,7 @@ public static class WorldStateMapper
             stewardshipAssignments: stewardshipAssignments,
             autonomousDecisionLogs: autonomousDecisionLogs,
             schemes: schemes,
+            spyPlacements: spyPlacements,
             returnReports: returnReports,
             householdHeadships: householdHeadships,
             heirDesignations: heirDesignations,
@@ -3302,6 +3314,34 @@ public static class WorldStateMapper
         dto.Progress,
         dto.DiscoveryRisk,
         new GameDate(dto.InitiatedDateTotalMonths),
+        new GameDate(dto.LastProgressedDateTotalMonths));
+
+    private static SpyPlacementDto ToSpyPlacementDto(SpyPlacement placement) => new()
+    {
+        PlacementId = placement.PlacementId.ToTaggedString(),
+        SpyCharacterId = placement.SpyCharacterId.ToTaggedString(),
+        SponsoringCharacterId = placement.SponsoringCharacterId.ToTaggedString(),
+        TargetActorId = placement.TargetActorId.ToTaggedString(),
+        Type = placement.Type.ToString(),
+        Status = placement.Status.ToString(),
+        ConcealmentQuality = placement.ConcealmentQuality,
+        DiscoveryRisk = placement.DiscoveryRisk,
+        MonthsActive = placement.MonthsActive,
+        PlacedDateTotalMonths = placement.PlacedDate.TotalMonths,
+        LastProgressedDateTotalMonths = placement.LastProgressedDate.TotalMonths,
+    };
+
+    private static SpyPlacement FromSpyPlacementDto(SpyPlacementDto dto) => new(
+        RuntimeId<SpyPlacement>.Parse(dto.PlacementId),
+        RuntimeId<Character>.Parse(dto.SpyCharacterId),
+        RuntimeId<Character>.Parse(dto.SponsoringCharacterId),
+        RuntimeId<Actor>.Parse(dto.TargetActorId),
+        Enum.Parse<SpyPlacementType>(dto.Type),
+        Enum.Parse<SpyPlacementStatus>(dto.Status),
+        dto.ConcealmentQuality,
+        dto.DiscoveryRisk,
+        dto.MonthsActive,
+        new GameDate(dto.PlacedDateTotalMonths),
         new GameDate(dto.LastProgressedDateTotalMonths));
 
     private static ReturnReportDto ToReturnReportDto(ReturnReport report) => new()
