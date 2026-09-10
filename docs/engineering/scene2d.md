@@ -33,3 +33,6 @@ dotnet run --project benchmarks/Gens.Visual.Benchmarks -c Release
 On the 2026-09-07 Windows software-reference run, 1080p render averages were 1.123/1.998/4.282 ms for 100/500/1,000 nodes; 4K averages were 4.036/5.245/6.587 ms. Twelve animation-track updates averaged 0.030–0.265 ms. Approximate managed allocation per combined benchmark iteration ranged from 6.6 KB to 57 KB. These are development-machine observations, not release budgets.
 
 Current limitations: no material/shader system, arbitrary clipping nodes, particles, spatial index, or batching layer.
+
+See [mosaic map language](mosaic-map-language.md) for a design spec that
+would compose a map presentation on top of this layer; not yet implemented.

@@ -123,7 +123,10 @@ change invalidates measure through its ancestor chain. These measurements are
 diagnostic observations, not rigid cross-machine thresholds.
 
 See [UI virtualization notes](ui-virtualization-notes.md) for the deliberately
-deferred large-list control and compatibility contract.
+deferred large-list control and compatibility contract. See
+[geometric icon system](geometric-icon-system.md) and
+[gamepad navigation](gamepad-navigation.md) for design specs that extend this
+styling and focus model but are not yet implemented.
 
 ## Sandbox
 
