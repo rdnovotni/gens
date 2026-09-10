@@ -21,6 +21,7 @@ using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
+using Gens.Simulation.Military;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
@@ -338,6 +339,10 @@ internal static class RuntimeIdTagRegistry
         // already-registered RuntimeId<Household>, not by its own RuntimeId, matching
         // SenateEntryInvestmentLog's identical exemption above.
         [typeof(RaidThreat)] = "raidthreat",
+        // Phase 16 item 3 — persistent squads and deployments are runtime entities. EstateForce and
+        // MilitaryCaptivity reuse their settlement/character keys and need no independent tag.
+        [typeof(Squad)] = "squad",
+        [typeof(MilitaryDeployment)] = "militarydeployment",
     };
 
     public static string Resolve(Type type) =>
