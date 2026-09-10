@@ -7,7 +7,7 @@ public enum HorizontalAlignment { Start, Center, End, Stretch }
 public enum VerticalAlignment { Start, Center, End, Stretch }
 public enum Orientation { Horizontal, Vertical }
 public enum UiLengthKind { Auto, Fixed, Star }
-public enum AccessibilityRole { None, Group, Text, Image, Button, CheckBox, Toggle, Heading, List, ListItem, ScrollView, Dialog }
+public enum AccessibilityRole { None, Group, Text, Image, Button, CheckBox, Toggle, Heading, List, ListItem, ScrollView, Dialog, TextInput }
 public enum MotionMode { Full, Reduced, None }
 public enum MotionCategory { Essential, Informational, Decorative }
 public enum TextWrapping { NoWrap, Wrap }

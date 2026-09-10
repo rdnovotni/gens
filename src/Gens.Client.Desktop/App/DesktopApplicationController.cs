@@ -3,36 +3,42 @@ using Gens.Art;
 using Gens.Audio;
 using Gens.Client.Desktop.Diagnostics;
 using Gens.Client.Desktop.Platform;
+using Gens.Client.Desktop.Saves;
 using Gens.Client.Desktop.Settings;
 using Gens.Presentation;
 using Gens.Presentation.Models;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Saves;
+using Gens.Simulation.Saves.Migrations;
 using Gens.UI;
 
 namespace Gens.Client.Desktop.App;
 
-public enum ScreenId { MainMenu, NewGameSetup, Settings, Credits, HouseholdRoster, CharacterDetail, EstateSettlement, MonthlyReport }
-public enum ModalKind { None, Information, Confirmation, WaxSeal, PrivacyConsent, CrashRecovery }
-public sealed record ModalState(ModalKind Kind, string Title, string Body, CampaignHouseholdAction? Action = null);
+public enum ScreenId { MainMenu, NewGameSetup, Settings, Credits, HouseholdRoster, CharacterDetail, EstateSettlement, MonthlyReport, SaveBrowser }
+public enum ModalKind { None, Information, Confirmation, WaxSeal, PrivacyConsent, CrashRecovery, SaveRecovery }
+public sealed record ModalState(ModalKind Kind, string Title, string Body, CampaignHouseholdAction? Action = null, string? SlotId = null);
 
 /// <summary>Testable application/navigation coordinator. It owns exactly one session and only snapshot view models.</summary>
 public sealed class DesktopApplicationController
 {
     private readonly IApplicationPaths paths;
     private readonly SettingsService settingsService;
+    private readonly SaveIndexService saveIndex;
     private readonly PrivacyTelemetry telemetry;
     private readonly CrashReportStore crashReports;
     private readonly DiagnosticsExporter diagnosticsExporter;
     private IReadOnlyList<IDomainEvent> lastReportEvents = Array.Empty<IDomainEvent>();
     private ScreenId? backScreen;
     private bool returnToMenuPending;
+    private TimeSpan unaccountedPlaytime;
 
     public DesktopApplicationController(IApplicationPaths paths, AudioEngine? audio = null, Action<string, Exception?>? settingsLog = null)
     {
         this.paths = paths;
         paths.EnsureRequiredDirectories();
         settingsService = new(paths, settingsLog);
+        saveIndex = new(paths, settingsLog);
         Settings = settingsService.Current;
         telemetry = new(paths, Settings.Privacy.UsageTelemetry);
         crashReports = new(paths, Settings.Privacy.CrashReports);
@@ -59,7 +65,7 @@ public sealed class DesktopApplicationController
     public bool QuitRequested { get; private set; }
     public string? SelectedCharacterId { get; private set; }
     public IReadOnlyList<string> Logs => logs;
-    public bool HasSave => File.Exists(paths.Quicksave);
+    public bool HasSave => SlotExists(QuicksaveSlot());
     public ulong? StateHash => CurrentCampaign?.ComputeStateHash();
     public string PortraitCachePath => Path.Combine(paths.Cache, "visuals");
     public int PendingCrashReportCount => crashReports.PendingCount;
@@ -81,28 +87,98 @@ public sealed class DesktopApplicationController
         telemetry.Record(BalanceMetric.CampaignStarted);
     }
 
-    public void Load()
+    public IReadOnlyList<SaveSlotMetadata> SaveSlots => saveIndex.Current.Slots;
+    public SaveBrowserModel SaveBrowser() => SaveBrowserMapper.ToModel(
+        saveIndex.Current.Slots.Select(s => new SaveSlotSource(s.SlotId, s.DisplayName, s.IsQuicksave, SlotExists(s), s.LastSavedUtc, s.PlaytimeSeconds)));
+
+    public void Load() => LoadSlot(QuicksaveSlot().SlotId);
+
+    public void LoadSlot(string slotId)
     {
         try
         {
-            if (!HasSave) { ShowInformation("Load Campaign", "No valid quicksave exists yet."); return; }
-            ReplaceCampaign(CampaignSession.Load(paths.Quicksave, out var manifest)); lastReportEvents = Array.Empty<IDomainEvent>();
+            SaveSlotMetadata? slot = saveIndex.Current.Slots.FirstOrDefault(s => string.Equals(s.SlotId, slotId, StringComparison.Ordinal));
+            if (slot is null || !SlotExists(slot)) { ShowInformation("Load Campaign", "No valid save exists in that slot yet."); return; }
+            string path = paths.ResolveSafePath(paths.Saves, slot.FileName);
+            ReplaceCampaign(CampaignSession.Load(path, out var manifest)); lastReportEvents = Array.Empty<IDomainEvent>();
             CurrentScreen = ScreenId.HouseholdRoster; Log($"Campaign loaded: format={manifest.SaveFormatVersion}, game={manifest.GameVersion}.");
             telemetry.Record(BalanceMetric.CampaignLoaded);
+            if (manifest.SaveFormatVersion < SaveFormat.CurrentVersion)
+                ShowInformation("Save Updated", "This save was updated from an older version of Gens.");
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or NotSupportedException)
         { ShowInformation("Load Failed", ex.Message); Log($"Load failed: {ex.Message}"); telemetry.Record(BalanceMetric.LoadFailed); }
+        catch (SaveCorruptedException ex) { ShowSaveRecovery(slotId, "Save Corrupted", $"This save could not be verified and may be damaged: {ex.Message}"); Log($"Load failed (corrupted): {ex.Message}"); telemetry.Record(BalanceMetric.LoadFailed); }
+        catch (SaveMigrationException ex) { ShowSaveRecovery(slotId, "Save Cannot Be Opened", ex.Message); Log($"Load failed (migration): {ex.Message}"); telemetry.Record(BalanceMetric.LoadFailed); }
     }
 
-    public void Save()
+    public void Save() => SaveToSlot(QuicksaveSlot().SlotId, "Quicksave");
+
+    public void SaveToSlot(string slotId, string displayName)
     {
         try
         {
-            RequireCampaign().Save(paths.Quicksave, "0.1.0"); ShowInformation("Campaign Saved", $"Saved to {paths.Quicksave}."); Log("Campaign saved."); telemetry.Record(BalanceMetric.SaveSucceeded);
+            SaveSlotMetadata? existing = saveIndex.Current.Slots.FirstOrDefault(s => string.Equals(s.SlotId, slotId, StringComparison.Ordinal));
+            bool isQuicksave = existing?.IsQuicksave ?? string.Equals(slotId, SaveIndexService.QuicksaveSlotId, StringComparison.Ordinal);
+            string fileName = existing?.FileName ?? (isQuicksave ? "quicksave.gens" : $"{slotId}.gens");
+            string path = paths.ResolveSafePath(paths.Saves, fileName);
+            RequireCampaign().Save(path, "0.1.0");
+            saveIndex.Upsert(slotId, fileName, existing?.DisplayName ?? displayName, isQuicksave, unaccountedPlaytime);
+            unaccountedPlaytime = TimeSpan.Zero;
+            ShowInformation("Campaign Saved", $"Saved to '{existing?.DisplayName ?? displayName}'."); Log("Campaign saved."); telemetry.Record(BalanceMetric.SaveSucceeded);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         { ShowInformation("Save Failed", ex.Message); Log($"Save failed: {ex.Message}"); telemetry.Record(BalanceMetric.SaveFailed); }
     }
+
+    public void SaveAs(string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName)) { ShowInformation("Save Failed", "Enter a name for this save."); return; }
+        string slotId = $"save-{Guid.NewGuid():N}";
+        try
+        {
+            string fileName = $"{slotId}.gens";
+            string path = paths.ResolveSafePath(paths.Saves, fileName);
+            RequireCampaign().Save(path, "0.1.0");
+            saveIndex.Upsert(slotId, fileName, displayName.Trim(), isQuicksave: false, unaccountedPlaytime);
+            unaccountedPlaytime = TimeSpan.Zero;
+            ShowInformation("Campaign Saved", $"Saved as '{displayName.Trim()}'."); Log($"Campaign saved as new slot '{displayName}'."); telemetry.Record(BalanceMetric.SaveSucceeded);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        { ShowInformation("Save Failed", ex.Message); Log($"Save failed: {ex.Message}"); telemetry.Record(BalanceMetric.SaveFailed); }
+    }
+
+    public void RenameSlot(string slotId, string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(displayName)) return;
+        saveIndex.Rename(slotId, displayName.Trim());
+    }
+
+    public void RequestDeleteSlot(string slotId)
+    {
+        SaveSlotMetadata? slot = saveIndex.Current.Slots.FirstOrDefault(s => string.Equals(s.SlotId, slotId, StringComparison.Ordinal));
+        if (slot is null || slot.IsQuicksave) return;
+        Modal = new(ModalKind.Confirmation, "Delete Save", $"Permanently delete '{slot.DisplayName}'? This cannot be undone.", SlotId: slotId);
+    }
+
+    public void DeleteSlot(string slotId)
+    {
+        SaveSlotMetadata? slot = saveIndex.Current.Slots.FirstOrDefault(s => string.Equals(s.SlotId, slotId, StringComparison.Ordinal));
+        if (slot is null || slot.IsQuicksave) return;
+        try { string path = paths.ResolveSafePath(paths.Saves, slot.FileName); if (File.Exists(path)) File.Delete(path); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Log($"Could not delete save file for slot '{slotId}': {ex.Message}"); }
+        saveIndex.Remove(slotId);
+        Log($"Save slot deleted: {slot.DisplayName}.");
+    }
+
+    public void AccumulatePlaytime(TimeSpan delta) { if (HasActiveCampaign && delta > TimeSpan.Zero) unaccountedPlaytime += delta; }
+    public void RetryLoad(string slotId) { Modal = null; LoadSlot(slotId); }
+    public void DeleteRecoverySlot(string slotId) { Modal = null; DeleteSlot(slotId); }
+    public void DismissSaveRecovery() => Modal = null;
+
+    private SaveSlotMetadata QuicksaveSlot() => saveIndex.Current.Slots.First(static s => s.IsQuicksave);
+    private bool SlotExists(SaveSlotMetadata slot) { try { return File.Exists(paths.ResolveSafePath(paths.Saves, slot.FileName)); } catch (InvalidOperationException) { return false; } }
+    private void ShowSaveRecovery(string slotId, string title, string body) => Modal = new(ModalKind.SaveRecovery, title, body, SlotId: slotId);
 
     public void AdvanceMonth()
     {
@@ -126,6 +202,7 @@ public sealed class DesktopApplicationController
         ModalState? pending = Modal; Modal = null;
         if (pending?.Kind is ModalKind.PrivacyConsent or ModalKind.CrashRecovery) return;
         if (returnToMenuPending) { returnToMenuPending = false; ConfirmMainMenu(); return; }
+        if (pending is { Kind: ModalKind.Confirmation, SlotId: { } deleteSlotId, Action: null }) { DeleteSlot(deleteSlotId); return; }
         if (pending?.Action is not { } action) return;
         CommandResult result = RequireCampaign().SubmitAction(action);
         telemetry.Record(result.Accepted ? BalanceMetric.CommandAccepted : BalanceMetric.CommandRejected);
@@ -265,7 +342,7 @@ public sealed class DesktopApplicationController
         Audio.SetBusVolume(AudioBus.Effects, Settings.Audio.EffectsVolume); Audio.SetBusVolume(AudioBus.UI, Settings.Audio.UiVolume);
     }
     private static string RunConsole(Action action, string response) { action(); return response; }
-    private void ReplaceCampaign(CampaignSession session) { CurrentCampaign = session; Presentation = new(session); SelectedCharacterId = null; }
+    private void ReplaceCampaign(CampaignSession session) { CurrentCampaign = session; Presentation = new(session); SelectedCharacterId = null; unaccountedPlaytime = TimeSpan.Zero; }
     private CampaignSession RequireCampaign() => CurrentCampaign ?? throw new InvalidOperationException("No active campaign.");
     private CampaignPresentation RequirePresentation() => Presentation ?? throw new InvalidOperationException("No active campaign.");
     private void ShowInformation(string title, string body) => Modal = new(ModalKind.Information, title, body);

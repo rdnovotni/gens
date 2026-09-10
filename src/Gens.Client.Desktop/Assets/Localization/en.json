@@ -3,6 +3,7 @@
   "app.tagline": "A household through the ages",
   "menu.new_game": "New Game",
   "menu.load_game": "Load Game",
+  "menu.save_browser": "Save Browser",
   "menu.settings": "Settings",
   "menu.credits": "Credits",
   "menu.quit": "Quit",
@@ -70,5 +71,13 @@
   "estate.change_rites": "Change Rites Budget",
   "estate.festival": "Fête",
   "dialog.seal": "Seal",
-  "developer.console_title": "GENS DEVELOPER CONSOLE · help for commands · ` to close"
+  "developer.console_title": "GENS DEVELOPER CONSOLE · help for commands · ` to close",
+  "save_browser.title": "Save Browser",
+  "save_browser.name_placeholder": "Name this save…",
+  "save_browser.save_as": "Save As…",
+  "save_browser.load": "Load",
+  "save_browser.delete": "Delete",
+  "save_recovery.retry": "Retry",
+  "save_recovery.choose_different": "Choose a Different Save",
+  "save_recovery.delete": "Delete This Save"
 }

@@ -30,6 +30,8 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     private TextBlock? inkName, inkDate, inkTreasury, inkDignitas;
     private bool gameplayMounted, consoleOpen;
     private string consoleInput = string.Empty;
+    private bool saveAsPromptOpen;
+    private TextField? saveAsField;
     private bool smokeCaptured;
     private bool smokeCapturePending;
     private bool smokeSemanticsValidated;
@@ -90,6 +92,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
     public void Update(PresentationFrame frame)
     {
         controller.Audio.Update(frame.Delta);
+        controller.AccumulatePlaytime(frame.Delta);
         while (uiActions.TryDequeue(out Action? action)) action();
         if (!smokeTest || smokeCaptured || frame.Elapsed < TimeSpan.FromMilliseconds(200)) return;
         smokeCapturePending = true;
@@ -155,7 +158,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         inkDignitas = Text("", TypographyRole.Caption, light: true); inkDignitas.Width = 100;
         row.AddChild(inkName); row.AddChild(inkDate); row.AddChild(inkTreasury); row.AddChild(inkDignitas);
         row.AddChild(NavButton(L("nav.household"), ScreenId.HouseholdRoster)); row.AddChild(NavButton(L("nav.estate"), ScreenId.EstateSettlement)); row.AddChild(NavButton(L("nav.report"), ScreenId.MonthlyReport));
-        row.AddChild(Button(L("campaign.advance"), () => Run(controller.AdvanceMonth))); row.AddChild(Button(L("common.save"), () => Run(controller.Save))); row.AddChild(Button(L("common.menu"), () => Run(controller.RequestMainMenu)));
+        row.AddChild(Button(L("campaign.advance"), () => Run(controller.AdvanceMonth))); row.AddChild(Button(L("common.save"), () => Run(controller.Save))); row.AddChild(Button(L("menu.save_browser"), () => Navigate(ScreenId.SaveBrowser), "GameplaySaveBrowser")); row.AddChild(Button(L("common.menu"), () => Run(controller.RequestMainMenu)));
         bar.Child = row; shell.AddChild(bar);
         screenHost = new Border { Name = "ScreenHost", Margin = new(18), Padding = new(2), Height = Math.Max(250, 620 / root.UiScale - 20), Background = new(41, 31, 25), ClipToBounds = true };
         shell.AddChild(screenHost); root.AddChild(shell); gameplayMounted = true;
@@ -167,6 +170,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         ScreenId.NewGameSetup => BuildNewGame(),
         ScreenId.Settings => BuildSettings(),
         ScreenId.Credits => BuildCredits(),
+        ScreenId.SaveBrowser => BuildSaveBrowser(),
         _ => BuildMainMenu(),
     };
 
@@ -176,6 +180,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         c.AddChild(Text(L("app.title").ToUpperInvariant(), TypographyRole.Title)); c.AddChild(Text(L("app.tagline"), TypographyRole.Inscription)); c.AddChild(new Spacer(height: 24));
         c.AddChild(Button(L("menu.new_game"), () => Navigate(ScreenId.NewGameSetup), "MainMenuNewGame"));
         Button load = Button(L("menu.load_game"), () => Run(controller.Load), "MainMenuLoad"); load.IsEnabled = controller.HasSave; c.AddChild(load);
+        c.AddChild(Button(L("menu.save_browser"), () => Navigate(ScreenId.SaveBrowser), "MainMenuSaveBrowser"));
         c.AddChild(Button(L("menu.settings"), () => Navigate(ScreenId.Settings))); c.AddChild(Button(L("menu.credits"), () => Navigate(ScreenId.Credits))); c.AddChild(Button(L("menu.quit"), () => Run(controller.RequestQuit)));
         return Center(tablet);
     }
@@ -234,6 +239,38 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         var tablet = Tablet("Credits", 620, 500); var c = Content(tablet); c.AddChild(Text(L("credits.title"), TypographyRole.Title));
         c.AddChild(Text($"Gens\nVersion: {Gens.Client.Desktop.Diagnostics.ReleaseMetadata.Current.Display}\nDesign and development: the Gens contributors\nNative runtime: SDL3, SkiaSharp, HarfBuzz\nFont: Noto Sans (SIL Open Font License)", TypographyRole.Body));
         c.AddChild(Button(L("common.back"), () => Navigate(ScreenId.MainMenu))); return Center(tablet);
+    }
+
+    private ScrollView BuildSaveBrowser()
+    {
+        SaveBrowserModel vm = controller.SaveBrowser(); var tablet = Tablet("SaveBrowser", null, 610); var c = Content(tablet); c.AddChild(Heading(L("save_browser.title"), TypographyRole.Title));
+
+        var saveAsRow = new Row { Name = "SaveAsRow", Spacing = 8 };
+        if (controller.HasActiveCampaign)
+        {
+            if (saveAsPromptOpen)
+            {
+                saveAsField = new TextField { Name = "SaveAsField", Width = 260, MaxLength = 64, Placeholder = L("save_browser.name_placeholder"), Submitted = () => Run(() => { controller.SaveAs(saveAsField!.Text); saveAsPromptOpen = false; }), Semantics = { Label = L("save_browser.name_placeholder") } };
+                saveAsRow.AddChild(saveAsField);
+                saveAsRow.AddChild(Button(L("common.confirm"), () => Run(() => { controller.SaveAs(saveAsField!.Text); saveAsPromptOpen = false; }), "SaveAsConfirm"));
+                saveAsRow.AddChild(Button(L("common.cancel"), () => Run(() => saveAsPromptOpen = false), "SaveAsCancel"));
+            }
+            else saveAsRow.AddChild(Button(L("save_browser.save_as"), () => Run(() => saveAsPromptOpen = true), "SaveAsOpen"));
+        }
+        c.AddChild(saveAsRow);
+
+        var rows = new Column { Spacing = 8 };
+        foreach (SaveSlotRowModel slot in vm.Slots)
+        {
+            var row = new Row { Name = $"SaveSlot-{slot.SlotId}", Spacing = 10 };
+            var labels = new Column(); labels.AddChild(Text(slot.DisplayName, TypographyRole.Button, light: true)); labels.AddChild(Text(slot.LastSavedDisplay, TypographyRole.SmallCaption, light: true)); if (!string.IsNullOrEmpty(slot.PlaytimeDisplay)) labels.AddChild(Text(slot.PlaytimeDisplay, TypographyRole.SmallCaption, light: true)); row.AddChild(labels);
+            Button loadButton = Button(L("save_browser.load"), () => Run(() => controller.LoadSlot(slot.SlotId)), $"LoadSlot-{slot.SlotId}"); loadButton.IsEnabled = slot.Exists; row.AddChild(loadButton);
+            if (!slot.IsQuicksave) row.AddChild(Button(L("save_browser.delete"), () => Run(() => controller.RequestDeleteSlot(slot.SlotId)), $"DeleteSlot-{slot.SlotId}"));
+            rows.AddChild(row);
+        }
+        c.AddChild(new ScrollView { Name = "SaveBrowserScroll", Height = 380, Content = rows, IsFocusable = true });
+        c.AddChild(Button(L("common.back"), () => Run(() => { saveAsPromptOpen = false; controller.Navigate(controller.HasActiveCampaign ? ScreenId.HouseholdRoster : ScreenId.MainMenu); })));
+        return Screen(tablet);
     }
 
     private ScrollView BuildGameplayScreen() => controller.CurrentScreen switch
@@ -325,6 +362,13 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         {
             actions.AddChild(Button(L("privacy.open_settings"), () => { controller.ConfirmModal(); controller.Navigate(ScreenId.Settings); Rebuild(); }));
             actions.AddChild(Button(L("privacy.later"), () => { controller.ConfirmModal(); Rebuild(); }));
+        }
+        else if (modal.Kind == ModalKind.SaveRecovery)
+        {
+            string slotId = modal.SlotId ?? string.Empty;
+            actions.AddChild(Button(L("save_recovery.retry"), () => Run(() => controller.RetryLoad(slotId))));
+            actions.AddChild(Button(L("save_recovery.choose_different"), () => Run(() => { controller.DismissSaveRecovery(); controller.Navigate(ScreenId.SaveBrowser); })));
+            actions.AddChild(Button(L("save_recovery.delete"), () => Run(() => controller.DeleteRecoverySlot(slotId))));
         }
         else actions.AddChild(Button(modal.Kind == ModalKind.Information ? "OK" : L("common.confirm"), () => { controller.ConfirmModal(); Rebuild(); }));
         if (modal.Kind is ModalKind.Confirmation or ModalKind.WaxSeal) actions.AddChild(Button(L("common.cancel"), () => { controller.CancelModal(); root.CloseModal(); context.Invalidate(); })); c.AddChild(actions); dialog.Child = c; root.ShowModal(dialog);
