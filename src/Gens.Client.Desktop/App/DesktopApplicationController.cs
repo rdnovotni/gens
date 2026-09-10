@@ -1,6 +1,7 @@
 using Gens.Application.Campaign;
 using Gens.Art;
 using Gens.Audio;
+using Gens.Client.Desktop.Diagnostics;
 using Gens.Client.Desktop.Platform;
 using Gens.Client.Desktop.Settings;
 using Gens.Presentation;
@@ -12,7 +13,7 @@ using Gens.UI;
 namespace Gens.Client.Desktop.App;
 
 public enum ScreenId { MainMenu, NewGameSetup, Settings, Credits, HouseholdRoster, CharacterDetail, EstateSettlement, MonthlyReport }
-public enum ModalKind { None, Information, Confirmation, WaxSeal }
+public enum ModalKind { None, Information, Confirmation, WaxSeal, PrivacyConsent, CrashRecovery }
 public sealed record ModalState(ModalKind Kind, string Title, string Body, CampaignHouseholdAction? Action = null);
 
 /// <summary>Testable application/navigation coordinator. It owns exactly one session and only snapshot view models.</summary>
@@ -20,6 +21,9 @@ public sealed class DesktopApplicationController
 {
     private readonly IApplicationPaths paths;
     private readonly SettingsService settingsService;
+    private readonly PrivacyTelemetry telemetry;
+    private readonly CrashReportStore crashReports;
+    private readonly DiagnosticsExporter diagnosticsExporter;
     private IReadOnlyList<IDomainEvent> lastReportEvents = Array.Empty<IDomainEvent>();
     private ScreenId? backScreen;
     private bool returnToMenuPending;
@@ -30,10 +34,18 @@ public sealed class DesktopApplicationController
         paths.EnsureRequiredDirectories();
         settingsService = new(paths, settingsLog);
         Settings = settingsService.Current;
+        telemetry = new(paths, Settings.Privacy.UsageTelemetry);
+        crashReports = new(paths, Settings.Privacy.CrashReports);
+        diagnosticsExporter = new(paths, telemetry, crashReports);
+        telemetry.Record(BalanceMetric.SessionStarted);
         Audio = audio ?? new AudioEngine(new NullAudioBackend("Native audio backend is unavailable; continuing silently."));
         ApplyAudioSettings();
         CurrentScreen = ScreenId.MainMenu;
         Log("Native client initialized.");
+        if (crashReports.PendingCount > 0)
+            Modal = new(ModalKind.CrashRecovery, "Gens closed unexpectedly", $"{crashReports.PendingCount} anonymous crash report(s) are stored locally. You can export or delete them in Settings.");
+        else if (Settings.Privacy.UsageTelemetry == ConsentState.NotAsked || Settings.Privacy.CrashReports == ConsentState.NotAsked)
+            Modal = new(ModalKind.PrivacyConsent, "Privacy choice", "Help improve Gens by allowing anonymous usage counters and scrubbed crash reports to be stored locally for diagnostics export. This is off until you allow it, and you can opt out or delete the data at any time.");
     }
 
     private CampaignSession? CurrentCampaign { get; set; }
@@ -50,6 +62,9 @@ public sealed class DesktopApplicationController
     public bool HasSave => File.Exists(paths.Quicksave);
     public ulong? StateHash => CurrentCampaign?.ComputeStateHash();
     public string PortraitCachePath => Path.Combine(paths.Cache, "visuals");
+    public int PendingCrashReportCount => crashReports.PendingCount;
+    public BalanceTelemetry BalanceTelemetry => telemetry.Snapshot;
+    public Gens.Runtime.RuntimeDiagnostics? RuntimeDiagnostics { get; set; }
     private readonly List<string> logs = new();
 
     public void Navigate(ScreenId screen)
@@ -60,8 +75,10 @@ public sealed class DesktopApplicationController
 
     public void StartNew(string region, string difficulty, ulong seed = 1)
     {
+        Modal = null;
         ReplaceCampaign(CampaignSession.CreateNew(new CampaignStartOptions(seed, region, difficulty), out IReadOnlyList<IDomainEvent> history));
         lastReportEvents = history; CurrentScreen = ScreenId.HouseholdRoster; Log($"Campaign created: seed={seed}, region={region}, difficulty={difficulty}.");
+        telemetry.Record(BalanceMetric.CampaignStarted);
     }
 
     public void Load()
@@ -71,25 +88,27 @@ public sealed class DesktopApplicationController
             if (!HasSave) { ShowInformation("Load Campaign", "No valid quicksave exists yet."); return; }
             ReplaceCampaign(CampaignSession.Load(paths.Quicksave, out var manifest)); lastReportEvents = Array.Empty<IDomainEvent>();
             CurrentScreen = ScreenId.HouseholdRoster; Log($"Campaign loaded: format={manifest.SaveFormatVersion}, game={manifest.GameVersion}.");
+            telemetry.Record(BalanceMetric.CampaignLoaded);
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or NotSupportedException)
-        { ShowInformation("Load Failed", ex.Message); Log($"Load failed: {ex.Message}"); }
+        { ShowInformation("Load Failed", ex.Message); Log($"Load failed: {ex.Message}"); telemetry.Record(BalanceMetric.LoadFailed); }
     }
 
     public void Save()
     {
         try
         {
-            RequireCampaign().Save(paths.Quicksave, "0.1.0"); ShowInformation("Campaign Saved", $"Saved to {paths.Quicksave}."); Log("Campaign saved.");
+            RequireCampaign().Save(paths.Quicksave, "0.1.0"); ShowInformation("Campaign Saved", $"Saved to {paths.Quicksave}."); Log("Campaign saved."); telemetry.Record(BalanceMetric.SaveSucceeded);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        { ShowInformation("Save Failed", ex.Message); Log($"Save failed: {ex.Message}"); }
+        { ShowInformation("Save Failed", ex.Message); Log($"Save failed: {ex.Message}"); telemetry.Record(BalanceMetric.SaveFailed); }
     }
 
     public void AdvanceMonth()
     {
         CampaignSession campaign = RequireCampaign(); lastReportEvents = campaign.AdvanceMonth(); CurrentScreen = ScreenId.MonthlyReport;
         Log($"Month advanced: hash={campaign.ComputeStateHash():x16}.");
+        telemetry.Record(BalanceMetric.MonthAdvanced);
     }
 
     public void OpenCharacter(string id) { SelectedCharacterId = id; backScreen = ScreenId.HouseholdRoster; CurrentScreen = ScreenId.CharacterDetail; Log($"Character opened: {id}."); }
@@ -105,9 +124,11 @@ public sealed class DesktopApplicationController
     public void ConfirmModal()
     {
         ModalState? pending = Modal; Modal = null;
+        if (pending?.Kind is ModalKind.PrivacyConsent or ModalKind.CrashRecovery) return;
         if (returnToMenuPending) { returnToMenuPending = false; ConfirmMainMenu(); return; }
         if (pending?.Action is not { } action) return;
         CommandResult result = RequireCampaign().SubmitAction(action);
+        telemetry.Record(result.Accepted ? BalanceMetric.CommandAccepted : BalanceMetric.CommandRejected);
         CurrentScreen = ScreenId.EstateSettlement;
         ShowInformation(result.Accepted ? "Command Accepted" : "Command Rejected", result.Accepted ? "The household records were updated." : result.Error?.Code ?? "Rejected.");
         Log($"Submit {action}: {(result.Accepted ? "accepted" : "rejected")}.");
@@ -133,6 +154,41 @@ public sealed class DesktopApplicationController
     public void SetConsoleEnabled(bool value) => UpdateSettings(Settings with { Developer = Settings.Developer with { ConsoleEnabled = value } }, "Developer");
     public void SetAiArtEnabled(bool value) => UpdateSettings(Settings with { Art = Settings.Art with { AiGenerationEnabled = value, Provider = value ? "mock" : "none" } }, "Art");
     public void SetExternalArtConsent(bool value) => UpdateSettings(Settings with { Art = Settings.Art with { ExternalGenerationConsent = value } }, "Art");
+    public void SetUsageTelemetryConsent(bool value)
+    {
+        ConsentState consent = value ? ConsentState.Granted : ConsentState.Denied;
+        UpdateSettings(Settings with { Privacy = Settings.Privacy with { UsageTelemetry = consent } }, "Privacy");
+        telemetry.SetConsent(Settings.Privacy.UsageTelemetry);
+    }
+    public void SetCrashReportConsent(bool value)
+    {
+        ConsentState consent = value ? ConsentState.Granted : ConsentState.Denied;
+        UpdateSettings(Settings with { Privacy = Settings.Privacy with { CrashReports = consent } }, "Privacy");
+        crashReports.SetConsent(Settings.Privacy.CrashReports);
+    }
+    public void AcceptPrivacyConsent() { SetUsageTelemetryConsent(true); SetCrashReportConsent(true); Modal = null; }
+    public void DeclinePrivacyConsent() { SetUsageTelemetryConsent(false); SetCrashReportConsent(false); Modal = null; }
+    public string ExportDiagnostics()
+    {
+        try
+        {
+            string path = diagnosticsExporter.Export(RuntimeDiagnostics);
+            ShowInformation("Diagnostics Exported", $"An anonymized diagnostics archive was saved to {path}.");
+            return path;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowInformation("Diagnostics Export Failed", "Gens could not write the diagnostics archive. Check access to the local logs directory and try again.");
+            Log($"Diagnostics export failed: {ex.GetType().Name}.");
+            return string.Empty;
+        }
+    }
+    public void DeleteLocalDiagnostics()
+    {
+        telemetry.Delete(); crashReports.DeleteAll();
+        UpdateSettings(Settings with { Privacy = Settings.Privacy with { UsageTelemetry = ConsentState.Denied, CrashReports = ConsentState.Denied } }, "Privacy");
+        ShowInformation("Diagnostics Deleted", "Local telemetry counters and crash reports were deleted. Collection remains off.");
+    }
     public void SetAudioVolume(AudioBus bus, float value)
     {
         AudioSettings audio = bus switch
@@ -190,7 +246,7 @@ public sealed class DesktopApplicationController
     {
         if (parts.Length < 2) return "Usage: submit <rites|festival>";
         CampaignHouseholdAction action = parts[1].Equals("festival", StringComparison.OrdinalIgnoreCase) ? CampaignHouseholdAction.FundFestival : CampaignHouseholdAction.CycleRitesBudget;
-        CommandResult result = RequireCampaign().SubmitAction(action); return result.Accepted ? "Accepted." : $"Rejected: {result.Error?.Code}";
+        CommandResult result = RequireCampaign().SubmitAction(action); telemetry.Record(result.Accepted ? BalanceMetric.CommandAccepted : BalanceMetric.CommandRejected); return result.Accepted ? "Accepted." : $"Rejected: {result.Error?.Code}";
     }
     private string ReplayConsole()
     {
