@@ -333,6 +333,11 @@ internal static class RuntimeIdTagRegistry
         // Phase 16 item 1 — Gens.Simulation.Interactions.SpyPlacement, same "real record as its own
         // tag" convention as CompetitiveEuergetismEvent/PublicWork above.
         [typeof(SpyPlacement)] = "spyplacement",
+        // Phase 16 item 2 — Gens.Simulation.Interactions.RaidThreat, same "real record as its own tag"
+        // convention as SpyPlacement above. EstateSecurityInvestment needs no entry: it is keyed by the
+        // already-registered RuntimeId<Household>, not by its own RuntimeId, matching
+        // SenateEntryInvestmentLog's identical exemption above.
+        [typeof(RaidThreat)] = "raidthreat",
     };
 
     public static string Resolve(Type type) =>

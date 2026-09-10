@@ -95,6 +95,7 @@ public sealed class WorldState
         RuntimeIdCounter<AutonomousDecisionLog> autonomousDecisionLogIds,
         RuntimeIdCounter<Scheme> schemeIds,
         RuntimeIdCounter<SpyPlacement> spyPlacementIds,
+        RuntimeIdCounter<RaidThreat> raidThreatIds,
         RuntimeIdCounter<ReturnReport> returnReportIds,
         RuntimeIdCounter<SuccessionDispute> successionDisputeIds,
         RuntimeIdCounter<ChronicleEntry> chronicleEntryIds,
@@ -168,6 +169,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<AutonomousDecisionLog>, AutonomousDecisionLog> autonomousDecisionLogs,
         OrderedRegistry<RuntimeId<Scheme>, Scheme> schemes,
         OrderedRegistry<RuntimeId<SpyPlacement>, SpyPlacement> spyPlacements,
+        OrderedRegistry<RuntimeId<RaidThreat>, RaidThreat> raidThreats,
+        OrderedRegistry<RuntimeId<Household>, EstateSecurityInvestment> estateSecurityInvestments,
         OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport> returnReports,
         OrderedRegistry<RuntimeId<Household>, HouseholdHeadship> householdHeadships,
         OrderedRegistry<RuntimeId<Household>, HeirDesignation> heirDesignations,
@@ -277,6 +280,7 @@ public sealed class WorldState
         AutonomousDecisionLogIds = autonomousDecisionLogIds;
         SchemeIds = schemeIds;
         SpyPlacementIds = spyPlacementIds;
+        RaidThreatIds = raidThreatIds;
         ReturnReportIds = returnReportIds;
         SuccessionDisputeIds = successionDisputeIds;
         ChronicleEntryIds = chronicleEntryIds;
@@ -350,6 +354,8 @@ public sealed class WorldState
         AutonomousDecisionLogs = autonomousDecisionLogs;
         Schemes = schemes;
         SpyPlacements = spyPlacements;
+        RaidThreats = raidThreats;
+        EstateSecurityInvestments = estateSecurityInvestments;
         ReturnReports = returnReports;
         HouseholdHeadships = householdHeadships;
         HeirDesignations = heirDesignations;
@@ -475,6 +481,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Interactions.SpyPlacement"/> (Phase 16 item 1).</summary>
     public RuntimeIdCounter<SpyPlacement> SpyPlacementIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Interactions.RaidThreat"/> (Phase 16 item 2).</summary>
+    public RuntimeIdCounter<RaidThreat> RaidThreatIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Stewardship.ReturnReport"/> (Phase 10 package 13).</summary>
     public RuntimeIdCounter<ReturnReport> ReturnReportIds { get; } = new();
@@ -778,6 +787,20 @@ public sealed class WorldState
     /// removed, matching <see cref="Schemes"/>' identical "resolved or not, kept for the campaign's
     /// lifetime" convention.</summary>
     public OrderedRegistry<RuntimeId<SpyPlacement>, SpyPlacement> SpyPlacements { get; } = new();
+
+    /// <summary>Every resolved <see cref="Interactions.RaidThreat"/> (Phase 16 item 2), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004) — a permanent historical record, matching
+    /// <see cref="SpyPlacements"/>' identical "resolved or not, kept for the campaign's lifetime"
+    /// convention (a <see cref="Interactions.RaidThreat"/> is always already resolved by the time it is
+    /// written; see that type's own doc comment).</summary>
+    public OrderedRegistry<RuntimeId<RaidThreat>, RaidThreat> RaidThreats { get; } = new();
+
+    /// <summary>One <see cref="Interactions.EstateSecurityInvestment"/> per household that has ever
+    /// adjusted its own defensive investment (Phase 16 item 2; <c>gens-piracy-banditry-design.md</c>
+    /// §9) — sparse like <see cref="HouseholdPolicies"/>: a household with no entry here is simply
+    /// unguarded (<see cref="Interactions.EstateSecurityInvestment.MinValue"/>), matching <see
+    /// cref="Interactions.RaidThreatSystem"/>'s own "missing entry reads as zero" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, EstateSecurityInvestment> EstateSecurityInvestments { get; } = new();
 
     /// <summary>Every <see cref="Stewardship.ReturnReport"/> ever produced when a <see
     /// cref="StewardshipAssignment"/> ended (Phase 10 package 13; design doc §10), in ascending-<see
@@ -1308,6 +1331,7 @@ public sealed class WorldState
         ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["schemeIds"] = SchemeIds.Peek,
         ["spyPlacementIds"] = SpyPlacementIds.Peek,
+        ["raidThreatIds"] = RaidThreatIds.Peek,
         ["returnReportIds"] = ReturnReportIds.Peek,
         ["successionDisputeIds"] = SuccessionDisputeIds.Peek,
         ["chronicleEntryIds"] = ChronicleEntryIds.Peek,
@@ -1367,6 +1391,8 @@ public sealed class WorldState
         ["autonomousDecisionLogs"] = AutonomousDecisionLogs.Version,
         ["schemes"] = Schemes.Version,
         ["spyPlacements"] = SpyPlacements.Version,
+        ["raidThreats"] = RaidThreats.Version,
+        ["estateSecurityInvestments"] = EstateSecurityInvestments.Version,
         ["returnReports"] = ReturnReports.Version,
         ["householdHeadships"] = HouseholdHeadships.Version,
         ["heirDesignations"] = HeirDesignations.Version,

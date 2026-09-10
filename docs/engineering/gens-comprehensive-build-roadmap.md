@@ -3863,6 +3863,44 @@ pass; the UR-01 shared-scenario fixtures and their recorded hash transcript
 `migrate-save` (ADR 0019) since adding any new `WorldState` partition changes `StateHasher`'s output
 for every save, including ones with no spy placements at all.
 
+**Item 2 progress:** the core vertical slice is built (`gens-piracy-banditry-design.md` §2, §3, §9).
+`BanditConfederationCreationService.CreateAncientSeed` seeds a `LivingWorldActorType.BanditConfederation`
+(§2) reusing the `LivingWorldActor`/`LivingWorldActorStandingTrend` framework directly rather than a
+parallel actor model — the land-vs-sea (Banditry-vs-Piracy) terrain distinction §2 describes is
+deliberately not modeled as a data field, since no terrain/Combatant-profile concept exists anywhere in
+this codebase yet (see that service's own doc comment). `RaidThreatSystem` (`TickPhase.Hazards`, a
+single-roll-sequence shape mirroring `SpyPlacementType.QuickOp`) runs monthly: each Confederation rolls
+whether it raids at all (§2's standing-trend- and strength-weighted chance), then which household in its
+own region it strikes — never outside that region, realizing §1's "regional risk" — then resolves
+interception (§3's "Interceptable... using a well-defended target's own security level") against a new
+sparse `EstateSecurityInvestment` partition (§9's "the defensive investment"), which `AdjustEstateSecurityInvestmentCommand`
+lets a household's own member raise or lower for a flat per-point ledger cost. §9's own named sources for
+that figure — the Vigil, Praefectus Vigilum, Navarchus, and Watchtower/City Walls — do not exist as code
+or content anywhere in this codebase yet (confirmed by direct search), so `EstateSecurityInvestment` is
+deliberately their common downstream aggregate rather than a recomputed roll-up of pieces that do not
+exist; a future pass wiring those roles/buildings should feed this same field. A successful raid posts
+its spoils loss against the target household's ledger; every terminal outcome also rolls a chance to nudge
+the Confederation's own `StandingTrend` toward Rising (success) or Declining (interception/capture),
+directly realizing §2's "an ignored Confederation grows bolder... one that's been roughed up... skews
+Declining" rather than leaving that trend static. All new numeric constants live in `RaidThreatCatalog`,
+documented as an untuned first pass like `SpyPlacementCatalog`. Deferred to a follow-up pass, matching
+item 1's own "core slice now, defer the rest" precedent: Bribery & Tribute (§4) and Retaliation (§5) —
+both need a Confederation's real base location and the not-yet-built Military & Combat Combat Resolution
+Engine/Fleet/Irregular Combatant types, which this package's own research confirmed do not exist in code
+despite the design doc's own "already built" framing — Turning Raider (§6), Allying With & Contracting
+Raiders including Targeted Contracts (§7, §7.1), and Familia-member/background-population kidnapping and
+the Ransom flow it opens (§8's non-goods targets). A captured raider (`RaidOutcome.RaidersCaptured`) is
+recorded as an outcome only; no Character is generated for them and no Legal & Court/Labor & Slavery
+intake is wired. Covered by `tests/Gens.Simulation.Tests/Interactions/{RaidThreatSystemTests,
+AdjustEstateSecurityInvestmentCommandTests}.cs` and `tests/Gens.Simulation.Tests/Saves/RaidThreatSaveRoundTripTests.cs`.
+**Build/test verification could not be run for this pass** — this session's environment has no `dotnet`
+SDK and no network path to install one, so `dotnet build`/`dotnet test`/`dotnet format --verify-no-changes`
+and the UR-01 shared-scenario fixture regeneration (`run-shared-scenario`/`migrate-save`, ADR 0019 —
+required because adding a new `WorldState` partition changes `StateHasher`'s output for every save, as
+item 1's own note above already established) were not performed; whoever picks this up next needs to run
+the full `CONTRIBUTING.md` sequence and regenerate `tests/Gens.Simulation.Tests/Saves/Fixtures/ur01-*`
+before merging.
+
 ### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.

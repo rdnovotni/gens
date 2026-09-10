@@ -759,6 +759,18 @@ public sealed record WorldSaveDocument
     /// above.</summary>
     [JsonPropertyOrder(118)]
     public IReadOnlyList<SpyPlacementDto> SpyPlacements { get; init; } = Array.Empty<SpyPlacementDto>();
+
+    /// <summary>Every resolved <see cref="Interactions.RaidThreat"/> (Phase 16 item 2), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// for the same additive-only reason as <see cref="SpyPlacements"/> above.</summary>
+    [JsonPropertyOrder(119)]
+    public IReadOnlyList<RaidThreatDto> RaidThreats { get; init; } = Array.Empty<RaidThreatDto>();
+
+    /// <summary>Every household's <see cref="Interactions.EstateSecurityInvestment"/> (Phase 16 item 2),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, for the same additive-only reason as <see cref="SpyPlacements"/> above.</summary>
+    [JsonPropertyOrder(120)]
+    public IReadOnlyList<EstateSecurityInvestmentDto> EstateSecurityInvestments { get; init; } = Array.Empty<EstateSecurityInvestmentDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -855,6 +867,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(63)]
     public long SpyPlacementIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-16-item-2 save has no RaidThreats.
+    /// Additive-only per ADR 0011's policy, matching <see cref="SpyPlacementIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(64)]
+    public long RaidThreatIds { get; init; }
 
     /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10-package-13 save has no Return
     /// Reports. Additive-only per ADR 0011's policy, matching <see cref="SchemeIds"/>'s identical
@@ -2426,6 +2444,48 @@ public sealed record SpyPlacementDto
 
     [JsonPropertyOrder(10)]
     public required int LastProgressedDateTotalMonths { get; init; }
+}
+
+/// <summary>One resolved <see cref="Gens.Simulation.Interactions.RaidThreat"/> (Phase 16 item 2).</summary>
+public sealed record RaidThreatDto
+{
+    [JsonPropertyOrder(0)]
+    public required string RaidId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string ConfederationActorId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string TargetHouseholdId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string TargetType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int DefenderSecurityLevel { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required string Outcome { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required long SpoilsLostRawValue { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int RaidDateTotalMonths { get; init; }
+}
+
+/// <summary>One household's <see cref="Gens.Simulation.Interactions.EstateSecurityInvestment"/> (Phase
+/// 16 item 2).</summary>
+public sealed record EstateSecurityInvestmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int SecurityLevel { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int LastAdjustedDateTotalMonths { get; init; }
 }
 
 /// <summary>One <see cref="Gens.Simulation.Stewardship.ReturnReport"/> (Phase 10 package 13).</summary>

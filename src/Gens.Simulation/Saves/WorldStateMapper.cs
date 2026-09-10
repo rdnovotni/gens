@@ -93,6 +93,7 @@ public static class WorldStateMapper
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
                 SchemeIds = state.SchemeIds.Peek,
                 SpyPlacementIds = state.SpyPlacementIds.Peek,
+                RaidThreatIds = state.RaidThreatIds.Peek,
                 ReturnReportIds = state.ReturnReportIds.Peek,
                 SuccessionDisputeIds = state.SuccessionDisputeIds.Peek,
                 ChronicleEntryIds = state.ChronicleEntryIds.Peek,
@@ -195,6 +196,10 @@ public static class WorldStateMapper
             Schemes = state.Schemes.InAscendingOrder().Select(entry => ToSchemeDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             SpyPlacements = state.SpyPlacements.InAscendingOrder().Select(entry => ToSpyPlacementDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RaidThreats = state.RaidThreats.InAscendingOrder().Select(entry => ToRaidThreatDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            EstateSecurityInvestments = state.EstateSecurityInvestments.InAscendingOrder().Select(entry => ToEstateSecurityInvestmentDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ReturnReports = state.ReturnReports.InAscendingOrder().Select(entry => ToReturnReportDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
@@ -574,6 +579,20 @@ public static class WorldStateMapper
             {
                 var placement = FromSpyPlacementDto(s);
                 return new KeyValuePair<RuntimeId<SpyPlacement>, SpyPlacement>(placement.PlacementId, placement);
+            }));
+
+        var raidThreats = OrderedRegistry<RuntimeId<RaidThreat>, RaidThreat>.Restore(
+            dto.RaidThreats.Select(r =>
+            {
+                var raid = FromRaidThreatDto(r);
+                return new KeyValuePair<RuntimeId<RaidThreat>, RaidThreat>(raid.RaidId, raid);
+            }));
+
+        var estateSecurityInvestments = OrderedRegistry<RuntimeId<Household>, EstateSecurityInvestment>.Restore(
+            dto.EstateSecurityInvestments.Select(e =>
+            {
+                var investment = FromEstateSecurityInvestmentDto(e);
+                return new KeyValuePair<RuntimeId<Household>, EstateSecurityInvestment>(investment.HouseholdId, investment);
             }));
 
         var returnReports = OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport>.Restore(
@@ -1177,6 +1196,7 @@ public static class WorldStateMapper
             autonomousDecisionLogIds: RuntimeIdCounter<AutonomousDecisionLog>.Restore(dto.Counters.AutonomousDecisionLogIds),
             schemeIds: RuntimeIdCounter<Scheme>.Restore(dto.Counters.SchemeIds),
             spyPlacementIds: RuntimeIdCounter<SpyPlacement>.Restore(dto.Counters.SpyPlacementIds),
+            raidThreatIds: RuntimeIdCounter<RaidThreat>.Restore(dto.Counters.RaidThreatIds),
             returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
             successionDisputeIds: RuntimeIdCounter<SuccessionDispute>.Restore(dto.Counters.SuccessionDisputeIds),
             chronicleEntryIds: RuntimeIdCounter<ChronicleEntry>.Restore(dto.Counters.ChronicleEntryIds),
@@ -1250,6 +1270,8 @@ public static class WorldStateMapper
             autonomousDecisionLogs: autonomousDecisionLogs,
             schemes: schemes,
             spyPlacements: spyPlacements,
+            raidThreats: raidThreats,
+            estateSecurityInvestments: estateSecurityInvestments,
             returnReports: returnReports,
             householdHeadships: householdHeadships,
             heirDesignations: heirDesignations,
@@ -3343,6 +3365,40 @@ public static class WorldStateMapper
         dto.MonthsActive,
         new GameDate(dto.PlacedDateTotalMonths),
         new GameDate(dto.LastProgressedDateTotalMonths));
+
+    private static RaidThreatDto ToRaidThreatDto(RaidThreat raid) => new()
+    {
+        RaidId = raid.RaidId.ToTaggedString(),
+        ConfederationActorId = raid.ConfederationActorId.ToTaggedString(),
+        TargetHouseholdId = raid.TargetHouseholdId.ToTaggedString(),
+        TargetType = raid.TargetType.ToString(),
+        DefenderSecurityLevel = raid.DefenderSecurityLevel,
+        Outcome = raid.Outcome.ToString(),
+        SpoilsLostRawValue = raid.SpoilsLost.RawValue,
+        RaidDateTotalMonths = raid.RaidDate.TotalMonths,
+    };
+
+    private static RaidThreat FromRaidThreatDto(RaidThreatDto dto) => new(
+        RuntimeId<RaidThreat>.Parse(dto.RaidId),
+        RuntimeId<Actor>.Parse(dto.ConfederationActorId),
+        RuntimeId<Household>.Parse(dto.TargetHouseholdId),
+        Enum.Parse<RaidTargetType>(dto.TargetType),
+        dto.DefenderSecurityLevel,
+        Enum.Parse<RaidOutcome>(dto.Outcome),
+        Money.FromMinorUnits(dto.SpoilsLostRawValue),
+        new GameDate(dto.RaidDateTotalMonths));
+
+    private static EstateSecurityInvestmentDto ToEstateSecurityInvestmentDto(EstateSecurityInvestment investment) => new()
+    {
+        HouseholdId = investment.HouseholdId.ToTaggedString(),
+        SecurityLevel = investment.SecurityLevel,
+        LastAdjustedDateTotalMonths = investment.LastAdjustedDate.TotalMonths,
+    };
+
+    private static EstateSecurityInvestment FromEstateSecurityInvestmentDto(EstateSecurityInvestmentDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.SecurityLevel,
+        new GameDate(dto.LastAdjustedDateTotalMonths));
 
     private static ReturnReportDto ToReturnReportDto(ReturnReport report) => new()
     {
