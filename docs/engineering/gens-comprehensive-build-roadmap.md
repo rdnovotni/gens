@@ -3925,6 +3925,37 @@ compiled building catalog still contains no Barracks/Garrison/Fortress definitio
 (1,733/1,733 simulation tests), format verification, content validation/compilation, deterministic-build
 check, save round trips, and regenerated ADR 0019 fixtures all pass.
 
+**Item 4 progress:** the shared Combat Resolution Engine itself is built in a new
+`src/Gens.Simulation/Combat/` domain (`gens-military-combat-design.md` §4), matching this item's own
+"usable by military, guards, raids, duels, and spectacle without giving each a separate damage model"
+framing directly. `CombatModels.cs` defines the engine's caller-agnostic vocabulary —
+`CombatantGroup`/`CombatantCommander`/`CombatSituation`/`CombatSide` as inputs, `CombatResolution` as
+output — deliberately built with no reference to any one consumer's own domain type (`Squad` included):
+a caller projects its own manpower model into one or more `CombatantGroup`s and reads losses back by
+its own group ordering, never by a shared id type. `CombatResolutionCalculator` is the pure, RNG-free
+half (§4.4 steps 2-4: effective strength, §4.3's terrain-fit table, the five-tier outcome band, and
+loss magnitude), following `Hazards.DisasterDamageCalculator`'s own established shape and the same
+"this implementation's own invented number" disclosure for every constant, since §11 leaves all numeric
+sizing open. `CombatResolutionEngine.Resolve` is the only RNG-consuming entry point (one variance roll
+per engagement, §4.4 step 3's "a real, if usually small, chance for the weaker side to win outright"),
+and stays a plain library call with no `WorldState`/command/event dependency of its own, so a future
+consumer never needs this engine to know its own state shape. `MilitaryCommands.ResolveMilitaryDeploymentCommand`
+is the first real consumer: it projects a deployment's own `Squad`s (plus its assigned commander's
+Martial attribute, if any) into the engine, and its `mutate` step hands the result straight to the
+existing `ApplyMilitaryAftermathCommand` mutation logic — proving the two commands' shapes actually
+line up rather than merely unit-testing the kernel in isolation. It does not generate an opposing force
+(a future Rival House/bandit AI opponent is each future caller's own concern) or spoils/captives (§7's
+aftermath economy remains out of scope); wiring `Interactions.RaidThreatSystem`'s own deferred
+Retaliation (§5 of `gens-piracy-banditry-design.md`) and guard/duel/spectacle consumers onto this same
+engine are the natural, now-unblocked follow-ups this item's own roadmap line anticipated. Covered by
+`tests/Gens.Simulation.Tests/Combat/CombatResolutionCalculatorTests.cs` and
+`tests/Gens.Simulation.Tests/Military/MilitaryCombatResolutionTests.cs`. **Build/test verification could
+not be run for this pass** — this sandbox has no `dotnet` SDK and no network path to install one, the
+same gap item 2's own progress note recorded; whoever picks this up next needs to run the full
+`CONTRIBUTING.md` sequence (including the UR-01 shared-scenario fixture regeneration, ADR 0019 — adding
+the new `military.combatResolution` random stream changes `StateHasher`'s output for every save) before
+merging.
+
 ### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
