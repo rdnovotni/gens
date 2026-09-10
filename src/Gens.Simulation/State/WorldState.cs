@@ -31,6 +31,7 @@ using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
+using Gens.Simulation.Military;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Policies;
 using Gens.Simulation.PrivateInfrastructure;
@@ -96,6 +97,8 @@ public sealed class WorldState
         RuntimeIdCounter<Scheme> schemeIds,
         RuntimeIdCounter<SpyPlacement> spyPlacementIds,
         RuntimeIdCounter<RaidThreat> raidThreatIds,
+        RuntimeIdCounter<Squad> squadIds,
+        RuntimeIdCounter<MilitaryDeployment> militaryDeploymentIds,
         RuntimeIdCounter<ReturnReport> returnReportIds,
         RuntimeIdCounter<SuccessionDispute> successionDisputeIds,
         RuntimeIdCounter<ChronicleEntry> chronicleEntryIds,
@@ -171,6 +174,10 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<SpyPlacement>, SpyPlacement> spyPlacements,
         OrderedRegistry<RuntimeId<RaidThreat>, RaidThreat> raidThreats,
         OrderedRegistry<RuntimeId<Household>, EstateSecurityInvestment> estateSecurityInvestments,
+        OrderedRegistry<RuntimeId<Settlement>, EstateForce> estateForces,
+        OrderedRegistry<RuntimeId<Squad>, Squad> squads,
+        OrderedRegistry<RuntimeId<MilitaryDeployment>, MilitaryDeployment> militaryDeployments,
+        OrderedRegistry<RuntimeId<Character>, MilitaryCaptivity> militaryCaptivities,
         OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport> returnReports,
         OrderedRegistry<RuntimeId<Household>, HouseholdHeadship> householdHeadships,
         OrderedRegistry<RuntimeId<Household>, HeirDesignation> heirDesignations,
@@ -281,6 +288,8 @@ public sealed class WorldState
         SchemeIds = schemeIds;
         SpyPlacementIds = spyPlacementIds;
         RaidThreatIds = raidThreatIds;
+        SquadIds = squadIds;
+        MilitaryDeploymentIds = militaryDeploymentIds;
         ReturnReportIds = returnReportIds;
         SuccessionDisputeIds = successionDisputeIds;
         ChronicleEntryIds = chronicleEntryIds;
@@ -356,6 +365,10 @@ public sealed class WorldState
         SpyPlacements = spyPlacements;
         RaidThreats = raidThreats;
         EstateSecurityInvestments = estateSecurityInvestments;
+        EstateForces = estateForces;
+        Squads = squads;
+        MilitaryDeployments = militaryDeployments;
+        MilitaryCaptivities = militaryCaptivities;
         ReturnReports = returnReports;
         HouseholdHeadships = householdHeadships;
         HeirDesignations = heirDesignations;
@@ -484,6 +497,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Interactions.RaidThreat"/> (Phase 16 item 2).</summary>
     public RuntimeIdCounter<RaidThreat> RaidThreatIds { get; } = new();
+
+    /// <summary>Issues IDs for persistent military squads (Phase 16 item 3).</summary>
+    public RuntimeIdCounter<Squad> SquadIds { get; } = new();
+
+    /// <summary>Issues IDs for military deployments (Phase 16 item 3).</summary>
+    public RuntimeIdCounter<MilitaryDeployment> MilitaryDeploymentIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Stewardship.ReturnReport"/> (Phase 10 package 13).</summary>
     public RuntimeIdCounter<ReturnReport> ReturnReportIds { get; } = new();
@@ -801,6 +820,19 @@ public sealed class WorldState
     /// unguarded (<see cref="Interactions.EstateSecurityInvestment.MinValue"/>), matching <see
     /// cref="Interactions.RaidThreatSystem"/>'s own "missing entry reads as zero" convention.</summary>
     public OrderedRegistry<RuntimeId<Household>, EstateSecurityInvestment> EstateSecurityInvestments { get; } = new();
+
+    /// <summary>Persistent private forces, one per settlement.</summary>
+    public OrderedRegistry<RuntimeId<Settlement>, EstateForce> EstateForces { get; } = new();
+
+    /// <summary>Every named squad, including units destroyed in battle.</summary>
+    public OrderedRegistry<RuntimeId<Squad>, Squad> Squads { get; } = new();
+
+    /// <summary>Active and resolved deployments; resolved records are the durable battle aftermath.</summary>
+    public OrderedRegistry<RuntimeId<MilitaryDeployment>, MilitaryDeployment> MilitaryDeployments { get; } = new();
+
+    /// <summary>Each named character's latest military-capture provenance. Crime's DetentionRecords
+    /// own whether that captivity is still active.</summary>
+    public OrderedRegistry<RuntimeId<Character>, MilitaryCaptivity> MilitaryCaptivities { get; } = new();
 
     /// <summary>Every <see cref="Stewardship.ReturnReport"/> ever produced when a <see
     /// cref="StewardshipAssignment"/> ended (Phase 10 package 13; design doc §10), in ascending-<see
@@ -1332,6 +1364,8 @@ public sealed class WorldState
         ["schemeIds"] = SchemeIds.Peek,
         ["spyPlacementIds"] = SpyPlacementIds.Peek,
         ["raidThreatIds"] = RaidThreatIds.Peek,
+        ["squadIds"] = SquadIds.Peek,
+        ["militaryDeploymentIds"] = MilitaryDeploymentIds.Peek,
         ["returnReportIds"] = ReturnReportIds.Peek,
         ["successionDisputeIds"] = SuccessionDisputeIds.Peek,
         ["chronicleEntryIds"] = ChronicleEntryIds.Peek,
@@ -1393,6 +1427,10 @@ public sealed class WorldState
         ["spyPlacements"] = SpyPlacements.Version,
         ["raidThreats"] = RaidThreats.Version,
         ["estateSecurityInvestments"] = EstateSecurityInvestments.Version,
+        ["estateForces"] = EstateForces.Version,
+        ["squads"] = Squads.Version,
+        ["militaryDeployments"] = MilitaryDeployments.Version,
+        ["militaryCaptivities"] = MilitaryCaptivities.Version,
         ["returnReports"] = ReturnReports.Version,
         ["householdHeadships"] = HouseholdHeadships.Version,
         ["heirDesignations"] = HeirDesignations.Version,

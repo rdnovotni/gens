@@ -3901,6 +3901,30 @@ item 1's own note above already established) were not performed; whoever picks t
 the full `CONTRIBUTING.md` sequence and regenerate `tests/Gens.Simulation.Tests/Saves/Fixtures/ur01-*`
 before merging.
 
+**Item 3 progress:** the persistent Estate Force vertical slice is built in a new
+`src/Gens.Simulation/Military/` domain (`gens-military-combat-design.md` §2, §4.6, §6, §7, §10).
+`EstateForce`, `Squad`, `MilitaryDeployment`, and `MilitaryCaptivity` are authoritative saved/hashed
+state. The seven command paths establish a force, raise citizen/militia/mustered-veteran/mercenary squads,
+consume stockpiled equipment, assign a Praefectus or squad commander, deploy one or more squads to a real
+`TravelLocation`, demobilize a squad (including returning a Muster's survivors), and apply a caller-supplied aftermath. Recruitment conserves local population;
+mercenaries conserve money through the ledger; committed equipment leaves its holding's real stockpile;
+casualties, desertions, readiness, morale, and equipment losses are range-checked against the deployed
+squad before mutation. Deserters from local cohorts return to that cohort, anonymous captives enter the
+existing `NonHouseholdEnslaved` population, and named captives are relocated and enter both latest military
+capture provenance and Crime's ordinary `DetentionRecord`, so its existing ransom flow can consume them
+without a parallel captive minigame. `MilitaryReadinessSystem` recovers idle readiness/morale, charges
+real recurring wages, and produces deterministic desertion when an unpaid squad's morale collapses.
+`MilitaryForceQuery` exposes a household-scoped presentation snapshot. Save DTO/mapping, stable runtime
+ID tags, deterministic hashing, backward-compatible empty defaults, and UR-01 fixtures are updated.
+The actual winner/loser and loss-number calculation remains deliberately absent: Phase 16 item 4 owns
+the shared combat-resolution kernel, and `ApplyMilitaryAftermathCommand` is its validated downstream
+boundary rather than a military-only battle formula. Exact balancing constants and building-definition
+wiring remain content/balance follow-up work because §11 explicitly leaves those values open and the
+compiled building catalog still contains no Barracks/Garrison/Fortress definitions. Covered by
+`tests/Gens.Simulation.Tests/Military/MilitaryLifecycleTests.cs`; the full solution build and test suite
+(1,733/1,733 simulation tests), format verification, content validation/compilation, deterministic-build
+check, save round trips, and regenerated ADR 0019 fixtures all pass.
+
 ### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
@@ -4021,4 +4045,3 @@ An issue is not ready for implementation until its dependencies, authoritative f
 ~~The milestone after that should be **Dynasty Continuity and Historical Memory**, encompassing Phase 11.~~ — ✅ **complete.** Heirs/succession/disputed inheritance, the player-control handoff and Regency, the Dynasty Chronicle, funerals/mourning/Memoria, and rules-and-provenance epithets are all in place, proven together by a three-succession (one contested) exit-gate soak.
 
 **The next milestone is Phase 12 — institutions, reputation, law, religion, and public life.** Dignitas, fame, patronage, religion, legal cases, crime and punishment, interest groups, scandal, and public life can now be constructed as extensions of the same shared contracts (commands, events, ledgers, read models, knowledge/visibility, and the Dynasty Chronicle Phase 11 just added) every prior milestone has used. That is the safest route to the unusually deep game described by the design corpus without sacrificing determinism, historical breadth, or future AI-assisted presentation. Items 1–4 (the shared Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion; Legal & Court) are complete; items 5–9 remain.
-

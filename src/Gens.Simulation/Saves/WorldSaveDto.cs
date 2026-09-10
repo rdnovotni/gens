@@ -771,6 +771,15 @@ public sealed record WorldSaveDocument
     /// to empty, for the same additive-only reason as <see cref="SpyPlacements"/> above.</summary>
     [JsonPropertyOrder(120)]
     public IReadOnlyList<EstateSecurityInvestmentDto> EstateSecurityInvestments { get; init; } = Array.Empty<EstateSecurityInvestmentDto>();
+
+    [JsonPropertyOrder(121)]
+    public IReadOnlyList<EstateForceDto> EstateForces { get; init; } = Array.Empty<EstateForceDto>();
+    [JsonPropertyOrder(122)]
+    public IReadOnlyList<SquadDto> Squads { get; init; } = Array.Empty<SquadDto>();
+    [JsonPropertyOrder(123)]
+    public IReadOnlyList<MilitaryDeploymentDto> MilitaryDeployments { get; init; } = Array.Empty<MilitaryDeploymentDto>();
+    [JsonPropertyOrder(124)]
+    public IReadOnlyList<MilitaryCaptivityDto> MilitaryCaptivities { get; init; } = Array.Empty<MilitaryCaptivityDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -873,6 +882,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(64)]
     public long RaidThreatIds { get; init; }
+
+    [JsonPropertyOrder(65)]
+    public long SquadIds { get; init; }
+
+    [JsonPropertyOrder(66)]
+    public long MilitaryDeploymentIds { get; init; }
 
     /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-10-package-13 save has no Return
     /// Reports. Additive-only per ADR 0011's policy, matching <see cref="SchemeIds"/>'s identical
@@ -4749,6 +4764,81 @@ public sealed record BusinessViabilityCheckDto
 
     [JsonPropertyOrder(4)]
     public string? RecommendedAction { get; init; }
+}
+
+public sealed record EstateForceDto
+{
+    public required string SettlementId { get; init; }
+    public required string HouseholdId { get; init; }
+    public required string InfrastructureTier { get; init; }
+    public string? PraefectusId { get; init; }
+    public required int EstablishedDateTotalMonths { get; init; }
+}
+
+public sealed record SquadEquipmentLotDto
+{
+    public required string Kind { get; init; }
+    public required string GoodId { get; init; }
+    public string? Quality { get; init; }
+    public required long Committed { get; init; }
+    public required long Lost { get; init; }
+}
+
+public sealed record SquadDto
+{
+    public required string SquadId { get; init; }
+    public required string ForceSettlementId { get; init; }
+    public required string Name { get; init; }
+    public required string Type { get; init; }
+    public required string RecruitmentSource { get; init; }
+    public string? SourcePopGroup { get; init; }
+    public required int Manpower { get; init; }
+    public required int InitialManpower { get; init; }
+    public required int Readiness { get; init; }
+    public required int Morale { get; init; }
+    public required string Status { get; init; }
+    public string? CommanderId { get; init; }
+    public required TravelLocationDto Location { get; init; }
+    public IReadOnlyList<SquadEquipmentLotDto> Equipment { get; init; } = Array.Empty<SquadEquipmentLotDto>();
+}
+
+public sealed record EquipmentLossDto { public required string Kind { get; init; } public required long Quantity { get; init; } }
+public sealed record SquadLossDto
+{
+    public required string SquadId { get; init; }
+    public required int Casualties { get; init; }
+    public required int Desertions { get; init; }
+    public required int ReadinessLoss { get; init; }
+    public required int MoraleLoss { get; init; }
+    public IReadOnlyList<EquipmentLossDto> EquipmentLosses { get; init; } = Array.Empty<EquipmentLossDto>();
+}
+
+public sealed record MilitaryDeploymentDto
+{
+    public required string DeploymentId { get; init; }
+    public required string ForceSettlementId { get; init; }
+    public required string Type { get; init; }
+    public required TravelLocationDto Destination { get; init; }
+    public IReadOnlyList<string> SquadIds { get; init; } = Array.Empty<string>();
+    public required int BeganDateTotalMonths { get; init; }
+    public required string Status { get; init; }
+    public string? Outcome { get; init; }
+    public int? ResolvedDateTotalMonths { get; init; }
+    public IReadOnlyList<SquadLossDto> Losses { get; init; } = Array.Empty<SquadLossDto>();
+    public required int CaptivesTaken { get; init; }
+    public string? CaptiveSourceSettlementId { get; init; }
+    public string? CaptiveSourcePopGroup { get; init; }
+    public IReadOnlyList<string> CapturedCharacters { get; init; } = Array.Empty<string>();
+    public string? AftermathSummary { get; init; }
+}
+
+public sealed record MilitaryCaptivityDto
+{
+    public required string CharacterId { get; init; }
+    public required string DeploymentId { get; init; }
+    public required string CaptorHouseholdId { get; init; }
+    public required string CaptorSettlementId { get; init; }
+    public required int CapturedDateTotalMonths { get; init; }
 }
 
 #endif

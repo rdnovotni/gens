@@ -33,6 +33,7 @@ using Gens.Simulation.Legal;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
+using Gens.Simulation.Military;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Policies;
@@ -94,6 +95,8 @@ public static class WorldStateMapper
                 SchemeIds = state.SchemeIds.Peek,
                 SpyPlacementIds = state.SpyPlacementIds.Peek,
                 RaidThreatIds = state.RaidThreatIds.Peek,
+                SquadIds = state.SquadIds.Peek,
+                MilitaryDeploymentIds = state.MilitaryDeploymentIds.Peek,
                 ReturnReportIds = state.ReturnReportIds.Peek,
                 SuccessionDisputeIds = state.SuccessionDisputeIds.Peek,
                 ChronicleEntryIds = state.ChronicleEntryIds.Peek,
@@ -200,6 +203,10 @@ public static class WorldStateMapper
             RaidThreats = state.RaidThreats.InAscendingOrder().Select(entry => ToRaidThreatDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             EstateSecurityInvestments = state.EstateSecurityInvestments.InAscendingOrder().Select(entry => ToEstateSecurityInvestmentDto(entry.Value)).ToArray(),
+            EstateForces = state.EstateForces.InAscendingOrder().Select(entry => ToEstateForceDto(entry.Value)).ToArray(),
+            Squads = state.Squads.InAscendingOrder().Select(entry => ToSquadDto(entry.Value)).ToArray(),
+            MilitaryDeployments = state.MilitaryDeployments.InAscendingOrder().Select(entry => ToMilitaryDeploymentDto(entry.Value)).ToArray(),
+            MilitaryCaptivities = state.MilitaryCaptivities.InAscendingOrder().Select(entry => ToMilitaryCaptivityDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ReturnReports = state.ReturnReports.InAscendingOrder().Select(entry => ToReturnReportDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
@@ -594,6 +601,27 @@ public static class WorldStateMapper
                 var investment = FromEstateSecurityInvestmentDto(e);
                 return new KeyValuePair<RuntimeId<Household>, EstateSecurityInvestment>(investment.HouseholdId, investment);
             }));
+
+        var estateForces = OrderedRegistry<RuntimeId<Settlement>, EstateForce>.Restore(dto.EstateForces.Select(value =>
+        {
+            var force = FromEstateForceDto(value);
+            return new KeyValuePair<RuntimeId<Settlement>, EstateForce>(force.SettlementId, force);
+        }));
+        var squads = OrderedRegistry<RuntimeId<Squad>, Squad>.Restore(dto.Squads.Select(value =>
+        {
+            var squad = FromSquadDto(value);
+            return new KeyValuePair<RuntimeId<Squad>, Squad>(squad.Id, squad);
+        }));
+        var militaryDeployments = OrderedRegistry<RuntimeId<MilitaryDeployment>, MilitaryDeployment>.Restore(dto.MilitaryDeployments.Select(value =>
+        {
+            var deployment = FromMilitaryDeploymentDto(value);
+            return new KeyValuePair<RuntimeId<MilitaryDeployment>, MilitaryDeployment>(deployment.Id, deployment);
+        }));
+        var militaryCaptivities = OrderedRegistry<RuntimeId<Character>, MilitaryCaptivity>.Restore(dto.MilitaryCaptivities.Select(value =>
+        {
+            var captivity = FromMilitaryCaptivityDto(value);
+            return new KeyValuePair<RuntimeId<Character>, MilitaryCaptivity>(captivity.CharacterId, captivity);
+        }));
 
         var returnReports = OrderedRegistry<RuntimeId<ReturnReport>, ReturnReport>.Restore(
             dto.ReturnReports.Select(r =>
@@ -1197,6 +1225,8 @@ public static class WorldStateMapper
             schemeIds: RuntimeIdCounter<Scheme>.Restore(dto.Counters.SchemeIds),
             spyPlacementIds: RuntimeIdCounter<SpyPlacement>.Restore(dto.Counters.SpyPlacementIds),
             raidThreatIds: RuntimeIdCounter<RaidThreat>.Restore(dto.Counters.RaidThreatIds),
+            squadIds: RuntimeIdCounter<Squad>.Restore(dto.Counters.SquadIds),
+            militaryDeploymentIds: RuntimeIdCounter<MilitaryDeployment>.Restore(dto.Counters.MilitaryDeploymentIds),
             returnReportIds: RuntimeIdCounter<ReturnReport>.Restore(dto.Counters.ReturnReportIds),
             successionDisputeIds: RuntimeIdCounter<SuccessionDispute>.Restore(dto.Counters.SuccessionDisputeIds),
             chronicleEntryIds: RuntimeIdCounter<ChronicleEntry>.Restore(dto.Counters.ChronicleEntryIds),
@@ -1272,6 +1302,10 @@ public static class WorldStateMapper
             spyPlacements: spyPlacements,
             raidThreats: raidThreats,
             estateSecurityInvestments: estateSecurityInvestments,
+            estateForces: estateForces,
+            squads: squads,
+            militaryDeployments: militaryDeployments,
+            militaryCaptivities: militaryCaptivities,
             returnReports: returnReports,
             householdHeadships: householdHeadships,
             heirDesignations: heirDesignations,
@@ -4211,6 +4245,118 @@ public static class WorldStateMapper
         dto.AmountCounteredRawValue is { } countered ? Money.FromMinorUnits(countered) : null,
         dto.Resolution is { } resolution ? Enum.Parse<RansomResolution>(resolution) : null,
         dto.ResolvedDateTotalMonths is { } resolved ? new GameDate(resolved) : null);
+
+    private static EstateForceDto ToEstateForceDto(EstateForce value) => new()
+    {
+        SettlementId = value.SettlementId.ToTaggedString(),
+        HouseholdId = value.HouseholdId.ToTaggedString(),
+        InfrastructureTier = value.InfrastructureTier.ToString(),
+        PraefectusId = value.PraefectusId?.ToTaggedString(),
+        EstablishedDateTotalMonths = value.EstablishedDate.TotalMonths,
+    };
+
+    private static EstateForce FromEstateForceDto(EstateForceDto value) => new(
+        RuntimeId<Settlement>.Parse(value.SettlementId), RuntimeId<Household>.Parse(value.HouseholdId),
+        Enum.Parse<ForceInfrastructureTier>(value.InfrastructureTier),
+        value.PraefectusId is null ? null : RuntimeId<Character>.Parse(value.PraefectusId),
+        new GameDate(value.EstablishedDateTotalMonths));
+
+    private static SquadDto ToSquadDto(Squad value) => new()
+    {
+        SquadId = value.Id.ToTaggedString(),
+        ForceSettlementId = value.ForceSettlementId.ToTaggedString(),
+        Name = value.Name,
+        Type = value.Type.ToString(),
+        RecruitmentSource = value.RecruitmentSource.ToString(),
+        SourcePopGroup = value.SourcePopGroup?.ToString(),
+        Manpower = value.Manpower,
+        InitialManpower = value.InitialManpower,
+        Readiness = value.Readiness,
+        Morale = value.Morale,
+        Status = value.Status.ToString(),
+        CommanderId = value.CommanderId?.ToTaggedString(),
+        Location = ToTravelLocationDto(value.Location),
+        Equipment = value.Equipment.Select(e => new SquadEquipmentLotDto
+        {
+            Kind = e.Kind.ToString(),
+            GoodId = e.GoodId.Value,
+            Quality = e.Quality?.ToString(),
+            Committed = e.Committed,
+            Lost = e.Lost,
+        }).ToArray(),
+    };
+
+    private static Squad FromSquadDto(SquadDto value) => Squad.Restore(
+        RuntimeId<Squad>.Parse(value.SquadId), RuntimeId<Settlement>.Parse(value.ForceSettlementId), value.Name,
+        Enum.Parse<SquadType>(value.Type), Enum.Parse<SquadRecruitmentSource>(value.RecruitmentSource),
+        value.SourcePopGroup is null ? null : Enum.Parse<PopGroupType>(value.SourcePopGroup), value.Manpower,
+        value.InitialManpower, value.Readiness, value.Morale, Enum.Parse<SquadStatus>(value.Status),
+        value.CommanderId is null ? null : RuntimeId<Character>.Parse(value.CommanderId), FromTravelLocationDto(value.Location),
+        value.Equipment.Select(e => new SquadEquipmentLot(Enum.Parse<EquipmentKind>(e.Kind), new DefinitionId<Good>(e.GoodId),
+            e.Quality is null ? null : Enum.Parse<GoodQuality>(e.Quality), e.Committed, e.Lost)).ToArray());
+
+    private static MilitaryDeploymentDto ToMilitaryDeploymentDto(MilitaryDeployment value) => new()
+    {
+        DeploymentId = value.Id.ToTaggedString(),
+        ForceSettlementId = value.ForceSettlementId.ToTaggedString(),
+        Type = value.Type.ToString(),
+        Destination = ToTravelLocationDto(value.Destination),
+        SquadIds = value.SquadIds.Select(id => id.ToTaggedString()).ToArray(),
+        BeganDateTotalMonths = value.BeganDate.TotalMonths,
+        Status = value.Status.ToString(),
+        Outcome = value.Outcome?.ToString(),
+        ResolvedDateTotalMonths = value.ResolvedDate?.TotalMonths,
+        CaptivesTaken = value.CaptivesTaken,
+        CaptiveSourceSettlementId = value.CaptiveSourceSettlementId?.ToTaggedString(),
+        CaptiveSourcePopGroup = value.CaptiveSourcePopGroup?.ToString(),
+        CapturedCharacters = value.CapturedCharacters.Select(id => id.ToTaggedString()).ToArray(),
+        AftermathSummary = value.AftermathSummary,
+        Losses = value.Losses.Select(loss => new SquadLossDto
+        {
+            SquadId = loss.SquadId.ToTaggedString(),
+            Casualties = loss.Casualties,
+            Desertions = loss.Desertions,
+            ReadinessLoss = loss.ReadinessLoss,
+            MoraleLoss = loss.MoraleLoss,
+            EquipmentLosses = loss.EquipmentLosses.Select(e => new EquipmentLossDto { Kind = e.Kind.ToString(), Quantity = e.Quantity }).ToArray(),
+        }).ToArray(),
+    };
+
+    private static MilitaryDeployment FromMilitaryDeploymentDto(MilitaryDeploymentDto value)
+    {
+        var deployment = MilitaryDeployment.Begin(RuntimeId<MilitaryDeployment>.Parse(value.DeploymentId),
+            RuntimeId<Settlement>.Parse(value.ForceSettlementId), Enum.Parse<MilitaryDeploymentType>(value.Type),
+            FromTravelLocationDto(value.Destination), value.SquadIds.Select(RuntimeId<Squad>.Parse).ToArray(),
+            new GameDate(value.BeganDateTotalMonths));
+        return deployment with
+        {
+            Status = Enum.Parse<MilitaryDeploymentStatus>(value.Status),
+            Outcome = value.Outcome is null ? null : Enum.Parse<MilitaryOutcome>(value.Outcome),
+            ResolvedDate = value.ResolvedDateTotalMonths is null ? null : new GameDate(value.ResolvedDateTotalMonths.Value),
+            CaptivesTaken = value.CaptivesTaken,
+            CaptiveSourceSettlementId = value.CaptiveSourceSettlementId is null ? null : RuntimeId<Settlement>.Parse(value.CaptiveSourceSettlementId),
+            CaptiveSourcePopGroup = value.CaptiveSourcePopGroup is null ? null : Enum.Parse<PopGroupType>(value.CaptiveSourcePopGroup),
+            CapturedCharacters = value.CapturedCharacters.Select(RuntimeId<Character>.Parse).ToArray(),
+            AftermathSummary = value.AftermathSummary,
+            Losses = value.Losses.Select(loss => new SquadLoss(RuntimeId<Squad>.Parse(loss.SquadId), loss.Casualties,
+                loss.Desertions, loss.ReadinessLoss, loss.MoraleLoss,
+                loss.EquipmentLosses.Select(e => new EquipmentLoss(Enum.Parse<EquipmentKind>(e.Kind), e.Quantity)).ToArray())).ToArray(),
+        };
+    }
+
+    private static MilitaryCaptivityDto ToMilitaryCaptivityDto(MilitaryCaptivity value) => new()
+    {
+        CharacterId = value.CharacterId.ToTaggedString(),
+        DeploymentId = value.DeploymentId.ToTaggedString(),
+        CaptorHouseholdId = value.CaptorHouseholdId.ToTaggedString(),
+        CaptorSettlementId = value.CaptorSettlementId.ToTaggedString(),
+        CapturedDateTotalMonths = value.CapturedDate.TotalMonths,
+    };
+
+    private static MilitaryCaptivity FromMilitaryCaptivityDto(MilitaryCaptivityDto value) => new(
+        RuntimeId<Character>.Parse(value.CharacterId), RuntimeId<MilitaryDeployment>.Parse(value.DeploymentId),
+        RuntimeId<Household>.Parse(value.CaptorHouseholdId), RuntimeId<Settlement>.Parse(value.CaptorSettlementId),
+        new GameDate(value.CapturedDateTotalMonths));
 
     private static DistantHoldingDto ToDistantHoldingDto(DistantHolding holding) => new()
     {

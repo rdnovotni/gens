@@ -21,6 +21,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.Markets;
 using Gens.Simulation.MerchantFamilies;
+using Gens.Simulation.Military;
 using Gens.Simulation.NotableBusinesses;
 using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
@@ -73,6 +74,8 @@ public static class StateHasher
         hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.SpyPlacementIds.Peek);
         hash = MixLong(hash, state.RaidThreatIds.Peek);
+        hash = MixLong(hash, state.SquadIds.Peek);
+        hash = MixLong(hash, state.MilitaryDeploymentIds.Peek);
         hash = MixLong(hash, state.SuccessionDisputeIds.Peek);
         hash = MixLong(hash, state.FuneralRecordIds.Peek);
         hash = MixLong(hash, state.AgnomenIds.Peek);
@@ -335,6 +338,47 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.SecurityLevel);
             hash = MixLong(hash, entry.Value.LastAdjustedDate.TotalMonths);
         }
+
+        foreach (var entry in state.EstateForces.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.HouseholdId.Value);
+            hash = MixLong(hash, (long)entry.Value.InfrastructureTier);
+            hash = MixLong(hash, entry.Value.PraefectusId?.Value ?? -1);
+            hash = MixLong(hash, entry.Value.EstablishedDate.TotalMonths);
+        }
+
+        foreach (var entry in state.Squads.InAscendingOrder())
+        {
+            var squad = entry.Value;
+            hash = MixLong(hash, squad.Id.Value);
+            hash = MixLong(hash, squad.ForceSettlementId.Value);
+            hash = MixString(hash, squad.Name);
+            hash = MixLong(hash, (long)squad.Type);
+            hash = MixLong(hash, (long)squad.RecruitmentSource);
+            hash = MixLong(hash, squad.SourcePopGroup is null ? -1 : (long)squad.SourcePopGroup.Value);
+            hash = MixLong(hash, squad.Manpower);
+            hash = MixLong(hash, squad.InitialManpower);
+            hash = MixLong(hash, squad.Readiness);
+            hash = MixLong(hash, squad.Morale);
+            hash = MixLong(hash, (long)squad.Status);
+            hash = MixLong(hash, squad.CommanderId?.Value ?? -1);
+            hash = MixString(hash, JsonSerializer.Serialize(squad.Location));
+            foreach (var lot in squad.Equipment)
+            {
+                hash = MixLong(hash, (long)lot.Kind);
+                hash = MixString(hash, lot.GoodId.Value);
+                hash = MixLong(hash, lot.Quality is null ? -1 : (long)lot.Quality.Value);
+                hash = MixLong(hash, lot.Committed);
+                hash = MixLong(hash, lot.Lost);
+            }
+        }
+
+        foreach (var entry in state.MilitaryDeployments.InAscendingOrder())
+            hash = MixString(hash, JsonSerializer.Serialize(entry.Value));
+
+        foreach (var entry in state.MilitaryCaptivities.InAscendingOrder())
+            hash = MixString(hash, JsonSerializer.Serialize(entry.Value));
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.ReturnReports.InAscendingOrder())
