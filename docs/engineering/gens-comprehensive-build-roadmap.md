@@ -3819,7 +3819,7 @@ passes unaffected (59 definitions across 10 families) since this item adds no ne
 §5/§7 good-tier gap noted above rather than papering over it. **Phase 15 — Add advanced commerce, property,
 and public investment — is now complete: all 10 items shipped.**
 
-### Phase 16 — Add espionage, banditry, military force, and diplomacy — ⬜ NOT STARTED
+### Phase 16 — Add espionage, banditry, military force, and diplomacy — 🟨 IN PROGRESS
 
 **Outcome:** coercion and external danger use the same world rather than a separate minigame state.
 
@@ -3835,6 +3835,33 @@ Recommended internal order:
 **Exit gate:** conflict conserves people, equipment, goods, money, location, injury, captivity, and reputation; intelligence remains uncertain; military outcomes do not bypass the ordinary state model.
 
 **Primary design inputs:** `gens-espionage-design.md`, `gens-piracy-banditry-design.md`, `gens-military-combat-design.md`, `gens-diplomacy-non-roman-peoples-design.md`.
+
+**Item 1 progress:** the core vertical slice is built (`gens-espionage-design.md` §2, §5, §6). `Interactions.SpyPlacement` is a
+new sibling record to `Scheme` (not a fourth `SchemeType` — see that type's own doc comment for why: a
+Persistent Network has no Progress-completes-at-100 success condition, and Discovery needs a second
+Traceability roll `Scheme`'s single counter-play roll has no slot for), covering both placement shapes
+(`SpyPlacementType.QuickOp`/`PersistentNetwork`). `SpyPlacementProgressSystem` runs the monthly
+Discovery-Risk advance and resolves the two-roll Discovery-then-Traceability sequence (§6), reusing
+`SchemeProgressSystem`'s snapshot-then-mutate/named-RNG-stream shape. `PlaceSpyCommand` starts a
+placement (Spymaster capacity cap enforced, §2.2); `CounterEspionageSweepCommand` runs a costed,
+immediately-resolved Sweep against a suspected placement (§5). All new numeric constants live in
+`SpyPlacementCatalog`, documented as an untuned first pass like `SchemeProgressCatalog`. A new
+`SpyPlacementRosterQuery` gives a deliberately narrow "what does this observer already legitimately
+know" projection (ownership + already-emitted resolution events only) rather than inventing real
+`KnowledgeState` propagation. Deferred to a follow-up pass: double-agent turning and disinformation
+(§6's "turned" outcome), `KnowledgeState`-backed dossier propagation and Rival Houses' staleness
+override (§4's "Dossier Currency"), concrete Blackmail Material/Covert Sabotage/Administrative
+Foreknowledge/Early-Warning payloads (§4), and the Household Spymaster's own mechanical bonus wiring
+(§7) — `SpyPlacementCatalog.SpymasterCapacityCap` is a placeholder constant pending that bonus.
+Covered by `tests/Gens.Simulation.Tests/Interactions/{SpyPlacementTests,PlaceSpyCommandTests,
+SpyPlacementProgressSystemTests,CounterEspionageSweepCommandTests}.cs`,
+`tests/Gens.Simulation.Tests/Queries/SpyPlacementRosterQueryTests.cs`, and
+`tests/Gens.Simulation.Tests/Saves/SpyPlacementSaveRoundTripTests.cs`. `dotnet build`/`dotnet test`
+(1714/1714 in `Gens.Simulation.Tests`, unaffected elsewhere)/`dotnet format --verify-no-changes` all
+pass; the UR-01 shared-scenario fixtures and their recorded hash transcript
+(`tests/Gens.Simulation.Tests/Saves/Fixtures/ur01-*`) were regenerated via `run-shared-scenario` and
+`migrate-save` (ADR 0019) since adding any new `WorldState` partition changes `StateHasher`'s output
+for every save, including ones with no spy placements at all.
 
 ### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
 
