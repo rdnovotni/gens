@@ -76,7 +76,7 @@ public sealed class RaidThreatSystem : IMonthlySystem<WorldState>
     public string Id => "hazards.raidThreat";
     public TickPhase Phase => TickPhase.Hazards;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "actors", "householdHeadships", "characters", "settlements", "estateSecurityInvestments" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "actors" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "ledgerTransactionIds", "actors" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)

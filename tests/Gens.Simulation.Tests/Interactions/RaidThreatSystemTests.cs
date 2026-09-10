@@ -68,7 +68,7 @@ public sealed class RaidThreatSystemTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.Hazards));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "actors", "householdHeadships", "characters", "settlements", "estateSecurityInvestments" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "actors" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[] { "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "ledgerTransactionIds", "actors" }));
         });
     }
 
