@@ -72,6 +72,7 @@ public static class StateHasher
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
         hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.SpyPlacementIds.Peek);
+        hash = MixLong(hash, state.RaidThreatIds.Peek);
         hash = MixLong(hash, state.SuccessionDisputeIds.Peek);
         hash = MixLong(hash, state.FuneralRecordIds.Peek);
         hash = MixLong(hash, state.AgnomenIds.Peek);
@@ -322,6 +323,18 @@ public static class StateHasher
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.SpyPlacements.InAscendingOrder())
             hash = MixSpyPlacement(hash, entry.Value);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.RaidThreats.InAscendingOrder())
+            hash = MixRaidThreat(hash, entry.Value);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.EstateSecurityInvestments.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.SecurityLevel);
+            hash = MixLong(hash, entry.Value.LastAdjustedDate.TotalMonths);
+        }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.ReturnReports.InAscendingOrder())
@@ -1338,6 +1351,21 @@ public static class StateHasher
         hash = MixLong(hash, placement.MonthsActive);
         hash = MixLong(hash, placement.PlacedDate.TotalMonths);
         hash = MixLong(hash, placement.LastProgressedDate.TotalMonths);
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="Interactions.RaidThreat"/>'s full state, in field-declaration order
+    /// (Phase 16 item 2).</summary>
+    private static ulong MixRaidThreat(ulong hash, RaidThreat raid)
+    {
+        hash = MixLong(hash, raid.RaidId.Value);
+        hash = MixLong(hash, raid.ConfederationActorId.Value);
+        hash = MixLong(hash, raid.TargetHouseholdId.Value);
+        hash = MixLong(hash, (long)raid.TargetType);
+        hash = MixLong(hash, raid.DefenderSecurityLevel);
+        hash = MixLong(hash, (long)raid.Outcome);
+        hash = MixLong(hash, raid.SpoilsLost.RawValue);
+        hash = MixLong(hash, raid.RaidDate.TotalMonths);
         return hash;
     }
 

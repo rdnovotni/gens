@@ -115,6 +115,12 @@ public static class CampaignBootstrapper
     /// cref="SpyPlacementProgressStreamName"/> for the same rule-8 reason.</summary>
     public const string CounterEspionageSweepStreamName = "interactions.counterEspionageSweep";
 
+    /// <summary>The named random stream <see cref="Interactions.RaidThreatSystem"/> reserves for its
+    /// monthly raid-generation-and-resolution rolls (raid chance, target-type, interception, capture,
+    /// and standing-trend drift — Phase 16 item 2), kept distinct from every other stream here for the
+    /// same rule-8 reason.</summary>
+    public const string RaidThreatStreamName = "interactions.raidThreat";
+
     /// <summary>The named random stream <see cref="Stewardship.StewardAutonomousDecisionSystem"/>
     /// reserves for its monthly steward/Council Loyalty-risk and incident-type rolls (Phase 10 package
     /// 13; <c>gens-steward-council-auto-management-design.md</c> §6), kept distinct from every other
@@ -222,6 +228,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(SchemeProgressStreamName, config.Seed);
         streams.AddDerived(SpyPlacementProgressStreamName, config.Seed);
         streams.AddDerived(CounterEspionageSweepStreamName, config.Seed);
+        streams.AddDerived(RaidThreatStreamName, config.Seed);
         streams.AddDerived(StewardLoyaltyRiskStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeTriggerStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeScoringStreamName, config.Seed);
