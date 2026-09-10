@@ -27,7 +27,7 @@ public sealed record AudioSettings
     public float UiVolume { get; init; } = 1f;
     public bool Muted { get; init; }
 }
-public sealed record AccessibilitySettings { public bool ReducedMotion { get; init; } public MotionMode Motion { get; init; } = MotionMode.Full; public bool HighContrast { get; init; } }
+public sealed record AccessibilitySettings { public bool ReducedMotion { get; init; } public MotionMode Motion { get; init; } = MotionMode.Full; public bool HighContrast { get; init; } public bool ColorblindSafe { get; init; } }
 public sealed record LanguageSettings { public string Locale { get; init; } = "en"; }
 public sealed record DeveloperSettings { public bool ConsoleEnabled { get; init; } }
 public enum ConsentState { NotAsked, Granted, Denied }

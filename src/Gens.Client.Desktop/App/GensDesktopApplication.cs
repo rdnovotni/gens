@@ -56,7 +56,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         localization = new("en", controller.Settings.Developer.ConsoleEnabled);
         using (FileStream catalog = File.OpenRead(Path.Combine(AppContext.BaseDirectory, "Assets", "Localization", "en.json"))) localization.AddJson("en", catalog);
         localization.SetLocale(controller.Settings.Language.Locale);
-        root = new(GensTheme.Create(graphics, font, highContrast: controller.Settings.Accessibility.HighContrast)) { Name = "DesktopRoot", UiScale = controller.Settings.Display.UiScale, MotionPolicy = new(controller.Settings.Accessibility.Motion) };
+        root = new(GensTheme.Create(graphics, font, highContrast: controller.Settings.Accessibility.HighContrast, colorblindSafe: controller.Settings.Accessibility.ColorblindSafe)) { Name = "DesktopRoot", UiScale = controller.Settings.Display.UiScale, MotionPolicy = new(controller.Settings.Accessibility.Motion) };
         root.AttachInvalidation(context.Invalidate);
         controller.Audio.ActivityChanged += OnAudioActivityChanged;
         if (OperatingSystem.IsWindows())
@@ -208,7 +208,8 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         c.AddChild(Toggle(L("settings.mute"), s.Audio.Muted, controller.SetAudioMuted));
         c.AddChild(Text(L("settings.accessibility"), TypographyRole.Heading));
         c.AddChild(Toggle(L("settings.reduced_motion"), s.Accessibility.ReducedMotion, value => { controller.SetReducedMotion(value); root.MotionPolicy = new(controller.Settings.Accessibility.Motion); }));
-        c.AddChild(Toggle(L("settings.high_contrast"), s.Accessibility.HighContrast, value => { controller.SetHighContrast(value); root.ApplyTheme(GensTheme.Create(graphics, font, highContrast: value)); Rebuild(); }));
+        c.AddChild(Toggle(L("settings.high_contrast"), s.Accessibility.HighContrast, value => { controller.SetHighContrast(value); root.ApplyTheme(GensTheme.Create(graphics, font, highContrast: value, colorblindSafe: s.Accessibility.ColorblindSafe)); Rebuild(); }));
+        c.AddChild(Toggle(L("settings.colorblind_safe"), s.Accessibility.ColorblindSafe, value => { controller.SetColorblindSafe(value); root.ApplyTheme(GensTheme.Create(graphics, font, highContrast: s.Accessibility.HighContrast, colorblindSafe: value)); Rebuild(); }));
         c.AddChild(Text(L("settings.language"), TypographyRole.Heading));
         c.AddChild(Button(L("settings.english"), () => { controller.SetLocale("en"); localization.SetLocale("en"); Rebuild(); }));
         if (s.Developer.ConsoleEnabled) c.AddChild(Button(L("settings.pseudo"), () => { controller.SetLocale("qps-ploc"); localization.SetLocale("qps-ploc"); Rebuild(); }));
