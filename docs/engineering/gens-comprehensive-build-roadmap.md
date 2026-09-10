@@ -3865,7 +3865,7 @@ Construction order:
 
 1. Finish the canonical data catalogs and migrate provisional definitions.
 2. Expand region profiles, traits, events, buildings, goods, policies, actors, historical hooks, activities, and authored text in measured content waves.
-3. Complete the visual system: ink bar, diptych layouts, mosaic map language, Chronicle presentation, wax seals, geometric icons, responsive UI, keyboard/gamepad navigation, text scaling, contrast, and content controls.
+3. Complete the visual system: ink bar, diptych layouts, [mosaic map language](mosaic-map-language.md), Chronicle presentation, wax seals, [geometric icons](geometric-icon-system.md), responsive UI, [keyboard/gamepad navigation](gamepad-navigation.md), text scaling, contrast, and [content controls](content-controls.md).
 4. Complete deterministic procedural layered SVG portraits and caches; add optional generated-art providers only after placeholders and procedural art cover every required state.
 5. Add artwork moderation, recipes, hashes, cache manifests, provider failure/retry, offline behavior, and save portability.
 6. Profile real worlds. Optimize algorithms and allocations first; use Jobs/Burst selectively only with benchmarks. Reconsider Entities/DOTS only if measured scale still misses the agreed budget and the migration cost is justified.

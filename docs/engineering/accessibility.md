@@ -12,4 +12,8 @@ Known gaps in this pass, not yet certified:
 
 macOS NSAccessibility and Linux AT-SPI currently use the explicit null bridge. These, and the gaps above, are release gaps, not supported features.
 
+See [content controls](content-controls.md) for a design spec that extends
+this document with player-facing text-scale and colorblind-safe presentation
+settings, not yet implemented.
+
 Keyboard navigation uses Tab/Shift+Tab, Enter/Space, Escape, and scroll keys. Tests cover focus, modal trapping, semantic names, and snapshot focus. `MotionPolicy` classifies Essential, Informational, and Decorative motion: Reduced disables Decorative SceneView updates and caps Informational transitions at 120 ms; None permits only Essential motion. The estate preview is static today. High contrast replaces control surfaces with black/white, thicker borders, and a yellow/blue focus treatment; statuses retain text, not color alone.
