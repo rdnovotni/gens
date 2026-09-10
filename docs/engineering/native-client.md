@@ -44,6 +44,8 @@ dotnet publish src/Gens.Client.Desktop -c Release -r win-x64 --self-contained fa
 
 The console supports `help`, `state`, `hash`, `replay`, `query`, `submit`, `save`, `load`, `advance`, and `clear`. Campaign operations route through `CampaignSession`; it has no privileged mutation path. `replay` writes a diagnostic save into the native cache, reloads it, and compares canonical state hashes.
 
+Privacy-controlled observability is local-first and opt-in. The client records only allowlisted aggregate balance counters, writes scrubbed crash metadata after consent, presents a recovery notice on the next launch, and can export or delete local diagnostics from Settings. The exact exclusions and export contract are documented in [Telemetry, crash reporting, and diagnostics privacy](telemetry-and-crash-privacy.md).
+
 ## User data
 
 Windows uses `%LOCALAPPDATA%/Gens`, macOS uses `~/Library/Application Support/Gens`, and Linux uses `$XDG_DATA_HOME/gens` (or `~/.local/share/gens`). Startup establishes centralized save, settings, logs, cache, generated-art, screenshots, crash-report, and mod paths; traversal derived from external input is rejected. `settings/settings.json` is separate, versioned, migrated, atomically replaced, and preserved with a `.corrupt-*` suffix when invalid. The current save frontend uses `saves/quicksave.gens` and the shared `.gens` reader/writer.

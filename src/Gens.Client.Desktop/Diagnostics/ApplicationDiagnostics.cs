@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Gens.Client.Desktop.Platform;
@@ -63,36 +62,20 @@ public sealed class StructuredFileLogger : IRuntimeLogger, IDisposable
     }
 }
 
-public sealed class CrashReporter(IApplicationPaths paths, StructuredFileLogger logger)
+/// <summary>Compatibility wrapper for callers that explicitly request a local crash capture.</summary>
+public sealed class CrashReporter
 {
-    private static readonly JsonSerializerOptions ReportJsonOptions = new() { WriteIndented = true };
+    private readonly CrashReportStore store;
+
+    public CrashReporter(IApplicationPaths paths, StructuredFileLogger logger)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        store = new(paths, Settings.ConsentState.Granted);
+    }
+
     public string? Capture(Exception exception, string activeScreen, string platformBackend, string graphicsBackend, string audioBackend, string rendererMode)
     {
-        string id = $"crash-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmssfff}-{Guid.NewGuid():N}";
-        string path = Path.Combine(paths.CrashReports, id + ".json");
-        var report = new
-        {
-            id,
-            capturedUtc = DateTimeOffset.UtcNow,
-            release = ReleaseMetadata.Current,
-            os = RuntimeInformation.OSDescription,
-            architecture = RuntimeInformation.ProcessArchitecture.ToString(),
-            runtime = RuntimeInformation.FrameworkDescription,
-            platformBackend,
-            graphicsBackend,
-            audioBackend,
-            activeScreen,
-            rendererMode,
-            saveFormatVersion = 2,
-            recentLogs = logger.Recent,
-            exception = StructuredFileLogger.Redact(exception.ToString()),
-        };
-        try
-        {
-            Directory.CreateDirectory(paths.CrashReports);
-            File.WriteAllText(path, JsonSerializer.Serialize(report, ReportJsonOptions));
-            return path;
-        }
-        catch (Exception writeException) when (writeException is IOException or UnauthorizedAccessException) { return null; }
+        _ = activeScreen; _ = platformBackend; _ = graphicsBackend; _ = audioBackend; _ = rendererMode;
+        return store.Capture(exception, "explicit");
     }
 }

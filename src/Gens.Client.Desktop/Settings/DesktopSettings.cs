@@ -15,6 +15,7 @@ public sealed record DesktopSettings
     public LanguageSettings Language { get; init; } = new();
     public DeveloperSettings Developer { get; init; } = new();
     public ArtSettings Art { get; init; } = new();
+    public PrivacySettings Privacy { get; init; } = new();
 }
 public sealed record DisplaySettings { public float UiScale { get; init; } = 1f; }
 public sealed record AudioSettings
@@ -29,6 +30,12 @@ public sealed record AudioSettings
 public sealed record AccessibilitySettings { public bool ReducedMotion { get; init; } public MotionMode Motion { get; init; } = MotionMode.Full; public bool HighContrast { get; init; } }
 public sealed record LanguageSettings { public string Locale { get; init; } = "en"; }
 public sealed record DeveloperSettings { public bool ConsoleEnabled { get; init; } }
+public enum ConsentState { NotAsked, Granted, Denied }
+public sealed record PrivacySettings
+{
+    public ConsentState UsageTelemetry { get; init; }
+    public ConsentState CrashReports { get; init; }
+}
 public sealed class SettingsChangedEventArgs(DesktopSettings previous, DesktopSettings current, string domain) : EventArgs
 {
     public DesktopSettings Previous { get; } = previous;

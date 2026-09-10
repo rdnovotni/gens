@@ -17,11 +17,14 @@ internal static class Program
         DesktopApplicationPaths? paths = null;
         StructuredFileLogger? logger = null;
         DesktopApplicationController? controller = null;
+        CrashHandler? crashHandler = null;
         try
         {
             RendererMode renderer = ParseRenderer(args);
             paths = new DesktopApplicationPaths(Option(args, "--user-data="));
             paths.EnsureRequiredDirectories();
+            crashHandler = new(paths);
+            crashHandler.Install();
             logger = new(paths);
             logger.Log(AppLogCategory.Client, RuntimeLogLevel.Information, $"Starting Gens {ReleaseMetadata.Current.Display}; OS={System.Runtime.InteropServices.RuntimeInformation.OSDescription}; arch={System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture}.");
             using var platform = new SdlPlatform();
@@ -42,6 +45,7 @@ internal static class Program
             var application = new GensDesktopApplication(graphics, controller, args.Contains("--smoke-test", StringComparer.OrdinalIgnoreCase), Option(args, "--capture="));
             using var runtime = new RuntimeHost(platform, graphics, application,
                 new WindowOptions("Gens", 1280, 720, Resizable: true, HighDpi: true, MinWidth: 960, MinHeight: 640), renderer, logger: logger);
+            controller.RuntimeDiagnostics = runtime.Diagnostics;
             application.CapturePng = runtime.CapturePng;
             runtime.Run();
             controller.Audio.Dispose();
@@ -49,10 +53,11 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            string? report = paths is not null && logger is not null ? new CrashReporter(paths, logger).Capture(ex, controller?.CurrentScreen.ToString() ?? "startup", "SDL3", "SkiaSharp", controller?.Audio.BackendName ?? "not initialized", Option(args, "--renderer=") ?? "default") : null;
-            Console.Error.WriteLine($"Gens failed to start: {ex.Message}{Environment.NewLine}{ex}{(report is null ? string.Empty : Environment.NewLine + "Crash report: " + report)}"); return 1;
+            crashHandler?.Capture(ex, "fatal");
+            Console.Error.WriteLine($"Gens failed to start: {ex.GetType().Name}. An anonymous crash report was saved only if crash reporting was enabled.");
+            return 1;
         }
-        finally { controller?.Audio.Dispose(); logger?.Dispose(); }
+        finally { crashHandler?.Dispose(); controller?.Audio.Dispose(); logger?.Dispose(); }
     }
 
     private static void ConfigureScreenFixture(DesktopApplicationController controller, string[] args)

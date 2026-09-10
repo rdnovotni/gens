@@ -47,6 +47,10 @@ public sealed class KeyboardOnlyWorkflowTests : IDisposable
     [Test]
     public void FullCampaignVerticalSliceCompletesKeyboardOnly()
     {
+        Assert.That(controller.Modal?.Kind, Is.EqualTo(ModalKind.PrivacyConsent));
+        TabTo("Keep off"); Activate();
+        Assert.That(controller.Modal, Is.Null);
+
         TabTo("New Game"); Activate();
         Assert.That(controller.CurrentScreen, Is.EqualTo(ScreenId.NewGameSetup));
 

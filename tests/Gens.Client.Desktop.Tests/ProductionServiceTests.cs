@@ -30,6 +30,6 @@ public sealed class ProductionServiceTests
         string? reportPath = new CrashReporter(paths, logger).Capture(new InvalidOperationException("controlled"), "Settings", "SDL3", "Skia", "Null", "software");
         Assert.That(reportPath, Is.Not.Null);
         using JsonDocument report = JsonDocument.Parse(File.ReadAllText(reportPath!)); string text = report.RootElement.GetRawText();
-        Assert.Multiple(() => { Assert.That(text, Does.Contain("controlled")); Assert.That(text, Does.Contain("saveFormatVersion")); Assert.That(text, Does.Not.Contain("Bearer-secret")); Assert.That(text, Does.Not.Contain("world.json")); });
+        Assert.Multiple(() => { Assert.That(text, Does.Not.Contain("controlled")); Assert.That(text, Does.Contain("InvalidOperationException")); Assert.That(text, Does.Not.Contain("saveFormatVersion")); Assert.That(text, Does.Not.Contain("Bearer-secret")); Assert.That(text, Does.Not.Contain("world.json")); });
     }
 }

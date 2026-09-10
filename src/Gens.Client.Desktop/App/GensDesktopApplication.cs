@@ -194,7 +194,7 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
 
     private ScrollView BuildSettings()
     {
-        var tablet = Tablet("Settings", 650, 610); var c = Content(tablet); DesktopSettings s = controller.Settings;
+        var tablet = Tablet("Settings", 700, 1050); var c = Content(tablet); DesktopSettings s = controller.Settings;
         c.AddChild(Text(L("settings.title"), TypographyRole.Title)); c.AddChild(Text(L("settings.display"), TypographyRole.Heading)); c.AddChild(Text(L("settings.ui_scale", ("scale", s.Display.UiScale.ToString("P0", CultureInfo.CurrentCulture))), TypographyRole.Body));
         var scales = new Row { Spacing = 6 }; foreach (float scale in new[] { 1f, 1.25f, 1.5f, 1.75f, 2f }) scales.AddChild(Button($"{scale:P0}", () => { controller.SetUiScale(scale); root.UiScale = scale; Rebuild(); })); c.AddChild(scales);
         c.AddChild(Text(L("settings.audio"), TypographyRole.Heading));
@@ -208,6 +208,15 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         c.AddChild(Button(L("settings.english"), () => { controller.SetLocale("en"); localization.SetLocale("en"); Rebuild(); }));
         if (s.Developer.ConsoleEnabled) c.AddChild(Button(L("settings.pseudo"), () => { controller.SetLocale("qps-ploc"); localization.SetLocale("qps-ploc"); Rebuild(); }));
         c.AddChild(Toggle(L("settings.developer_console"), s.Developer.ConsoleEnabled, controller.SetConsoleEnabled));
+        c.AddChild(Text(L("settings.privacy"), TypographyRole.Heading));
+        c.AddChild(Toggle(L("settings.telemetry"), s.Privacy.UsageTelemetry == ConsentState.Granted, controller.SetUsageTelemetryConsent));
+        c.AddChild(Toggle(L("settings.crash_reports"), s.Privacy.CrashReports == ConsentState.Granted, controller.SetCrashReportConsent));
+        c.AddChild(Text(L("settings.privacy_notice"), TypographyRole.Caption));
+        var diagnosticActions = new Row { Spacing = 8 };
+        diagnosticActions.AddChild(Button(L("settings.export_diagnostics"), () => Run(() => { controller.ExportDiagnostics(); })));
+        diagnosticActions.AddChild(Button(L("settings.delete_diagnostics"), () => Run(controller.DeleteLocalDiagnostics)));
+        c.AddChild(diagnosticActions);
+        c.AddChild(Text(L("settings.crash_count", ("count", controller.PendingCrashReportCount.ToString(CultureInfo.CurrentCulture))), TypographyRole.SmallCaption));
         c.AddChild(Text(L("settings.art"), TypographyRole.Heading));
         c.AddChild(Toggle(L("settings.art_enable"), s.Art.AiGenerationEnabled, value => { controller.SetAiArtEnabled(value); Rebuild(); }));
         c.AddChild(Text(L("settings.art_notice"), TypographyRole.Caption));
@@ -307,8 +316,18 @@ public sealed class GensDesktopApplication(IGraphicsBackend graphics, DesktopApp
         ModalState modal = controller.Modal!; var dialog = new Border { Name = modal.Kind == ModalKind.WaxSeal ? "WaxSealConfirmation" : "ConfirmationDialog", Width = 520, Height = 300, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, Background = new(245, 229, 195), BorderBrush = new(133, 48, 39), BorderThickness = 4, Padding = new(24), Semantics = { Role = AccessibilityRole.Dialog, Label = modal.Title } };
         var c = new Column { Spacing = 14 }; c.AddChild(Text(modal.Title, TypographyRole.Heading)); c.AddChild(Text(modal.Body, TypographyRole.Body)); var actions = new Row { Spacing = 12 };
         if (modal.Kind == ModalKind.WaxSeal) { string seal = L("dialog.seal"); actions.AddChild(new WaxSealButton { Content = Text(seal, TypographyRole.Button, light: true), Clicked = () => { controller.ConfirmModal(); Rebuild(); }, Semantics = { Label = seal } }); }
+        else if (modal.Kind == ModalKind.PrivacyConsent)
+        {
+            actions.AddChild(Button(L("privacy.allow"), () => { controller.AcceptPrivacyConsent(); Rebuild(); }));
+            actions.AddChild(Button(L("privacy.keep_off"), () => { controller.DeclinePrivacyConsent(); Rebuild(); }));
+        }
+        else if (modal.Kind == ModalKind.CrashRecovery)
+        {
+            actions.AddChild(Button(L("privacy.open_settings"), () => { controller.ConfirmModal(); controller.Navigate(ScreenId.Settings); Rebuild(); }));
+            actions.AddChild(Button(L("privacy.later"), () => { controller.ConfirmModal(); Rebuild(); }));
+        }
         else actions.AddChild(Button(modal.Kind == ModalKind.Information ? "OK" : L("common.confirm"), () => { controller.ConfirmModal(); Rebuild(); }));
-        if (modal.Kind != ModalKind.Information) actions.AddChild(Button(L("common.cancel"), () => { controller.CancelModal(); root.CloseModal(); context.Invalidate(); })); c.AddChild(actions); dialog.Child = c; root.ShowModal(dialog);
+        if (modal.Kind is ModalKind.Confirmation or ModalKind.WaxSeal) actions.AddChild(Button(L("common.cancel"), () => { controller.CancelModal(); root.CloseModal(); context.Invalidate(); })); c.AddChild(actions); dialog.Child = c; root.ShowModal(dialog);
     }
 
     private void ToggleConsole()
