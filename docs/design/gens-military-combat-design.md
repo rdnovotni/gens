@@ -108,6 +108,8 @@ Unchanged, cross-referenced rather than redesigned: discharge — not enlistment
 
 The shared backbone, designed in shape now per the decision to fully define the resolution's inputs, order, and outcomes without committing to real numbers yet.
 
+*Implemented in `src/Gens.Simulation/Combat/` (build roadmap Phase 16 item 4): `CombatModels.cs` for §4.1-§4.3's vocabulary, `CombatResolutionCalculator.cs` for §4.4's pure strength/outcome/loss math (every constant this implementation's own invented number, per §11's "all numeric sizing... deliberately unsized"), and `CombatResolutionEngine.cs` as the single RNG-consuming entry point. `MilitaryCommands.ResolveMilitaryDeploymentCommand` is the first real consumer; §4.7's Sieges, §5's Duels/Retinues/Reconnaissance/Battle Report, and wiring Piracy & Banditry/Rival Houses/Games & Spectacle onto the same engine remain open follow-up work.*
+
 ### 4.1 Force & Combatant Composition
 
 A **Force** is a collection of Squads (§2.3); a lighter engagement (a duel, a small raid, an arena bout) can resolve against a single Combatant or a handful, using the same engine at a smaller scale rather than a different one. Squad/Combatant types — Militia, Auxiliary, Legionary, Cavalry, Siege, and a looser **Irregular** type covering pirates, bandits, and gladiators for the systems that will eventually plug in here — are all read identically by the engine. A **Fleet** (Shipyard/Navalia-built warships, Buildings §4.11) is the naval mirror of a Force, resolving through the same engine with Coast/River terrain treated as the naval equivalent of §4.3's terrain fit — this is Piracy & Banditry's most direct hook into the engine, since most of that system's raids are inherently maritime.

@@ -121,6 +121,13 @@ public static class CampaignBootstrapper
     /// same rule-8 reason.</summary>
     public const string RaidThreatStreamName = "interactions.raidThreat";
 
+    /// <summary>The named random stream <see cref="Military.MilitaryCommands.CreateResolveDeploymentPipeline"/>
+    /// reserves for the shared Combat Resolution Engine's variance roll
+    /// (<c>Gens.Simulation.Combat.CombatResolutionEngine.Resolve</c>; Phase 16 item 4), kept distinct
+    /// from every other stream here for the same rule-8 reason — a future guard/duel/spectacle consumer
+    /// of the same engine reserves its own stream rather than sharing this one.</summary>
+    public const string MilitaryCombatResolutionStreamName = "military.combatResolution";
+
     /// <summary>The named random stream <see cref="Stewardship.StewardAutonomousDecisionSystem"/>
     /// reserves for its monthly steward/Council Loyalty-risk and incident-type rolls (Phase 10 package
     /// 13; <c>gens-steward-council-auto-management-design.md</c> §6), kept distinct from every other
@@ -229,6 +236,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(SpyPlacementProgressStreamName, config.Seed);
         streams.AddDerived(CounterEspionageSweepStreamName, config.Seed);
         streams.AddDerived(RaidThreatStreamName, config.Seed);
+        streams.AddDerived(MilitaryCombatResolutionStreamName, config.Seed);
         streams.AddDerived(StewardLoyaltyRiskStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeTriggerStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeScoringStreamName, config.Seed);

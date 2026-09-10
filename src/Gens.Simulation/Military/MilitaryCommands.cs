@@ -2,13 +2,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Gens.Simulation.Campaign;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Combat;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Numerics;
+using Gens.Simulation.Random;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 using Gens.Simulation.Travel;
@@ -46,6 +50,19 @@ public sealed record ApplyMilitaryAftermathCommand(RuntimeId<Command> CommandId,
     IReadOnlyList<RuntimeId<Character>> CapturedCharacters, RuntimeId<Household>? CaptorHouseholdId,
     string AftermathSummary) : ICommand;
 
+/// <summary>Resolves an <see cref="MilitaryDeploymentStatus.Active"/> deployment through the shared
+/// Combat Resolution Engine (<see cref="CombatResolutionEngine"/>; design doc §4, build roadmap Phase
+/// 16 item 4) rather than requiring a caller to have computed a <see cref="MilitaryOutcome"/> and <see
+/// cref="SquadLoss"/> list by hand. <see cref="OpposingGroups"/>/<see cref="OpposingCommander"/> are the
+/// opposing side's own combat inputs — this command resolves the fight, it does not generate an
+/// opponent, since deriving one (an AI-controlled Rival House Force, a bandit party) is each future
+/// caller's own concern. It does not generate spoils or captives (§7's own aftermath-economy layer is
+/// out of this pass's scope) — only the outcome tier and squad-level losses §4.4 steps 2-4 compute.</summary>
+public sealed record ResolveMilitaryDeploymentCommand(RuntimeId<Command> CommandId, string ActorId, GameDate SubmittedDate,
+    string? CausationId, RuntimeId<MilitaryDeployment> DeploymentId,
+    IReadOnlyList<CombatantGroup> OpposingGroups, CombatantCommander? OpposingCommander,
+    CombatSituation AttackerSituation, CombatSituation DefenderSituation, string AftermathSummary) : ICommand;
+
 public sealed record MilitaryStateChangedEvent(RuntimeId<DomainEventEntity> EventId, GameDate OccurredDate,
     string Change, IReadOnlyList<string> SubjectIds, string? CausationId) : IDomainEvent
 {
@@ -73,6 +90,8 @@ public static class MilitaryCommands
     public static readonly ValidationErrorCode AftermathInvalid = new("military.aftermathInvalid");
     public static readonly ValidationErrorCode CaptiveIntakeMissing = new("military.captiveIntakeMissing");
     public static readonly ValidationErrorCode InvalidInfrastructure = new("military.invalidInfrastructure");
+    public static readonly ValidationErrorCode DeploymentNotActive = new("military.deploymentNotActive");
+    public static readonly ValidationErrorCode OpposingForceInvalid = new("military.opposingForceInvalid");
 
     public static readonly CommandPipeline<WorldState, EstablishEstateForceCommand> EstablishForce = new(
         ValidateEstablish, MutateEstablish, static state => state.IssueCommandSequenceNumber());
@@ -88,6 +107,18 @@ public static class MilitaryCommands
         ValidateDemobilize, MutateDemobilize, static state => state.IssueCommandSequenceNumber());
     public static readonly CommandPipeline<WorldState, ApplyMilitaryAftermathCommand> ApplyAftermath = new(
         ValidateAftermath, MutateAftermath, static state => state.IssueCommandSequenceNumber());
+
+    /// <summary>Builds the <see cref="ResolveMilitaryDeploymentCommand"/> pipeline. RNG-consuming (the
+    /// Combat Resolution Engine's variance roll), so, like <see
+    /// cref="Religion.RespondToOmenCommands.CreatePipeline"/>, it captures an injected <see
+    /// cref="RandomStreamSet"/> rather than being exposed as a static field.</summary>
+    public static CommandPipeline<WorldState, ResolveMilitaryDeploymentCommand> CreateResolveDeploymentPipeline(RandomStreamSet randomStreams)
+    {
+        if (randomStreams is null) throw new ArgumentNullException(nameof(randomStreams));
+        return new CommandPipeline<WorldState, ResolveMilitaryDeploymentCommand>(
+            ValidateResolve, (state, command) => MutateResolve(state, command, randomStreams),
+            static state => state.IssueCommandSequenceNumber());
+    }
 
     private static bool ValidSponsor(WorldState state, RuntimeId<Character> id, RuntimeId<Household> household,
         RuntimeId<Settlement> settlement) => state.Characters.TryGet(id, out var character) && character!.IsAlive
@@ -363,6 +394,86 @@ public static class MilitaryCommands
             AftermathSummary = command.AftermathSummary.Trim(),
         });
         return Event(state, command.SubmittedDate, "aftermathApplied", command.CausationId, command.DeploymentId.ToTaggedString());
+    }
+
+    private static ValidationErrorCode? ValidateResolve(WorldState state, ResolveMilitaryDeploymentCommand command)
+    {
+        if (!state.MilitaryDeployments.TryGet(command.DeploymentId, out var deployment) || deployment!.Status != MilitaryDeploymentStatus.Active) return DeploymentNotActive;
+        if (string.IsNullOrWhiteSpace(command.AftermathSummary)) return AftermathInvalid;
+        if (command.OpposingGroups is null || command.OpposingGroups.Count == 0) return OpposingForceInvalid;
+        foreach (var group in command.OpposingGroups)
+            if (!Enum.IsDefined(typeof(CombatantType), group.Type) || group.Manpower <= 0 ||
+                group.EquipmentTier < 0 || group.EquipmentTier > 3 ||
+                group.Readiness < 0 || group.Readiness > 100 || group.Morale < 0 || group.Morale > 100)
+                return OpposingForceInvalid;
+        foreach (var squadId in deployment.SquadIds)
+            if (!state.Squads.TryGet(squadId, out var squad) || squad!.Status != SquadStatus.Deployed)
+                return SquadUnavailable;
+        return null;
+    }
+
+    private static IDomainEvent[] MutateResolve(WorldState state, ResolveMilitaryDeploymentCommand command, RandomStreamSet randomStreams)
+    {
+        state.MilitaryDeployments.TryGet(command.DeploymentId, out var deployment);
+        var groups = new List<CombatantGroup>();
+        RuntimeId<Character>? commanderId = null;
+        foreach (var squadId in deployment!.SquadIds)
+        {
+            state.Squads.TryGet(squadId, out var squad);
+            groups.Add(new CombatantGroup(ToCombatantType(squad!.Type), squad.Manpower, squad.EquipmentTier, squad.Readiness, squad.Morale));
+            commanderId ??= squad.CommanderId;
+        }
+        if (commanderId is null && state.EstateForces.TryGet(deployment.ForceSettlementId, out var force))
+            commanderId = force!.PraefectusId;
+
+        CombatantCommander? commander = null;
+        if (commanderId is { } id && state.Characters.TryGet(id, out var character) && character!.IsAlive)
+            commander = new CombatantCommander(CommanderMultiplier(character.GetEffectiveAttributes().Martial));
+
+        var attacker = new CombatSide(groups, commander, command.AttackerSituation);
+        var defender = new CombatSide(command.OpposingGroups, command.OpposingCommander, command.DefenderSituation);
+        var resolution = CombatResolutionEngine.Resolve(attacker, defender, randomStreams, CampaignBootstrapper.MilitaryCombatResolutionStreamName);
+
+        var losses = deployment.SquadIds.Select((squadId, index) =>
+        {
+            var loss = resolution.AttackerLosses[index];
+            return new SquadLoss(squadId, loss.Casualties, 0, loss.ReadinessLoss, loss.MoraleLoss, Array.Empty<EquipmentLoss>());
+        }).ToArray();
+
+        var aftermath = new ApplyMilitaryAftermathCommand(command.CommandId, command.ActorId, command.SubmittedDate,
+            command.CausationId, command.DeploymentId, ToMilitaryOutcome(resolution.AttackerOutcome), losses, 0, null, null, null,
+            Array.Empty<RuntimeId<Character>>(), null, command.AftermathSummary.Trim());
+        return MutateAftermath(state, aftermath);
+    }
+
+    private static CombatantType ToCombatantType(SquadType type) => type switch
+    {
+        SquadType.Infantry => CombatantType.Legionary,
+        SquadType.Cavalry => CombatantType.Cavalry,
+        SquadType.Siege => CombatantType.Siege,
+        SquadType.Militia => CombatantType.Militia,
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unhandled squad type."),
+    };
+
+    private static MilitaryOutcome ToMilitaryOutcome(CombatOutcome outcome) => outcome switch
+    {
+        CombatOutcome.DecisiveVictory => MilitaryOutcome.DecisiveVictory,
+        CombatOutcome.CostlyVictory => MilitaryOutcome.CostlyVictory,
+        CombatOutcome.RepulsedStalemate => MilitaryOutcome.RepulsedStalemate,
+        CombatOutcome.Defeat => MilitaryOutcome.Defeat,
+        CombatOutcome.CatastrophicDefeat => MilitaryOutcome.CatastrophicDefeat,
+        _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, "Unhandled combat outcome."),
+    };
+
+    /// <summary>§4.2's commander weighting: no real Personality-Axis/Trait numeric contract exists yet
+    /// to read from, so this reads Martial alone (0-100, <see cref="Character.GetEffectiveAttributes"/>
+    /// so an injured commander fights as genuinely diminished) into a 0.7-1.3 multiplier — this
+    /// implementation's own invented number, same disclosure <see cref="Hazards.DisasterDamageCalculator"/>
+    /// already carries for its own untuned figures.</summary>
+    private static Fixed64 CommanderMultiplier(int martial)
+    {
+        var fraction = Fixed64.Divide(Fixed64.FromInt(Math.Clamp(martial, 0, 100)), Fixed64.FromInt(100));
+        return Fixed64.FromRaw(700_000) + Fixed64.Multiply(fraction, Fixed64.FromRaw(600_000));
     }
 
     private static SquadEquipmentLot[] ApplyEquipmentLosses(IReadOnlyList<SquadEquipmentLot> lots, IReadOnlyList<EquipmentLoss> losses)
