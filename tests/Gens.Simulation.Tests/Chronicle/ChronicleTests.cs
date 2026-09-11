@@ -2,8 +2,12 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Interactions;
+using Gens.Simulation.Ledger;
+using Gens.Simulation.Military;
 using Gens.Simulation.Queries;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
@@ -253,5 +257,115 @@ public sealed class ChronicleTests
             Assert.That(restored.ChronicleEntries.Count, Is.EqualTo(state.ChronicleEntries.Count));
             Assert.That(restored.GenerationalChapters.Count, Is.EqualTo(state.GenerationalChapters.Count));
         });
+    }
+
+    // Phase 16 item 6 coverage: the new WarAndCombat/PoliticsAndOffice case arms this item added.
+
+    [Test]
+    public void MilitaryAftermathAppliedEventProjectsWarAndCombatOnlyForTheDramaticTiers()
+    {
+        var (state, householdId, _) = HouseholdWithHead();
+        var deploymentId = state.MilitaryDeploymentIds.Issue();
+
+        foreach (var (outcome, expectedTier) in new[]
+        {
+            (MilitaryOutcome.Sack, ChronicleTier.Legendary),
+            (MilitaryOutcome.DecisiveVictory, ChronicleTier.Major),
+            (MilitaryOutcome.CatastrophicDefeat, ChronicleTier.Major),
+            (MilitaryOutcome.NegotiatedSurrender, ChronicleTier.Notable),
+        })
+        {
+            var evt = new MilitaryAftermathAppliedEvent(state.EventIds.Issue(), new GameDate(1), deploymentId, householdId, outcome, null);
+            var draft = ChronicleProjector.Project(state, new IDomainEvent[] { evt }).Single();
+            Assert.Multiple(() =>
+            {
+                Assert.That(draft.Category, Is.EqualTo(ChronicleCategory.WarAndCombat), outcome.ToString());
+                Assert.That(draft.Tier, Is.EqualTo(expectedTier), outcome.ToString());
+                Assert.That(draft.HouseholdId, Is.EqualTo(householdId), outcome.ToString());
+            });
+        }
+
+        var stalemate = new MilitaryAftermathAppliedEvent(
+            state.EventIds.Issue(), new GameDate(1), deploymentId, householdId, MilitaryOutcome.RepulsedStalemate, null);
+        Assert.That(ChronicleProjector.Project(state, new IDomainEvent[] { stalemate }), Is.Empty,
+            "a routine, non-dramatic outcome must not be chronicled");
+    }
+
+    [Test]
+    public void RaidOccurredEventProjectsWarAndCombatOnlyWhenTheRaidSucceeded()
+    {
+        var (state, householdId, _) = HouseholdWithHead();
+        var actorId = state.ActorIds.Issue();
+        var raidId = state.RaidThreatIds.Issue();
+
+        var succeeded = new RaidOccurredEvent(
+            state.EventIds.Issue(), new GameDate(1), raidId, actorId, householdId,
+            RaidTargetType.Settlement, RaidOutcome.RaidSucceeded, Money.FromDenarii(400));
+        var draft = ChronicleProjector.Project(state, new IDomainEvent[] { succeeded }).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(draft.Category, Is.EqualTo(ChronicleCategory.WarAndCombat));
+            Assert.That(draft.Tier, Is.EqualTo(ChronicleTier.Notable), "a direct settlement strike is the heavier tier");
+            Assert.That(draft.HouseholdId, Is.EqualTo(householdId));
+        });
+
+        var repelled = new RaidOccurredEvent(
+            state.EventIds.Issue(), new GameDate(1), raidId, actorId, householdId,
+            RaidTargetType.Settlement, RaidOutcome.InterceptedRepelled, Money.Zero);
+        Assert.That(ChronicleProjector.Project(state, new IDomainEvent[] { repelled }), Is.Empty,
+            "a failed/repelled raid must not be chronicled");
+    }
+
+    [Test]
+    public void RaidOccurredEventIsChronicledEvenThoughItIsAPrivateEvent()
+    {
+        // ChronicleGenerationSystem is handed a month's raw events directly (no Visibility filtering
+        // happens before the projector runs) — a household's own private raid must still land in its
+        // own Chronicle.
+        var (state, householdId, _) = HouseholdWithHead();
+        var actorId = state.ActorIds.Issue();
+        var raidId = state.RaidThreatIds.Issue();
+        var raided = new RaidOccurredEvent(
+            state.EventIds.Issue(), new GameDate(1), raidId, actorId, householdId,
+            RaidTargetType.Livestock, RaidOutcome.RaidSucceeded, Money.FromDenarii(100));
+
+        Assert.That(raided.Visibility, Is.Not.EqualTo(Visibility.Public));
+
+        ChronicleGenerationSystem.Generate(state, new IDomainEvent[] { raided });
+
+        Assert.That(state.ChronicleEntries.Count, Is.EqualTo(1));
+        var entry = state.ChronicleEntries.InAscendingOrder().Single().Value;
+        Assert.That(entry.Category, Is.EqualTo(ChronicleCategory.WarAndCombat));
+    }
+
+    [Test]
+    public void FrontierTreatyEventsProjectPoliticsAndOffice()
+    {
+        var (state, householdId, _) = HouseholdWithHead();
+        var actorId = state.ActorIds.Issue();
+        var treatyId = state.FrontierTreatyIds.Issue();
+
+        var concluded = new FrontierTreatyConcludedEvent(
+            state.EventIds.Issue(), new GameDate(1), treatyId, householdId, actorId, FrontierTreatyType.NonAggression,
+            TributeDirection.None, new GameDate(60), FrontierNegotiationQualitySource.CulturalFamiliarity, null, null);
+        var concludedDraft = ChronicleProjector.Project(state, new IDomainEvent[] { concluded }).Single();
+        Assert.Multiple(() =>
+        {
+            Assert.That(concludedDraft.Category, Is.EqualTo(ChronicleCategory.PoliticsAndOffice));
+            Assert.That(concludedDraft.Tier, Is.EqualTo(ChronicleTier.Notable));
+            Assert.That(concludedDraft.HouseholdId, Is.EqualTo(householdId));
+        });
+
+        var rejected = new FrontierTreatyRejectedEvent(
+            state.EventIds.Issue(), new GameDate(1), householdId, actorId, FrontierTreatyType.NonAggression,
+            FrontierNegotiationQualitySource.CulturalFamiliarity, 50, null);
+        var rejectedDraft = ChronicleProjector.Project(state, new IDomainEvent[] { rejected }).Single();
+        Assert.That(rejectedDraft.Tier, Is.EqualTo(ChronicleTier.Minor));
+
+        var ended = new FrontierTreatyEndedEvent(
+            state.EventIds.Issue(), new GameDate(1), treatyId, householdId, actorId, FrontierTreatyStatus.Abrogated, null);
+        var endedDraft = ChronicleProjector.Project(state, new IDomainEvent[] { ended }).Single();
+        Assert.That(endedDraft.Category, Is.EqualTo(ChronicleCategory.PoliticsAndOffice));
+        Assert.That(endedDraft.Tier, Is.EqualTo(ChronicleTier.Minor));
     }
 }
