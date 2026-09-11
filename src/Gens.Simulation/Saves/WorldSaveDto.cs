@@ -798,6 +798,27 @@ public sealed record WorldSaveDocument
     /// for the same additive-only reason as <see cref="SpyPlacements"/> above.</summary>
     [JsonPropertyOrder(128)]
     public IReadOnlyList<FrontierTreatyDto> FrontierTreaties { get; init; } = Array.Empty<FrontierTreatyDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Companions.OverseerAssignment"/> ever created (Phase
+    /// 17 item 1), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, for the same additive-only reason as <see cref="FrontierTreaties"/> above.</summary>
+    [JsonPropertyOrder(129)]
+    public IReadOnlyList<OverseerAssignmentDto> OverseerAssignments { get; init; } = Array.Empty<OverseerAssignmentDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Companions.SeniorPositionAssignment"/> ever created
+    /// (Phase 17 item 1), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="OverseerAssignments"/> above.</summary>
+    [JsonPropertyOrder(130)]
+    public IReadOnlyList<SeniorPositionAssignmentDto> SeniorPositionAssignments { get; init; } = Array.Empty<SeniorPositionAssignmentDto>();
+
+    /// <summary>Every household currently marked in <see
+    /// cref="Gens.Simulation.State.WorldState.RationalisClusterActiveHouseholds"/> (Phase 17 item 1),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, for the same additive-only reason as <see cref="OverseerAssignments"/> above.</summary>
+    [JsonPropertyOrder(131)]
+    public IReadOnlyList<RationalisClusterActiveHouseholdDto> RationalisClusterActiveHouseholds { get; init; } =
+        Array.Empty<RationalisClusterActiveHouseholdDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1149,6 +1170,18 @@ public sealed record CounterSetDto
     /// identical reasoning.</summary>
     [JsonPropertyOrder(125)]
     public long FrontierTreatyIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-17-item-1 save has no Overseer
+    /// Assignments. Additive-only per ADR 0011's policy, matching <see cref="FrontierTreatyIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(126)]
+    public long OverseerAssignmentIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-17-item-1 save has no Senior
+    /// Position Assignments. Additive-only per ADR 0011's policy, matching <see
+    /// cref="OverseerAssignmentIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(127)]
+    public long SeniorPositionAssignmentIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -4895,6 +4928,43 @@ public sealed record FrontierTreatyDto
     public required int ExpiresDateTotalMonths { get; init; }
     public required string Status { get; init; }
     public int? EndedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Companions.OverseerAssignment"/> (Phase 17 item 1).</summary>
+public sealed record OverseerAssignmentDto
+{
+    public required string RecordId { get; init; }
+    public required string HolderId { get; init; }
+    public required string Role { get; init; }
+    public required string HouseholdId { get; init; }
+    public required string BuildingId { get; init; }
+    public required int AssignedDateTotalMonths { get; init; }
+    public int? OnLeaveSinceTotalMonths { get; init; }
+    public int? EndDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Companions.SeniorPositionAssignment"/> (Phase 17 item 1).</summary>
+public sealed record SeniorPositionAssignmentDto
+{
+    public required string RecordId { get; init; }
+    public required string HolderId { get; init; }
+    public required string Title { get; init; }
+    public required string HouseholdId { get; init; }
+    public required string Scope { get; init; }
+    public string? TiedBuildingId { get; init; }
+    public string? OversightSettlementId { get; init; }
+    public required int AssignedDateTotalMonths { get; init; }
+    public int? OnLeaveSinceTotalMonths { get; init; }
+    public int? EndDateTotalMonths { get; init; }
+    public string? PromotedFromOverseerRecordId { get; init; }
+}
+
+/// <summary>One entry of <see
+/// cref="Gens.Simulation.State.WorldState.RationalisClusterActiveHouseholds"/> (Phase 17 item 1).</summary>
+public sealed record RationalisClusterActiveHouseholdDto
+{
+    public required string HouseholdId { get; init; }
+    public required int ActiveSinceTotalMonths { get; init; }
 }
 
 #endif

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Companions;
 using Gens.Simulation.Identity;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -57,8 +58,8 @@ public sealed class TravelProgressSystem : IMonthlySystem<WorldState>
 {
     public string Id => "travel.progress";
     public TickPhase Phase => TickPhase.Lifecycle;
-    public IReadOnlyCollection<string> Reads { get; } = new[] { "travelTrips", "characters" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "travelTrips", "characters", "eventIds" };
+    public IReadOnlyCollection<string> Reads { get; } = new[] { "travelTrips", "characters", "overseerAssignments", "seniorPositionAssignments" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "travelTrips", "characters", "overseerAssignments", "seniorPositionAssignments", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -143,6 +144,11 @@ public sealed class TravelProgressSystem : IMonthlySystem<WorldState>
         tripUpdates.Add((tripId, trip with { MonthsElapsed = 0, Status = TravelTripStatus.Completed }));
         foreach (var memberId in trip.Party.AllMembers)
             locationUpdates.Add((memberId, null));
+
+        // Phase 17 item 1 (§7): the retinue is home again — clear whatever Overseer/Senior Position
+        // OnLeaveSince BeginTravelCommand set at departure.
+        RetinueVacancyCommands.ClearOnLeave(state, trip.Party);
+
         events.Add(new TravelCompletedEvent(
             state.EventIds.Issue(), context.Date, tripId, trip.Party.TravelerId,
             trip.EncounterCompleted, CausationId: null));
