@@ -3956,6 +3956,58 @@ same gap item 2's own progress note recorded; whoever picks this up next needs t
 the new `military.combatResolution` random stream changes `StateHasher`'s output for every save) before
 merging.
 
+**Item 5 progress (slice 1 of N):** a first vertical slice of Foreign Peoples diplomacy is built in a new
+`src/Gens.Simulation/Diplomacy/` domain (`gens-diplomacy-non-roman-peoples-design.md` §2, §4, §5, §6),
+covering only ordinary Frontier tribal diplomacy — Great Power/Parthia (§8), the Armenia Contested-Buffer
+resolution (§9), and Alliance Against Rome (§10) are explicitly out of this slice, matching every prior
+item's own "core vertical slice now, defer the rest" precedent. `ForeignPeopleCreationService.CreateAncientSeed`
+finally instantiates `LivingWorldActorType.ForeignPeople` — reserved but never created since Phase 10 —
+the same way item 2 did for `BanditConfederation`, and rejects any culture that is not
+`CultureCategory.Frontier` as of the seeding date; a sparse `ForeignPeopleDetails` side table (mirroring
+`Collegia.CollegiumDetails`'s "hold only what a `LivingWorldActor` has no field for" convention) records
+which culture a people belongs to. Two firm decisions this slice makes, both because a player household is
+never itself a `LivingWorldActor` (see `Crime.RansomNegotiationResolver.TryFindActorForHousehold`'s own
+doc comment): (1) a new `PerPeopleStanding` record, keyed by a directed `(Household, Actor)` pair rather
+than `HouseStandingKey`'s undirected `(Actor, Actor)` shape, reuses `HouseStandingLevel` verbatim as its
+tier scale per §4's own "using Rival Houses' own tiered scale," plus an accumulating `Goodwill` field so a
+repeatable action can nudge standing without crossing a full tier every time; (2) §5's Interpreter Problem
+honors the hard gate `Languages.DiplomacyLanguageGateEvaluator` was already built and tested for in Phase
+13 item 4 ("no actual Diplomacy negotiation flow to call it from yet... named as the future caller") rather
+than inventing the design doc's own softer "meaningful penalty" language, and this item is that gate's
+first real caller — `FrontierNegotiationQualityEvaluator` layers §5's three-way quality read (Cultural
+Familiarity > Negotiator Fluency > Interpres) on top of the gate's own cleared/uncleared result, with
+Cultural Familiarity resolved as an exact `Character.Culture` match only, since Cultural Drift does not
+exist anywhere in this codebase yet (Education & Culture is a later phase) — an honest, disclosed gap
+rather than a fabricated drift mechanic. Four commands cover the in-scope actions: `SendDiplomaticGiftCommand`
+(§6, gate-exempt by design — "Treasury cost rather than negotiation risk"), `ProposeFrontierTreatyCommand`
+(Non-Aggression/Tribute/Trade only; validates the language gate, standing, tribute terms, and one-active-
+per-type, then rolls a deterministic success chance against a new `diplomacy.frontierNegotiation` stream),
+`AdjustPerPeopleStandingCommand` (the general actor-agnostic standing-nudge path future systems reuse,
+mirroring `AdjustHouseStandingCommand` exactly), and `AbrogateFrontierTreatyCommand`. `FrontierTreatySystem`
+(`TickPhase.RelationshipsActors`) posts monthly Tribute payments (arrears + a goodwill penalty on
+insufficient funds, no ledger posting) and expires treaties past their term. `FrontierDiplomacyQuery`
+follows Espionage's own `SpyPlacementRosterQuery` precedent rather than building real `KnowledgeState`
+propagation: a household's own standing/treaties with a people it has actually contacted are read live,
+since no full `KnowledgeState` partition exists in code yet for any system to read through. All new numeric
+constants live in `FrontierDiplomacyCatalog`, documented as an untuned first pass per §14's own open
+questions. Explicitly deferred to a follow-up slice: Frontier Relations Posture (§3 — a standing-policy
+layer with no in-slice payoff), Marriage Alliance/Auxiliary Levy/Foederati Pact/Frontier Hostage-Taking
+(§6), Raiding & Retaliation (§7, the same real follow-up item 4's own progress note already named for
+`RaidThreatSystem`), Great Power/Parthia diplomacy (§8), Armenia's Contested-Buffer resolution (§9),
+Alliance Against Rome (§10), and rival-house competing diplomacy (§11). Covered by
+`tests/Gens.Simulation.Tests/Diplomacy/{ForeignPeopleCreationServiceTests,PerPeopleStandingTests,
+FrontierNegotiationQualityTests,SendDiplomaticGiftCommandTests,ProposeFrontierTreatyCommandTests,
+AbrogateFrontierTreatyCommandTests,FrontierTreatySystemTests}.cs`,
+`tests/Gens.Simulation.Tests/Queries/FrontierDiplomacyQueryTests.cs`, and
+`tests/Gens.Simulation.Tests/Saves/FrontierDiplomacySaveRoundTripTests.cs`. The full solution build
+(`dotnet build Gens.slnx`), `dotnet format --verify-no-changes`, the full `Gens.Simulation.Tests` suite
+(1,791/1,791), content validate/compile, the deterministic-build check, and the regenerated UR-01
+shared-scenario fixtures and hash transcript (`tests/Gens.Simulation.Tests/Saves/Fixtures/ur01-*`, via
+`run-shared-scenario`/`migrate-save` per ADR 0019 — required because the three new `WorldState` partitions
+change `StateHasher`'s output for every save, including ones with no diplomacy activity at all) all pass.
+`Gens.UI.Tests`/`Gens.Audio.Tests`/`Gens.Client.Desktop.Tests` have pre-existing, unrelated failures in
+this sandbox (missing native font/audio decoding support), untouched by and unaffected by this change.
+
 ### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.

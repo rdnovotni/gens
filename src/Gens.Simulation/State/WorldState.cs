@@ -11,6 +11,7 @@ using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
+using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
@@ -142,6 +143,7 @@ public sealed class WorldState
         RuntimeIdCounter<VoyageEvent> voyageEventIds,
         RuntimeIdCounter<PublicWork> publicWorkIds,
         RuntimeIdCounter<CompetitiveEuergetismEvent> competitiveEuergetismEventIds,
+        RuntimeIdCounter<FrontierTreaty> frontierTreatyIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -262,6 +264,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<CompetitiveEuergetismEvent>, CompetitiveEuergetismEvent> competitiveEuergetismEvents,
         OrderedRegistry<RuntimeId<Settlement>, AggregateDemandReading> aggregateDemandReadings,
         OrderedRegistry<RuntimeId<NotableBusiness>, BusinessViabilityCheck> businessViabilityChecks,
+        OrderedRegistry<RuntimeId<Actor>, ForeignPeopleDetails> foreignPeopleDetails,
+        OrderedRegistry<PerPeopleStandingKey, PerPeopleStanding> perPeopleStandings,
+        OrderedRegistry<RuntimeId<FrontierTreaty>, FrontierTreaty> frontierTreaties,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -333,6 +338,7 @@ public sealed class WorldState
         VoyageEventIds = voyageEventIds;
         PublicWorkIds = publicWorkIds;
         CompetitiveEuergetismEventIds = competitiveEuergetismEventIds;
+        FrontierTreatyIds = frontierTreatyIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -453,6 +459,9 @@ public sealed class WorldState
         CompetitiveEuergetismEvents = competitiveEuergetismEvents;
         AggregateDemandReadings = aggregateDemandReadings;
         BusinessViabilityChecks = businessViabilityChecks;
+        ForeignPeopleDetails = foreignPeopleDetails;
+        PerPeopleStandings = perPeopleStandings;
+        FrontierTreaties = frontierTreaties;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -632,6 +641,9 @@ public sealed class WorldState
     /// <see cref="Gens.Simulation.PublicWorks.EuergetismObligation"/> needs none, keyed by the
     /// already-registered <see cref="RuntimeId{Household}"/> it describes instead.</summary>
     public RuntimeIdCounter<CompetitiveEuergetismEvent> CompetitiveEuergetismEventIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Diplomacy.FrontierTreaty"/> (Phase 16 item 5 slice 1).</summary>
+    public RuntimeIdCounter<FrontierTreaty> FrontierTreatyIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -1324,6 +1336,22 @@ public sealed class WorldState
     /// cref="Gens.Simulation.PurchasingPower.BusinessViabilitySystem"/> has actually evaluated.</summary>
     public OrderedRegistry<RuntimeId<NotableBusiness>, BusinessViabilityCheck> BusinessViabilityChecks { get; } = new();
 
+    /// <summary>The Diplomacy-specific data for every <see cref="Actors.LivingWorldActorType.ForeignPeople"/>
+    /// actor (Phase 16 item 5 slice 1), sparse and keyed by <see cref="RuntimeId{Actor}"/> — see <see
+    /// cref="Diplomacy.ForeignPeopleDetails"/>'s own doc comment.</summary>
+    public OrderedRegistry<RuntimeId<Actor>, ForeignPeopleDetails> ForeignPeopleDetails { get; } = new();
+
+    /// <summary>One household's tracked standing with one Foreign People (Phase 16 item 5 slice 1),
+    /// sparse — see <see cref="Diplomacy.PerPeopleStandingResolver"/> for the default that applies to a
+    /// missing entry.</summary>
+    public OrderedRegistry<PerPeopleStandingKey, PerPeopleStanding> PerPeopleStandings { get; } = new();
+
+    /// <summary>Every concluded Frontier treaty (Phase 16 item 5 slice 1), in ascending-<see
+    /// cref="RuntimeId{T}"/> order (ADR 0004) — a permanent historical record; a treaty that has expired
+    /// or been abrogated stays here with its terminal <see cref="Diplomacy.FrontierTreatyStatus"/>
+    /// rather than being removed.</summary>
+    public OrderedRegistry<RuntimeId<FrontierTreaty>, FrontierTreaty> FrontierTreaties { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1505,6 +1533,10 @@ public sealed class WorldState
         ["boundaryInfrastructures"] = BoundaryInfrastructures.Version,
         ["infrastructureConditions"] = InfrastructureConditions.Version,
         ["unifiedEstateMilestones"] = UnifiedEstateMilestones.Version,
+        ["frontierTreatyIds"] = FrontierTreatyIds.Peek,
+        ["foreignPeopleDetails"] = ForeignPeopleDetails.Version,
+        ["perPeopleStandings"] = PerPeopleStandings.Version,
+        ["frontierTreaties"] = FrontierTreaties.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

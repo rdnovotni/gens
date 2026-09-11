@@ -11,10 +11,12 @@ using Gens.Simulation.Time;
 namespace Gens.Simulation.Actors;
 
 /// <summary>The kind of living-world entity a <see cref="LivingWorldActor"/> represents
-/// (<c>gens-rival-houses-design.md</c> §6: the framework generalizes past rival gentes). Phase 10
-/// only creates <see cref="Gens"/> actors; the rest exist here so the framework itself does not need
-/// to change shape once Diplomacy, Piracy, and Religion (Phases 13/16 and later) start creating their
-/// own actors.</summary>
+/// (<c>gens-rival-houses-design.md</c> §6: the framework generalizes past rival gentes). <see
+/// cref="Gens"/> (Phase 10), <see cref="Collegium"/> (Phase 12 item 6), <see
+/// cref="BanditConfederation"/> (Phase 16 item 2), and <see cref="ForeignPeople"/> (Phase 16 item 5
+/// slice 1, via <c>Diplomacy.ForeignPeopleCreationService</c>) are all instantiated today; only <see
+/// cref="ReligiousInstitution"/> remains reserved for whichever future pass creates it, so the
+/// framework itself never needs to change shape to accommodate a new actor kind.</summary>
 public enum LivingWorldActorType
 {
     Gens,
