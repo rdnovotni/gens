@@ -101,7 +101,7 @@ The authored content catalog contained only `status.placeholder`. The JSON Schem
 - [x] **Phase 13** — Add geography, travel, correspondence, culture, and history
 - [x] **Phase 14** — Add health, disease, disasters, and mobile populations
 - [x] **Phase 15** — Add advanced commerce, property, and public investment
-- [ ] **Phase 16** — Add espionage, banditry, military force, and diplomacy
+- [x] **Phase 16** — Add espionage, banditry, military force, and diplomacy
 - [ ] **Phase 17** — Add deep relationships, activities, culture, and legacy objects
 - [ ] **Phase 18** — Scale content, presentation, art, performance, and release operations
 
@@ -3819,7 +3819,7 @@ passes unaffected (59 definitions across 10 families) since this item adds no ne
 §5/§7 good-tier gap noted above rather than papering over it. **Phase 15 — Add advanced commerce, property,
 and public investment — is now complete: all 10 items shipped.**
 
-### Phase 16 — Add espionage, banditry, military force, and diplomacy — 🟨 IN PROGRESS
+### Phase 16 — Add espionage, banditry, military force, and diplomacy — ✅ COMPLETE
 
 **Outcome:** coercion and external danger use the same world rather than a separate minigame state.
 
@@ -4007,6 +4007,143 @@ shared-scenario fixtures and hash transcript (`tests/Gens.Simulation.Tests/Saves
 change `StateHasher`'s output for every save, including ones with no diplomacy activity at all) all pass.
 `Gens.UI.Tests`/`Gens.Audio.Tests`/`Gens.Client.Desktop.Tests` have pre-existing, unrelated failures in
 this sandbox (missing native font/audio decoding support), untouched by and unaffected by this change.
+
+**Item 6 progress:** the cross-system integration wave closing this phase's own exit gate, following
+Phase 14 item 5's precedent — verified against the real code (not re-derived from scratch), closing what
+was real and cheap to close with existing patterns, and explicitly deferring the two areas that would
+need not-yet-built substructure. Five areas closed, one needed no code change, two are recommended
+follow-ups (see below):
+
+1. **Reputation** — four new `DignitasResolver.Apply` call sites, each with its own disclosed-as-invented
+   constants in the owning catalog: `MilitaryCommands.MutateAftermath` (`MilitaryCatalog.DecisiveVictoryDignitasGain`/
+   `CostlyVictoryDignitasGain`/`DefeatDignitasLoss`/`CatastrophicDefeatDignitasLoss`, keyed off the real
+   `MilitaryOutcome`, resolved against the deployment's owning `EstateForce.HouseholdId`);
+   `ProposeFrontierTreatyCommands.Mutate` (`FrontierDiplomacyCatalog.TreatyConcludedDignitasGain`/
+   `TreatyRejectedDignitasLoss`, alongside the existing Goodwill move); `AbrogateFrontierTreatyCommands.Mutate`
+   (`FrontierDiplomacyCatalog.AbrogationDignitasPenalty`, a gap that command's own doc comment left open);
+   and `RaidThreatSystem.Tick` (`RaidThreatCatalog.SuccessfulDefenseDignitasGain` on
+   `InterceptedRepelled`/`RaidersCaptured`, `RaidSucceededDignitasLoss` on `RaidSucceeded`). No new
+   `WorldState` partition — `HouseholdReputations` was already wired by Phase 12 item 1.
+2. **Law** — `Interactions.RaidCaptiveGenerator` (sibling to `Actors.LivingWorldActorHeadGenerator`'s
+   "lazily generate a Character on demand" pattern) draws a bare Character off `RaidThreatSystem`'s own
+   already-registered `interactions.raidThreat` stream on `RaidOutcome.RaidersCaptured` — no new RNG
+   stream, per the plan's own explicit instruction — tags it `CharacterSource.RaidCaptured` (a new,
+   additive enum value), and places them at the target household's own settlement. `RaidThreatSystem.Tick`
+   then opens a Crime `DetentionRecord` for them (`DetentionLocationType.PrivateErgastulum`,
+   `Justified: true`), exactly mirroring `Military.MilitaryCommands.ApplyMilitaryAftermathCommand`'s own
+   captured-Character path. Confirmed directly that `Crime.OpenRansomNegotiationCommand` is already
+   generalized over any `(CaptiveCharacterId, CapturingHouseholdId, TargetHouseholdId)` triple, so no new
+   ransom command was needed — the existing flow consumes the new `DetentionRecord` unmodified.
+   `RaidThreatSystem.Writes` grew to declare the newly-touched `characters`/`characterIds`/
+   `detentionRecords`/`detentionRecordIds`/`householdReputations` partitions (`WriteSetVerifyingSimulation`'s
+   debug-build check enforces this).
+3. **History/Chronicle** — filled `ChronicleCategory.WarAndCombat`'s previously-empty case-arm slot in
+   `ChronicleProjector.ProjectOne`. A new `Military.MilitaryAftermathAppliedEvent` (emitted alongside, not
+   instead of, the existing `MilitaryStateChangedEvent`, per this codebase's per-domain-event-per-fact
+   convention) carries the real `MilitaryOutcome` `MilitaryStateChangedEvent`'s own plain `Change` string
+   could not; only the dramatic/terminal tiers are chronicled (`Sack` → Legendary, `DecisiveVictory`/
+   `CatastrophicDefeat` → Major, `NegotiatedSurrender` → Notable — this item's own invented tier judgment,
+   no design doc sizes Chronicle tiers for combat outcomes). `RaidOccurredEvent { Outcome: RaidSucceeded }`
+   → `WarAndCombat`, tier scaled by target type (`Settlement` → Notable, goods/livestock → Minor).
+   Confirmed directly against `ChronicleGenerationSystem`'s own source that it is handed a month's raw
+   events with no `Visibility`-based filtering before the projector runs, so a household's own `Private`
+   raid event still lands correctly in its own Chronicle (covered by its own dedicated test).
+   `FrontierTreatyConcludedEvent`/`RejectedEvent`/`EndedEvent` → `PoliticsAndOffice` (Notable for
+   concluded, Minor for rejected/ended, per the plan's own explicit split). No new `WorldState` partition
+   — Chronicle's append path already consumes whatever the projector yields.
+4. **Combat Engine → Banditry Retaliation** — new `Interactions.RetaliateAgainstConfederationCommand`,
+   mirroring `MilitaryCommands.ResolveMilitaryDeploymentCommand`'s exact shape: the retaliating
+   household's own Ready Squads at one `EstateForce` settlement project into `CombatantGroup`s through
+   `MilitaryCommands.ToCombatantType`/`CommanderMultiplier` (both widened from `private` to `internal` so
+   this command can reuse them rather than duplicating the mapping/formula), and the targeted
+   `BanditConfederation` projects into a single `CombatantType.Irregular` group via a new, disclosed-as-
+   invented `MilitaryStrengthBand`-to-manpower/equipment-tier/readiness/morale mapping (this
+   implementation's own untuned first pass — no design doc sizes a Confederation's real combat stats).
+   Resolves as an abstract, no-travel engagement — no `MilitaryDeployment` is created — since a
+   Confederation has no real `TravelLocation`-anchored base location in this codebase yet (`TravelLocation.RivalEstate`
+   confirmed to have zero live callers anywhere), a deliberate, disclosed scope boundary matching item 2's
+   own precedent, not an oversight. Squad losses (casualties/readiness/morale, the same fields
+   `ApplyMilitaryAftermathCommand` already tracks) apply for every outcome tier, matching how the
+   underlying `CombatResolutionCalculator` already assigns nonzero losses even to a `DecisiveVictory`; a
+   win (`DecisiveVictory`/`CostlyVictory`) additionally drifts the Confederation's own `StandingTrend` one
+   notch toward `Declining`, reusing `RaidThreatSystem`'s own step helper (widened to `internal`) rather
+   than re-deriving the same enum-stepping table. Registered a **new, separate**
+   `interactions.raidRetaliation` RNG stream in `CampaignBootstrapper.cs`, deliberately not sharing
+   `MilitaryCombatResolutionStreamName`, matching how `FrontierNegotiationStreamName` got its own
+   registration alongside `RaidThreatStreamName` despite living in the same "conflict" territory (rule 8,
+   ADR 0004). Deferred, matching item 2's own already-named list: Bribery & Tribute (§4), Turning Raider
+   (§6), Allying With & Contracting Raiders including Targeted Contracts (§7, §7.1).
+5. **Public authority** — new `Policies.FundLocalDefenseCommand(HouseholdId, SettlementId, Amount)`,
+   matching `FundFestivalCommand`/`FundDisasterReliefCommand`'s exact shape (no separate sponsor field): a
+   ledger spend into a new `fundedaction:localdefense` system sink that raises the household's own
+   `EstateSecurityInvestment.SecurityLevel` at `RaidThreatCatalog.SecurityLevelCostPerPointDenarii`'s
+   existing per-point cost, plus the standard Funded-Action Dignitas payoff
+   (`FundLocalDefenseCommands.DignitasGain`, sized like `FundDisasterReliefCommands.DignitasGain`).
+   Confirmed directly that no design doc gates raising a private force or ratifying a treaty on holding
+   office (no file under `Magistracies/` references Military, Combat, or Diplomacy), so no such gate was
+   invented; instead, if the funding household's own current head holds an active
+   `MagistracyOffice.Aedile` seat at the target settlement (the office-holding check mirrors
+   `Crime.ImprisonCommand`'s own `HoldsActiveOfficeAtTargetSettlement`, narrowed to Aedile specifically), a
+   modest `AedileBonusPercent` multiplier applies to the Dignitas gain — a defensible extension of
+   Aedile's own documented "occasional real duty" framing, not a new invented authority. No new
+   `WorldState` partition.
+6. **Correspondence** — confirmed no code change needed: `LetterAction.DirectPlacedSpy` remains a
+   reserved enum value with no real caller, and both `SpyPlacementRosterQuery` and
+   `FrontierDiplomacyQuery` already disclose, in their own doc comments, that they bypass real
+   `KnowledgeState` propagation because no `KnowledgeState` partition exists in code yet — a
+   pre-existing, already-disclosed gap from Items 1 and 5 themselves, not something this item introduces.
+
+**Deferred, and why (recommended as separate follow-up roadmap items):**
+- **Economy — Barracks/Garrison/Fortress building content.** Confirmed no hook exists:
+  `EstateForce.ForceInfrastructureTier` is a bare, self-contained enum with no reference to
+  `Gens.Simulation.Buildings`, and `content/schemas/buildings.schema.json` only supports
+  production-recipe buildings, not capacity-granting ones. Needs a new schema shape,
+  `Gens.ContentCompiler` support, and rewiring `EstateForce` to read a real `BuildingInstance` — genuinely
+  separate, larger work.
+- **Travel — a real base location for Bandit Confederations.** `TravelLocation.RivalEstate` needs a
+  `DefinitionId<RegionProfileDefinition>`, while `LivingWorldActor.RegionId` only stores a bare runtime
+  `Region` (id+name, no link to authored region-profile content) — confirmed this factory has zero live
+  callers anywhere in the codebase, even for Rival Houses. Building the `Region` → `RegionProfileDefinition`
+  resolver is real, cross-cutting work that would benefit Rival Houses and Foreign Peoples too, not just
+  Confederations. Item 4's retaliation command is designed to not depend on this (see above).
+- **Fame/Scandal reputation hooks** (a narrower cut of item 1). Dignitas hooks already satisfy the exit
+  gate's "conserves reputation" requirement; Fame (personal glory) and Scandal (public disgrace from
+  catastrophic defeat) extensions are legitimate, separable follow-ups.
+
+New/changed test coverage: `tests/Gens.Simulation.Tests/Interactions/RaidThreatSystemTests.cs` (extended
+with per-outcome Dignitas and captive/`DetentionRecord` assertions), `RetaliateAgainstConfederationCommandTests.cs`
+(new — win/loss/rejection paths, StandingTrend drift, save round trip); `tests/Gens.Simulation.Tests/Military/MilitaryLifecycleTests.cs`
+(new Dignitas-per-outcome-tier test, asserting the narrower `MilitaryAftermathAppliedEvent` too);
+`tests/Gens.Simulation.Tests/Diplomacy/{ProposeFrontierTreatyCommandTests,AbrogateFrontierTreatyCommandTests}.cs`
+(extended with Dignitas assertions); `tests/Gens.Simulation.Tests/Chronicle/ChronicleTests.cs` (four new
+tests covering every new case arm, including the Private-visibility raid-event Chronicle test);
+`tests/Gens.Simulation.Tests/Policies/FundLocalDefenseCommandTests.cs` (new); and
+`tests/Gens.Simulation.Tests/Saves/RaidThreatSaveRoundTripTests.cs` (extended with a
+`CharacterSource.RaidCaptured`/`DetentionRecord` round-trip test). The full solution build
+(`dotnet build Gens.slnx`), `dotnet format --verify-no-changes`, the full `Gens.Simulation.Tests` suite
+(1,806/1,806), content validate/compile, and the deterministic-build check all pass. Because item 4 adds
+a new named RNG stream (`interactions.raidRetaliation`), the UR-01 shared-scenario fixtures were
+regenerated via `run-shared-scenario`/`migrate-save` per ADR 0019: the recorded hash transcript
+(`ur01-hash-transcript-native.json`) came back byte-identical (the shared scenario's own fixed command
+sequence never draws from the new stream, and `StateHasher` never hashes RNG stream state at all), but
+the three `.gens` fixtures themselves changed (each now registers one additional named stream) and were
+regenerated and committed; `ur01-migrated.gens` was re-verified byte-identical to `ur01-current-native.gens`
+(the `SaveMigrationRegistry.Empty` v1→v1 identity migration). `Gens.UI.Tests`/`Gens.Audio.Tests`/
+`Gens.Client.Desktop.Tests` have the same pre-existing, unrelated font/audio-decoding failures this
+sandbox's environment already carried before this change (confirmed unaffected).
+
+**Phase 16 exit gate, checked against items 1-6 together:** "conflict conserves people, equipment, goods,
+money, location, injury, captivity, and reputation" — people (Squad manpower/casualties, captive
+Characters), equipment (`EquipmentLoss`/`SquadEquipmentLot`), goods/money (Ledger postings for spoils,
+mercenary wages, security investment, Tribute), location (`TravelLocation`/settlement placement), injury
+(readiness/morale loss), captivity (`DetentionRecord`/`MilitaryCaptivity`/`RansomNegotiation`), and now
+reputation (Dignitas, this item) are all real, conserved `WorldState` facts reached through the ordinary
+command/event/query model — no parallel ledger, no silently-vanishing manpower, no untracked captive.
+"Intelligence remains uncertain" — Espionage's Discovery/Traceability rolls and Diplomacy's
+Interpreter/Cultural-Familiarity gate both stay genuinely probabilistic; this item added no
+new certainty-producing shortcut. "Military outcomes do not bypass the ordinary state model" — every new
+mutation in this item (Dignitas, captive intake, retaliation losses, security investment) goes through a
+real `ICommand`/`IMonthlySystem.Tick`, never a direct field set. Phase 16 is complete.
 
 ### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
 
