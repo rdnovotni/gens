@@ -65,4 +65,17 @@ public static class FrontierDiplomacyCatalog
 
     /// <summary>Goodwill lost on a rejected treaty proposal.</summary>
     public const int TreatyRejectedGoodwillLoss = 10;
+
+    /// <summary>Phase 16 item 6's Dignitas payoff for a successfully concluded Frontier treaty — this
+    /// implementation's own invented figure (no Dignitas conversion for diplomacy is sized anywhere in
+    /// the design corpus), matching <see cref="Policies.FundDisasterReliefCommands.DignitasGain"/>'s
+    /// identical "the visible act, not its exact price tag" disclosure.</summary>
+    public const int TreatyConcludedDignitasGain = 10;
+
+    /// <summary>The smaller Dignitas penalty for a rejected treaty proposal.</summary>
+    public const int TreatyRejectedDignitasLoss = 5;
+
+    /// <summary>The Dignitas penalty for abrogating one's own active treaty early — a real breach of
+    /// standing on top of <see cref="AbrogationGoodwillPenalty"/>'s per-people cost.</summary>
+    public const int AbrogationDignitasPenalty = 15;
 }

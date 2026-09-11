@@ -6,6 +6,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Crime;
+using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
@@ -14,6 +15,7 @@ using Gens.Simulation.History;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Legal;
+using Gens.Simulation.Military;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Succession;
@@ -514,6 +516,108 @@ public static class ChronicleProjector
                 lost.Type,
                 lost.EventId.ToTaggedString(),
                 shipOwner),
+
+            // Phase 16 item 6: only the dramatic/terminal MilitaryOutcome tiers are Chronicle-worthy,
+            // matching every other "only the severe/terminal rung" precedent above — an ordinary
+            // RepulsedStalemate/CostlyVictory aftermath is routine military bookkeeping, not a
+            // household-defining moment. Tier assignment here is this implementation's own invented
+            // judgment call (no design doc sizes Chronicle tiers for combat outcomes): a Sack is the
+            // single most dramatic outcome a household can inflict or suffer (Legendary); a Decisive
+            // Victory or Catastrophic Defeat is real, lasting material (Major); a Negotiated Surrender
+            // is real but less dramatic than an outright military result (Notable).
+            MilitaryAftermathAppliedEvent { Outcome: MilitaryOutcome.Sack } sacked => new ChronicleEntryDraft(
+                sacked.OccurredDate,
+                ChronicleCategory.WarAndCombat,
+                ChronicleTier.Legendary,
+                "The household's forces put an enemy settlement to the sack.",
+                Array.Empty<RuntimeId<Character>>(),
+                sacked.Type,
+                sacked.EventId.ToTaggedString(),
+                sacked.HouseholdId),
+
+            MilitaryAftermathAppliedEvent { Outcome: MilitaryOutcome.DecisiveVictory } decisive => new ChronicleEntryDraft(
+                decisive.OccurredDate,
+                ChronicleCategory.WarAndCombat,
+                ChronicleTier.Major,
+                "The household's forces won a decisive victory in the field.",
+                Array.Empty<RuntimeId<Character>>(),
+                decisive.Type,
+                decisive.EventId.ToTaggedString(),
+                decisive.HouseholdId),
+
+            MilitaryAftermathAppliedEvent { Outcome: MilitaryOutcome.CatastrophicDefeat } catastrophic => new ChronicleEntryDraft(
+                catastrophic.OccurredDate,
+                ChronicleCategory.WarAndCombat,
+                ChronicleTier.Major,
+                "The household's forces suffered a catastrophic defeat in the field.",
+                Array.Empty<RuntimeId<Character>>(),
+                catastrophic.Type,
+                catastrophic.EventId.ToTaggedString(),
+                catastrophic.HouseholdId),
+
+            MilitaryAftermathAppliedEvent { Outcome: MilitaryOutcome.NegotiatedSurrender } surrendered => new ChronicleEntryDraft(
+                surrendered.OccurredDate,
+                ChronicleCategory.WarAndCombat,
+                ChronicleTier.Notable,
+                "The household's forces reached a negotiated surrender rather than fight to the last.",
+                Array.Empty<RuntimeId<Character>>(),
+                surrendered.Type,
+                surrendered.EventId.ToTaggedString(),
+                surrendered.HouseholdId),
+
+            // Phase 16 item 6: a successful bandit/pirate raid is real Chronicle material for the
+            // household it struck. RaidOccurredEvent's own Visibility is Private (to the target
+            // household), but ChronicleGenerationSystem.Generate is handed every one of a month's
+            // already-emitted events directly (no Visibility-based filtering happens before this
+            // projector runs — confirmed directly against ChronicleGenerationSystem's own source), so
+            // the household's own private raid still lands in its own Chronicle exactly as it should.
+            // Tier scales with what was actually hit (§3): a direct strike on the settlement itself is
+            // Notable; goods/livestock loss is the lesser, routine Minor tier.
+            RaidOccurredEvent { Outcome: RaidOutcome.RaidSucceeded } raided => new ChronicleEntryDraft(
+                raided.OccurredDate,
+                ChronicleCategory.WarAndCombat,
+                raided.TargetType == RaidTargetType.Settlement ? ChronicleTier.Notable : ChronicleTier.Minor,
+                $"A bandit raid struck the household, making off with {raided.SpoilsLost.RawValue / Ledger.Money.ScaleFactor} denarii in losses.",
+                Array.Empty<RuntimeId<Character>>(),
+                raided.Type,
+                raided.EventId.ToTaggedString(),
+                raided.TargetHouseholdId),
+
+            // Phase 16 item 6: matches LegalCaseRuledEvent's own "PoliticsAndOffice for a real standing
+            // consequence" filing — a concluded treaty is Notable material; a rejected proposal or a
+            // treaty's own ordinary ending (expiry or abrogation) is the lesser Minor tier, per the plan's
+            // own explicit tier split.
+            FrontierTreatyConcludedEvent concluded => new ChronicleEntryDraft(
+                concluded.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                ChronicleTier.Notable,
+                $"The household concluded a {concluded.TreatyType} treaty with a foreign people.",
+                Array.Empty<RuntimeId<Character>>(),
+                concluded.Type,
+                concluded.EventId.ToTaggedString(),
+                concluded.HouseholdId),
+
+            FrontierTreatyRejectedEvent rejected => new ChronicleEntryDraft(
+                rejected.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                ChronicleTier.Minor,
+                $"The household's proposed {rejected.TreatyType} treaty with a foreign people was rejected.",
+                Array.Empty<RuntimeId<Character>>(),
+                rejected.Type,
+                rejected.EventId.ToTaggedString(),
+                rejected.HouseholdId),
+
+            FrontierTreatyEndedEvent ended => new ChronicleEntryDraft(
+                ended.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                ChronicleTier.Minor,
+                ended.EndStatus == FrontierTreatyStatus.Abrogated
+                    ? "The household abrogated its own treaty with a foreign people."
+                    : "The household's treaty with a foreign people came to its ordinary end.",
+                Array.Empty<RuntimeId<Character>>(),
+                ended.Type,
+                ended.EventId.ToTaggedString(),
+                ended.HouseholdId),
 
             _ => null,
         };

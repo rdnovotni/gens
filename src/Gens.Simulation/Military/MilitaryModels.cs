@@ -189,6 +189,23 @@ public static class MilitaryCatalog
     public const int MercenaryWageDenariiPerSoldier = 6;
     public const int MercenaryHireDenariiPerSoldier = 20;
 
+    /// <summary>Phase 16 item 6's Dignitas payoff for a <see cref="MilitaryOutcome.DecisiveVictory"/>
+    /// aftermath (<see cref="MilitaryCommands.MutateAftermath"/>) — this implementation's own invented
+    /// figure, no military-Dignitas conversion is sized anywhere in the design corpus, matching <see
+    /// cref="Policies.FundDisasterReliefCommands.DignitasGain"/>'s identical "the visible act, not its
+    /// exact price tag" disclosure.</summary>
+    public const int DecisiveVictoryDignitasGain = 15;
+
+    /// <summary>The smaller Dignitas payoff for a <see cref="MilitaryOutcome.CostlyVictory"/> — still a
+    /// win, but a costlier and less impressive one.</summary>
+    public const int CostlyVictoryDignitasGain = 6;
+
+    /// <summary>Dignitas lost on an ordinary <see cref="MilitaryOutcome.Defeat"/>.</summary>
+    public const int DefeatDignitasLoss = 8;
+
+    /// <summary>The larger Dignitas penalty for a <see cref="MilitaryOutcome.CatastrophicDefeat"/>.</summary>
+    public const int CatastrophicDefeatDignitasLoss = 20;
+
     public static int SquadCap(ForceInfrastructureTier tier) => tier switch
     {
         ForceInfrastructureTier.Barracks => 2,

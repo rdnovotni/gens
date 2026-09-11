@@ -9,6 +9,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Random;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
@@ -57,6 +58,7 @@ public sealed class ProposeFrontierTreatyCommandTests
     {
         var (state, householdId, negotiatorId, actorId) = Setup();
         var beforeGoodwill = PerPeopleStandingResolver.GetEffective(state, householdId, actorId).Goodwill;
+        var beforeDignitas = DignitasResolver.Current(state, householdId);
 
         var result = Pipeline(Streams(12345)).Execute(state, new ProposeFrontierTreatyCommand(
             state.CommandIds.Issue(), "player", StartDate, null, householdId, negotiatorId, actorId,
@@ -64,17 +66,20 @@ public sealed class ProposeFrontierTreatyCommandTests
 
         Assert.That(result.Accepted, Is.True);
         var afterGoodwill = PerPeopleStandingResolver.GetEffective(state, householdId, actorId).Goodwill;
+        var afterDignitas = DignitasResolver.Current(state, householdId);
         Assert.That(afterGoodwill, Is.Not.EqualTo(beforeGoodwill));
 
         if (state.FrontierTreaties.Count > 0)
         {
             Assert.That(result.Events, Has.Some.InstanceOf<FrontierTreatyConcludedEvent>());
             Assert.That(afterGoodwill, Is.GreaterThan(beforeGoodwill));
+            Assert.That(afterDignitas, Is.EqualTo(beforeDignitas + FrontierDiplomacyCatalog.TreatyConcludedDignitasGain));
         }
         else
         {
             Assert.That(result.Events, Has.Some.InstanceOf<FrontierTreatyRejectedEvent>());
             Assert.That(afterGoodwill, Is.LessThan(beforeGoodwill));
+            Assert.That(afterDignitas, Is.EqualTo(beforeDignitas - FrontierDiplomacyCatalog.TreatyRejectedDignitasLoss));
         }
     }
 

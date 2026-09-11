@@ -2,11 +2,13 @@ using System.Linq;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Characters;
+using Gens.Simulation.Crime;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Interactions;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Random;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Tests.Characters;
@@ -68,7 +70,11 @@ public sealed class RaidThreatSystemTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.Hazards));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "actors", "householdHeadships", "characters", "settlements", "estateSecurityInvestments" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "ledgerTransactionIds", "actors" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[]
+            {
+                "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "ledgerTransactionIds", "actors",
+                "householdReputations", "characters", "characterIds", "detentionRecords", "detentionRecordIds",
+            }));
         });
     }
 
@@ -126,8 +132,10 @@ public sealed class RaidThreatSystemTests
         for (var month = 1; month <= 2000 && state.RaidThreats.Count == 0; month++)
         {
             state.LedgerAccounts.TryGet(account, out var before);
+            var dignitasBefore = DignitasResolver.Current(state, householdId);
             system.Tick(state, new MonthlyTickContext(new GameDate(month), streams));
             state.LedgerAccounts.TryGet(account, out var after);
+            var dignitasAfter = DignitasResolver.Current(state, householdId);
 
             if (state.RaidThreats.Count == 0)
                 continue;
@@ -144,11 +152,29 @@ public sealed class RaidThreatSystemTests
                 {
                     Assert.That(raid.SpoilsLost, Is.GreaterThan(Money.Zero));
                     Assert.That(after!.Balance, Is.EqualTo(before!.Balance - raid.SpoilsLost));
+                    Assert.That(dignitasAfter, Is.EqualTo(dignitasBefore - RaidThreatCatalog.RaidSucceededDignitasLoss),
+                        "a successful raid must cost the target household some Dignitas");
                 }
                 else
                 {
                     Assert.That(raid.SpoilsLost, Is.EqualTo(Money.Zero));
                     Assert.That(after!.Balance, Is.EqualTo(before!.Balance));
+                    Assert.That(dignitasAfter, Is.EqualTo(dignitasBefore + RaidThreatCatalog.SuccessfulDefenseDignitasGain),
+                        "a successful defense must gain the target household some Dignitas");
+                }
+
+                if (raid.Outcome == RaidOutcome.RaidersCaptured)
+                {
+                    var captive = state.DetentionRecords.InAscendingOrder().Select(entry => entry.Value).SingleOrDefault();
+                    Assert.That(captive, Is.Not.Null, "a captured raider must open a real DetentionRecord");
+                    Assert.That(captive!.LocationType, Is.EqualTo(DetentionLocationType.PrivateErgastulum));
+                    Assert.That(captive.Justified, Is.True);
+                    Assert.That(state.Characters.TryGet(captive.CharacterId, out var captiveCharacter), Is.True);
+                    Assert.That(captiveCharacter!.Source, Is.EqualTo(CharacterSource.RaidCaptured));
+                }
+                else
+                {
+                    Assert.That(state.DetentionRecords.Count, Is.EqualTo(0));
                 }
             });
         }

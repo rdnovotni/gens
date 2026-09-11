@@ -29,10 +29,11 @@ public enum RaidOutcome
 
     /// <summary>The defender's own security intercepted and captured the raiders (§3: "a well-defended
     /// target can... capture the raiders outright"). §3 goes on to note a captured raider is a real
-    /// Character available for a Legal &amp; Court matter or sale into slavery — this slice records the
-    /// outcome only; generating that Character and wiring Legal &amp; Court/Labor &amp; Slavery intake is
-    /// deferred, matching item 1's identical "record the outcome now, wire the downstream consumer
-    /// later" precedent for Discovered-and-traced.</summary>
+    /// Character available for a Legal &amp; Court matter or sale into slavery — Phase 16 item 6 closes
+    /// this: <see cref="RaidCaptiveGenerator"/> generates that Character and a Crime <see
+    /// cref="Crime.DetentionRecord"/> is opened for them, exactly like Military's own captured-Character
+    /// path, so the existing <see cref="Crime.OpenRansomNegotiationCommand"/> flow can consume it without
+    /// a parallel captive minigame.</summary>
     RaidersCaptured,
 
     /// <summary>Nothing intercepted the raid; the target household loses <see

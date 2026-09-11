@@ -33,4 +33,11 @@ public enum CharacterSource
 
     /// <summary>A direct Slave Market purchase from the Non-Household Enslaved cohort (§11, §9).</summary>
     SlaveMarketPurchase,
+
+    /// <summary>A bandit/pirate raider generated on capture (Phase 16 item 6; <see
+    /// cref="Interactions.RaidThreatSystem"/>'s own <see cref="Interactions.RaidOutcome.RaidersCaptured"/>
+    /// outcome) — mirrors <see cref="RivalGenerated"/>'s identical "lazily instantiate a bare Character
+    /// only once one is actually needed" convention, applied to a captured raider rather than a rival
+    /// house's head.</summary>
+    RaidCaptured,
 }

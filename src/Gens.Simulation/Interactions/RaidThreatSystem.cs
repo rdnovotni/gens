@@ -6,8 +6,10 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Campaign;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Crime;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
@@ -55,18 +57,21 @@ public sealed record RaidOccurredEvent(
 /// cref="LivingWorldActorType.Gens"/> actors and never looks at raid history.
 ///
 /// <para><b>Deliberately not modeled here</b> (matching item 1's own "core vertical slice now, defer the
-/// rest" precedent): Bribery &amp; Tribute (§4), Retaliation (§5) — both require a Confederation's real
-/// base location and the not-yet-built Combat Resolution Engine — Turning Raider (§6), Allying With
-/// &amp; Contracting Raiders including Targeted Contracts (§7, §7.1), Familia-member/background-population
-/// kidnapping and the Ransom flow it opens (§8's non-goods targets), and the actual Vigil/Praefectus
-/// Vigilum/Navarchus/Watchtower/City Walls sources that should someday feed <see
+/// rest" precedent): Bribery &amp; Tribute (§4), Turning Raider (§6), Allying With &amp; Contracting
+/// Raiders including Targeted Contracts (§7, §7.1), Familia-member/background-population kidnapping and
+/// the Ransom flow it opens (§8's non-goods targets), and the actual Vigil/Praefectus Vigilum/Navarchus/
+/// Watchtower/City Walls sources that should someday feed <see
 /// cref="EstateSecurityInvestment.SecurityLevel"/> instead of the direct-investment command this item
-/// ships with. A captured raider (<see cref="RaidOutcome.RaidersCaptured"/>) is recorded as an outcome
-/// only — no Character is generated for them, and no Legal &amp; Court/Labor &amp; Slavery intake is
-/// wired, per that outcome's own doc comment. §9's own "a better-defended estate is also less likely to
-/// be targeted... in the first place" axis is likewise deferred — <see cref="FindTarget"/> below is a
-/// plain regional tie-break with no <see cref="EstateSecurityInvestment.SecurityLevel"/> weighting; see
-/// that type's own doc comment.</para>
+/// ships with. Retaliation (§5) is now built (Phase 16 item 6) as <see
+/// cref="RetaliateAgainstConfederationCommands"/> — a separate, player-initiated command rather than
+/// something this monthly tick resolves itself. A captured raider (<see
+/// cref="RaidOutcome.RaidersCaptured"/>) generates a real Character via <see
+/// cref="RaidCaptiveGenerator"/> and a Crime <see cref="DetentionRecord"/>, exactly like Military's own
+/// captured-Character path — the existing <see cref="Crime.OpenRansomNegotiationCommand"/> flow consumes
+/// it without a parallel captive minigame (Phase 16 item 6). §9's own "a better-defended estate is also
+/// less likely to be targeted... in the first place" axis is likewise deferred — <see cref="FindTarget"/>
+/// below is a plain regional tie-break with no <see cref="EstateSecurityInvestment.SecurityLevel"/>
+/// weighting; see that type's own doc comment.</para>
 ///
 /// Every numeric constant here is this codebase's own untuned first pass — see <see
 /// cref="RaidThreatCatalog"/>'s own doc comments.
@@ -76,7 +81,11 @@ public sealed class RaidThreatSystem : IMonthlySystem<WorldState>
     public string Id => "hazards.raidThreat";
     public TickPhase Phase => TickPhase.Hazards;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "actors", "householdHeadships", "characters", "settlements", "estateSecurityInvestments" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "ledgerTransactionIds", "actors" };
+    public IReadOnlyCollection<string> Writes { get; } = new[]
+    {
+        "raidThreats", "raidThreatIds", "eventIds", "ledgerAccounts", "ledgerTransactions", "ledgerTransactionIds", "actors",
+        "householdReputations", "characters", "characterIds", "detentionRecords", "detentionRecordIds",
+    };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -146,6 +155,24 @@ public sealed class RaidThreatSystem : IMonthlySystem<WorldState>
                 raidId, confederationActorId, targetEntry.Key, targetType, securityLevel, outcome, spoilsLost, context.Date);
             state.RaidThreats.Add(raidId, raid);
 
+            var dignitasDelta = outcome switch
+            {
+                RaidOutcome.InterceptedRepelled or RaidOutcome.RaidersCaptured => RaidThreatCatalog.SuccessfulDefenseDignitasGain,
+                RaidOutcome.RaidSucceeded => -RaidThreatCatalog.RaidSucceededDignitasLoss,
+                _ => 0,
+            };
+            if (dignitasDelta != 0)
+                DignitasResolver.Apply(state, targetEntry.Key, dignitasDelta);
+
+            if (outcome == RaidOutcome.RaidersCaptured)
+            {
+                state.Characters.TryGet(targetEntry.Value.HeadCharacterId, out var targetHead);
+                var captive = RaidCaptiveGenerator.GenerateCaptive(state, context.RandomStreams, StreamName, targetHead!.Location, context.Date);
+                var detentionId = state.DetentionRecordIds.Issue();
+                state.DetentionRecords.Add(detentionId, new DetentionRecord(
+                    detentionId, captive.Id, DetentionLocationType.PrivateErgastulum, context.Date, Justified: true));
+            }
+
             if (outcome == RaidOutcome.RaidSucceeded && spoilsLost > Money.Zero)
             {
                 var account = LedgerAccountKey.ForHousehold(targetEntry.Key);
@@ -212,7 +239,11 @@ public sealed class RaidThreatSystem : IMonthlySystem<WorldState>
         _ => current,
     };
 
-    private static LivingWorldActorStandingTrend StepTowardDeclining(LivingWorldActorStandingTrend current) => current switch
+    /// <summary>Internal rather than private (Phase 16 item 6): <see
+    /// cref="RetaliateAgainstConfederationCommands"/> steps a retaliated-against Confederation's own
+    /// <see cref="LivingWorldActorStandingTrend"/> toward Declining through this exact same one-notch
+    /// helper, rather than duplicating the step table.</summary>
+    internal static LivingWorldActorStandingTrend StepTowardDeclining(LivingWorldActorStandingTrend current) => current switch
     {
         LivingWorldActorStandingTrend.Rising => LivingWorldActorStandingTrend.Established,
         LivingWorldActorStandingTrend.Established => LivingWorldActorStandingTrend.Declining,

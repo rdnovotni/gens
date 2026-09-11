@@ -5,6 +5,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Military;
 using Gens.Simulation.Queries;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
@@ -82,6 +83,50 @@ public sealed class MilitaryLifecycleTests
             Assert.That(CanonicalJson.SerializeToCanonicalBytes(WorldStateMapper.ToDto(restored)),
                 Is.EqualTo(CanonicalJson.SerializeToCanonicalBytes(dto)));
         });
+    }
+
+    [Test]
+    public void AftermathAppliesTheDignitasHookForEachOutcomeTierAndEmitsTheNarrowerAftermathEvent()
+    {
+        foreach (var (outcome, expectedDelta) in new[]
+        {
+            (MilitaryOutcome.DecisiveVictory, MilitaryCatalog.DecisiveVictoryDignitasGain),
+            (MilitaryOutcome.CostlyVictory, MilitaryCatalog.CostlyVictoryDignitasGain),
+            (MilitaryOutcome.RepulsedStalemate, 0),
+            (MilitaryOutcome.Defeat, -MilitaryCatalog.DefeatDignitasLoss),
+            (MilitaryOutcome.CatastrophicDefeat, -MilitaryCatalog.CatastrophicDefeatDignitasLoss),
+        })
+        {
+            var state = BuildState(out var householdId, out var settlementId, out var sponsorId);
+            MilitaryCommands.EstablishForce.Execute(state, new EstablishEstateForceCommand(
+                state.CommandIds.Issue(), sponsorId.ToTaggedString(), state.Date, null, householdId, sponsorId,
+                settlementId, ForceInfrastructureTier.Barracks));
+            MilitaryCommands.RaiseSquad.Execute(state, new RaiseSquadCommand(
+                state.CommandIds.Issue(), sponsorId.ToTaggedString(), state.Date, null, settlementId, sponsorId,
+                "First Italic", SquadType.Infantry, SquadRecruitmentSource.MusteredVeterans, PopGroupType.Veterans, 20));
+            var squadId = state.Squads.InAscendingOrder().Single().Key;
+            var deployed = MilitaryCommands.BeginDeployment.Execute(state, new BeginMilitaryDeploymentCommand(
+                state.CommandIds.Issue(), sponsorId.ToTaggedString(), state.Date, null, sponsorId, settlementId,
+                MilitaryDeploymentType.OffenseCampaign, TravelLocation.Rome(), new[] { squadId }));
+            var deploymentId = state.MilitaryDeployments.InAscendingOrder().Single().Key;
+
+            var dignitasBefore = DignitasResolver.Current(state, householdId);
+            var aftermath = MilitaryCommands.ApplyAftermath.Execute(state, new ApplyMilitaryAftermathCommand(
+                state.CommandIds.Issue(), sponsorId.ToTaggedString(), state.Date, null, deploymentId, outcome,
+                new[] { new SquadLoss(squadId, 0, 0, 0, 0, Array.Empty<EquipmentLoss>()) }, 0, null, null, null,
+                Array.Empty<RuntimeId<Character>>(), null, "Resolved."));
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(aftermath.Accepted, Is.True, outcome.ToString());
+                Assert.That(DignitasResolver.Current(state, householdId), Is.EqualTo(dignitasBefore + expectedDelta), outcome.ToString());
+                Assert.That(aftermath.Events, Has.Some.InstanceOf<MilitaryAftermathAppliedEvent>(), outcome.ToString());
+                var narrower = aftermath.Events.OfType<MilitaryAftermathAppliedEvent>().Single();
+                Assert.That(narrower.HouseholdId, Is.EqualTo(householdId));
+                Assert.That(narrower.Outcome, Is.EqualTo(outcome));
+                Assert.That(narrower.DeploymentId, Is.EqualTo(deploymentId));
+            });
+        }
     }
 
     [Test]

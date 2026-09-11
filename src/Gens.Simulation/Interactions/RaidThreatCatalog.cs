@@ -92,4 +92,14 @@ public static class RaidThreatCatalog
     /// cref="AdjustEstateSecurityInvestmentCommand"/> (§9's "the defensive investment"). Lowering the
     /// level is free — this slice does not model recovering spent coin from stood-down guards.</summary>
     public const long SecurityLevelCostPerPointDenarii = 20;
+
+    /// <summary>Phase 16 item 6's Dignitas payoff to the target household on a successful defense
+    /// (<see cref="RaidOutcome.InterceptedRepelled"/>/<see cref="RaidOutcome.RaidersCaptured"/>) — this
+    /// implementation's own invented figure, deliberately small since repelling a single raid is a
+    /// minor, routine defensive success rather than a Funded-Action-scale act of patronage.</summary>
+    public const int SuccessfulDefenseDignitasGain = 4;
+
+    /// <summary>The Dignitas cost of a successful raid (<see cref="RaidOutcome.RaidSucceeded"/>) —
+    /// being raided and losing is a real, if modest, dent to a household's public standing.</summary>
+    public const int RaidSucceededDignitasLoss = 6;
 }

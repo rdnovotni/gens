@@ -13,6 +13,7 @@ using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Numerics;
 using Gens.Simulation.Random;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 using Gens.Simulation.Travel;
@@ -71,6 +72,23 @@ public sealed record MilitaryStateChangedEvent(RuntimeId<DomainEventEntity> Even
     public Visibility Visibility => Visibility.Public;
 }
 
+/// <summary>Phase 16 item 6's narrower sibling to <see cref="MilitaryStateChangedEvent"/>, carrying the
+/// real <see cref="MilitaryOutcome"/> and owning household rather than just a <c>Change</c> tag string —
+/// <see cref="Chronicle.ChronicleProjector"/> needs the actual outcome tier to decide whether an
+/// aftermath is Chronicle-worthy, which <see cref="MilitaryStateChangedEvent"/>'s plain string cannot
+/// carry. Emitted alongside (not instead of) <see cref="MilitaryStateChangedEvent"/>'s own
+/// "aftermathApplied" event, matching this codebase's per-domain-event-per-fact convention rather than
+/// widening an existing event's payload.</summary>
+public sealed record MilitaryAftermathAppliedEvent(RuntimeId<DomainEventEntity> EventId, GameDate OccurredDate,
+    RuntimeId<MilitaryDeployment> DeploymentId, RuntimeId<Household> HouseholdId, MilitaryOutcome Outcome,
+    string? CausationId) : IDomainEvent
+{
+    public string Type => "military.aftermathOutcome";
+    public int SchemaVersion => 1;
+    public IReadOnlyList<string> SubjectIds => new[] { HouseholdId.ToTaggedString() };
+    public Visibility Visibility => Visibility.Public;
+}
+
 public static class MilitaryCommands
 {
     public static readonly ValidationErrorCode SponsorInvalid = new("military.sponsorInvalid");
@@ -120,7 +138,10 @@ public static class MilitaryCommands
             static state => state.IssueCommandSequenceNumber());
     }
 
-    private static bool ValidSponsor(WorldState state, RuntimeId<Character> id, RuntimeId<Household> household,
+    /// <summary>Internal rather than private (Phase 16 item 6): <see
+    /// cref="Interactions.RetaliateAgainstConfederationCommands"/> reuses this same sponsor-authority
+    /// check rather than duplicating it.</summary>
+    internal static bool ValidSponsor(WorldState state, RuntimeId<Character> id, RuntimeId<Household> household,
         RuntimeId<Settlement> settlement) => state.Characters.TryGet(id, out var character) && character!.IsAlive
         && character.Household == household && character.Location == settlement;
 
@@ -393,7 +414,27 @@ public static class MilitaryCommands
             CapturedCharacters = command.CapturedCharacters.OrderBy(value => value).ToArray(),
             AftermathSummary = command.AftermathSummary.Trim(),
         });
-        return Event(state, command.SubmittedDate, "aftermathApplied", command.CausationId, command.DeploymentId.ToTaggedString());
+
+        var events = Event(state, command.SubmittedDate, "aftermathApplied", command.CausationId, command.DeploymentId.ToTaggedString()).ToList();
+        if (state.EstateForces.TryGet(deployment.ForceSettlementId, out var owningForce))
+        {
+            var dignitasDelta = command.Outcome switch
+            {
+                MilitaryOutcome.DecisiveVictory => MilitaryCatalog.DecisiveVictoryDignitasGain,
+                MilitaryOutcome.CostlyVictory => MilitaryCatalog.CostlyVictoryDignitasGain,
+                MilitaryOutcome.Defeat => -MilitaryCatalog.DefeatDignitasLoss,
+                MilitaryOutcome.CatastrophicDefeat => -MilitaryCatalog.CatastrophicDefeatDignitasLoss,
+                _ => 0,
+            };
+            if (dignitasDelta != 0)
+                DignitasResolver.Apply(state, owningForce!.HouseholdId, dignitasDelta);
+
+            events.Add(new MilitaryAftermathAppliedEvent(
+                state.EventIds.Issue(), command.SubmittedDate, command.DeploymentId, owningForce!.HouseholdId,
+                command.Outcome, command.CausationId));
+        }
+
+        return events.ToArray();
     }
 
     private static ValidationErrorCode? ValidateResolve(WorldState state, ResolveMilitaryDeploymentCommand command)
@@ -446,7 +487,10 @@ public static class MilitaryCommands
         return MutateAftermath(state, aftermath);
     }
 
-    private static CombatantType ToCombatantType(SquadType type) => type switch
+    /// <summary>Internal rather than private (Phase 16 item 6): <see
+    /// cref="Interactions.RetaliateAgainstConfederationCommands"/> projects its own retaliating
+    /// household's Squads through this exact same mapping.</summary>
+    internal static CombatantType ToCombatantType(SquadType type) => type switch
     {
         SquadType.Infantry => CombatantType.Legionary,
         SquadType.Cavalry => CombatantType.Cavalry,
@@ -470,7 +514,10 @@ public static class MilitaryCommands
     /// so an injured commander fights as genuinely diminished) into a 0.7-1.3 multiplier — this
     /// implementation's own invented number, same disclosure <see cref="Hazards.DisasterDamageCalculator"/>
     /// already carries for its own untuned figures.</summary>
-    private static Fixed64 CommanderMultiplier(int martial)
+    /// <summary>Internal rather than private (Phase 16 item 6): <see
+    /// cref="Interactions.RetaliateAgainstConfederationCommands"/> reuses this exact commander-weighting
+    /// formula for its own retaliation engagement.</summary>
+    internal static Fixed64 CommanderMultiplier(int martial)
     {
         var fraction = Fixed64.Divide(Fixed64.FromInt(Math.Clamp(martial, 0, 100)), Fixed64.FromInt(100));
         return Fixed64.FromRaw(700_000) + Fixed64.Multiply(fraction, Fixed64.FromRaw(600_000));
