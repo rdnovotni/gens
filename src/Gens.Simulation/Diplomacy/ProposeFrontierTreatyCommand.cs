@@ -10,6 +10,7 @@ using Gens.Simulation.Identity;
 using Gens.Simulation.Languages;
 using Gens.Simulation.Ledger;
 using Gens.Simulation.Random;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -178,6 +179,7 @@ public static class ProposeFrontierTreatyCommands
             state.FrontierTreaties.Add(treatyId, treaty);
 
             PerPeopleStandingMutator.Apply(state, key, FrontierDiplomacyCatalog.TreatyConcludedGoodwillGain, command.SubmittedDate);
+            DignitasResolver.Apply(state, command.HouseholdId, FrontierDiplomacyCatalog.TreatyConcludedDignitasGain);
 
             events.Add(new FrontierTreatyConcludedEvent(
                 state.EventIds.Issue(), command.SubmittedDate, treatyId, command.HouseholdId, command.ForeignPeopleActorId,
@@ -190,6 +192,7 @@ public static class ProposeFrontierTreatyCommands
         else
         {
             PerPeopleStandingMutator.Apply(state, key, -FrontierDiplomacyCatalog.TreatyRejectedGoodwillLoss, command.SubmittedDate);
+            DignitasResolver.Apply(state, command.HouseholdId, -FrontierDiplomacyCatalog.TreatyRejectedDignitasLoss);
 
             events.Add(new FrontierTreatyRejectedEvent(
                 state.EventIds.Issue(), command.SubmittedDate, command.HouseholdId, command.ForeignPeopleActorId,

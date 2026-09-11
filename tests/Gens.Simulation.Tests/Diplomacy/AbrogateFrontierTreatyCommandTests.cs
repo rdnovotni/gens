@@ -5,6 +5,7 @@ using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
 using Gens.Simulation.Ledger;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
@@ -44,6 +45,7 @@ public sealed class AbrogateFrontierTreatyCommandTests
     {
         var (state, householdId, headId, treatyId) = SetupWithAnActiveTreaty();
         state.FrontierTreaties.TryGet(treatyId, out var treaty);
+        var dignitasBefore = DignitasResolver.Current(state, householdId);
 
         var result = AbrogateFrontierTreatyCommands.Pipeline.Execute(state, new AbrogateFrontierTreatyCommand(
             state.CommandIds.Issue(), "player", StartDate, null, treatyId, headId));
@@ -55,6 +57,7 @@ public sealed class AbrogateFrontierTreatyCommandTests
             Assert.That(updated!.Status, Is.EqualTo(FrontierTreatyStatus.Abrogated));
             Assert.That(updated.EndedDate, Is.EqualTo(StartDate));
             Assert.That(PerPeopleStandingResolver.GetEffective(state, householdId, treaty!.ForeignPeopleActorId).Goodwill, Is.LessThan(0));
+            Assert.That(DignitasResolver.Current(state, householdId), Is.EqualTo(dignitasBefore - FrontierDiplomacyCatalog.AbrogationDignitasPenalty));
         });
     }
 

@@ -6,6 +6,7 @@ using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
 
@@ -79,6 +80,7 @@ public static class AbrogateFrontierTreatyCommands
 
         var key = new PerPeopleStandingKey(treaty.HouseholdId, treaty.ForeignPeopleActorId);
         PerPeopleStandingMutator.Apply(state, key, -FrontierDiplomacyCatalog.AbrogationGoodwillPenalty, command.SubmittedDate);
+        DignitasResolver.Apply(state, treaty.HouseholdId, -FrontierDiplomacyCatalog.AbrogationDignitasPenalty);
 
         RivalDossierRefresh.Refresh(
             state, treaty.ForeignPeopleActorId, command.SubmittedDate,
