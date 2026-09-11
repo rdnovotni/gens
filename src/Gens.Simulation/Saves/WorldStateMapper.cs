@@ -13,6 +13,7 @@ using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
+using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
@@ -140,6 +141,7 @@ public static class WorldStateMapper
                 VoyageEventIds = state.VoyageEventIds.Peek,
                 PublicWorkIds = state.PublicWorkIds.Peek,
                 CompetitiveEuergetismEventIds = state.CompetitiveEuergetismEventIds.Peek,
+                FrontierTreatyIds = state.FrontierTreatyIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -394,6 +396,15 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             BusinessViabilityChecks = state.BusinessViabilityChecks.InAscendingOrder()
                 .Select(entry => ToBusinessViabilityCheckDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ForeignPeopleDetails = state.ForeignPeopleDetails.InAscendingOrder()
+                .Select(entry => ToForeignPeopleDetailsDto(entry.Value)).ToArray(),
+            // Already ascending-key order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PerPeopleStandings = state.PerPeopleStandings.InAscendingOrder()
+                .Select(entry => ToPerPeopleStandingDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            FrontierTreaties = state.FrontierTreaties.InAscendingOrder()
+                .Select(entry => ToFrontierTreatyDto(entry.Value)).ToArray(),
         };
     }
 
@@ -1201,6 +1212,28 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<NotableBusiness>, BusinessViabilityCheck>(check.BusinessId, check);
             }));
 
+        var foreignPeopleDetails = OrderedRegistry<RuntimeId<Actor>, ForeignPeopleDetails>.Restore(
+            dto.ForeignPeopleDetails.Select(d =>
+            {
+                var details = FromForeignPeopleDetailsDto(d);
+                return new KeyValuePair<RuntimeId<Actor>, ForeignPeopleDetails>(details.ActorId, details);
+            }));
+
+        var perPeopleStandings = OrderedRegistry<PerPeopleStandingKey, PerPeopleStanding>.Restore(
+            dto.PerPeopleStandings.Select(s =>
+            {
+                var standing = FromPerPeopleStandingDto(s);
+                return new KeyValuePair<PerPeopleStandingKey, PerPeopleStanding>(
+                    new PerPeopleStandingKey(standing.HouseholdId, standing.ForeignPeopleActorId), standing);
+            }));
+
+        var frontierTreaties = OrderedRegistry<RuntimeId<FrontierTreaty>, FrontierTreaty>.Restore(
+            dto.FrontierTreaties.Select(t =>
+            {
+                var treaty = FromFrontierTreatyDto(t);
+                return new KeyValuePair<RuntimeId<FrontierTreaty>, FrontierTreaty>(treaty.TreatyId, treaty);
+            }));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -1270,6 +1303,7 @@ public static class WorldStateMapper
             voyageEventIds: RuntimeIdCounter<Shipping.VoyageEvent>.Restore(dto.Counters.VoyageEventIds),
             publicWorkIds: RuntimeIdCounter<PublicWork>.Restore(dto.Counters.PublicWorkIds),
             competitiveEuergetismEventIds: RuntimeIdCounter<CompetitiveEuergetismEvent>.Restore(dto.Counters.CompetitiveEuergetismEventIds),
+            frontierTreatyIds: RuntimeIdCounter<FrontierTreaty>.Restore(dto.Counters.FrontierTreatyIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1390,6 +1424,9 @@ public static class WorldStateMapper
             competitiveEuergetismEvents: competitiveEuergetismEvents,
             aggregateDemandReadings: aggregateDemandReadings,
             businessViabilityChecks: businessViabilityChecks,
+            foreignPeopleDetails: foreignPeopleDetails,
+            perPeopleStandings: perPeopleStandings,
+            frontierTreaties: frontierTreaties,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -4357,6 +4394,54 @@ public static class WorldStateMapper
         RuntimeId<Character>.Parse(value.CharacterId), RuntimeId<MilitaryDeployment>.Parse(value.DeploymentId),
         RuntimeId<Household>.Parse(value.CaptorHouseholdId), RuntimeId<Settlement>.Parse(value.CaptorSettlementId),
         new GameDate(value.CapturedDateTotalMonths));
+
+    private static ForeignPeopleDetailsDto ToForeignPeopleDetailsDto(ForeignPeopleDetails value) => new()
+    {
+        ActorId = value.ActorId.ToTaggedString(),
+        CultureId = value.CultureId.Value,
+    };
+
+    private static ForeignPeopleDetails FromForeignPeopleDetailsDto(ForeignPeopleDetailsDto value) => new(
+        RuntimeId<Actor>.Parse(value.ActorId), new DefinitionId<Culture>(value.CultureId));
+
+    private static PerPeopleStandingDto ToPerPeopleStandingDto(PerPeopleStanding value) => new()
+    {
+        HouseholdId = value.HouseholdId.ToTaggedString(),
+        ForeignPeopleActorId = value.ForeignPeopleActorId.ToTaggedString(),
+        Standing = value.Standing.ToString(),
+        Goodwill = value.Goodwill,
+        LastChangedDateTotalMonths = value.LastChangedDate.TotalMonths,
+    };
+
+    private static PerPeopleStanding FromPerPeopleStandingDto(PerPeopleStandingDto value) => new(
+        RuntimeId<Household>.Parse(value.HouseholdId), RuntimeId<Actor>.Parse(value.ForeignPeopleActorId),
+        Enum.Parse<HouseStandingLevel>(value.Standing), value.Goodwill, new GameDate(value.LastChangedDateTotalMonths));
+
+    private static FrontierTreatyDto ToFrontierTreatyDto(FrontierTreaty value) => new()
+    {
+        TreatyId = value.TreatyId.ToTaggedString(),
+        HouseholdId = value.HouseholdId.ToTaggedString(),
+        ForeignPeopleActorId = value.ForeignPeopleActorId.ToTaggedString(),
+        Type = value.Type.ToString(),
+        TributeDirection = value.TributeDirection.ToString(),
+        MonthlyTributeRawValue = value.MonthlyTribute.RawValue,
+        ConcludedDateTotalMonths = value.ConcludedDate.TotalMonths,
+        ExpiresDateTotalMonths = value.ExpiresDate.TotalMonths,
+        Status = value.Status.ToString(),
+        EndedDateTotalMonths = value.EndedDate?.TotalMonths,
+    };
+
+    private static FrontierTreaty FromFrontierTreatyDto(FrontierTreatyDto value) => new(
+        RuntimeId<FrontierTreaty>.Parse(value.TreatyId),
+        RuntimeId<Household>.Parse(value.HouseholdId),
+        RuntimeId<Actor>.Parse(value.ForeignPeopleActorId),
+        Enum.Parse<FrontierTreatyType>(value.Type),
+        Enum.Parse<TributeDirection>(value.TributeDirection),
+        Money.FromMinorUnits(value.MonthlyTributeRawValue),
+        new GameDate(value.ConcludedDateTotalMonths),
+        new GameDate(value.ExpiresDateTotalMonths),
+        Enum.Parse<FrontierTreatyStatus>(value.Status),
+        value.EndedDateTotalMonths.HasValue ? new GameDate(value.EndedDateTotalMonths.Value) : null);
 
     private static DistantHoldingDto ToDistantHoldingDto(DistantHolding holding) => new()
     {

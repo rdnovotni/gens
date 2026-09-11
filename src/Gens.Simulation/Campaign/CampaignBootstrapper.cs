@@ -128,6 +128,11 @@ public static class CampaignBootstrapper
     /// of the same engine reserves its own stream rather than sharing this one.</summary>
     public const string MilitaryCombatResolutionStreamName = "military.combatResolution";
 
+    /// <summary>The named random stream <see cref="Diplomacy.ProposeFrontierTreatyCommands"/> reserves
+    /// for its own negotiation success roll (Phase 16 item 5 slice 1), kept distinct from every other
+    /// stream here for the same rule-8 reason.</summary>
+    public const string FrontierNegotiationStreamName = "diplomacy.frontierNegotiation";
+
     /// <summary>The named random stream <see cref="Stewardship.StewardAutonomousDecisionSystem"/>
     /// reserves for its monthly steward/Council Loyalty-risk and incident-type rolls (Phase 10 package
     /// 13; <c>gens-steward-council-auto-management-design.md</c> §6), kept distinct from every other
@@ -237,6 +242,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(CounterEspionageSweepStreamName, config.Seed);
         streams.AddDerived(RaidThreatStreamName, config.Seed);
         streams.AddDerived(MilitaryCombatResolutionStreamName, config.Seed);
+        streams.AddDerived(FrontierNegotiationStreamName, config.Seed);
         streams.AddDerived(StewardLoyaltyRiskStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeTriggerStreamName, config.Seed);
         streams.AddDerived(SuccessionDisputeScoringStreamName, config.Seed);

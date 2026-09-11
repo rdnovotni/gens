@@ -7,6 +7,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
+using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
 using Gens.Simulation.Epithets;
@@ -343,6 +344,11 @@ internal static class RuntimeIdTagRegistry
         // MilitaryCaptivity reuse their settlement/character keys and need no independent tag.
         [typeof(Squad)] = "squad",
         [typeof(MilitaryDeployment)] = "militarydeployment",
+        // Phase 16 item 5 slice 1 — Gens.Simulation.Diplomacy.FrontierTreaty, same "real record as its
+        // own tag" convention as RaidThreat above. ForeignPeopleDetails and PerPeopleStanding need no
+        // entry: they are keyed by the already-registered RuntimeId<Actor>/PerPeopleStandingKey they
+        // describe, not by their own RuntimeId, matching SenateEntryInvestmentLog's identical exemption.
+        [typeof(FrontierTreaty)] = "frontiertreaty",
     };
 
     public static string Resolve(Type type) =>

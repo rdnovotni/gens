@@ -780,6 +780,24 @@ public sealed record WorldSaveDocument
     public IReadOnlyList<MilitaryDeploymentDto> MilitaryDeployments { get; init; } = Array.Empty<MilitaryDeploymentDto>();
     [JsonPropertyOrder(124)]
     public IReadOnlyList<MilitaryCaptivityDto> MilitaryCaptivities { get; init; } = Array.Empty<MilitaryCaptivityDto>();
+
+    /// <summary>Every <see cref="Diplomacy.ForeignPeopleDetails"/> (Phase 16 item 5 slice 1), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// for the same additive-only reason as <see cref="SpyPlacements"/> above.</summary>
+    [JsonPropertyOrder(126)]
+    public IReadOnlyList<ForeignPeopleDetailsDto> ForeignPeopleDetails { get; init; } = Array.Empty<ForeignPeopleDetailsDto>();
+
+    /// <summary>Every <see cref="Diplomacy.PerPeopleStanding"/> (Phase 16 item 5 slice 1), already in
+    /// ascending-key order. Not <c>required</c>, and defaults to empty, for the same additive-only
+    /// reason as <see cref="SpyPlacements"/> above.</summary>
+    [JsonPropertyOrder(127)]
+    public IReadOnlyList<PerPeopleStandingDto> PerPeopleStandings { get; init; } = Array.Empty<PerPeopleStandingDto>();
+
+    /// <summary>Every <see cref="Diplomacy.FrontierTreaty"/> (Phase 16 item 5 slice 1), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// for the same additive-only reason as <see cref="SpyPlacements"/> above.</summary>
+    [JsonPropertyOrder(128)]
+    public IReadOnlyList<FrontierTreatyDto> FrontierTreaties { get; init; } = Array.Empty<FrontierTreatyDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1125,6 +1143,12 @@ public sealed record CounterSetDto
 
     [JsonPropertyOrder(62)]
     public long CompetitiveEuergetismEventIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-16-item-5-slice-1 save has no
+    /// FrontierTreaties. Additive-only per ADR 0011's policy, matching <see cref="RaidThreatIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(125)]
+    public long FrontierTreatyIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -4839,6 +4863,38 @@ public sealed record MilitaryCaptivityDto
     public required string CaptorHouseholdId { get; init; }
     public required string CaptorSettlementId { get; init; }
     public required int CapturedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Diplomacy.ForeignPeopleDetails"/> (Phase 16 item 5 slice 1).</summary>
+public sealed record ForeignPeopleDetailsDto
+{
+    public required string ActorId { get; init; }
+    public required string CultureId { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Diplomacy.PerPeopleStanding"/> (Phase 16 item 5 slice 1).</summary>
+public sealed record PerPeopleStandingDto
+{
+    public required string HouseholdId { get; init; }
+    public required string ForeignPeopleActorId { get; init; }
+    public required string Standing { get; init; }
+    public required int Goodwill { get; init; }
+    public required int LastChangedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Diplomacy.FrontierTreaty"/> (Phase 16 item 5 slice 1).</summary>
+public sealed record FrontierTreatyDto
+{
+    public required string TreatyId { get; init; }
+    public required string HouseholdId { get; init; }
+    public required string ForeignPeopleActorId { get; init; }
+    public required string Type { get; init; }
+    public required string TributeDirection { get; init; }
+    public required long MonthlyTributeRawValue { get; init; }
+    public required int ConcludedDateTotalMonths { get; init; }
+    public required int ExpiresDateTotalMonths { get; init; }
+    public required string Status { get; init; }
+    public int? EndedDateTotalMonths { get; init; }
 }
 
 #endif

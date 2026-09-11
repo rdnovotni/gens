@@ -10,6 +10,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
 using Gens.Simulation.Correspondence;
+using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Health;
@@ -74,6 +75,7 @@ public static class StateHasher
         hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.SpyPlacementIds.Peek);
         hash = MixLong(hash, state.RaidThreatIds.Peek);
+        hash = MixLong(hash, state.FrontierTreatyIds.Peek);
         hash = MixLong(hash, state.SquadIds.Peek);
         hash = MixLong(hash, state.MilitaryDeploymentIds.Peek);
         hash = MixLong(hash, state.SuccessionDisputeIds.Peek);
@@ -330,6 +332,18 @@ public static class StateHasher
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.RaidThreats.InAscendingOrder())
             hash = MixRaidThreat(hash, entry.Value);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.ForeignPeopleDetails.InAscendingOrder())
+            hash = MixForeignPeopleDetails(hash, entry.Value);
+
+        // Already ascending-key order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.PerPeopleStandings.InAscendingOrder())
+            hash = MixPerPeopleStanding(hash, entry.Value);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.FrontierTreaties.InAscendingOrder())
+            hash = MixFrontierTreaty(hash, entry.Value);
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.EstateSecurityInvestments.InAscendingOrder())
@@ -1410,6 +1424,44 @@ public static class StateHasher
         hash = MixLong(hash, (long)raid.Outcome);
         hash = MixLong(hash, raid.SpoilsLost.RawValue);
         hash = MixLong(hash, raid.RaidDate.TotalMonths);
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="Diplomacy.ForeignPeopleDetails"/>'s full state, in field-declaration
+    /// order (Phase 16 item 5 slice 1).</summary>
+    private static ulong MixForeignPeopleDetails(ulong hash, ForeignPeopleDetails details)
+    {
+        hash = MixLong(hash, details.ActorId.Value);
+        hash = MixString(hash, details.CultureId.Value);
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="Diplomacy.PerPeopleStanding"/>'s full state, in field-declaration
+    /// order (Phase 16 item 5 slice 1).</summary>
+    private static ulong MixPerPeopleStanding(ulong hash, PerPeopleStanding standing)
+    {
+        hash = MixLong(hash, standing.HouseholdId.Value);
+        hash = MixLong(hash, standing.ForeignPeopleActorId.Value);
+        hash = MixLong(hash, (long)standing.Standing);
+        hash = MixLong(hash, standing.Goodwill);
+        hash = MixLong(hash, standing.LastChangedDate.TotalMonths);
+        return hash;
+    }
+
+    /// <summary>Folds one <see cref="Diplomacy.FrontierTreaty"/>'s full state, in field-declaration order
+    /// (Phase 16 item 5 slice 1).</summary>
+    private static ulong MixFrontierTreaty(ulong hash, FrontierTreaty treaty)
+    {
+        hash = MixLong(hash, treaty.TreatyId.Value);
+        hash = MixLong(hash, treaty.HouseholdId.Value);
+        hash = MixLong(hash, treaty.ForeignPeopleActorId.Value);
+        hash = MixLong(hash, (long)treaty.Type);
+        hash = MixLong(hash, (long)treaty.TributeDirection);
+        hash = MixLong(hash, treaty.MonthlyTribute.RawValue);
+        hash = MixLong(hash, treaty.ConcludedDate.TotalMonths);
+        hash = MixLong(hash, treaty.ExpiresDate.TotalMonths);
+        hash = MixLong(hash, (long)treaty.Status);
+        hash = MixLong(hash, treaty.EndedDate?.TotalMonths ?? -1L);
         return hash;
     }
 
