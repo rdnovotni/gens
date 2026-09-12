@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gens.invalid/schemas/institutions-of-renown.schema.json",
+  "allOf": [
+    {
+      "$ref": "https://gens.invalid/schemas/_envelope.schema.json#/$defs/envelope"
+    },
+    {
+      "type": "object",
+      "required": [
+        "specialtyTrack",
+        "primeCulturalAssociation",
+        "prestigeTier",
+        "distanceTier",
+        "baseRiskLevel",
+        "journeyDurationMonths",
+        "costPerMonth"
+      ],
+      "properties": {
+        "specialtyTrack": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "primeCulturalAssociation": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+        },
+        "prestigeTier": {
+          "type": "string",
+          "enum": ["notable", "renowned", "legendary"]
+        },
+        "distanceTier": {
+          "type": "string",
+          "enum": ["near", "moderate", "far"]
+        },
+        "baseRiskLevel": {
+          "type": "string",
+          "enum": ["secure", "guarded", "dangerous"]
+        },
+        "journeyDurationMonths": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "costPerMonth": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        }
+      }
+    }
+  ]
+}

@@ -210,6 +210,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment> distinguishedEducationInvestments,
         OrderedRegistry<RuntimeId<Household>, EducationRoleAssignment> educationRoleAssignments,
         OrderedRegistry<RuntimeId<Character>, CulturalDriftState> culturalDriftStates,
+        OrderedRegistry<RuntimeId<TravelTrip>, StudyAbroadJourney> studyAbroadJourneys,
+        OrderedRegistry<RuntimeId<Character>, CharacterInstitutionCredential> characterInstitutionCredentials,
+        OrderedRegistry<RuntimeId<Household>, RenownAttractsRenownState> renownAttractsRenownStates,
         OrderedRegistry<RuntimeId<LegalCase>, LegalCase> legalCases,
         OrderedRegistry<RuntimeId<PunishableOffense>, PunishableOffense> punishableOffenses,
         OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord> detentionRecords,
@@ -412,6 +415,9 @@ public sealed class WorldState
         DistinguishedEducationInvestments = distinguishedEducationInvestments;
         EducationRoleAssignments = educationRoleAssignments;
         CulturalDriftStates = culturalDriftStates;
+        StudyAbroadJourneys = studyAbroadJourneys;
+        CharacterInstitutionCredentials = characterInstitutionCredentials;
+        RenownAttractsRenownStates = renownAttractsRenownStates;
         LegalCases = legalCases;
         PunishableOffenses = punishableOffenses;
         DetentionRecords = detentionRecords;
@@ -1032,6 +1038,21 @@ public sealed class WorldState
     /// progress has no entry.</summary>
     public OrderedRegistry<RuntimeId<Character>, CulturalDriftState> CulturalDriftStates { get; } = new();
 
+    /// <summary>Each active <see cref="Education.StudyAbroadJourney"/> (Phase 17 item 2; §4), keyed by
+    /// the underlying <see cref="Travel.TravelTrip"/>'s own <see cref="RuntimeId{T}"/> — see that
+    /// record's own doc comment for why. Sparse: a trip that isn't a Study Abroad Journey has no entry.</summary>
+    public OrderedRegistry<RuntimeId<TravelTrip>, StudyAbroadJourney> StudyAbroadJourneys { get; } = new();
+
+    /// <summary>Each named Character's permanent <see cref="Education.CharacterInstitutionCredential"/>
+    /// (Phase 17 item 2; §12), keyed by the Character it describes. Sparse: a Character who never
+    /// completed a Study Abroad Journey has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Character>, CharacterInstitutionCredential> CharacterInstitutionCredentials { get; } = new();
+
+    /// <summary>Each household's <see cref="Education.RenownAttractsRenownState"/> (Phase 17 item 2;
+    /// §12), keyed by household. Sparse: a household that has never crossed the recognition threshold
+    /// has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Household>, RenownAttractsRenownState> RenownAttractsRenownStates { get; } = new();
+
     /// <summary>Every <see cref="Legal.LegalCase"/> ever filed, ruled or not (Phase 12 item 4; §11's own
     /// data model), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once filed,
     /// matching <see cref="MagistracyRecords"/>'s identical "kept for the campaign's lifetime"
@@ -1537,6 +1558,9 @@ public sealed class WorldState
         ["distinguishedEducationInvestments"] = DistinguishedEducationInvestments.Version,
         ["educationRoleAssignments"] = EducationRoleAssignments.Version,
         ["culturalDriftStates"] = CulturalDriftStates.Version,
+        ["studyAbroadJourneys"] = StudyAbroadJourneys.Version,
+        ["characterInstitutionCredentials"] = CharacterInstitutionCredentials.Version,
+        ["renownAttractsRenownStates"] = RenownAttractsRenownStates.Version,
         ["legalCases"] = LegalCases.Version,
         ["punishableOffenses"] = PunishableOffenses.Version,
         ["detentionRecords"] = DetentionRecords.Version,

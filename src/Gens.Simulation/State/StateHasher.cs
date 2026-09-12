@@ -807,6 +807,31 @@ public static class StateHasher
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.StudyAbroadJourneys.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.CharacterId.Value);
+            hash = MixString(hash, entry.Value.InstitutionId.Value);
+            hash = MixLong(hash, entry.Value.HouseholdId.Value);
+            hash = MixLong(hash, entry.Value.MonthsAtInstitution);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.CharacterInstitutionCredentials.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.InstitutionId.Value);
+            hash = MixLong(hash, entry.Value.GrantedDate.TotalMonths);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.RenownAttractsRenownStates.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.IncomingForeignStudentOpportunityActive ? 1L : 0L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.CharacterHealthConditions.InAscendingOrder())
         {
             hash = MixLong(hash, entry.Key.Value);
@@ -1766,6 +1791,7 @@ public static class StateHasher
         hash = MixString(hash, value.RegionId?.Value ?? string.Empty);
         hash = MixLong(hash, value.SettlementId?.Value ?? -1L);
         hash = MixLong(hash, value.ActorId?.Value ?? -1L);
+        hash = MixString(hash, value.InstitutionId?.Value ?? string.Empty);
         return hash;
     }
 

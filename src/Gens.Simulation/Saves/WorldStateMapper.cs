@@ -265,6 +265,12 @@ public static class WorldStateMapper
                 .Select(entry => ToEducationRoleAssignmentDto(entry.Value)).ToArray(),
             CulturalDriftStates = state.CulturalDriftStates.InAscendingOrder()
                 .Select(entry => ToCulturalDriftStateDto(entry.Value)).ToArray(),
+            StudyAbroadJourneys = state.StudyAbroadJourneys.InAscendingOrder()
+                .Select(entry => ToStudyAbroadJourneyDto(entry.Value)).ToArray(),
+            CharacterInstitutionCredentials = state.CharacterInstitutionCredentials.InAscendingOrder()
+                .Select(entry => ToCharacterInstitutionCredentialDto(entry.Value)).ToArray(),
+            RenownAttractsRenownStates = state.RenownAttractsRenownStates.InAscendingOrder()
+                .Select(entry => ToRenownAttractsRenownStateDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             LegalCases = state.LegalCases.InAscendingOrder().Select(entry => ToLegalCaseDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
@@ -843,6 +849,27 @@ public static class WorldStateMapper
             {
                 var drift = FromCulturalDriftStateDto(c);
                 return new KeyValuePair<RuntimeId<Character>, CulturalDriftState>(drift.CharacterId, drift);
+            }));
+
+        var studyAbroadJourneys = OrderedRegistry<RuntimeId<TravelTrip>, StudyAbroadJourney>.Restore(
+            dto.StudyAbroadJourneys.Select(j =>
+            {
+                var journey = FromStudyAbroadJourneyDto(j);
+                return new KeyValuePair<RuntimeId<TravelTrip>, StudyAbroadJourney>(journey.TripId, journey);
+            }));
+
+        var characterInstitutionCredentials = OrderedRegistry<RuntimeId<Character>, CharacterInstitutionCredential>.Restore(
+            dto.CharacterInstitutionCredentials.Select(c =>
+            {
+                var credential = FromCharacterInstitutionCredentialDto(c);
+                return new KeyValuePair<RuntimeId<Character>, CharacterInstitutionCredential>(credential.CharacterId, credential);
+            }));
+
+        var renownAttractsRenownStates = OrderedRegistry<RuntimeId<Household>, RenownAttractsRenownState>.Restore(
+            dto.RenownAttractsRenownStates.Select(r =>
+            {
+                var renown = FromRenownAttractsRenownStateDto(r);
+                return new KeyValuePair<RuntimeId<Household>, RenownAttractsRenownState>(renown.HouseholdId, renown);
             }));
 
         var legalCases = OrderedRegistry<RuntimeId<LegalCase>, LegalCase>.Restore(
@@ -1425,6 +1452,9 @@ public static class WorldStateMapper
             distinguishedEducationInvestments: distinguishedEducationInvestments,
             educationRoleAssignments: educationRoleAssignments,
             culturalDriftStates: culturalDriftStates,
+            studyAbroadJourneys: studyAbroadJourneys,
+            characterInstitutionCredentials: characterInstitutionCredentials,
+            renownAttractsRenownStates: renownAttractsRenownStates,
             legalCases: legalCases,
             punishableOffenses: punishableOffenses,
             detentionRecords: detentionRecords,
@@ -3987,6 +4017,7 @@ public static class WorldStateMapper
         RegionId = location.RegionId?.Value,
         SettlementId = location.SettlementId?.ToTaggedString(),
         ActorId = location.ActorId?.ToTaggedString(),
+        InstitutionId = location.InstitutionId?.Value,
     };
 
     private static TravelLocation FromTravelLocationDto(TravelLocationDto dto)
@@ -3995,6 +4026,9 @@ public static class WorldStateMapper
         var regionId = dto.RegionId is null ? (DefinitionId<RegionProfileDefinition>?)null : new DefinitionId<RegionProfileDefinition>(dto.RegionId);
         var settlementId = dto.SettlementId is null ? (RuntimeId<Settlement>?)null : RuntimeId<Settlement>.Parse(dto.SettlementId);
         var actorId = dto.ActorId is null ? (RuntimeId<Actor>?)null : RuntimeId<Actor>.Parse(dto.ActorId);
+        var institutionId = dto.InstitutionId is null
+            ? (DefinitionId<Education.InstitutionOfRenown>?)null
+            : new DefinitionId<Education.InstitutionOfRenown>(dto.InstitutionId);
 
         return kind switch
         {
@@ -4004,6 +4038,7 @@ public static class WorldStateMapper
             LocationKind.RivalEstate => TravelLocation.RivalEstate(actorId!.Value, settlementId!.Value, regionId!.Value),
             LocationKind.FrontierRegion => TravelLocation.FrontierRegion(regionId!.Value),
             LocationKind.SecondSettlement => TravelLocation.SecondSettlement(settlementId!.Value, regionId!.Value),
+            LocationKind.InstitutionOfRenown => TravelLocation.InstitutionOfRenown(institutionId!.Value),
             _ => throw new FormatException($"Unrestorable Travel Location kind '{dto.Kind}'."),
         };
     }
@@ -4297,6 +4332,44 @@ public static class WorldStateMapper
         RuntimeId<Character>.Parse(dto.CharacterId),
         new DefinitionId<Identity.Culture>(dto.TargetCultureId),
         dto.ProgressMonths);
+
+    private static StudyAbroadJourneyDto ToStudyAbroadJourneyDto(StudyAbroadJourney journey) => new()
+    {
+        TripId = journey.TripId.ToTaggedString(),
+        CharacterId = journey.CharacterId.ToTaggedString(),
+        InstitutionId = journey.InstitutionId.Value,
+        HouseholdId = journey.HouseholdId.ToTaggedString(),
+        MonthsAtInstitution = journey.MonthsAtInstitution,
+    };
+
+    private static StudyAbroadJourney FromStudyAbroadJourneyDto(StudyAbroadJourneyDto dto) => new(
+        RuntimeId<TravelTrip>.Parse(dto.TripId),
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        new DefinitionId<InstitutionOfRenown>(dto.InstitutionId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.MonthsAtInstitution);
+
+    private static CharacterInstitutionCredentialDto ToCharacterInstitutionCredentialDto(CharacterInstitutionCredential credential) => new()
+    {
+        CharacterId = credential.CharacterId.ToTaggedString(),
+        InstitutionId = credential.InstitutionId.Value,
+        GrantedDateTotalMonths = credential.GrantedDate.TotalMonths,
+    };
+
+    private static CharacterInstitutionCredential FromCharacterInstitutionCredentialDto(CharacterInstitutionCredentialDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        new DefinitionId<InstitutionOfRenown>(dto.InstitutionId),
+        new GameDate(dto.GrantedDateTotalMonths));
+
+    private static RenownAttractsRenownStateDto ToRenownAttractsRenownStateDto(RenownAttractsRenownState renown) => new()
+    {
+        HouseholdId = renown.HouseholdId.ToTaggedString(),
+        IncomingForeignStudentOpportunityActive = renown.IncomingForeignStudentOpportunityActive,
+    };
+
+    private static RenownAttractsRenownState FromRenownAttractsRenownStateDto(RenownAttractsRenownStateDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.IncomingForeignStudentOpportunityActive);
 
     private static LegalCaseDto ToLegalCaseDto(LegalCase legalCase) => new()
     {

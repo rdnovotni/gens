@@ -619,6 +619,26 @@ public static class ChronicleProjector
                 ended.EventId.ToTaggedString(),
                 ended.HouseholdId),
 
+            // Phase 17 item 2 (gens-education-culture-design.md §4/§12): a returning Institution
+            // credential, filed under ChronicleCategory.Other (no new enum value, minimizing blast
+            // radius on a shared enum many domains touch, matching this ticket's own confirmed scope
+            // decision), tiered by the institution's own PrestigeTier.
+            Education.StudyAbroadCompletedEvent studyAbroadCompleted => new ChronicleEntryDraft(
+                studyAbroadCompleted.OccurredDate,
+                ChronicleCategory.Other,
+                Education.KnownInstitutionsOfRenown.Catalog.Get(studyAbroadCompleted.InstitutionId).PrestigeTier switch
+                {
+                    Education.InstitutionPrestigeTier.Legendary => ChronicleTier.Legendary,
+                    Education.InstitutionPrestigeTier.Renowned => ChronicleTier.Major,
+                    _ => ChronicleTier.Notable,
+                },
+                $"{Name(state, studyAbroadCompleted.CharacterId)} returned from " +
+                $"{Education.KnownInstitutionsOfRenown.Catalog.Get(studyAbroadCompleted.InstitutionId).Name} bearing a hard-won credential.",
+                new[] { studyAbroadCompleted.CharacterId },
+                studyAbroadCompleted.Type,
+                studyAbroadCompleted.EventId.ToTaggedString(),
+                HouseholdOf(state, studyAbroadCompleted.CharacterId)),
+
             _ => null,
         };
 

@@ -128,5 +128,15 @@
   "education.philosophy.name": "Philosophy",
   "education.philosophy.description": "Training in philosophy and letters, sharpening Learning and accruing Cultural Prestige.",
   "education.gymnasium.name": "Gymnasium Training",
-  "education.gymnasium.description": "Greek-style athletic and physical training, sharpening Martial and Learning."
+  "education.gymnasium.description": "Greek-style athletic and physical training, sharpening Martial and Learning.",
+  "institutions.athens.name": "Athens",
+  "institutions.athens.description": "The legendary Academy and Lyceum of Athens, the pinnacle destination for a Rhetoric Study Abroad Journey.",
+  "institutions.rhodes.name": "Rhodes",
+  "institutions.rhodes.description": "The Rhodian school of rhetoric, whose credential also satisfies the magistracy-contest gate.",
+  "institutions.alexandria.name": "Alexandria",
+  "institutions.alexandria.description": "The Library and Museum of Alexandria, the pinnacle destination for a Philosophy Study Abroad Journey.",
+  "institutions.pergamon.name": "Pergamon",
+  "institutions.pergamon.description": "The great library of Pergamon, a renowned seat of Philosophy.",
+  "institutions.massilia.name": "Massilia",
+  "institutions.massilia.description": "A Greek colony on the southern coast of Gaul, a nearer and safer Study Abroad destination for Rhetoric."
 }

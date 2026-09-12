@@ -39,13 +39,14 @@ namespace Gens.Simulation.Education;
 /// </summary>
 public static class EducationGateResolver
 {
-    /// <summary>§3's magistracy-contest standing gate: true once a Character has completed the Rhetoric
-    /// Track (<see cref="EducationalTrackEnrollmentResolver.HasCompleted"/>). The Rhodes Institution
-    /// credential half of §3's "or" is added by this ticket's own Institutions of Renown slice once
-    /// <c>CharacterInstitutionCredential</c> exists — see that slice's amendment here. Never wired as a
+    /// <summary>§3's magistracy-contest standing gate: true once a Character has either completed the
+    /// Rhetoric Track (<see cref="EducationalTrackEnrollmentResolver.HasCompleted"/>) or holds a Rhodes
+    /// Institution credential (<see cref="CharacterInstitutionCredentialResolver.HasCredentialFrom"/>) —
+    /// §12's own cross-reference naming Rhodes specifically among the five Institutions. Never wired as a
     /// hard block on any existing command; see this class's own doc comment for why.</summary>
     public static bool CanContestMagistracyAboveLowestRung(WorldState state, RuntimeId<Character> characterId) =>
-        EducationalTrackEnrollmentResolver.HasCompleted(state, characterId, KnownEducationTracks.Rhetoric);
+        EducationalTrackEnrollmentResolver.HasCompleted(state, characterId, KnownEducationTracks.Rhetoric) ||
+        CharacterInstitutionCredentialResolver.HasCredentialFrom(state, characterId, KnownInstitutionsOfRenown.Rhodes);
 
     /// <summary>§3's Learning-tier role gate — wired into <see
     /// cref="Magistracies.HoldContestedElectionCommand"/>'s challenger check (Phase 17 item 2 slice 2).</summary>

@@ -176,6 +176,26 @@ public sealed class TravelTests
     }
 
     [Test]
+    public void InstitutionOfRenownResolvesItsTierAndRiskFromItsOwnContentDefinitionNotTheRegionCatalog()
+    {
+        var settlementId = new RuntimeIdCounter<Settlement>().Issue();
+        var origin = TravelLocation.Home(settlementId);
+        var destination = TravelLocation.InstitutionOfRenown(Gens.Simulation.Education.KnownInstitutionsOfRenown.Athens);
+        // An empty region catalog proves the branch never consults it — an Institution destination
+        // would otherwise throw DestinationRegionRequired-style errors trying to resolve a region pair.
+        var route = TravelRoute.Resolve(
+            origin, destination, TravelTestFixtures.HomeRegionId,
+            TravelTestFixtures.BuildRegionCatalog(includeCapital: false), TravelTestFixtures.BuildDistanceTierCatalog());
+
+        var institution = Gens.Simulation.Education.KnownInstitutionsOfRenown.Catalog.Get(Gens.Simulation.Education.KnownInstitutionsOfRenown.Athens);
+        Assert.Multiple(() =>
+        {
+            Assert.That(route.DistanceTier, Is.EqualTo(institution.DistanceTier));
+            Assert.That(route.RiskExposure, Is.EqualTo(institution.BaseRiskLevel));
+        });
+    }
+
+    [Test]
     public void RomeResolvesItsTierViaTheCapitalRegionsGazetteerEntry()
     {
         var settlementId = new RuntimeIdCounter<Settlement>().Issue();

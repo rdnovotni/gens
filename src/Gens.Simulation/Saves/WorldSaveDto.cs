@@ -392,6 +392,23 @@ public sealed record WorldSaveDocument
     [JsonPropertyOrder(134)]
     public IReadOnlyList<CulturalDriftStateDto> CulturalDriftStates { get; init; } = Array.Empty<CulturalDriftStateDto>();
 
+    /// <summary>Each active <see cref="Gens.Simulation.Education.StudyAbroadJourney"/> (Phase 17 item
+    /// 2), already keyed by Travel trip. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(135)]
+    public IReadOnlyList<StudyAbroadJourneyDto> StudyAbroadJourneys { get; init; } = Array.Empty<StudyAbroadJourneyDto>();
+
+    /// <summary>Each named Character's <see cref="Gens.Simulation.Education.CharacterInstitutionCredential"/>
+    /// (Phase 17 item 2), already keyed by Character. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(136)]
+    public IReadOnlyList<CharacterInstitutionCredentialDto> CharacterInstitutionCredentials { get; init; } =
+        Array.Empty<CharacterInstitutionCredentialDto>();
+
+    /// <summary>Each household's <see cref="Gens.Simulation.Education.RenownAttractsRenownState"/> (Phase
+    /// 17 item 2), already keyed by household. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(137)]
+    public IReadOnlyList<RenownAttractsRenownStateDto> RenownAttractsRenownStates { get; init; } =
+        Array.Empty<RenownAttractsRenownStateDto>();
+
     /// <summary>Every <see cref="Gens.Simulation.Legal.LegalCase"/> ever filed (Phase 12 item 4), already
     /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
     /// empty, matching <see cref="PriesthoodRecords"/>'s identical reasoning.</summary>
@@ -3156,6 +3173,51 @@ public sealed record CulturalDriftStateDto
     public required int ProgressMonths { get; init; }
 }
 
+/// <summary>One <see cref="Gens.Simulation.Education.StudyAbroadJourney"/> (Phase 17 item 2), keyed by
+/// Travel trip.</summary>
+public sealed record StudyAbroadJourneyDto
+{
+    [JsonPropertyOrder(0)]
+    public required string TripId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string InstitutionId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int MonthsAtInstitution { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.CharacterInstitutionCredential"/> (Phase 17 item 2),
+/// keyed by Character.</summary>
+public sealed record CharacterInstitutionCredentialDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string InstitutionId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int GrantedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.RenownAttractsRenownState"/> (Phase 17 item 2),
+/// keyed by household.</summary>
+public sealed record RenownAttractsRenownStateDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required bool IncomingForeignStudentOpportunityActive { get; init; }
+}
+
 /// <summary>One <see cref="Gens.Simulation.Legal.LegalCase"/> (Phase 12 item 4).</summary>
 public sealed record LegalCaseDto
 {
@@ -3484,6 +3546,12 @@ public sealed record TravelLocationDto
 
     [JsonPropertyOrder(3)]
     public string? ActorId { get; init; }
+
+    /// <summary>Set only for <see cref="Gens.Simulation.Travel.LocationKind.InstitutionOfRenown"/> (Phase
+    /// 17 item 2). Not <c>required</c>, and defaults to null, matching this DTO's other optional
+    /// per-kind fields — a pre-Phase-17-item-2 save simply never carries this kind.</summary>
+    [JsonPropertyOrder(4)]
+    public string? InstitutionId { get; init; }
 }
 
 /// <summary>One <see cref="Gens.Simulation.Travel.TravelParty"/> (Phase 13 item 2).</summary>
