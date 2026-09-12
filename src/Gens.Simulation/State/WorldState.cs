@@ -15,6 +15,7 @@ using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
+using Gens.Simulation.Education;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
@@ -110,6 +111,7 @@ public sealed class WorldState
         RuntimeIdCounter<MagistracyRecord> magistracyRecordIds,
         RuntimeIdCounter<OmenEvent> omenEventIds,
         RuntimeIdCounter<PriesthoodRecord> priesthoodRecordIds,
+        RuntimeIdCounter<CulturalPatronageRecord> culturalPatronageRecordIds,
         RuntimeIdCounter<LegalCase> legalCaseIds,
         RuntimeIdCounter<PunishableOffense> punishableOffenseIds,
         RuntimeIdCounter<DetentionRecord> detentionRecordIds,
@@ -202,6 +204,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HouseholdReligion> householdReligions,
         OrderedRegistry<RuntimeId<OmenEvent>, OmenEvent> omenEvents,
         OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> priesthoodRecords,
+        OrderedRegistry<RuntimeId<Household>, HouseholdCulturalPrestige> householdCulturalPrestiges,
+        OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord> culturalPatronageRecords,
         OrderedRegistry<RuntimeId<LegalCase>, LegalCase> legalCases,
         OrderedRegistry<RuntimeId<PunishableOffense>, PunishableOffense> punishableOffenses,
         OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord> detentionRecords,
@@ -305,6 +309,7 @@ public sealed class WorldState
         MagistracyRecordIds = magistracyRecordIds;
         OmenEventIds = omenEventIds;
         PriesthoodRecordIds = priesthoodRecordIds;
+        CulturalPatronageRecordIds = culturalPatronageRecordIds;
         LegalCaseIds = legalCaseIds;
         PunishableOffenseIds = punishableOffenseIds;
         DetentionRecordIds = detentionRecordIds;
@@ -397,6 +402,8 @@ public sealed class WorldState
         HouseholdReligions = householdReligions;
         OmenEvents = omenEvents;
         PriesthoodRecords = priesthoodRecords;
+        HouseholdCulturalPrestiges = householdCulturalPrestiges;
+        CulturalPatronageRecords = culturalPatronageRecords;
         LegalCases = legalCases;
         PunishableOffenses = punishableOffenses;
         DetentionRecords = detentionRecords;
@@ -542,6 +549,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Religion.PriesthoodRecord"/> (Phase 12 item 3).</summary>
     public RuntimeIdCounter<PriesthoodRecord> PriesthoodRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Education.CulturalPatronageRecord"/> (Phase 17 item 2).</summary>
+    public RuntimeIdCounter<CulturalPatronageRecord> CulturalPatronageRecordIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Legal.LegalCase"/> (Phase 12 item 4).</summary>
     public RuntimeIdCounter<LegalCase> LegalCaseIds { get; } = new();
@@ -983,6 +993,17 @@ public sealed class WorldState
     /// matching <see cref="MagistracyRecords"/>'s identical convention.</summary>
     public OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> PriesthoodRecords { get; } = new();
 
+    /// <summary>Each household's <see cref="Education.HouseholdCulturalPrestige"/> (Phase 17 item 2; §7),
+    /// keyed by household. Sparse: a household this item never touches has no entry, matching <see
+    /// cref="HouseholdReputations"/>'s identical "no entry means the default" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdCulturalPrestige> HouseholdCulturalPrestiges { get; } = new();
+
+    /// <summary>Every <see cref="Education.CulturalPatronageRecord"/> ever begun, active or ended (Phase
+    /// 17 item 2; §7), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once begun,
+    /// matching <see cref="MagistracyRecords"/>'s identical "resolved or not, kept for the campaign's
+    /// lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord> CulturalPatronageRecords { get; } = new();
+
     /// <summary>Every <see cref="Legal.LegalCase"/> ever filed, ruled or not (Phase 12 item 4; §11's own
     /// data model), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once filed,
     /// matching <see cref="MagistracyRecords"/>'s identical "kept for the campaign's lifetime"
@@ -1404,6 +1425,7 @@ public sealed class WorldState
         ["magistracyRecordIds"] = MagistracyRecordIds.Peek,
         ["omenEventIds"] = OmenEventIds.Peek,
         ["priesthoodRecordIds"] = PriesthoodRecordIds.Peek,
+        ["culturalPatronageRecordIds"] = CulturalPatronageRecordIds.Peek,
         ["legalCaseIds"] = LegalCaseIds.Peek,
         ["punishableOffenseIds"] = PunishableOffenseIds.Peek,
         ["detentionRecordIds"] = DetentionRecordIds.Peek,
@@ -1481,6 +1503,8 @@ public sealed class WorldState
         ["householdReligions"] = HouseholdReligions.Version,
         ["omenEvents"] = OmenEvents.Version,
         ["priesthoodRecords"] = PriesthoodRecords.Version,
+        ["householdCulturalPrestiges"] = HouseholdCulturalPrestiges.Version,
+        ["culturalPatronageRecords"] = CulturalPatronageRecords.Version,
         ["legalCases"] = LegalCases.Version,
         ["punishableOffenses"] = PunishableOffenses.Version,
         ["detentionRecords"] = DetentionRecords.Version,

@@ -17,6 +17,7 @@ using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
+using Gens.Simulation.Education;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
@@ -108,6 +109,7 @@ public static class WorldStateMapper
                 MagistracyRecordIds = state.MagistracyRecordIds.Peek,
                 OmenEventIds = state.OmenEventIds.Peek,
                 PriesthoodRecordIds = state.PriesthoodRecordIds.Peek,
+                CulturalPatronageRecordIds = state.CulturalPatronageRecordIds.Peek,
                 LegalCaseIds = state.LegalCaseIds.Peek,
                 PunishableOffenseIds = state.PunishableOffenseIds.Peek,
                 DetentionRecordIds = state.DetentionRecordIds.Peek,
@@ -251,6 +253,10 @@ public static class WorldStateMapper
             HouseholdReligions = state.HouseholdReligions.InAscendingOrder().Select(entry => ToHouseholdReligionDto(entry.Value)).ToArray(),
             OmenEvents = state.OmenEvents.InAscendingOrder().Select(entry => ToOmenEventDto(entry.Value)).ToArray(),
             PriesthoodRecords = state.PriesthoodRecords.InAscendingOrder().Select(entry => ToPriesthoodRecordDto(entry.Value)).ToArray(),
+            HouseholdCulturalPrestiges = state.HouseholdCulturalPrestiges.InAscendingOrder()
+                .Select(entry => ToHouseholdCulturalPrestigeDto(entry.Value)).ToArray(),
+            CulturalPatronageRecords = state.CulturalPatronageRecords.InAscendingOrder()
+                .Select(entry => ToCulturalPatronageRecordDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             LegalCases = state.LegalCases.InAscendingOrder().Select(entry => ToLegalCaseDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
@@ -789,6 +795,20 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<PriesthoodRecord>, PriesthoodRecord>(record.RecordId, record);
             }));
 
+        var householdCulturalPrestiges = OrderedRegistry<RuntimeId<Household>, HouseholdCulturalPrestige>.Restore(
+            dto.HouseholdCulturalPrestiges.Select(p =>
+            {
+                var prestige = FromHouseholdCulturalPrestigeDto(p);
+                return new KeyValuePair<RuntimeId<Household>, HouseholdCulturalPrestige>(prestige.HouseholdId, prestige);
+            }));
+
+        var culturalPatronageRecords = OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord>.Restore(
+            dto.CulturalPatronageRecords.Select(p =>
+            {
+                var record = FromCulturalPatronageRecordDto(p);
+                return new KeyValuePair<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord>(record.RecordId, record);
+            }));
+
         var legalCases = OrderedRegistry<RuntimeId<LegalCase>, LegalCase>.Restore(
             dto.LegalCases.Select(c =>
             {
@@ -1270,6 +1290,7 @@ public static class WorldStateMapper
             magistracyRecordIds: RuntimeIdCounter<MagistracyRecord>.Restore(dto.Counters.MagistracyRecordIds),
             omenEventIds: RuntimeIdCounter<OmenEvent>.Restore(dto.Counters.OmenEventIds),
             priesthoodRecordIds: RuntimeIdCounter<PriesthoodRecord>.Restore(dto.Counters.PriesthoodRecordIds),
+            culturalPatronageRecordIds: RuntimeIdCounter<CulturalPatronageRecord>.Restore(dto.Counters.CulturalPatronageRecordIds),
             legalCaseIds: RuntimeIdCounter<LegalCase>.Restore(dto.Counters.LegalCaseIds),
             punishableOffenseIds: RuntimeIdCounter<PunishableOffense>.Restore(dto.Counters.PunishableOffenseIds),
             detentionRecordIds: RuntimeIdCounter<DetentionRecord>.Restore(dto.Counters.DetentionRecordIds),
@@ -1362,6 +1383,8 @@ public static class WorldStateMapper
             householdReligions: householdReligions,
             omenEvents: omenEvents,
             priesthoodRecords: priesthoodRecords,
+            householdCulturalPrestiges: householdCulturalPrestiges,
+            culturalPatronageRecords: culturalPatronageRecords,
             legalCases: legalCases,
             punishableOffenses: punishableOffenses,
             detentionRecords: detentionRecords,
@@ -4152,6 +4175,34 @@ public static class WorldStateMapper
         new GameDate(dto.AppointedDateTotalMonths),
         dto.FlamenDeity is { } deity ? Enum.Parse<PatronDeity>(deity) : null,
         dto.EndDateTotalMonths is { } end ? new GameDate(end) : null);
+
+    private static HouseholdCulturalPrestigeDto ToHouseholdCulturalPrestigeDto(HouseholdCulturalPrestige prestige) => new()
+    {
+        HouseholdId = prestige.HouseholdId.ToTaggedString(),
+        Prestige = prestige.Prestige,
+    };
+
+    private static HouseholdCulturalPrestige FromHouseholdCulturalPrestigeDto(HouseholdCulturalPrestigeDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        dto.Prestige);
+
+    private static CulturalPatronageRecordDto ToCulturalPatronageRecordDto(CulturalPatronageRecord record) => new()
+    {
+        RecordId = record.RecordId.ToTaggedString(),
+        HouseholdId = record.HouseholdId.ToTaggedString(),
+        PatronageType = record.Type.ToString(),
+        HostCharacterId = record.HostCharacterId.ToTaggedString(),
+        StartedDateTotalMonths = record.StartedDate.TotalMonths,
+        EndedDateTotalMonths = record.EndedDate?.TotalMonths,
+    };
+
+    private static CulturalPatronageRecord FromCulturalPatronageRecordDto(CulturalPatronageRecordDto dto) => new(
+        RuntimeId<CulturalPatronageRecord>.Parse(dto.RecordId),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<CulturalPatronageType>(dto.PatronageType),
+        RuntimeId<Character>.Parse(dto.HostCharacterId),
+        new GameDate(dto.StartedDateTotalMonths),
+        dto.EndedDateTotalMonths is { } ended ? new GameDate(ended) : null);
 
     private static LegalCaseDto ToLegalCaseDto(LegalCase legalCase) => new()
     {

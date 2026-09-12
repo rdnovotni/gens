@@ -10,6 +10,7 @@ using Gens.Simulation.Crime;
 using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
+using Gens.Simulation.Education;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Funerary;
@@ -349,6 +350,11 @@ internal static class RuntimeIdTagRegistry
         // entry: they are keyed by the already-registered RuntimeId<Actor>/PerPeopleStandingKey they
         // describe, not by their own RuntimeId, matching SenateEntryInvestmentLog's identical exemption.
         [typeof(FrontierTreaty)] = "frontiertreaty",
+        // Phase 17 item 2 — Gens.Simulation.Education.CulturalPatronageRecord, same "real record as its
+        // own tag" convention as MagistracyRecord/OmenEvent above. HouseholdCulturalPrestige needs no
+        // entry: it's keyed by RuntimeId<Household>, not by its own RuntimeId, matching
+        // HouseholdReligion's identical exemption.
+        [typeof(CulturalPatronageRecord)] = "culturalpatronage",
     };
 
     public static string Resolve(Type type) =>

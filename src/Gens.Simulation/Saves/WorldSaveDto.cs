@@ -353,6 +353,20 @@ public sealed record WorldSaveDocument
     [JsonPropertyOrder(55)]
     public IReadOnlyList<PriesthoodRecordDto> PriesthoodRecords { get; init; } = Array.Empty<PriesthoodRecordDto>();
 
+    /// <summary>Each household's <see cref="Gens.Simulation.Education.HouseholdCulturalPrestige"/>
+    /// (Phase 17 item 2), already keyed by household. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="PriesthoodRecords"/>'s identical additive-only ADR 0011 reasoning.</summary>
+    [JsonPropertyOrder(129)]
+    public IReadOnlyList<HouseholdCulturalPrestigeDto> HouseholdCulturalPrestiges { get; init; } =
+        Array.Empty<HouseholdCulturalPrestigeDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Education.CulturalPatronageRecord"/> ever begun (Phase
+    /// 17 item 2), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, matching <see cref="HouseholdCulturalPrestiges"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(130)]
+    public IReadOnlyList<CulturalPatronageRecordDto> CulturalPatronageRecords { get; init; } =
+        Array.Empty<CulturalPatronageRecordDto>();
+
     /// <summary>Every <see cref="Gens.Simulation.Legal.LegalCase"/> ever filed (Phase 12 item 4), already
     /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
     /// empty, matching <see cref="PriesthoodRecords"/>'s identical reasoning.</summary>
@@ -966,6 +980,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(29)]
     public long PriesthoodRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-17-item-2 save has no Cultural
+    /// Patronage Records. Additive-only per ADR 0011's policy, matching <see
+    /// cref="PriesthoodRecordIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(126)]
+    public long CulturalPatronageRecordIds { get; init; }
 
     /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-4 save has no Legal Cases.
     /// Additive-only per ADR 0011's policy, matching <see cref="PriesthoodRecordIds"/>'s identical
@@ -3011,6 +3031,39 @@ public sealed record PriesthoodRecordDto
 
     [JsonPropertyOrder(6)]
     public int? EndDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.HouseholdCulturalPrestige"/> (Phase 17 item 2),
+/// keyed by household.</summary>
+public sealed record HouseholdCulturalPrestigeDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Prestige { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.CulturalPatronageRecord"/> (Phase 17 item 2).</summary>
+public sealed record CulturalPatronageRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string RecordId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string PatronageType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string HostCharacterId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int StartedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public int? EndedDateTotalMonths { get; init; }
 }
 
 /// <summary>One <see cref="Gens.Simulation.Legal.LegalCase"/> (Phase 12 item 4).</summary>
