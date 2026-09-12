@@ -37,6 +37,7 @@ Per the decision to make these named, specific, persistent places rather than ge
 - **The Frontier** — a region rather than a single settlement, the natural venue for Diplomacy with Non-Roman Peoples (§6.25, future) and carrying real elevated Piracy & Banditry and Natural Disaster exposure (§4).
 - **A Campaign** — a genuinely mobile destination that moves with wherever Military & Combat's active deployment currently is, letting the player personally join a Force they've sent out or take up a Roman Service commission in person.
 - **A Second Settlement** — where the player holds one via the Procurator mechanic (Companions & Court Positions §5.3), a real destination for checking in personally rather than relying on that appointee's own reports.
+- **An Institution of Renown** — one of five fixed, named institutions (Athens, Rhodes, Alexandria, Pergamon, Massilia) a Study Abroad Journey travels to (Education & Culture §4, §12). Added as a real, intentional 8th destination kind rather than forced through the region/Distance-Tier system above: each institution authors its own fixed Distance Tier and route-danger level directly (Education & Culture §12's own `InstitutionOfRenown` model), since the region/distance-tier system is still mostly unbuilt outside Latium and a Study Abroad destination shouldn't wait on it. Massilia is deliberately nearer and safer than the other four, without needing any of them to sit in real, authored region content.
 
 ---
 
@@ -122,9 +123,10 @@ TravelTrip {
 Location {
   locationId,
   type,                // "home" | "rome" | "provincialCapital" | "rivalEstate" | "frontierRegion" |
-                         // "campaign" | "secondSettlement"
+                         // "campaign" | "secondSettlement" | "institutionOfRenown"
   linkedActorId,          // set for "rivalEstate" — the specific Rival Houses LivingWorldActor
   linkedSettlementId,       // set for "secondSettlement" or "home"
+  linkedInstitutionId,      // set for "institutionOfRenown" — see Education & Culture §12
 }
 
 // Addition to Characters' own Character{} schema (Characters §14):

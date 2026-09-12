@@ -4145,9 +4145,44 @@ new certainty-producing shortcut. "Military outcomes do not bypass the ordinary 
 mutation in this item (Dignitas, captive intake, retaliation losses, security investment) goes through a
 real `ICommand`/`IMonthlySystem.Tick`, never a direct field set. Phase 16 is complete.
 
-### Phase 17 — Add deep relationships, activities, culture, and legacy objects — ⬜ NOT STARTED
+### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (item 2 complete)
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
+
+**Item 2 progress:** Education, pedagogy, study, literacy, cultural patronage, and institutions
+(`src/Gens.Simulation/Education/`, `gens-education-culture-design.md`) are implemented in four vertical
+slices, mirroring Religion's own "one folder per domain, one command per file, a monthly system, a
+content family, one consolidated test file" structural template. Slice 1 (§7): `HouseholdCulturalPrestige`
+(a household's own tracked value, distinct from Dignitas) and two ongoing Cultural Patronage commitments
+(Literary Patron, Symposium), modeled on Religion's Patron Deity/Favor founding+cycle shape per the
+ticket's confirmed scope decision (an ongoing sponsorship, not a one-time Festival-style spend). Slice 2
+(§3, §10): the Literacy hard-gate wiring — `EducationGateResolver` reads the existing `LiteracyRecord`
+partition, defaulting to permissive when a Character carries no explicit record (so every already-shipped
+`HoldContestedElectionCommand`/`SendLetterCommand` test and campaign keeps behaving exactly as before),
+and rejects only a Character an explicit `SetLiteracyCommand` call has actually marked illiterate. Slice 3
+(§2, §3): three Educational Tracks (Rhetoric→Diplomacy, Philosophy→Learning+Cultural Prestige,
+Gymnasium→Martial+Learning), each delivered by a settlement building (schola/academia/gymnasium/palaestra)
+staffed through the existing generic `BuildingInstance` slot mechanism; a Distinguished-tier paid upgrade;
+the narrow, explicitly-labeled Education-only Paedagogus/Foreign-Tutor placeholder (superseded once Phase
+17 item 1 lands); and per-Character Culture drift toward a target Culture, fast for Childhood/Adolescence
+and slow for Adult/Elderly, accelerated by a matching Foreign Tutor. `EducationalTrackProgressSystem` is
+this codebase's first-ever writer of `Character.Attributes` post-creation (via the new
+`EducationAttributeAdjustor` helper). Slice 4 (§4, §12): Institutions of Renown — a new 8th `LocationKind`
+(`InstitutionOfRenown`, documented in `gens-travel-design.md` §2) lets a Study Abroad Journey reach one of
+five fixed institutions (Athens, Rhodes, Alexandria, Pergamon, Massilia) with its own authored Distance
+Tier/risk, bypassing the still-mostly-unbuilt region/distance-tier system; completing the Journey grants a
+permanent `CharacterInstitutionCredential` (Rhodes' also satisfying the magistracy-contest gate alongside
+a completed Rhetoric Track) and pushes Culture drift sharply toward the institution's prime culture; and a
+narrow Renown Attracts Renown flag-and-event, not a full foreign-student gameplay loop, per the design's
+own "rare, earned endgame payoff" framing. Companions & Court Positions (item 1) and region content beyond
+Latium (Phase 13 item 6) — the two real dependencies this item's own construction order names — are both
+still unbuilt; this item's own narrow, explicitly-labeled placeholders (the tutor-role stand-in; each
+institution's own fixed distance/risk tier) cover the gap without blocking on either. Covered in
+`tests/Gens.Simulation.Tests/Education/` (`CulturalPrestigeTests.cs`, `EducationGateResolverTests.cs`,
+`PedagogyTests.cs`, `InstitutionsOfRenownTests.cs`) plus one new rejection-path assertion each in the
+existing Magistracy/Correspondence test files and one new route-resolution case in the Travel test file,
+including command accept/reject validation, resolver/monthly-system math, save round trips, and
+deterministic state-hash stability for every new partition.
 
 Recommended internal order:
 
