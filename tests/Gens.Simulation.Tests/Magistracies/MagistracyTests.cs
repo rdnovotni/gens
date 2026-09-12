@@ -145,6 +145,26 @@ public sealed class MagistracyTests
     }
 
     [Test]
+    public void HoldContestedElectionCommandRejectsAChallengerAnExplicitLiteracyRecordMarksIlliterate()
+    {
+        var (state, settlementId, _, characterId) = EligibleCitizen();
+        MakeDecurion(state, settlementId, characterId, new GameDate(0));
+        Gens.Simulation.Languages.SetLiteracyCommands.Pipeline.Execute(
+            state,
+            new Gens.Simulation.Languages.SetLiteracyCommand(
+                state.CommandIds.Issue(), "system", new GameDate(0), null, characterId, IsLiterate: false,
+                Gens.Simulation.Languages.LiteracyDerivation.LearningAttribute));
+
+        var result = HoldContestedElectionCommands.Pipeline.Execute(
+            state,
+            new HoldContestedElectionCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null, MagistracyOffice.Aedile, settlementId,
+                IncumbentCharacterId: null, characterId, InfluenceSpentByChallenger: 0, InfluenceSpentByIncumbent: 0));
+
+        Assert.That(result.Error, Is.EqualTo(HoldContestedElectionCommands.ChallengerNotLiterate));
+    }
+
+    [Test]
     public void HoldContestedElectionCommandLetsAHigherScoringChallengerUnseatTheIncumbent()
     {
         var (state, settlementId, _, incumbentId) = EligibleCitizen();

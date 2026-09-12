@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Education;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Regions;
 using Gens.Simulation.State;
@@ -70,6 +71,12 @@ public static class SendLetterCommands
     public static readonly ValidationErrorCode RecipientRequired = new("correspondence.send.recipientRequired");
     public static readonly ValidationErrorCode OralTraditionBlocksThisAction = new("correspondence.send.oralTraditionBlocksThisAction");
 
+    /// <summary>Phase 17 item 2 slice 2's Literacy hard gate (<see
+    /// cref="EducationGateResolver.CanUseCorrespondence"/>) — rejected only for a drafter an explicit
+    /// <see cref="Languages.SetLiteracyCommand"/> has actually marked illiterate; see that resolver's own
+    /// doc comment for why an untracked drafter is never rejected on this ground.</summary>
+    public static readonly ValidationErrorCode DrafterNotLiterate = new("correspondence.send.drafterNotLiterate");
+
     public static CommandPipeline<WorldState, SendLetterCommand> BuildPipeline(
         DistanceTierCatalog distanceTiers, CorrespondenceReachabilityCatalog reachability)
     {
@@ -93,6 +100,8 @@ public static class SendLetterCommands
             return DrafterDeceased;
         if (string.IsNullOrWhiteSpace(command.RecipientCharacterOrActorId))
             return RecipientRequired;
+        if (!EducationGateResolver.CanUseCorrespondence(state, command.DraftedByCharacterId))
+            return DrafterNotLiterate;
 
         var route = LetterRoute.Resolve(
             command.SenderRegionId, command.RecipientRegionId, command.RecipientCultureId,
