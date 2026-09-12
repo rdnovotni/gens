@@ -27,8 +27,7 @@
     {
       "type": "object",
       "required": [
-        "constructionMonths",
-        "recipe"
+        "constructionMonths"
       ],
       "properties": {
         "constructionMonths": {

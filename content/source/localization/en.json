@@ -114,5 +114,19 @@
   "religions.roman-state-religion.name": "Roman State Religion",
   "religions.roman-state-religion.description": "The civic polytheism of Rome and its magistrates.",
   "names.name-gaius.name": "Gaius",
-  "presentation.goods-grain-icon.name": "Grain Icon"
+  "presentation.goods-grain-icon.name": "Grain Icon",
+  "buildings.schola.name": "Schola",
+  "buildings.schola.description": "A rhetoric school staffed by a Rhetor, delivering the Rhetoric Educational Track.",
+  "buildings.academia.name": "Academia",
+  "buildings.academia.description": "A philosophy school staffed by a Magister, delivering the Philosophy Educational Track.",
+  "buildings.gymnasium.name": "Gymnasium",
+  "buildings.gymnasium.description": "A Greek-style training ground staffed by a Paidotribes, delivering the Gymnasium Educational Track.",
+  "buildings.palaestra.name": "Palaestra",
+  "buildings.palaestra.description": "A wrestling and athletics court staffed by a Paidotribes, delivering the Gymnasium Educational Track.",
+  "education.rhetoric.name": "Rhetoric",
+  "education.rhetoric.description": "Training in oratory and persuasion, sharpening Diplomacy and opening the magistracy-contest gate.",
+  "education.philosophy.name": "Philosophy",
+  "education.philosophy.description": "Training in philosophy and letters, sharpening Learning and accruing Cultural Prestige.",
+  "education.gymnasium.name": "Gymnasium Training",
+  "education.gymnasium.description": "Greek-style athletic and physical training, sharpening Martial and Learning."
 }

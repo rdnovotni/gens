@@ -1,0 +1,42 @@
+[
+  {
+    "id": "schola",
+    "status": "active",
+    "nameKey": "buildings.schola.name",
+    "descriptionKey": "buildings.schola.description",
+    "constructionMonths": 2,
+    "staffingSlots": [
+      { "id": "rhetor", "capacity": 1 }
+    ]
+  },
+  {
+    "id": "academia",
+    "status": "active",
+    "nameKey": "buildings.academia.name",
+    "descriptionKey": "buildings.academia.description",
+    "constructionMonths": 3,
+    "staffingSlots": [
+      { "id": "magister", "capacity": 1 }
+    ]
+  },
+  {
+    "id": "gymnasium",
+    "status": "active",
+    "nameKey": "buildings.gymnasium.name",
+    "descriptionKey": "buildings.gymnasium.description",
+    "constructionMonths": 2,
+    "staffingSlots": [
+      { "id": "paidotribes", "capacity": 1 }
+    ]
+  },
+  {
+    "id": "palaestra",
+    "status": "active",
+    "nameKey": "buildings.palaestra.name",
+    "descriptionKey": "buildings.palaestra.description",
+    "constructionMonths": 3,
+    "staffingSlots": [
+      { "id": "paidotribes", "capacity": 1 }
+    ]
+  }
+]

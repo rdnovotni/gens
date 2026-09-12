@@ -257,6 +257,14 @@ public static class WorldStateMapper
                 .Select(entry => ToHouseholdCulturalPrestigeDto(entry.Value)).ToArray(),
             CulturalPatronageRecords = state.CulturalPatronageRecords.InAscendingOrder()
                 .Select(entry => ToCulturalPatronageRecordDto(entry.Value)).ToArray(),
+            EducationalTrackEnrollments = state.EducationalTrackEnrollments.InAscendingOrder()
+                .Select(entry => ToEducationalTrackEnrollmentDto(entry.Value)).ToArray(),
+            DistinguishedEducationInvestments = state.DistinguishedEducationInvestments.InAscendingOrder()
+                .Select(entry => ToDistinguishedEducationInvestmentDto(entry.Value)).ToArray(),
+            EducationRoleAssignments = state.EducationRoleAssignments.InAscendingOrder()
+                .Select(entry => ToEducationRoleAssignmentDto(entry.Value)).ToArray(),
+            CulturalDriftStates = state.CulturalDriftStates.InAscendingOrder()
+                .Select(entry => ToCulturalDriftStateDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             LegalCases = state.LegalCases.InAscendingOrder().Select(entry => ToLegalCaseDto(entry.Value)).ToArray(),
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
@@ -807,6 +815,34 @@ public static class WorldStateMapper
             {
                 var record = FromCulturalPatronageRecordDto(p);
                 return new KeyValuePair<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord>(record.RecordId, record);
+            }));
+
+        var educationalTrackEnrollments = OrderedRegistry<RuntimeId<Character>, EducationalTrackEnrollment>.Restore(
+            dto.EducationalTrackEnrollments.Select(e =>
+            {
+                var enrollment = FromEducationalTrackEnrollmentDto(e);
+                return new KeyValuePair<RuntimeId<Character>, EducationalTrackEnrollment>(enrollment.CharacterId, enrollment);
+            }));
+
+        var distinguishedEducationInvestments = OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment>.Restore(
+            dto.DistinguishedEducationInvestments.Select(d =>
+            {
+                var investment = FromDistinguishedEducationInvestmentDto(d);
+                return new KeyValuePair<RuntimeId<Character>, DistinguishedEducationInvestment>(investment.CharacterId, investment);
+            }));
+
+        var educationRoleAssignments = OrderedRegistry<RuntimeId<Household>, EducationRoleAssignment>.Restore(
+            dto.EducationRoleAssignments.Select(a =>
+            {
+                var assignment = FromEducationRoleAssignmentDto(a);
+                return new KeyValuePair<RuntimeId<Household>, EducationRoleAssignment>(assignment.HouseholdId, assignment);
+            }));
+
+        var culturalDriftStates = OrderedRegistry<RuntimeId<Character>, CulturalDriftState>.Restore(
+            dto.CulturalDriftStates.Select(c =>
+            {
+                var drift = FromCulturalDriftStateDto(c);
+                return new KeyValuePair<RuntimeId<Character>, CulturalDriftState>(drift.CharacterId, drift);
             }));
 
         var legalCases = OrderedRegistry<RuntimeId<LegalCase>, LegalCase>.Restore(
@@ -1385,6 +1421,10 @@ public static class WorldStateMapper
             priesthoodRecords: priesthoodRecords,
             householdCulturalPrestiges: householdCulturalPrestiges,
             culturalPatronageRecords: culturalPatronageRecords,
+            educationalTrackEnrollments: educationalTrackEnrollments,
+            distinguishedEducationInvestments: distinguishedEducationInvestments,
+            educationRoleAssignments: educationRoleAssignments,
+            culturalDriftStates: culturalDriftStates,
             legalCases: legalCases,
             punishableOffenses: punishableOffenses,
             detentionRecords: detentionRecords,
@@ -4203,6 +4243,60 @@ public static class WorldStateMapper
         RuntimeId<Character>.Parse(dto.HostCharacterId),
         new GameDate(dto.StartedDateTotalMonths),
         dto.EndedDateTotalMonths is { } ended ? new GameDate(ended) : null);
+
+    private static EducationalTrackEnrollmentDto ToEducationalTrackEnrollmentDto(EducationalTrackEnrollment enrollment) => new()
+    {
+        CharacterId = enrollment.CharacterId.ToTaggedString(),
+        TrackId = enrollment.TrackId.Value,
+        StartedDateTotalMonths = enrollment.StartedDate.TotalMonths,
+        DistinguishedTierActive = enrollment.DistinguishedTierActive,
+        CompletedDateTotalMonths = enrollment.CompletedDate?.TotalMonths,
+    };
+
+    private static EducationalTrackEnrollment FromEducationalTrackEnrollmentDto(EducationalTrackEnrollmentDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        new DefinitionId<EducationTrack>(dto.TrackId),
+        new GameDate(dto.StartedDateTotalMonths),
+        dto.DistinguishedTierActive,
+        dto.CompletedDateTotalMonths is { } completed ? new GameDate(completed) : null);
+
+    private static DistinguishedEducationInvestmentDto ToDistinguishedEducationInvestmentDto(DistinguishedEducationInvestment investment) => new()
+    {
+        CharacterId = investment.CharacterId.ToTaggedString(),
+        TrackId = investment.TrackId.Value,
+        PurchasedDateTotalMonths = investment.PurchasedDate.TotalMonths,
+        AmountPaid = investment.AmountPaid,
+    };
+
+    private static DistinguishedEducationInvestment FromDistinguishedEducationInvestmentDto(DistinguishedEducationInvestmentDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        new DefinitionId<EducationTrack>(dto.TrackId),
+        new GameDate(dto.PurchasedDateTotalMonths),
+        dto.AmountPaid);
+
+    private static EducationRoleAssignmentDto ToEducationRoleAssignmentDto(EducationRoleAssignment assignment) => new()
+    {
+        HouseholdId = assignment.HouseholdId.ToTaggedString(),
+        TutorId = assignment.TutorId.ToTaggedString(),
+        Role = assignment.Role.ToString(),
+    };
+
+    private static EducationRoleAssignment FromEducationRoleAssignmentDto(EducationRoleAssignmentDto dto) => new(
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Character>.Parse(dto.TutorId),
+        Enum.Parse<EducationRole>(dto.Role));
+
+    private static CulturalDriftStateDto ToCulturalDriftStateDto(CulturalDriftState drift) => new()
+    {
+        CharacterId = drift.CharacterId.ToTaggedString(),
+        TargetCultureId = drift.TargetCultureId.Value,
+        ProgressMonths = drift.ProgressMonths,
+    };
+
+    private static CulturalDriftState FromCulturalDriftStateDto(CulturalDriftStateDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        new DefinitionId<Identity.Culture>(dto.TargetCultureId),
+        dto.ProgressMonths);
 
     private static LegalCaseDto ToLegalCaseDto(LegalCase legalCase) => new()
     {

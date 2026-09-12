@@ -206,6 +206,10 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> priesthoodRecords,
         OrderedRegistry<RuntimeId<Household>, HouseholdCulturalPrestige> householdCulturalPrestiges,
         OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord> culturalPatronageRecords,
+        OrderedRegistry<RuntimeId<Character>, EducationalTrackEnrollment> educationalTrackEnrollments,
+        OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment> distinguishedEducationInvestments,
+        OrderedRegistry<RuntimeId<Household>, EducationRoleAssignment> educationRoleAssignments,
+        OrderedRegistry<RuntimeId<Character>, CulturalDriftState> culturalDriftStates,
         OrderedRegistry<RuntimeId<LegalCase>, LegalCase> legalCases,
         OrderedRegistry<RuntimeId<PunishableOffense>, PunishableOffense> punishableOffenses,
         OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord> detentionRecords,
@@ -404,6 +408,10 @@ public sealed class WorldState
         PriesthoodRecords = priesthoodRecords;
         HouseholdCulturalPrestiges = householdCulturalPrestiges;
         CulturalPatronageRecords = culturalPatronageRecords;
+        EducationalTrackEnrollments = educationalTrackEnrollments;
+        DistinguishedEducationInvestments = distinguishedEducationInvestments;
+        EducationRoleAssignments = educationRoleAssignments;
+        CulturalDriftStates = culturalDriftStates;
         LegalCases = legalCases;
         PunishableOffenses = punishableOffenses;
         DetentionRecords = detentionRecords;
@@ -1004,6 +1012,26 @@ public sealed class WorldState
     /// lifetime" convention.</summary>
     public OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord> CulturalPatronageRecords { get; } = new();
 
+    /// <summary>Each named Character's <see cref="Education.EducationalTrackEnrollment"/> (Phase 17 item
+    /// 2; §3), keyed by the Character it describes. Sparse: a Character never enrolled in a Track has no
+    /// entry, matching <see cref="LiteracyRecords"/>'s identical shape.</summary>
+    public OrderedRegistry<RuntimeId<Character>, EducationalTrackEnrollment> EducationalTrackEnrollments { get; } = new();
+
+    /// <summary>Each named Character's <see cref="Education.DistinguishedEducationInvestment"/> (Phase 17
+    /// item 2; §3), keyed by the Character it upgrades. Sparse: a Character never upgraded to the
+    /// Distinguished tier has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment> DistinguishedEducationInvestments { get; } = new();
+
+    /// <summary>Each household's standing <see cref="Education.EducationRoleAssignment"/> (Phase 17 item
+    /// 2; §3.3), keyed by the appointing household. Sparse: a household with no tutor assigned has no
+    /// entry, matching <see cref="InterpresAppointments"/>'s identical shape.</summary>
+    public OrderedRegistry<RuntimeId<Household>, EducationRoleAssignment> EducationRoleAssignments { get; } = new();
+
+    /// <summary>Each named Character's in-progress <see cref="Education.CulturalDriftState"/> (Phase 17
+    /// item 2; §2), keyed by the Character it describes. Sparse: a Character with no drift target in
+    /// progress has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Character>, CulturalDriftState> CulturalDriftStates { get; } = new();
+
     /// <summary>Every <see cref="Legal.LegalCase"/> ever filed, ruled or not (Phase 12 item 4; §11's own
     /// data model), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once filed,
     /// matching <see cref="MagistracyRecords"/>'s identical "kept for the campaign's lifetime"
@@ -1505,6 +1533,10 @@ public sealed class WorldState
         ["priesthoodRecords"] = PriesthoodRecords.Version,
         ["householdCulturalPrestiges"] = HouseholdCulturalPrestiges.Version,
         ["culturalPatronageRecords"] = CulturalPatronageRecords.Version,
+        ["educationalTrackEnrollments"] = EducationalTrackEnrollments.Version,
+        ["distinguishedEducationInvestments"] = DistinguishedEducationInvestments.Version,
+        ["educationRoleAssignments"] = EducationRoleAssignments.Version,
+        ["culturalDriftStates"] = CulturalDriftStates.Version,
         ["legalCases"] = LegalCases.Version,
         ["punishableOffenses"] = PunishableOffenses.Version,
         ["detentionRecords"] = DetentionRecords.Version,

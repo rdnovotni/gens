@@ -2,6 +2,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Education;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Languages;
+using Gens.Simulation.Random;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
 using Gens.Simulation.Time;
@@ -55,6 +56,28 @@ public sealed class EducationGateResolverTests
             Assert.That(EducationGateResolver.CanHoldLearningTierRole(state, characterId), Is.True);
             Assert.That(EducationGateResolver.CanUseCorrespondence(state, characterId), Is.True);
         });
+    }
+
+    [Test]
+    public void CanContestMagistracyAboveLowestRungRequiresACompletedRhetoricTrack()
+    {
+        var state = new WorldState(new GameDate(180));
+        var householdId = state.HouseholdIds.Issue();
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId, nomen: "Marcus", household: householdId));
+
+        Assert.That(EducationGateResolver.CanContestMagistracyAboveLowestRung(state, characterId), Is.False);
+
+        StartEducationalTrackCommands.Pipeline.Execute(
+            state,
+            new StartEducationalTrackCommand(
+                state.CommandIds.Issue(), "player", new GameDate(180), null, characterId, KnownEducationTracks.Rhetoric));
+        var track = KnownEducationTracks.Catalog.Get(KnownEducationTracks.Rhetoric);
+        var system = new EducationalTrackProgressSystem();
+        for (var i = 1; i <= track.CompletionMonths; i++)
+            system.Tick(state, new MonthlyTickContext(new GameDate(180 + i), new RandomStreamSet()));
+
+        Assert.That(EducationGateResolver.CanContestMagistracyAboveLowestRung(state, characterId), Is.True);
     }
 
     [Test]

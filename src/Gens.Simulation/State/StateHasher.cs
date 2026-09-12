@@ -772,6 +772,41 @@ public static class StateHasher
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.EducationalTrackEnrollments.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.TrackId.Value);
+            hash = MixLong(hash, entry.Value.StartedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.DistinguishedTierActive ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.CompletedDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.DistinguishedEducationInvestments.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.TrackId.Value);
+            hash = MixLong(hash, entry.Value.PurchasedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.AmountPaid.RawValue);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.EducationRoleAssignments.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.TutorId.Value);
+            hash = MixLong(hash, (long)entry.Value.Role);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
+        foreach (var entry in state.CulturalDriftStates.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixString(hash, entry.Value.TargetCultureId.Value);
+            hash = MixLong(hash, entry.Value.ProgressMonths);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.CharacterHealthConditions.InAscendingOrder())
         {
             hash = MixLong(hash, entry.Key.Value);
