@@ -9,6 +9,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
+using Gens.Simulation.Companions;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Diplomacy;
@@ -144,6 +145,8 @@ public sealed class WorldState
         RuntimeIdCounter<PublicWork> publicWorkIds,
         RuntimeIdCounter<CompetitiveEuergetismEvent> competitiveEuergetismEventIds,
         RuntimeIdCounter<FrontierTreaty> frontierTreatyIds,
+        RuntimeIdCounter<OverseerAssignment> overseerAssignmentIds,
+        RuntimeIdCounter<SeniorPositionAssignment> seniorPositionAssignmentIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -267,6 +270,9 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Actor>, ForeignPeopleDetails> foreignPeopleDetails,
         OrderedRegistry<PerPeopleStandingKey, PerPeopleStanding> perPeopleStandings,
         OrderedRegistry<RuntimeId<FrontierTreaty>, FrontierTreaty> frontierTreaties,
+        OrderedRegistry<RuntimeId<OverseerAssignment>, OverseerAssignment> overseerAssignments,
+        OrderedRegistry<RuntimeId<SeniorPositionAssignment>, SeniorPositionAssignment> seniorPositionAssignments,
+        OrderedRegistry<RuntimeId<Household>, GameDate> rationalisClusterActiveHouseholds,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -339,6 +345,8 @@ public sealed class WorldState
         PublicWorkIds = publicWorkIds;
         CompetitiveEuergetismEventIds = competitiveEuergetismEventIds;
         FrontierTreatyIds = frontierTreatyIds;
+        OverseerAssignmentIds = overseerAssignmentIds;
+        SeniorPositionAssignmentIds = seniorPositionAssignmentIds;
         Regions = regions;
         Settlements = settlements;
         Plots = plots;
@@ -462,6 +470,9 @@ public sealed class WorldState
         ForeignPeopleDetails = foreignPeopleDetails;
         PerPeopleStandings = perPeopleStandings;
         FrontierTreaties = frontierTreaties;
+        OverseerAssignments = overseerAssignments;
+        SeniorPositionAssignments = seniorPositionAssignments;
+        RationalisClusterActiveHouseholds = rationalisClusterActiveHouseholds;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -644,6 +655,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Diplomacy.FrontierTreaty"/> (Phase 16 item 5 slice 1).</summary>
     public RuntimeIdCounter<FrontierTreaty> FrontierTreatyIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Companions.OverseerAssignment"/> (Phase 17 item 1).</summary>
+    public RuntimeIdCounter<OverseerAssignment> OverseerAssignmentIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Companions.SeniorPositionAssignment"/> (Phase 17 item 1).</summary>
+    public RuntimeIdCounter<SeniorPositionAssignment> SeniorPositionAssignmentIds { get; } = new();
 
     /// <summary>Every Region (Phase 6 item 1), in ascending-<see cref="RuntimeId{T}"/> order
     /// (ADR 0004).</summary>
@@ -1352,6 +1369,24 @@ public sealed class WorldState
     /// rather than being removed.</summary>
     public OrderedRegistry<RuntimeId<FrontierTreaty>, FrontierTreaty> FrontierTreaties { get; } = new();
 
+    /// <summary>Every <see cref="Companions.OverseerAssignment"/> ever created, active or ended (Phase
+    /// 17 item 1; §4), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once
+    /// created, matching <see cref="MagistracyRecords"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<OverseerAssignment>, OverseerAssignment> OverseerAssignments { get; } = new();
+
+    /// <summary>Every <see cref="Companions.SeniorPositionAssignment"/> ever created, active or ended
+    /// (Phase 17 item 1; §5), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever
+    /// once created, matching <see cref="OverseerAssignments"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<SeniorPositionAssignment>, SeniorPositionAssignment> SeniorPositionAssignments { get; } = new();
+
+    /// <summary>Sparse per-household bookkeeping for <see cref="Companions.RationalisBonusSystem"/>'s
+    /// own edge-triggered activation event only (Phase 17 item 1; §5.3) — presence means the household's
+    /// Rationalis cluster was filled as of last month's tick; absence means it was not. Not read by any
+    /// other system: every other check re-derives "is the cluster filled right now" fresh from <see
+    /// cref="OverseerAssignments"/>/<see cref="SeniorPositionAssignments"/> instead (see that system's
+    /// own doc comment for why this one narrow piece of memory is still needed).</summary>
+    public OrderedRegistry<RuntimeId<Household>, GameDate> RationalisClusterActiveHouseholds { get; } = new();
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1534,9 +1569,14 @@ public sealed class WorldState
         ["infrastructureConditions"] = InfrastructureConditions.Version,
         ["unifiedEstateMilestones"] = UnifiedEstateMilestones.Version,
         ["frontierTreatyIds"] = FrontierTreatyIds.Peek,
+        ["overseerAssignmentIds"] = OverseerAssignmentIds.Peek,
+        ["seniorPositionAssignmentIds"] = SeniorPositionAssignmentIds.Peek,
         ["foreignPeopleDetails"] = ForeignPeopleDetails.Version,
         ["perPeopleStandings"] = PerPeopleStandings.Version,
         ["frontierTreaties"] = FrontierTreaties.Version,
+        ["overseerAssignments"] = OverseerAssignments.Version,
+        ["seniorPositionAssignments"] = SeniorPositionAssignments.Version,
+        ["rationalisClusterActiveHouseholds"] = RationalisClusterActiveHouseholds.Version,
         ["knowledge"] = Knowledge.Version,
         ["commandSequence"] = NextCommandSequenceNumber,
         ["date"] = Date.TotalMonths,

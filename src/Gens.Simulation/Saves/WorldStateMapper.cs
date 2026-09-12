@@ -11,6 +11,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
+using Gens.Simulation.Companions;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Diplomacy;
@@ -142,6 +143,8 @@ public static class WorldStateMapper
                 PublicWorkIds = state.PublicWorkIds.Peek,
                 CompetitiveEuergetismEventIds = state.CompetitiveEuergetismEventIds.Peek,
                 FrontierTreatyIds = state.FrontierTreatyIds.Peek,
+                OverseerAssignmentIds = state.OverseerAssignmentIds.Peek,
+                SeniorPositionAssignmentIds = state.SeniorPositionAssignmentIds.Peek,
             },
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             CharacterIds = state.Characters.InAscendingOrder().Select(entry => entry.Key.ToTaggedString()).ToArray(),
@@ -405,6 +408,15 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             FrontierTreaties = state.FrontierTreaties.InAscendingOrder()
                 .Select(entry => ToFrontierTreatyDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            OverseerAssignments = state.OverseerAssignments.InAscendingOrder()
+                .Select(entry => ToOverseerAssignmentDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            SeniorPositionAssignments = state.SeniorPositionAssignments.InAscendingOrder()
+                .Select(entry => ToSeniorPositionAssignmentDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId (by household) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RationalisClusterActiveHouseholds = state.RationalisClusterActiveHouseholds.InAscendingOrder()
+                .Select(entry => ToRationalisClusterActiveHouseholdDto(entry.Key, entry.Value)).ToArray(),
         };
     }
 
@@ -1234,6 +1246,25 @@ public static class WorldStateMapper
                 return new KeyValuePair<RuntimeId<FrontierTreaty>, FrontierTreaty>(treaty.TreatyId, treaty);
             }));
 
+        var overseerAssignments = OrderedRegistry<RuntimeId<OverseerAssignment>, OverseerAssignment>.Restore(
+            dto.OverseerAssignments.Select(o =>
+            {
+                var record = FromOverseerAssignmentDto(o);
+                return new KeyValuePair<RuntimeId<OverseerAssignment>, OverseerAssignment>(record.RecordId, record);
+            }));
+
+        var seniorPositionAssignments = OrderedRegistry<RuntimeId<SeniorPositionAssignment>, SeniorPositionAssignment>.Restore(
+            dto.SeniorPositionAssignments.Select(s =>
+            {
+                var record = FromSeniorPositionAssignmentDto(s);
+                return new KeyValuePair<RuntimeId<SeniorPositionAssignment>, SeniorPositionAssignment>(record.RecordId, record);
+            }));
+
+        var rationalisClusterActiveHouseholds = OrderedRegistry<RuntimeId<Household>, GameDate>.Restore(
+            dto.RationalisClusterActiveHouseholds.Select(r =>
+                new KeyValuePair<RuntimeId<Household>, GameDate>(
+                    RuntimeId<Household>.Parse(r.HouseholdId), new GameDate(r.ActiveSinceTotalMonths))));
+
         return new WorldState(
             date: new GameDate(dto.DateTotalMonths),
             regionIds: RuntimeIdCounter<Region>.Restore(dto.Counters.RegionIds),
@@ -1304,6 +1335,8 @@ public static class WorldStateMapper
             publicWorkIds: RuntimeIdCounter<PublicWork>.Restore(dto.Counters.PublicWorkIds),
             competitiveEuergetismEventIds: RuntimeIdCounter<CompetitiveEuergetismEvent>.Restore(dto.Counters.CompetitiveEuergetismEventIds),
             frontierTreatyIds: RuntimeIdCounter<FrontierTreaty>.Restore(dto.Counters.FrontierTreatyIds),
+            overseerAssignmentIds: RuntimeIdCounter<OverseerAssignment>.Restore(dto.Counters.OverseerAssignmentIds),
+            seniorPositionAssignmentIds: RuntimeIdCounter<SeniorPositionAssignment>.Restore(dto.Counters.SeniorPositionAssignmentIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1427,6 +1460,9 @@ public static class WorldStateMapper
             foreignPeopleDetails: foreignPeopleDetails,
             perPeopleStandings: perPeopleStandings,
             frontierTreaties: frontierTreaties,
+            overseerAssignments: overseerAssignments,
+            seniorPositionAssignments: seniorPositionAssignments,
+            rationalisClusterActiveHouseholds: rationalisClusterActiveHouseholds,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -3808,6 +3844,62 @@ public static class WorldStateMapper
         dto.TermEndDateTotalMonths is { } end ? new GameDate(end) : null,
         dto.LossReason is { } loss ? Enum.Parse<MagistracyLossReason>(loss) : null,
         dto.CoHolderId is { } coHolder ? RuntimeId<Character>.Parse(coHolder) : null);
+
+    private static OverseerAssignmentDto ToOverseerAssignmentDto(OverseerAssignment record) => new()
+    {
+        RecordId = record.RecordId.ToTaggedString(),
+        HolderId = record.HolderId.ToTaggedString(),
+        Role = record.Role.ToString(),
+        HouseholdId = record.HouseholdId.ToTaggedString(),
+        BuildingId = record.BuildingId.ToTaggedString(),
+        AssignedDateTotalMonths = record.AssignedDate.TotalMonths,
+        OnLeaveSinceTotalMonths = record.OnLeaveSince?.TotalMonths,
+        EndDateTotalMonths = record.EndDate?.TotalMonths,
+    };
+
+    private static OverseerAssignment FromOverseerAssignmentDto(OverseerAssignmentDto dto) => new(
+        RuntimeId<OverseerAssignment>.Parse(dto.RecordId),
+        RuntimeId<Character>.Parse(dto.HolderId),
+        Enum.Parse<OverseerRole>(dto.Role),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        RuntimeId<Building>.Parse(dto.BuildingId),
+        new GameDate(dto.AssignedDateTotalMonths),
+        dto.OnLeaveSinceTotalMonths is { } onLeave ? new GameDate(onLeave) : null,
+        dto.EndDateTotalMonths is { } end ? new GameDate(end) : null);
+
+    private static SeniorPositionAssignmentDto ToSeniorPositionAssignmentDto(SeniorPositionAssignment record) => new()
+    {
+        RecordId = record.RecordId.ToTaggedString(),
+        HolderId = record.HolderId.ToTaggedString(),
+        Title = record.Title.ToString(),
+        HouseholdId = record.HouseholdId.ToTaggedString(),
+        Scope = record.Scope.ToString(),
+        TiedBuildingId = record.TiedBuildingId?.ToTaggedString(),
+        OversightSettlementId = record.OversightSettlementId?.ToTaggedString(),
+        AssignedDateTotalMonths = record.AssignedDate.TotalMonths,
+        OnLeaveSinceTotalMonths = record.OnLeaveSince?.TotalMonths,
+        EndDateTotalMonths = record.EndDate?.TotalMonths,
+        PromotedFromOverseerRecordId = record.PromotedFromOverseerRecordId?.ToTaggedString(),
+    };
+
+    private static SeniorPositionAssignment FromSeniorPositionAssignmentDto(SeniorPositionAssignmentDto dto) => new(
+        RuntimeId<SeniorPositionAssignment>.Parse(dto.RecordId),
+        RuntimeId<Character>.Parse(dto.HolderId),
+        Enum.Parse<SeniorPositionTitle>(dto.Title),
+        RuntimeId<Household>.Parse(dto.HouseholdId),
+        Enum.Parse<SeniorPositionScope>(dto.Scope),
+        dto.TiedBuildingId is { } tied ? RuntimeId<Building>.Parse(tied) : null,
+        dto.OversightSettlementId is { } settlement ? RuntimeId<Settlement>.Parse(settlement) : null,
+        new GameDate(dto.AssignedDateTotalMonths),
+        dto.OnLeaveSinceTotalMonths is { } onLeave ? new GameDate(onLeave) : null,
+        dto.EndDateTotalMonths is { } end ? new GameDate(end) : null,
+        dto.PromotedFromOverseerRecordId is { } source ? RuntimeId<OverseerAssignment>.Parse(source) : null);
+
+    private static RationalisClusterActiveHouseholdDto ToRationalisClusterActiveHouseholdDto(RuntimeId<Household> householdId, GameDate activeSince) => new()
+    {
+        HouseholdId = householdId.ToTaggedString(),
+        ActiveSinceTotalMonths = activeSince.TotalMonths,
+    };
 
     private static CollegiumDetailsDto ToCollegiumDetailsDto(CollegiumDetails details) => new()
     {

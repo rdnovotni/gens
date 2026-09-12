@@ -9,6 +9,7 @@ using Gens.Simulation.BusinessCompetition;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Collegia;
+using Gens.Simulation.Companions;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Funerary;
@@ -92,6 +93,8 @@ public static class StateHasher
         hash = MixLong(hash, state.WandererEngagementIds.Peek);
         hash = MixLong(hash, state.PublicWorkIds.Peek);
         hash = MixLong(hash, state.CompetitiveEuergetismEventIds.Peek);
+        hash = MixLong(hash, state.OverseerAssignmentIds.Peek);
+        hash = MixLong(hash, state.SeniorPositionAssignmentIds.Peek);
         hash = MixLong(hash, state.NextCommandSequenceNumber);
 
         foreach (var entry in state.Characters.InAscendingOrder())
@@ -1373,6 +1376,44 @@ public static class StateHasher
             hash = MixLong(hash, (long)check.OutputGoodTier);
             hash = MixLong(hash, check.LocalDemandMatch ? 1L : 0L);
             hash = MixString(hash, check.RecommendedAction ?? string.Empty);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 1.
+        foreach (var entry in state.OverseerAssignments.InAscendingOrder())
+        {
+            var record = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, record.HolderId.Value);
+            hash = MixLong(hash, (long)record.Role);
+            hash = MixLong(hash, record.HouseholdId.Value);
+            hash = MixLong(hash, record.BuildingId.Value);
+            hash = MixLong(hash, record.AssignedDate.TotalMonths);
+            hash = MixLong(hash, record.OnLeaveSince?.TotalMonths ?? -1L);
+            hash = MixLong(hash, record.EndDate?.TotalMonths ?? -1L);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 1.
+        foreach (var entry in state.SeniorPositionAssignments.InAscendingOrder())
+        {
+            var record = entry.Value;
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, record.HolderId.Value);
+            hash = MixLong(hash, (long)record.Title);
+            hash = MixLong(hash, record.HouseholdId.Value);
+            hash = MixLong(hash, (long)record.Scope);
+            hash = MixLong(hash, record.TiedBuildingId?.Value ?? -1L);
+            hash = MixLong(hash, record.OversightSettlementId?.Value ?? -1L);
+            hash = MixLong(hash, record.AssignedDate.TotalMonths);
+            hash = MixLong(hash, record.OnLeaveSince?.TotalMonths ?? -1L);
+            hash = MixLong(hash, record.EndDate?.TotalMonths ?? -1L);
+            hash = MixLong(hash, record.PromotedFromOverseerRecordId?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId (by household) order (ADR 0004) via OrderedRegistry. Phase 17 item 1.
+        foreach (var entry in state.RationalisClusterActiveHouseholds.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.TotalMonths);
         }
 
         return hash;

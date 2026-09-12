@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Gens.Simulation.BusinessCompetition;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Chronicle;
+using Gens.Simulation.Companions;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Diplomacy;
@@ -349,6 +350,12 @@ internal static class RuntimeIdTagRegistry
         // entry: they are keyed by the already-registered RuntimeId<Actor>/PerPeopleStandingKey they
         // describe, not by their own RuntimeId, matching SenateEntryInvestmentLog's identical exemption.
         [typeof(FrontierTreaty)] = "frontiertreaty",
+        // Phase 17 item 1 — Gens.Simulation.Companions.OverseerAssignment and SeniorPositionAssignment,
+        // same "real record as its own tag" convention as FrontierTreaty above. RationalisClusterActiveHouseholds
+        // needs no entry: it's keyed by the already-registered RuntimeId<Household>, not by its own
+        // RuntimeId, matching SenateEntryInvestmentLog's identical exemption above.
+        [typeof(OverseerAssignment)] = "overseer",
+        [typeof(SeniorPositionAssignment)] = "seniorPosition",
     };
 
     public static string Resolve(Type type) =>

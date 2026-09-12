@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Companions;
 using Gens.Simulation.Crime;
 using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Doctrine;
@@ -618,6 +619,28 @@ public static class ChronicleProjector
                 ended.Type,
                 ended.EventId.ToTaggedString(),
                 ended.HouseholdId),
+
+            // Phase 17 item 1 (gens-companions-court-positions-design.md §6): a promotion out of an
+            // existing OverseerAssignment is Notable-tier narrative material — "roughly as a Duumvir
+            // stands to a plain Decurion," the same relative-prestige framing §6 itself uses. A direct,
+            // tier-skipping appointment is quieter Minor-tier material instead. OverseerAssignedEvent is
+            // deliberately not projected at all — §6 frames Overseer as a working mid-tier role, not
+            // narrative material. Verified against the actual switch below rather than assumed: NO
+            // Magistracies or Religion office-holding event (MagistracyAssumedEvent, ElectionResolvedEvent,
+            // PairDuumvirsEvent, PriesthoodAssumedEvent) is projected anywhere in this file today, so
+            // there is no existing "office assumption" Chronicle convention to match — this is the first
+            // one, added per this item's own explicit plan rather than an established precedent.
+            SeniorPositionAssignedEvent assigned => new ChronicleEntryDraft(
+                assigned.OccurredDate,
+                ChronicleCategory.PoliticsAndOffice,
+                assigned.PromotedFromOverseerRecordId is not null ? ChronicleTier.Notable : ChronicleTier.Minor,
+                assigned.PromotedFromOverseerRecordId is not null
+                    ? $"{Name(state, assigned.HolderId)} was promoted to {assigned.Title} of the household."
+                    : $"{Name(state, assigned.HolderId)} was appointed {assigned.Title} of the household.",
+                new[] { assigned.HolderId },
+                assigned.Type,
+                assigned.EventId.ToTaggedString(),
+                assigned.HouseholdId),
 
             _ => null,
         };
