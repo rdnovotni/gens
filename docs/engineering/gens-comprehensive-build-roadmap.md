@@ -4145,9 +4145,42 @@ new certainty-producing shortcut. "Military outcomes do not bypass the ordinary 
 mutation in this item (Dignitas, captive intake, retaliation losses, security investment) goes through a
 real `ICommand`/`IMonthlySystem.Tick`, never a direct field set. Phase 16 is complete.
 
-### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (item 2 complete)
+### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (items 1-2 complete)
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
+
+**Item 1 progress:** Companions/court positions and travel retinues are implemented
+(`src/Gens.Simulation/Companions/`) per `gens-companions-court-positions-design.md`. `OverseerAssignment`
+(§4's Tier 2 mid-tier staffing, ~19 roles) and `SeniorPositionAssignment` (§5's Tier 3 full Court
+standing, ~34 titles across Villa-scope and Estate/settlement-scope) are two new concrete `WorldState`
+registries, keyed and resolved the same way `MagistracyRecord`/`PriesthoodRecord` already are.
+`AppointOverseerCommand`/`AppointSeniorPositionCommand` turn §6's qualitative standing bar into concrete
+`Character.GetEffectiveAttributes()`/`Condition.Loyalty` gates, with no legal-status gate (§3) and no
+prior-tenure requirement for a direct, tier-skipping Senior Position appointment; a promotion out of an
+active `OverseerAssignment` (`PromotedFromOverseerRecordId` set) ends that source record in the same
+mutate step and projects to the Dynasty Chronicle as `Notable`-tier, while a direct appointment projects
+`Minor`-tier and a plain `OverseerAssignedEvent` is not chronicled at all. `AppointSecondSettlementProcuratorCommand`
+seats §5.3's Procurator and creates the linked `StewardshipContext.SecondSettlementProcurator`
+`StewardshipAssignment` atomically; `VacateOverseerCommand`/`VacateSeniorPositionCommand` end a record
+deliberately (replace-with-`EndDate`, never delete), and vacating a Procurator also ends its linked
+Stewardship assignment. `PositionVacancySystem` (monthly) vacates a record whose holder died or left the
+household; `RationalisBonusSystem` (monthly) applies a Dignitas trickle while a household's Treasurer,
+Argentarius (Overseer tier), Institor Maximus, and Cellarer are all concurrently active and present, via
+the same `AdjustDignitasCommand` pattern `MagistracyTermSystem` already uses. `TravelRetinueQuery` is a
+pure read resolving each `TravelParty` retinue member's currently-held Position/Duty into ambush/disease
+mitigation, correspondence-unlocked, and Core Attribute contributions, closing the gap `TravelParty`'s
+own doc comment and `InterpresAppointment`'s own doc comment both flagged as deferred to this document;
+`RetinueVacancyCommands` marks a retinue member's Position `OnLeaveSince` at `BeginTravelCommand` time
+(which also gained a `RetinueOverCapacity` check) and clears it once the trip's return leg completes
+(`TravelProgressSystem`). One naming note: an unrelated, pre-existing Phase 13 item 7 command in
+`Gens.Simulation.Land` is also named `AppointProcuratorCommand` (a `DistantHolding` mismanagement-risk
+concern, appointing a Procurator through the ordinary Stewardship path directly rather than through a
+Senior Position record) — this item's own command is named `AppointSecondSettlementProcuratorCommand`
+instead to avoid the collision; the two features are not otherwise merged. Covered in
+`tests/Gens.Simulation.Tests/Companions/CompanionsTests.cs`, including every validation path, the
+promotion/direct-appointment distinction, Procurator/StewardshipAssignment linkage, the Rationalis
+cluster bonus's edge-triggered activation/deactivation event, travel on-leave/return, a save/load round
+trip, and deterministic state-hash stability.
 
 **Item 2 progress:** Education, pedagogy, study, literacy, cultural patronage, and institutions
 (`src/Gens.Simulation/Education/`, `gens-education-culture-design.md`) are implemented in four vertical
@@ -4175,19 +4208,29 @@ permanent `CharacterInstitutionCredential` (Rhodes' also satisfying the magistra
 a completed Rhetoric Track) and pushes Culture drift sharply toward the institution's prime culture; and a
 narrow Renown Attracts Renown flag-and-event, not a full foreign-student gameplay loop, per the design's
 own "rare, earned endgame payoff" framing. Companions & Court Positions (item 1) and region content beyond
-Latium (Phase 13 item 6) — the two real dependencies this item's own construction order names — are both
-still unbuilt; this item's own narrow, explicitly-labeled placeholders (the tutor-role stand-in; each
-institution's own fixed distance/risk tier) cover the gap without blocking on either. Covered in
+Latium (Phase 13 item 6) — the two real dependencies this item's own construction order names — were both
+still unbuilt when this item's own placeholders (the tutor-role stand-in; each institution's own fixed
+distance/risk tier) were written to cover the gap without blocking on either; item 1 has since landed
+(see its own progress note above and the fast-follow note below on reconciling the tutor placeholder with
+it), while region content beyond Latium remains unbuilt. Covered in
 `tests/Gens.Simulation.Tests/Education/` (`CulturalPrestigeTests.cs`, `EducationGateResolverTests.cs`,
 `PedagogyTests.cs`, `InstitutionsOfRenownTests.cs`) plus one new rejection-path assertion each in the
 existing Magistracy/Correspondence test files and one new route-resolution case in the Travel test file,
 including command accept/reject validation, resolver/monthly-system math, save round trips, and
-deterministic state-hash stability for every new partition.
+deterministic state-hash stability for every new partition. **Fast-follow noted, not done here:** now
+that item 1's real Companions system has landed, its `SeniorPositionTitle.Tutor` is the obvious long-term
+home for this item's Paedagogus/Foreign-Tutor placeholder — but `AppointSeniorPositionCommand` hard-requires
+the appointee already belong to the household (`NotHouseholdMember`), while this item's own
+`EducationRole.ForeignTutor` deliberately allows (and needs) a tutor from outside it, so swapping the
+placeholder for `SeniorPositionTitle.Tutor` is a genuine validation-model change, not a mechanical rename;
+it is left as its own follow-up (likely a household-membership override or a dedicated external-tutor
+allowance on `AppointSeniorPositionCommand`) rather than attempted as part of this merge. Items 3-10
+remain unbuilt.
 
 Recommended internal order:
 
-1. Companions/court positions and travel retinues on top of duties, delegation, and relationships.
-2. Education, pedagogy, study, literacy, cultural patronage, and institutions.
+1. ✅ Companions/court positions and travel retinues on top of duties, delegation, and relationships.
+2. ✅ Education, pedagogy, study, literacy, cultural patronage, and institutions.
 3. Full adult romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences. Preserve the document's hard Adult lifecycle gate and power-imbalance exclusions.
 4. The generic activity engine: invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting.
 5. Feasts as the first complete activity type.
@@ -4248,7 +4291,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-4 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track; Legal & Court's case filing, presiding assignment, evidence/testimony/bribery, and verdict consequences) are now done too. **The next unimplemented work is Phase 12 item 5** — crime, detention, punishment, ransom, legitimacy, and authority boundaries.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-4 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track; Legal & Court's case filing, presiding assignment, evidence/testimony/bribery, and verdict consequences) are now done too. Phases 12–16 have since been completed in full (see the phase checklist above), and Phase 17 item 1 (Companions/court positions and travel retinues) is now done as well. **The next unimplemented work is Phase 17 item 2** — education, pedagogy, study, literacy, cultural patronage, and institutions.
 
 ## Vertical-slice acceptance test
 

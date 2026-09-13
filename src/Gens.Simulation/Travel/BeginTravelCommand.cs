@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Companions;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Regions;
 using Gens.Simulation.State;
@@ -52,6 +53,9 @@ public static class BeginTravelCommands
     public static readonly ValidationErrorCode RetinueMemberDeceased = new("travel.begin.retinueMemberDeceased");
     public static readonly ValidationErrorCode RetinueMemberIsTraveler = new("travel.begin.retinueMemberIsTraveler");
     public static readonly ValidationErrorCode DuplicateRetinueMember = new("travel.begin.duplicateRetinueMember");
+    // Phase 17 item 1 (gens-companions-court-positions-design.md §7) — an invented flat cap, see
+    // CompanionsCatalog.TravelRetinueCapacity's own doc comment.
+    public static readonly ValidationErrorCode RetinueOverCapacity = new("travel.begin.retinueOverCapacity");
     public static readonly ValidationErrorCode PartyMemberAlreadyTraveling = new("travel.begin.partyMemberAlreadyTraveling");
     public static readonly ValidationErrorCode DestinationMustNotBeHome = new("travel.begin.destinationMustNotBeHome");
     public static readonly ValidationErrorCode DestinationUnsupported = new("travel.begin.destinationUnsupported");
@@ -82,6 +86,8 @@ public static class BeginTravelCommands
             return RetinueMemberIsTraveler;
         if (command.RetinueCharacterIds.Distinct().Count() != command.RetinueCharacterIds.Count)
             return DuplicateRetinueMember;
+        if (command.RetinueCharacterIds.Count > CompanionsCatalog.TravelRetinueCapacity)
+            return RetinueOverCapacity;
 
         foreach (var retinueId in command.RetinueCharacterIds)
         {
@@ -128,6 +134,11 @@ public static class BeginTravelCommands
         var tripId = state.TravelTripIds.Issue();
         var trip = TravelTrip.Begin(tripId, party, route, command.SubmittedDate);
         state.TravelTrips.Add(tripId, trip);
+
+        // Phase 17 item 1 (§7): a retinue member's own Overseer/Senior Position goes on-leave, not
+        // ended, for the duration of the trip — cleared again once the return leg completes
+        // (TravelProgressSystem).
+        RetinueVacancyCommands.MarkOnLeave(state, party, command.SubmittedDate);
 
         // CurrentTravelLocation is left null (§10: "defaults to a 'home' Location") while a leg is
         // actually underway — it is set once the party genuinely arrives somewhere (§7's Arrival), by
