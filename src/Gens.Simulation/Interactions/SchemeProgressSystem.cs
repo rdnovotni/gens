@@ -50,7 +50,13 @@ public sealed record SchemeResolvedEvent(
 /// regardless of how much Progress had accumulated.</item>
 /// <item>Otherwise, once Progress reaches 100 cleanly, an Intrigue-weighted roll decides <see
 /// cref="SchemeStatus.Succeeded"/> versus <see cref="SchemeStatus.FailedQuietly"/> (§10.5: "completing
-/// the plan is necessary but not sufficient").</item>
+/// the plan is necessary but not sufficient"). For a <see cref="SchemeType.Seduce"/> Scheme only
+/// (<c>gens-romance-sexuality-lineage-design.md</c> §7), this roll's chance also reads the target's
+/// existing <see cref="Romance.RomanticBond.Attraction"/> toward the initiator — every other <see
+/// cref="SchemeType"/>'s formula is unaffected. A successful <see cref="SchemeType.Seduce"/> resolution
+/// is additionally handed to <see cref="Romance.SeduceSchemeResolutionHook"/> from <see cref="Resolve"/>
+/// below, mirroring the Legal case-type hooks' identical "additive hook called from the shared resolution
+/// point" precedent.</item>
 /// </list>
 ///
 /// A Scheme whose initiator has died, or whose target has died or no longer exists at all, resolves
@@ -63,7 +69,7 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
 {
     public string Id => "interactions.schemeProgress";
     public TickPhase Phase => TickPhase.RelationshipsActors;
-    public IReadOnlyCollection<string> Reads { get; } = new[] { "schemes", "characters", "actors" };
+    public IReadOnlyCollection<string> Reads { get; } = new[] { "schemes", "characters", "actors", "romanticBonds" };
     public IReadOnlyCollection<string> Writes { get; } = new[] { "schemes", "eventIds", "rivalDossiers" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
@@ -114,6 +120,23 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
                     SchemeProgressCatalog.BaseSuccessChancePercent
                         + initiator.Attributes.Intrigue * SchemeProgressCatalog.SuccessChanceIntrigueWeightPercent / 100,
                     0, 100);
+
+                // §7: a Seduce Scheme's success chance additionally reads the target's existing
+                // Attraction toward the initiator — cold-start seduction against someone with no spark at
+                // all (no bond, Attraction 0) gets none of this bonus, enforcing "never overrides genuine
+                // unwillingness" (§2/§3). Every other SchemeType's formula is byte-for-byte unchanged
+                // above this point.
+                if (scheme.Type == SchemeType.Seduce)
+                {
+                    var attraction = state.RomanticBonds.TryGet(
+                        Romance.RomanticBondKey.Create(scheme.InitiatorCharacterId, scheme.TargetCharacterId), out var bond)
+                        ? bond.Attraction
+                        : 0;
+                    successChance = Math.Clamp(
+                        successChance + attraction * Romance.RomanceCatalog.SeduceAttractionSuccessWeightPercent / 100,
+                        0, 100);
+                }
+
                 var succeeded = context.RandomStreams.NextUInt(StreamName, 100) < (uint)successChance;
                 Resolve(state, schemeId, advanced, succeeded ? SchemeStatus.Succeeded : SchemeStatus.FailedQuietly, context.Date, events);
             }
@@ -133,6 +156,7 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
         state.Schemes.Remove(schemeId);
         state.Schemes.Add(schemeId, scheme with { Status = status, LastProgressedDate = date });
         events.Add(new SchemeResolvedEvent(state.EventIds.Issue(), date, schemeId, scheme.InitiatorCharacterId, scheme.TargetCharacterId, status));
+        events.AddRange(Romance.SeduceSchemeResolutionHook.Apply(state, scheme with { Status = status }, date));
 
         // Genuine contact for both participants (Phase 10 package 14) — a Scheme resolving against or
         // by a tracked rival's own head Character is exactly the "shared event" §7 names; a no-op for

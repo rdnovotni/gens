@@ -58,6 +58,24 @@ public static class RomanceCatalog
     /// per-pair monthly percent chance, invented baseline, flagged for future balancing."</summary>
     public const int AutonomousRomanceMonthlyChancePercent = 3;
 
+    // ---- Slice 4: Seduce Scheme (§7) ----------------------------------------------------------------
+
+    /// <summary>The weight <see cref="Interactions.SchemeProgressSystem"/> applies to the target's
+    /// existing <see cref="RomanticBond.Attraction"/> toward the initiator when computing a <see
+    /// cref="Interactions.SchemeType.Seduce"/> Scheme's success chance, on top of that system's ordinary
+    /// Intrigue-weighted formula — every other <see cref="Interactions.SchemeType"/> is unaffected (§7,
+    /// §2/§3's "never overrides genuine unwillingness": a cold-start seduction against someone with no
+    /// existing spark, Attraction 0, gets none of this bonus).</summary>
+    public const int SeduceAttractionSuccessWeightPercent = 50;
+
+    /// <summary>The Affection/Attraction bump a successful Seduce Scheme applies to the resulting <see
+    /// cref="RomanticBond"/> via <see cref="Romance.SeduceSchemeResolutionHook"/> — sized on the same
+    /// order as <see cref="ConfessFeelingsAffectionDelta"/>/<see cref="ConfessFeelingsAttractionDelta"/>,
+    /// this codebase's other "high-investment, high-payoff" Romance interaction.</summary>
+    public const int SeduceSuccessAffectionDelta = 10;
+
+    public const int SeduceSuccessAttractionDelta = 8;
+
     // ---- Slice 8 (forward-declared): Affairs & Discovery (§11) --------------------------------------
 
     /// <summary>How many points a later slice's <c>AffairDiscoverySystem</c> adds to an undiscovered

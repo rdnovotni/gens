@@ -52,4 +52,12 @@ public enum BondTag
     /// <summary>One party holds damaging material on the other — a standing, usable threat rather
     /// than just poor opinion (<c>gens-characters-design.md</c> §7; Espionage's forward hook).</summary>
     BlackmailLeverage = 1 << 16,
+
+    /// <summary>The legally-recognized, publicly-acknowledged "middle ground" short of marriage
+    /// (<c>gens-romance-sexuality-lineage-design.md</c> §6): "sits between <see cref="Spouse"/> and
+    /// <see cref="Lover"/>-as-Affair... publicly acknowledged, no Legitimacy claim, never subject to
+    /// Divorce." Distinct from an Affair specifically because it is never hidden, and distinct from a
+    /// marriage because it carries none of <see cref="Spouse"/>'s legal weight (no Legitimacy claim for
+    /// resulting children, no Divorce proceeding to end it).</summary>
+    Concubine = 1 << 17,
 }

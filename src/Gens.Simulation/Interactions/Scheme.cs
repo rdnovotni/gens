@@ -8,15 +8,24 @@ using Gens.Simulation.Time;
 namespace Gens.Simulation.Interactions;
 
 /// <summary>Which flavor of Multi-stage interaction a <see cref="Scheme"/> is running
-/// (<c>gens-characters-design.md</c> §9.4's "Scheme (generic wrapper)"). One value for now — Phase 10
-/// item 6 only needs to prove the shared engine works end to end; every future consumer named in §10's
-/// own closing paragraph (Politics &amp; Patronage's Scheming, Romance &amp; Seduction's courtship,
-/// Espionage) adds its own scheme *type* here without changing <see cref="Scheme"/>'s own shape, per
-/// that section's explicit design.</summary>
+/// (<c>gens-characters-design.md</c> §9.4's "Scheme (generic wrapper)"). Phase 10 item 6 only needed to
+/// prove the shared engine works end to end with one value; every future consumer named in §10's own
+/// closing paragraph adds its own scheme *type* here without changing <see cref="Scheme"/>'s own shape,
+/// per that section's explicit design. Phase 17 item 3's Seduce (<c>gens-romance-sexuality-lineage-design.md</c>
+/// §7) is the first of those to actually land — Romance &amp; Seduction's courtship is no longer a
+/// forward reference, it is <see cref="Seduce"/> below, wired into <see cref="SchemeProgressSystem"/>'s
+/// success-chance formula and resolved by <see cref="Romance.SeduceSchemeResolutionHook"/>. Politics
+/// &amp; Patronage's Scheming and Espionage remain forward references, unaffected by this addition.</summary>
 public enum SchemeType
 {
     /// <summary>The generic Coercive/Intrigue scheme (§9.4) — the worked example this phase implements.</summary>
     Coercive,
+
+    /// <summary>A romantic seduction attempt (<c>gens-romance-sexuality-lineage-design.md</c> §7),
+    /// gated by <see cref="Romance.RomanceEligibility"/> like every other Romance mechanic and weighted
+    /// by the target's existing <see cref="Romance.RomanticBond.Attraction"/> toward the initiator — see
+    /// <see cref="SchemeProgressSystem"/>'s own doc comment for exactly how.</summary>
+    Seduce,
 }
 
 /// <summary>A Scheme's terminal (or in-progress) state (<c>gens-characters-design.md</c> §10.5): four
