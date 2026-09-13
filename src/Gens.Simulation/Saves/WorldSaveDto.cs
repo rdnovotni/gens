@@ -875,6 +875,13 @@ public sealed record WorldSaveDocument
     [JsonPropertyOrder(131)]
     public IReadOnlyList<RationalisClusterActiveHouseholdDto> RationalisClusterActiveHouseholds { get; init; } =
         Array.Empty<RationalisClusterActiveHouseholdDto>();
+
+    /// <summary>Every undirected <see cref="Gens.Simulation.Romance.RomanticBond"/> (Phase 17 item 3),
+    /// already in ascending <see cref="Gens.Simulation.Romance.RomanticBondKey"/> order. Not
+    /// <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="RationalisClusterActiveHouseholds"/> above.</summary>
+    [JsonPropertyOrder(132)]
+    public IReadOnlyList<RomanticBondDto> RomanticBonds { get; init; } = Array.Empty<RomanticBondDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1572,6 +1579,43 @@ public sealed record RelationshipDto
     public required int LastMeaningfulInteractionDateTotalMonths { get; init; }
 
     [JsonPropertyOrder(7)]
+    public string? ProvenanceEventId { get; init; }
+}
+
+/// <summary>One undirected <see cref="Gens.Simulation.Romance.RomanticBond"/> (Phase 17 item 3;
+/// <c>gens-romance-sexuality-lineage-design.md</c> §3, §16), keyed by its <see
+/// cref="Gens.Simulation.Romance.RomanticBondKey"/>'s canonically-ordered (CharacterAId, CharacterBId)
+/// pair.</summary>
+public sealed record RomanticBondDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterAId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterBId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string BondType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int Affection { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int Attraction { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool IsKnownPublicly { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int DiscoveryRisk { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int FormedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int LastMeaningfulInteractionDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(9)]
     public string? ProvenanceEventId { get; init; }
 }
 

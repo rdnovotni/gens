@@ -44,6 +44,7 @@ using Gens.Simulation.PurchasingPower;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Shipping;
 using Gens.Simulation.Societates;
@@ -155,6 +156,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Holding>, Holding> holdings,
         OrderedRegistry<RuntimeId<Character>, Character> characters,
         OrderedRegistry<RelationshipKey, Relationship> relationships,
+        OrderedRegistry<RomanticBondKey, RomanticBond> romanticBonds,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
@@ -365,6 +367,7 @@ public sealed class WorldState
         Holdings = holdings;
         Characters = characters;
         Relationships = relationships;
+        RomanticBonds = romanticBonds;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
@@ -712,6 +715,13 @@ public sealed class WorldState
     /// interaction simply has no entry here at all, rather than every possible pair pre-allocating a
     /// zero-opinion slot.</summary>
     public OrderedRegistry<RelationshipKey, Relationship> Relationships { get; } = new();
+
+    /// <summary>Every undirected romantic pairing's Affection/Attraction record (Phase 17 item 3;
+    /// <c>gens-romance-sexuality-lineage-design.md</c> §3, §16), in ascending <see
+    /// cref="Romance.RomanticBondKey"/> order (ADR 0004). Sparse by construction, matching <see
+    /// cref="Relationships"/>'s identical convention: a pair with no romantic history simply has no
+    /// entry here at all.</summary>
+    public OrderedRegistry<RomanticBondKey, RomanticBond> RomanticBonds { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -1535,6 +1545,7 @@ public sealed class WorldState
         ["holdings"] = Holdings.Version,
         ["characters"] = Characters.Version,
         ["relationships"] = Relationships.Version,
+        ["romanticBonds"] = RomanticBonds.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,

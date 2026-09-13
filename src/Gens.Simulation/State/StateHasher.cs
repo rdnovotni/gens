@@ -29,6 +29,7 @@ using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Societates;
 using Gens.Simulation.Stewardship;
@@ -1493,6 +1494,21 @@ public static class StateHasher
         {
             hash = MixLong(hash, entry.Key.Value);
             hash = MixLong(hash, entry.Value.TotalMonths);
+        }
+
+        // Already ascending RomanticBondKey order (ADR 0004) via OrderedRegistry. Phase 17 item 3.
+        foreach (var entry in state.RomanticBonds.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.CharacterAId.Value);
+            hash = MixLong(hash, entry.Key.CharacterBId.Value);
+            hash = MixLong(hash, (long)entry.Value.BondType);
+            hash = MixLong(hash, entry.Value.Affection);
+            hash = MixLong(hash, entry.Value.Attraction);
+            hash = MixLong(hash, entry.Value.IsKnownPublicly ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.DiscoveryRisk);
+            hash = MixLong(hash, entry.Value.FormedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.LastMeaningfulInteractionDate.TotalMonths);
+            hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
         }
 
         return hash;

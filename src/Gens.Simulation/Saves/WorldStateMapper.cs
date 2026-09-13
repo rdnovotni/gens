@@ -48,6 +48,7 @@ using Gens.Simulation.RealEstate;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Societates;
 using Gens.Simulation.State;
@@ -437,6 +438,9 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId (by household) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             RationalisClusterActiveHouseholds = state.RationalisClusterActiveHouseholds.InAscendingOrder()
                 .Select(entry => ToRationalisClusterActiveHouseholdDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending RomanticBondKey order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RomanticBonds = state.RomanticBonds.InAscendingOrder()
+                .Select(entry => ToRomanticBondDto(entry.Key, entry.Value)).ToArray(),
         };
     }
 
@@ -459,6 +463,9 @@ public static class WorldStateMapper
 
         var relationships = OrderedRegistry<RelationshipKey, Relationship>.Restore(
             dto.Relationships.Select(FromRelationshipDto));
+
+        var romanticBonds = OrderedRegistry<RomanticBondKey, RomanticBond>.Restore(
+            dto.RomanticBonds.Select(FromRomanticBondDto));
 
         var popGroups = OrderedRegistry<PopGroupKey, PopGroup>.Restore(
             dto.PopGroups.Select(FromPopGroupDto));
@@ -1427,6 +1434,7 @@ public static class WorldStateMapper
             holdings: holdings,
             characters: characters,
             relationships: relationships,
+            romanticBonds: romanticBonds,
             scheduledActions: scheduledActions,
             popGroups: popGroups,
             householdRegimenDefaults: householdRegimenDefaults,
@@ -2814,6 +2822,35 @@ public static class WorldStateMapper
             new GameDate(dto.LastMeaningfulInteractionDateTotalMonths),
             dto.ProvenanceEventId);
         return new KeyValuePair<RelationshipKey, Relationship>(key, relationship);
+    }
+
+    private static RomanticBondDto ToRomanticBondDto(RomanticBondKey key, RomanticBond bond) => new()
+    {
+        CharacterAId = key.CharacterAId.ToTaggedString(),
+        CharacterBId = key.CharacterBId.ToTaggedString(),
+        BondType = bond.BondType.ToString(),
+        Affection = bond.Affection,
+        Attraction = bond.Attraction,
+        IsKnownPublicly = bond.IsKnownPublicly,
+        DiscoveryRisk = bond.DiscoveryRisk,
+        FormedDateTotalMonths = bond.FormedDate.TotalMonths,
+        LastMeaningfulInteractionDateTotalMonths = bond.LastMeaningfulInteractionDate.TotalMonths,
+        ProvenanceEventId = bond.ProvenanceEventId,
+    };
+
+    private static KeyValuePair<RomanticBondKey, RomanticBond> FromRomanticBondDto(RomanticBondDto dto)
+    {
+        var key = RomanticBondKey.Create(RuntimeId<Character>.Parse(dto.CharacterAId), RuntimeId<Character>.Parse(dto.CharacterBId));
+        var bond = new RomanticBond(
+            Enum.Parse<RomanticBondType>(dto.BondType),
+            dto.Affection,
+            dto.Attraction,
+            dto.IsKnownPublicly,
+            dto.DiscoveryRisk,
+            new GameDate(dto.FormedDateTotalMonths),
+            new GameDate(dto.LastMeaningfulInteractionDateTotalMonths),
+            dto.ProvenanceEventId);
+        return new KeyValuePair<RomanticBondKey, RomanticBond>(key, bond);
     }
 
     private static PopGroupDto ToPopGroupDto(PopGroup popGroup) => new()
