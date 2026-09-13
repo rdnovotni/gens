@@ -353,6 +353,62 @@ public sealed record WorldSaveDocument
     [JsonPropertyOrder(55)]
     public IReadOnlyList<PriesthoodRecordDto> PriesthoodRecords { get; init; } = Array.Empty<PriesthoodRecordDto>();
 
+    /// <summary>Each household's <see cref="Gens.Simulation.Education.HouseholdCulturalPrestige"/>
+    /// (Phase 17 item 2), already keyed by household. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="PriesthoodRecords"/>'s identical additive-only ADR 0011 reasoning.</summary>
+    [JsonPropertyOrder(129)]
+    public IReadOnlyList<HouseholdCulturalPrestigeDto> HouseholdCulturalPrestiges { get; init; } =
+        Array.Empty<HouseholdCulturalPrestigeDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Education.CulturalPatronageRecord"/> ever begun (Phase
+    /// 17 item 2), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, matching <see cref="HouseholdCulturalPrestiges"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(130)]
+    public IReadOnlyList<CulturalPatronageRecordDto> CulturalPatronageRecords { get; init; } =
+        Array.Empty<CulturalPatronageRecordDto>();
+
+    /// <summary>Each named Character's <see cref="Gens.Simulation.Education.EducationalTrackEnrollment"/>
+    /// (Phase 17 item 2), already keyed by Character. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="CulturalPatronageRecords"/>'s identical additive-only ADR 0011 reasoning.</summary>
+    [JsonPropertyOrder(131)]
+    public IReadOnlyList<EducationalTrackEnrollmentDto> EducationalTrackEnrollments { get; init; } =
+        Array.Empty<EducationalTrackEnrollmentDto>();
+
+    /// <summary>Each named Character's <see
+    /// cref="Gens.Simulation.Education.DistinguishedEducationInvestment"/> (Phase 17 item 2), already
+    /// keyed by Character. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(132)]
+    public IReadOnlyList<DistinguishedEducationInvestmentDto> DistinguishedEducationInvestments { get; init; } =
+        Array.Empty<DistinguishedEducationInvestmentDto>();
+
+    /// <summary>Each household's <see cref="Gens.Simulation.Education.EducationRoleAssignment"/> (Phase
+    /// 17 item 2), already keyed by household. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(133)]
+    public IReadOnlyList<EducationRoleAssignmentDto> EducationRoleAssignments { get; init; } =
+        Array.Empty<EducationRoleAssignmentDto>();
+
+    /// <summary>Each named Character's in-progress <see cref="Gens.Simulation.Education.CulturalDriftState"/>
+    /// (Phase 17 item 2), already keyed by Character. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(134)]
+    public IReadOnlyList<CulturalDriftStateDto> CulturalDriftStates { get; init; } = Array.Empty<CulturalDriftStateDto>();
+
+    /// <summary>Each active <see cref="Gens.Simulation.Education.StudyAbroadJourney"/> (Phase 17 item
+    /// 2), already keyed by Travel trip. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(135)]
+    public IReadOnlyList<StudyAbroadJourneyDto> StudyAbroadJourneys { get; init; } = Array.Empty<StudyAbroadJourneyDto>();
+
+    /// <summary>Each named Character's <see cref="Gens.Simulation.Education.CharacterInstitutionCredential"/>
+    /// (Phase 17 item 2), already keyed by Character. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(136)]
+    public IReadOnlyList<CharacterInstitutionCredentialDto> CharacterInstitutionCredentials { get; init; } =
+        Array.Empty<CharacterInstitutionCredentialDto>();
+
+    /// <summary>Each household's <see cref="Gens.Simulation.Education.RenownAttractsRenownState"/> (Phase
+    /// 17 item 2), already keyed by household. Not <c>required</c>, and defaults to empty.</summary>
+    [JsonPropertyOrder(137)]
+    public IReadOnlyList<RenownAttractsRenownStateDto> RenownAttractsRenownStates { get; init; } =
+        Array.Empty<RenownAttractsRenownStateDto>();
+
     /// <summary>Every <see cref="Gens.Simulation.Legal.LegalCase"/> ever filed (Phase 12 item 4), already
     /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
     /// empty, matching <see cref="PriesthoodRecords"/>'s identical reasoning.</summary>
@@ -987,6 +1043,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(29)]
     public long PriesthoodRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-17-item-2 save has no Cultural
+    /// Patronage Records. Additive-only per ADR 0011's policy, matching <see
+    /// cref="PriesthoodRecordIds"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(126)]
+    public long CulturalPatronageRecordIds { get; init; }
 
     /// <summary>Not <c>required</c>, and defaults to 0: a pre-Phase-12-item-4 save has no Legal Cases.
     /// Additive-only per ADR 0011's policy, matching <see cref="PriesthoodRecordIds"/>'s identical
@@ -3046,6 +3108,149 @@ public sealed record PriesthoodRecordDto
     public int? EndDateTotalMonths { get; init; }
 }
 
+/// <summary>One <see cref="Gens.Simulation.Education.HouseholdCulturalPrestige"/> (Phase 17 item 2),
+/// keyed by household.</summary>
+public sealed record HouseholdCulturalPrestigeDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required int Prestige { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.CulturalPatronageRecord"/> (Phase 17 item 2).</summary>
+public sealed record CulturalPatronageRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string RecordId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string PatronageType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string HostCharacterId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int StartedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public int? EndedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.EducationalTrackEnrollment"/> (Phase 17 item 2),
+/// keyed by Character.</summary>
+public sealed record EducationalTrackEnrollmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string TrackId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int StartedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required bool DistinguishedTierActive { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public int? CompletedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.DistinguishedEducationInvestment"/> (Phase 17 item
+/// 2), keyed by Character.</summary>
+public sealed record DistinguishedEducationInvestmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string TrackId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int PurchasedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required Money AmountPaid { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.EducationRoleAssignment"/> (Phase 17 item 2), keyed
+/// by household.</summary>
+public sealed record EducationRoleAssignmentDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string TutorId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string Role { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.CulturalDriftState"/> (Phase 17 item 2), keyed by
+/// Character.</summary>
+public sealed record CulturalDriftStateDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string TargetCultureId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int ProgressMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.StudyAbroadJourney"/> (Phase 17 item 2), keyed by
+/// Travel trip.</summary>
+public sealed record StudyAbroadJourneyDto
+{
+    [JsonPropertyOrder(0)]
+    public required string TripId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string InstitutionId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int MonthsAtInstitution { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.CharacterInstitutionCredential"/> (Phase 17 item 2),
+/// keyed by Character.</summary>
+public sealed record CharacterInstitutionCredentialDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string InstitutionId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required int GrantedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Education.RenownAttractsRenownState"/> (Phase 17 item 2),
+/// keyed by household.</summary>
+public sealed record RenownAttractsRenownStateDto
+{
+    [JsonPropertyOrder(0)]
+    public required string HouseholdId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required bool IncomingForeignStudentOpportunityActive { get; init; }
+}
+
 /// <summary>One <see cref="Gens.Simulation.Legal.LegalCase"/> (Phase 12 item 4).</summary>
 public sealed record LegalCaseDto
 {
@@ -3374,6 +3579,12 @@ public sealed record TravelLocationDto
 
     [JsonPropertyOrder(3)]
     public string? ActorId { get; init; }
+
+    /// <summary>Set only for <see cref="Gens.Simulation.Travel.LocationKind.InstitutionOfRenown"/> (Phase
+    /// 17 item 2). Not <c>required</c>, and defaults to null, matching this DTO's other optional
+    /// per-kind fields — a pre-Phase-17-item-2 save simply never carries this kind.</summary>
+    [JsonPropertyOrder(4)]
+    public string? InstitutionId { get; init; }
 }
 
 /// <summary>One <see cref="Gens.Simulation.Travel.TravelParty"/> (Phase 13 item 2).</summary>

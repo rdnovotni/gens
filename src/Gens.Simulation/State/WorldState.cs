@@ -16,6 +16,7 @@ using Gens.Simulation.Diplomacy;
 using Gens.Simulation.Doctrine;
 using Gens.Simulation.Economy;
 using Gens.Simulation.Edicts;
+using Gens.Simulation.Education;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
@@ -111,6 +112,7 @@ public sealed class WorldState
         RuntimeIdCounter<MagistracyRecord> magistracyRecordIds,
         RuntimeIdCounter<OmenEvent> omenEventIds,
         RuntimeIdCounter<PriesthoodRecord> priesthoodRecordIds,
+        RuntimeIdCounter<CulturalPatronageRecord> culturalPatronageRecordIds,
         RuntimeIdCounter<LegalCase> legalCaseIds,
         RuntimeIdCounter<PunishableOffense> punishableOffenseIds,
         RuntimeIdCounter<DetentionRecord> detentionRecordIds,
@@ -205,6 +207,15 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HouseholdReligion> householdReligions,
         OrderedRegistry<RuntimeId<OmenEvent>, OmenEvent> omenEvents,
         OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> priesthoodRecords,
+        OrderedRegistry<RuntimeId<Household>, HouseholdCulturalPrestige> householdCulturalPrestiges,
+        OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord> culturalPatronageRecords,
+        OrderedRegistry<RuntimeId<Character>, EducationalTrackEnrollment> educationalTrackEnrollments,
+        OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment> distinguishedEducationInvestments,
+        OrderedRegistry<RuntimeId<Household>, EducationRoleAssignment> educationRoleAssignments,
+        OrderedRegistry<RuntimeId<Character>, CulturalDriftState> culturalDriftStates,
+        OrderedRegistry<RuntimeId<TravelTrip>, StudyAbroadJourney> studyAbroadJourneys,
+        OrderedRegistry<RuntimeId<Character>, CharacterInstitutionCredential> characterInstitutionCredentials,
+        OrderedRegistry<RuntimeId<Household>, RenownAttractsRenownState> renownAttractsRenownStates,
         OrderedRegistry<RuntimeId<LegalCase>, LegalCase> legalCases,
         OrderedRegistry<RuntimeId<PunishableOffense>, PunishableOffense> punishableOffenses,
         OrderedRegistry<RuntimeId<DetentionRecord>, DetentionRecord> detentionRecords,
@@ -311,6 +322,7 @@ public sealed class WorldState
         MagistracyRecordIds = magistracyRecordIds;
         OmenEventIds = omenEventIds;
         PriesthoodRecordIds = priesthoodRecordIds;
+        CulturalPatronageRecordIds = culturalPatronageRecordIds;
         LegalCaseIds = legalCaseIds;
         PunishableOffenseIds = punishableOffenseIds;
         DetentionRecordIds = detentionRecordIds;
@@ -405,6 +417,15 @@ public sealed class WorldState
         HouseholdReligions = householdReligions;
         OmenEvents = omenEvents;
         PriesthoodRecords = priesthoodRecords;
+        HouseholdCulturalPrestiges = householdCulturalPrestiges;
+        CulturalPatronageRecords = culturalPatronageRecords;
+        EducationalTrackEnrollments = educationalTrackEnrollments;
+        DistinguishedEducationInvestments = distinguishedEducationInvestments;
+        EducationRoleAssignments = educationRoleAssignments;
+        CulturalDriftStates = culturalDriftStates;
+        StudyAbroadJourneys = studyAbroadJourneys;
+        CharacterInstitutionCredentials = characterInstitutionCredentials;
+        RenownAttractsRenownStates = renownAttractsRenownStates;
         LegalCases = legalCases;
         PunishableOffenses = punishableOffenses;
         DetentionRecords = detentionRecords;
@@ -553,6 +574,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Religion.PriesthoodRecord"/> (Phase 12 item 3).</summary>
     public RuntimeIdCounter<PriesthoodRecord> PriesthoodRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Education.CulturalPatronageRecord"/> (Phase 17 item 2).</summary>
+    public RuntimeIdCounter<CulturalPatronageRecord> CulturalPatronageRecordIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Legal.LegalCase"/> (Phase 12 item 4).</summary>
     public RuntimeIdCounter<LegalCase> LegalCaseIds { get; } = new();
@@ -1000,6 +1024,52 @@ public sealed class WorldState
     /// matching <see cref="MagistracyRecords"/>'s identical convention.</summary>
     public OrderedRegistry<RuntimeId<PriesthoodRecord>, PriesthoodRecord> PriesthoodRecords { get; } = new();
 
+    /// <summary>Each household's <see cref="Education.HouseholdCulturalPrestige"/> (Phase 17 item 2; §7),
+    /// keyed by household. Sparse: a household this item never touches has no entry, matching <see
+    /// cref="HouseholdReputations"/>'s identical "no entry means the default" convention.</summary>
+    public OrderedRegistry<RuntimeId<Household>, HouseholdCulturalPrestige> HouseholdCulturalPrestiges { get; } = new();
+
+    /// <summary>Every <see cref="Education.CulturalPatronageRecord"/> ever begun, active or ended (Phase
+    /// 17 item 2; §7), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once begun,
+    /// matching <see cref="MagistracyRecords"/>'s identical "resolved or not, kept for the campaign's
+    /// lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord> CulturalPatronageRecords { get; } = new();
+
+    /// <summary>Each named Character's <see cref="Education.EducationalTrackEnrollment"/> (Phase 17 item
+    /// 2; §3), keyed by the Character it describes. Sparse: a Character never enrolled in a Track has no
+    /// entry, matching <see cref="LiteracyRecords"/>'s identical shape.</summary>
+    public OrderedRegistry<RuntimeId<Character>, EducationalTrackEnrollment> EducationalTrackEnrollments { get; } = new();
+
+    /// <summary>Each named Character's <see cref="Education.DistinguishedEducationInvestment"/> (Phase 17
+    /// item 2; §3), keyed by the Character it upgrades. Sparse: a Character never upgraded to the
+    /// Distinguished tier has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment> DistinguishedEducationInvestments { get; } = new();
+
+    /// <summary>Each household's standing <see cref="Education.EducationRoleAssignment"/> (Phase 17 item
+    /// 2; §3.3), keyed by the appointing household. Sparse: a household with no tutor assigned has no
+    /// entry, matching <see cref="InterpresAppointments"/>'s identical shape.</summary>
+    public OrderedRegistry<RuntimeId<Household>, EducationRoleAssignment> EducationRoleAssignments { get; } = new();
+
+    /// <summary>Each named Character's in-progress <see cref="Education.CulturalDriftState"/> (Phase 17
+    /// item 2; §2), keyed by the Character it describes. Sparse: a Character with no drift target in
+    /// progress has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Character>, CulturalDriftState> CulturalDriftStates { get; } = new();
+
+    /// <summary>Each active <see cref="Education.StudyAbroadJourney"/> (Phase 17 item 2; §4), keyed by
+    /// the underlying <see cref="Travel.TravelTrip"/>'s own <see cref="RuntimeId{T}"/> — see that
+    /// record's own doc comment for why. Sparse: a trip that isn't a Study Abroad Journey has no entry.</summary>
+    public OrderedRegistry<RuntimeId<TravelTrip>, StudyAbroadJourney> StudyAbroadJourneys { get; } = new();
+
+    /// <summary>Each named Character's permanent <see cref="Education.CharacterInstitutionCredential"/>
+    /// (Phase 17 item 2; §12), keyed by the Character it describes. Sparse: a Character who never
+    /// completed a Study Abroad Journey has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Character>, CharacterInstitutionCredential> CharacterInstitutionCredentials { get; } = new();
+
+    /// <summary>Each household's <see cref="Education.RenownAttractsRenownState"/> (Phase 17 item 2;
+    /// §12), keyed by household. Sparse: a household that has never crossed the recognition threshold
+    /// has no entry.</summary>
+    public OrderedRegistry<RuntimeId<Household>, RenownAttractsRenownState> RenownAttractsRenownStates { get; } = new();
+
     /// <summary>Every <see cref="Legal.LegalCase"/> ever filed, ruled or not (Phase 12 item 4; §11's own
     /// data model), in ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept forever once filed,
     /// matching <see cref="MagistracyRecords"/>'s identical "kept for the campaign's lifetime"
@@ -1439,6 +1509,7 @@ public sealed class WorldState
         ["magistracyRecordIds"] = MagistracyRecordIds.Peek,
         ["omenEventIds"] = OmenEventIds.Peek,
         ["priesthoodRecordIds"] = PriesthoodRecordIds.Peek,
+        ["culturalPatronageRecordIds"] = CulturalPatronageRecordIds.Peek,
         ["legalCaseIds"] = LegalCaseIds.Peek,
         ["punishableOffenseIds"] = PunishableOffenseIds.Peek,
         ["detentionRecordIds"] = DetentionRecordIds.Peek,
@@ -1516,6 +1587,15 @@ public sealed class WorldState
         ["householdReligions"] = HouseholdReligions.Version,
         ["omenEvents"] = OmenEvents.Version,
         ["priesthoodRecords"] = PriesthoodRecords.Version,
+        ["householdCulturalPrestiges"] = HouseholdCulturalPrestiges.Version,
+        ["culturalPatronageRecords"] = CulturalPatronageRecords.Version,
+        ["educationalTrackEnrollments"] = EducationalTrackEnrollments.Version,
+        ["distinguishedEducationInvestments"] = DistinguishedEducationInvestments.Version,
+        ["educationRoleAssignments"] = EducationRoleAssignments.Version,
+        ["culturalDriftStates"] = CulturalDriftStates.Version,
+        ["studyAbroadJourneys"] = StudyAbroadJourneys.Version,
+        ["characterInstitutionCredentials"] = CharacterInstitutionCredentials.Version,
+        ["renownAttractsRenownStates"] = RenownAttractsRenownStates.Version,
         ["legalCases"] = LegalCases.Version,
         ["punishableOffenses"] = PunishableOffenses.Version,
         ["detentionRecords"] = DetentionRecords.Version,

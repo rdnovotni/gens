@@ -24,7 +24,31 @@ public static class ContentFamilies
         new ContentFamilySpec("traits", "traits.schema.json", ExtractTraitReferences),
         new ContentFamilySpec("buildings", "buildings.schema.json", ExtractBuildingReferences),
         new ContentFamilySpec("regions", "regions.schema.json", ExtractRegionReferences),
+        new ContentFamilySpec("education", "education-tracks.schema.json", ExtractEducationTrackReferences),
+        // Phase 17 item 2 — the fixed five-entry Institutions of Renown roster. Registered as
+        // "institutions" (its content/source directory name, per ContentPack's convention) rather than
+        // the more descriptive "institutionsOfRenown" the plan's own prose uses informally, matching
+        // "education"'s identical naming precedent above. NoReferences, mirroring cultures/religions:
+        // specialtyTrack/primeCulturalAssociation are informal cross-family pointers this item does not
+        // validate, the same restraint those two families already show for their own similarly-informal
+        // fields.
+        new ContentFamilySpec("institutions", "institutions-of-renown.schema.json", ContentFamilySpec.NoReferences),
     };
+
+    /// <summary>An Educational Track's <c>deliveringBuildings</c> each reference a Building (Phase 17
+    /// item 2) — the same "cross-file reference to validate" shape as <see
+    /// cref="ExtractBuildingReferences"/>'s own recipe-line references. The family's authoring directory
+    /// is named <c>content/source/education/</c> per the ticket's own plan, so this family is registered
+    /// as <c>"education"</c> (matching <see cref="ContentPack"/>'s directory-name convention) rather than
+    /// the more descriptive <c>"educationTracks"</c> the plan's own prose uses informally.</summary>
+    private static IEnumerable<ContentReference> ExtractEducationTrackReferences(JsonElement definition)
+    {
+        if (!definition.TryGetProperty("deliveringBuildings", out var buildings))
+            yield break;
+
+        foreach (var building in buildings.EnumerateArray())
+            yield return new ContentReference("buildings", building.GetString()!);
+    }
 
     /// <summary>A Building's recipe inputs/outputs each reference a Good (ADR 0012's own example of a
     /// cross-file reference to validate).</summary>

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Clientela;
 using Gens.Simulation.Commands;
+using Gens.Simulation.Education;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Land;
@@ -101,6 +102,12 @@ public static class HoldContestedElectionCommands
     public static readonly ValidationErrorCode NegativeInfluenceSpend = new("magistracies.holdElection.negativeInfluenceSpend");
     public static readonly ValidationErrorCode InsufficientInfluence = new("magistracies.holdElection.insufficientInfluence");
 
+    /// <summary>Phase 17 item 2 slice 2's Literacy hard gate (<see
+    /// cref="EducationGateResolver.CanHoldLearningTierRole"/>) — rejected only for a challenger an
+    /// explicit <see cref="Languages.SetLiteracyCommand"/> has actually marked illiterate; see that
+    /// resolver's own doc comment for why an untracked challenger is never rejected on this ground.</summary>
+    public static readonly ValidationErrorCode ChallengerNotLiterate = new("magistracies.holdElection.challengerNotLiterate");
+
     public static readonly CommandPipeline<WorldState, HoldContestedElectionCommand> Pipeline = new(
         validate: Validate,
         mutate: Mutate,
@@ -118,6 +125,8 @@ public static class HoldContestedElectionCommands
             return ChallengerDeceased;
         if (MagistracyResolver.ActiveRecord(state, command.SettlementId, MagistracyOffice.Decurion, command.ChallengerCharacterId) is null)
             return ChallengerNotADecurion;
+        if (!EducationGateResolver.CanHoldLearningTierRole(state, command.ChallengerCharacterId))
+            return ChallengerNotLiterate;
         if (command.ChallengerCharacterId == command.IncumbentCharacterId)
             return SameCandidate;
 

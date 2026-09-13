@@ -32,12 +32,14 @@ public readonly record struct TravelLocation
         LocationKind kind,
         DefinitionId<RegionProfileDefinition>? regionId,
         RuntimeId<Settlement>? settlementId,
-        RuntimeId<Actor>? actorId)
+        RuntimeId<Actor>? actorId,
+        DefinitionId<Education.InstitutionOfRenown>? institutionId = null)
     {
         Kind = kind;
         RegionId = regionId;
         SettlementId = settlementId;
         ActorId = actorId;
+        InstitutionId = institutionId;
     }
 
     public LocationKind Kind { get; }
@@ -56,6 +58,13 @@ public readonly record struct TravelLocation
     /// is — set only for <see cref="LocationKind.RivalEstate"/>, matching §10's <c>linkedActorId</c>
     /// field exactly.</summary>
     public RuntimeId<Actor>? ActorId { get; }
+
+    /// <summary>Which of the five fixed <see cref="Education.InstitutionOfRenown"/> this place is — set
+    /// only for <see cref="LocationKind.InstitutionOfRenown"/> (Phase 17 item 2; §4). Carries no <see
+    /// cref="RegionId"/> at all: each institution authors its own fixed Distance Tier/risk in content
+    /// (see <see cref="TravelRoute.Resolve"/>'s own dedicated branch), bypassing the region-pair system
+    /// entirely rather than needing one.</summary>
+    public DefinitionId<Education.InstitutionOfRenown>? InstitutionId { get; }
 
     /// <summary>A Character's own household settlement (§2; the implicit default every Character
     /// starts at, §10).</summary>
@@ -88,4 +97,9 @@ public readonly record struct TravelLocation
     public static TravelLocation SecondSettlement(
         RuntimeId<Settlement> settlementId, DefinitionId<RegionProfileDefinition> regionId) =>
         new(LocationKind.SecondSettlement, regionId, settlementId, actorId: null);
+
+    /// <summary>One of the five fixed Institutions of Renown (Phase 17 item 2; §4) — carries no region
+    /// or settlement of its own; see <see cref="InstitutionId"/>'s own doc comment for why.</summary>
+    public static TravelLocation InstitutionOfRenown(DefinitionId<Education.InstitutionOfRenown> institutionId) =>
+        new(LocationKind.InstitutionOfRenown, regionId: null, settlementId: null, actorId: null, institutionId);
 }

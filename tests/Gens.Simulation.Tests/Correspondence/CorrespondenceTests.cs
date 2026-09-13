@@ -315,6 +315,27 @@ public sealed class CorrespondenceTests
     }
 
     [Test]
+    public void SendLetterRejectsADrafterAnExplicitLiteracyRecordMarksIlliterate()
+    {
+        var (state, drafterId) = OneCharacterHousehold();
+        Gens.Simulation.Languages.SetLiteracyCommands.Pipeline.Execute(
+            state,
+            new Gens.Simulation.Languages.SetLiteracyCommand(
+                state.CommandIds.Issue(), "system", StartDate, null, drafterId, IsLiterate: false,
+                Gens.Simulation.Languages.LiteracyDerivation.LearningAttribute));
+
+        var pipeline = SendLetterCommands.BuildPipeline(
+            CorrespondenceTestFixtures.BuildDistanceTierCatalog(), CorrespondenceTestFixtures.BuildReachabilityCatalog());
+        var command = new SendLetterCommand(
+            state.CommandIds.Issue(), "player", StartDate, null, drafterId, "actor_0000042",
+            LetterAction.NewsAndGossip, CourierType.Tabellarius, null,
+            CorrespondenceTestFixtures.HomeRegionId, CorrespondenceTestFixtures.NearRegionId, null);
+        var result = pipeline.Execute(state, command);
+
+        Assert.That(result.Error, Is.EqualTo(SendLetterCommands.DrafterNotLiterate));
+    }
+
+    [Test]
     public void SendLetterRejectsASubstantiveActionBlockedByOralTradition()
     {
         var (state, drafterId) = OneCharacterHousehold();

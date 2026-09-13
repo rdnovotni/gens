@@ -3,10 +3,13 @@ using System.Linq;
 using System;
 namespace Gens.Simulation.Travel;
 
-/// <summary>The seven destination kinds <c>gens-travel-design.md</c> §2 names, matching that
-/// document's own <c>Location.type</c> field (§10) exactly: <c>"home" | "rome" | "provincialCapital" |
-/// "rivalEstate" | "frontierRegion" | "campaign" | "secondSettlement"</c>. Real, persistent places
-/// (§5) rather than generic types, per that section's own framing.</summary>
+/// <summary>The eight destination kinds <c>gens-travel-design.md</c> §2 names, matching that
+/// document's own <c>Location.type</c> field (§10): the original seven (<c>"home" | "rome" |
+/// "provincialCapital" | "rivalEstate" | "frontierRegion" | "campaign" | "secondSettlement"</c>) plus
+/// <see cref="InstitutionOfRenown"/>, added by Phase 17 item 2 (<c>gens-education-culture-design.md</c>
+/// §4's Study Abroad Journey) as a real, intentional extension — see §2's own updated entry and this
+/// enum value's own doc comment for why it is documented rather than merely bolted on. Real, persistent
+/// places (§5) rather than generic types, per that section's own framing.</summary>
 public enum LocationKind
 {
     /// <summary>A Character's own household settlement — the implicit default every Character starts
@@ -41,4 +44,15 @@ public enum LocationKind
     /// Companions &amp; Court Positions §5.3, not yet built) — a real destination for checking in
     /// personally.</summary>
     SecondSettlement,
+
+    /// <summary>One of the five fixed Institutions of Renown (<c>gens-education-culture-design.md</c>
+    /// §4's Study Abroad Journey, §12's <c>InstitutionOfRenown</c> model) — Athens, Rhodes, Alexandria,
+    /// Pergamon, or Massilia. Added by Phase 17 item 2 as an 8th <see cref="LocationKind"/> rather than
+    /// forced through the region/Distance-Tier system: each institution authors its own fixed <see
+    /// cref="DistanceTier"/>/<see cref="RouteRiskLevel"/> in content (<see
+    /// cref="Education.InstitutionOfRenown"/>), bypassing the still-mostly-unbuilt region-pair distance
+    /// system — see <see cref="TravelRoute.Resolve"/>'s own dedicated branch for this kind, and this
+    /// item's amendment to <c>gens-travel-design.md</c> §2 documenting it as a real, intentional
+    /// extension rather than an undocumented special case.</summary>
+    InstitutionOfRenown,
 }

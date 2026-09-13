@@ -48,6 +48,20 @@ public sealed record TravelRoute
         if (distanceTiers is null)
             throw new ArgumentNullException(nameof(distanceTiers));
 
+        // Phase 17 item 2 (gens-education-culture-design.md §4): an Institution of Renown authors its
+        // own fixed Distance Tier/risk in content rather than the region-pair catalog above — see
+        // Education.InstitutionOfRenown's own doc comment for why (bypassing the still-mostly-unbuilt
+        // region/distance-tier system, per this ticket's own confirmed scope decision, documented in
+        // gens-travel-design.md §2 as a real, intentional extension rather than an undocumented special
+        // case).
+        if (destination.Kind == LocationKind.InstitutionOfRenown)
+        {
+            var institution = Education.KnownInstitutionsOfRenown.Catalog.Get(destination.InstitutionId!.Value);
+            return new TravelRoute(
+                origin, destination, institution.DistanceTier, institution.BaseRiskLevel,
+                ResolveTravelTimeMonths(institution.DistanceTier));
+        }
+
         var tier = destination.Kind == LocationKind.Home
             ? DistanceTier.Near
             : distanceTiers.Resolve(homeRegionId, ResolveDestinationRegion(destination, regions));

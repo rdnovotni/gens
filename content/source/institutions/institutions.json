@@ -1,0 +1,67 @@
+[
+  {
+    "id": "athens",
+    "status": "active",
+    "nameKey": "institutions.athens.name",
+    "descriptionKey": "institutions.athens.description",
+    "specialtyTrack": "rhetoric",
+    "primeCulturalAssociation": "hellenic",
+    "prestigeTier": "legendary",
+    "distanceTier": "far",
+    "baseRiskLevel": "dangerous",
+    "journeyDurationMonths": 24,
+    "costPerMonth": 25
+  },
+  {
+    "id": "rhodes",
+    "status": "active",
+    "nameKey": "institutions.rhodes.name",
+    "descriptionKey": "institutions.rhodes.description",
+    "specialtyTrack": "rhetoric",
+    "primeCulturalAssociation": "hellenic",
+    "prestigeTier": "renowned",
+    "distanceTier": "far",
+    "baseRiskLevel": "dangerous",
+    "journeyDurationMonths": 24,
+    "costPerMonth": 25
+  },
+  {
+    "id": "alexandria",
+    "status": "active",
+    "nameKey": "institutions.alexandria.name",
+    "descriptionKey": "institutions.alexandria.description",
+    "specialtyTrack": "philosophy",
+    "primeCulturalAssociation": "alexandrian-greek",
+    "prestigeTier": "legendary",
+    "distanceTier": "far",
+    "baseRiskLevel": "dangerous",
+    "journeyDurationMonths": 24,
+    "costPerMonth": 30
+  },
+  {
+    "id": "pergamon",
+    "status": "active",
+    "nameKey": "institutions.pergamon.name",
+    "descriptionKey": "institutions.pergamon.description",
+    "specialtyTrack": "philosophy",
+    "primeCulturalAssociation": "hellenic",
+    "prestigeTier": "renowned",
+    "distanceTier": "far",
+    "baseRiskLevel": "dangerous",
+    "journeyDurationMonths": 24,
+    "costPerMonth": 25
+  },
+  {
+    "id": "massilia",
+    "status": "active",
+    "nameKey": "institutions.massilia.name",
+    "descriptionKey": "institutions.massilia.description",
+    "specialtyTrack": "rhetoric",
+    "primeCulturalAssociation": "hellenic",
+    "prestigeTier": "notable",
+    "distanceTier": "moderate",
+    "baseRiskLevel": "guarded",
+    "journeyDurationMonths": 18,
+    "costPerMonth": 20
+  }
+]

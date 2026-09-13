@@ -1,0 +1,42 @@
+[
+  {
+    "id": "rhetoric",
+    "status": "active",
+    "nameKey": "education.rhetoric.name",
+    "descriptionKey": "education.rhetoric.description",
+    "deliveringBuildings": ["schola"],
+    "primaryAttribute": "diplomacy",
+    "monthlyAttributeGain": 1,
+    "completionMonths": 24,
+    "distinguishedTierCostPerMonth": 20,
+    "distinguishedTierMultiplier": 2,
+    "satisfiesMagistracyContestGate": true
+  },
+  {
+    "id": "philosophy",
+    "status": "active",
+    "nameKey": "education.philosophy.name",
+    "descriptionKey": "education.philosophy.description",
+    "deliveringBuildings": ["academia"],
+    "primaryAttribute": "learning",
+    "monthlyAttributeGain": 1,
+    "completionMonths": 24,
+    "distinguishedTierCostPerMonth": 20,
+    "distinguishedTierMultiplier": 2,
+    "grantsCulturalPrestige": true,
+    "monthlyPrestigeGain": 1
+  },
+  {
+    "id": "gymnasium",
+    "status": "active",
+    "nameKey": "education.gymnasium.name",
+    "descriptionKey": "education.gymnasium.description",
+    "deliveringBuildings": ["gymnasium", "palaestra"],
+    "primaryAttribute": "martial",
+    "secondaryAttribute": "learning",
+    "monthlyAttributeGain": 1,
+    "completionMonths": 24,
+    "distinguishedTierCostPerMonth": 15,
+    "distinguishedTierMultiplier": 2
+  }
+]
