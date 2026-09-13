@@ -41,20 +41,28 @@ public static class RenownAttractsRenownCatalog
 /// The monthly Renown Attracts Renown check (Phase 17 item 2; §12): "a rare, earned endgame payoff," per
 /// the design's own framing — this ticket only flips the flag and records the tie the first time a
 /// household's Cultural Prestige clears <see
-/// cref="RenownAttractsRenownCatalog.RecognitionPrestigeThreshold"/> while it also holds an active
-/// Cultural Patronage commitment (this implementation's own reading of §12's "household School/Academy
-/// presence" — no runtime household-to-building ownership link exists anywhere in this codebase to check
-/// literal building ownership against, so an active Literary Patron/Symposium commitment stands in as the
-/// nearest already-modeled "this household is a recognized patron of learning" fact). Not a full
-/// foreign-student gameplay loop — no Clientela-adjacent consumer is wired here, matching this ticket's
-/// own confirmed scope decision.
+/// cref="RenownAttractsRenownCatalog.RecognitionPrestigeThreshold"/> while it also owns/occupies an
+/// operational Academia or Schola (§12's own "household School/Academy presence" condition, checked via
+/// <see cref="EducationBuildingResolver.HasOperationalBuilding"/> — correctness fix: this used to check
+/// for an active Cultural Patronage commitment instead, which is a different, unrelated §7 concept with no
+/// building-ownership implication at all). No Library/Bibliotheca building exists anywhere in this
+/// codebase's <see cref="Buildings.BuildingDefinition"/> catalog, so "Academia at minimum" per this fix's
+/// own scope decision also counts a plain <see cref="KnownEducationTracks.Schola"/> — matching this file's
+/// own prior "School/Academy" phrasing, and Rhetoric/Philosophy already treat Schola/Academia as
+/// interchangeable "delivers a Track" buildings (see <see cref="KnownEducationTracks.Catalog"/>) rather
+/// than Academia alone being some stricter, more prestigious tier. Not a full foreign-student gameplay
+/// loop — no Clientela-adjacent consumer is wired here, matching this ticket's own confirmed scope
+/// decision.
 /// </summary>
 public sealed class RenownAttractsRenownSystem : IMonthlySystem<WorldState>
 {
     public string Id => "education.renownAttractsRenown";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } =
-        new[] { "householdCulturalPrestiges", "culturalPatronageRecords", "renownAttractsRenownStates" };
+        new[] { "householdCulturalPrestiges", "holdings", "plots", "buildings", "renownAttractsRenownStates" };
+
+    private static readonly IReadOnlyCollection<DefinitionId<Identity.Building>> QualifyingBuildingIds =
+        new[] { KnownEducationTracks.Academia, KnownEducationTracks.Schola };
     public IReadOnlyCollection<string> Writes { get; } = new[] { "renownAttractsRenownStates", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
@@ -75,11 +83,9 @@ public sealed class RenownAttractsRenownSystem : IMonthlySystem<WorldState>
             }
 
             var clearsThreshold = entry.Value.Prestige >= RenownAttractsRenownCatalog.RecognitionPrestigeThreshold;
-            var hasActivePatronage =
-                CulturalPatronageResolver.ActiveRecord(state, householdId, CulturalPatronageType.LiteraryPatron) is not null ||
-                CulturalPatronageResolver.ActiveRecord(state, householdId, CulturalPatronageType.Symposium) is not null;
+            var hasQualifyingBuilding = EducationBuildingResolver.HasOperationalBuilding(state, householdId, QualifyingBuildingIds);
 
-            if (!clearsThreshold || !hasActivePatronage)
+            if (!clearsThreshold || !hasQualifyingBuilding)
                 continue;
 
             if (state.RenownAttractsRenownStates.TryGet(householdId, out _))

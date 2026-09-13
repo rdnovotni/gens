@@ -374,6 +374,15 @@ public sealed record WorldSaveDocument
     public IReadOnlyList<EducationalTrackEnrollmentDto> EducationalTrackEnrollments { get; init; } =
         Array.Empty<EducationalTrackEnrollmentDto>();
 
+    /// <summary>Each named Character's <see cref="Gens.Simulation.Education.CompletedEducationalTracks"/>
+    /// permanent history (Phase 17 item 2 correctness fix), already keyed by Character. Not
+    /// <c>required</c>, and defaults to empty (ADR 0011: an older save with no such field simply restores
+    /// nobody's completed-track history, which for a save written before this fix landed is already all
+    /// the completed-track information that ever existed).</summary>
+    [JsonPropertyOrder(138)]
+    public IReadOnlyList<CompletedEducationalTracksDto> CompletedEducationalTracks { get; init; } =
+        Array.Empty<CompletedEducationalTracksDto>();
+
     /// <summary>Each named Character's <see
     /// cref="Gens.Simulation.Education.DistinguishedEducationInvestment"/> (Phase 17 item 2), already
     /// keyed by Character. Not <c>required</c>, and defaults to empty.</summary>
@@ -3161,6 +3170,17 @@ public sealed record EducationalTrackEnrollmentDto
     public int? CompletedDateTotalMonths { get; init; }
 }
 
+/// <summary>One <see cref="Gens.Simulation.Education.CompletedEducationalTracks"/> record (Phase 17 item
+/// 2 correctness fix), keyed by Character.</summary>
+public sealed record CompletedEducationalTracksDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required IReadOnlyList<string> TrackIds { get; init; }
+}
+
 /// <summary>One <see cref="Gens.Simulation.Education.DistinguishedEducationInvestment"/> (Phase 17 item
 /// 2), keyed by Character.</summary>
 public sealed record DistinguishedEducationInvestmentDto
@@ -3224,6 +3244,13 @@ public sealed record StudyAbroadJourneyDto
 
     [JsonPropertyOrder(4)]
     public required int MonthsAtInstitution { get; init; }
+
+    /// <summary>Correctness fix; not <c>required</c>, and defaults to false (ADR 0011) — an older save has
+    /// no in-flight Journey that had already completed its stay but not yet its return leg under the old,
+    /// buggy behavior (that used to grant the credential and delete the Journey in the same month), so
+    /// false is exactly right for every such save.</summary>
+    [JsonPropertyOrder(5)]
+    public bool StudyCompleted { get; init; }
 }
 
 /// <summary>One <see cref="Gens.Simulation.Education.CharacterInstitutionCredential"/> (Phase 17 item 2),

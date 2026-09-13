@@ -784,6 +784,15 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.CompletedDate?.TotalMonths ?? -1L);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. TrackIds is append-only in
+        // completion order, so its own iteration order is already deterministic.
+        foreach (var entry in state.CompletedEducationalTracks.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            foreach (var trackId in entry.Value.TrackIds)
+                hash = MixString(hash, trackId.Value);
+        }
+
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.
         foreach (var entry in state.DistinguishedEducationInvestments.InAscendingOrder())
         {
@@ -817,6 +826,7 @@ public static class StateHasher
             hash = MixString(hash, entry.Value.InstitutionId.Value);
             hash = MixLong(hash, entry.Value.HouseholdId.Value);
             hash = MixLong(hash, entry.Value.MonthsAtInstitution);
+            hash = MixLong(hash, entry.Value.StudyCompleted ? 1L : 0L);
         }
 
         // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry.

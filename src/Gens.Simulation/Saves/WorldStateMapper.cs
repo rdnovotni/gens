@@ -262,6 +262,8 @@ public static class WorldStateMapper
                 .Select(entry => ToCulturalPatronageRecordDto(entry.Value)).ToArray(),
             EducationalTrackEnrollments = state.EducationalTrackEnrollments.InAscendingOrder()
                 .Select(entry => ToEducationalTrackEnrollmentDto(entry.Value)).ToArray(),
+            CompletedEducationalTracks = state.CompletedEducationalTracks.InAscendingOrder()
+                .Select(entry => ToCompletedEducationalTracksDto(entry.Value)).ToArray(),
             DistinguishedEducationInvestments = state.DistinguishedEducationInvestments.InAscendingOrder()
                 .Select(entry => ToDistinguishedEducationInvestmentDto(entry.Value)).ToArray(),
             EducationRoleAssignments = state.EducationRoleAssignments.InAscendingOrder()
@@ -840,6 +842,13 @@ public static class WorldStateMapper
             {
                 var enrollment = FromEducationalTrackEnrollmentDto(e);
                 return new KeyValuePair<RuntimeId<Character>, EducationalTrackEnrollment>(enrollment.CharacterId, enrollment);
+            }));
+
+        var completedEducationalTracks = OrderedRegistry<RuntimeId<Character>, CompletedEducationalTracks>.Restore(
+            dto.CompletedEducationalTracks.Select(c =>
+            {
+                var record = FromCompletedEducationalTracksDto(c);
+                return new KeyValuePair<RuntimeId<Character>, CompletedEducationalTracks>(record.CharacterId, record);
             }));
 
         var distinguishedEducationInvestments = OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment>.Restore(
@@ -1482,6 +1491,7 @@ public static class WorldStateMapper
             householdCulturalPrestiges: householdCulturalPrestiges,
             culturalPatronageRecords: culturalPatronageRecords,
             educationalTrackEnrollments: educationalTrackEnrollments,
+            completedEducationalTracks: completedEducationalTracks,
             distinguishedEducationInvestments: distinguishedEducationInvestments,
             educationRoleAssignments: educationRoleAssignments,
             culturalDriftStates: culturalDriftStates,
@@ -4387,6 +4397,16 @@ public static class WorldStateMapper
         dto.DistinguishedTierActive,
         dto.CompletedDateTotalMonths is { } completed ? new GameDate(completed) : null);
 
+    private static CompletedEducationalTracksDto ToCompletedEducationalTracksDto(CompletedEducationalTracks record) => new()
+    {
+        CharacterId = record.CharacterId.ToTaggedString(),
+        TrackIds = record.TrackIds.Select(t => t.Value).ToArray(),
+    };
+
+    private static CompletedEducationalTracks FromCompletedEducationalTracksDto(CompletedEducationalTracksDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        dto.TrackIds.Select(t => new DefinitionId<EducationTrack>(t)).ToArray());
+
     private static DistinguishedEducationInvestmentDto ToDistinguishedEducationInvestmentDto(DistinguishedEducationInvestment investment) => new()
     {
         CharacterId = investment.CharacterId.ToTaggedString(),
@@ -4432,6 +4452,7 @@ public static class WorldStateMapper
         InstitutionId = journey.InstitutionId.Value,
         HouseholdId = journey.HouseholdId.ToTaggedString(),
         MonthsAtInstitution = journey.MonthsAtInstitution,
+        StudyCompleted = journey.StudyCompleted,
     };
 
     private static StudyAbroadJourney FromStudyAbroadJourneyDto(StudyAbroadJourneyDto dto) => new(
@@ -4439,7 +4460,8 @@ public static class WorldStateMapper
         RuntimeId<Character>.Parse(dto.CharacterId),
         new DefinitionId<InstitutionOfRenown>(dto.InstitutionId),
         RuntimeId<Household>.Parse(dto.HouseholdId),
-        dto.MonthsAtInstitution);
+        dto.MonthsAtInstitution,
+        dto.StudyCompleted);
 
     private static CharacterInstitutionCredentialDto ToCharacterInstitutionCredentialDto(CharacterInstitutionCredential credential) => new()
     {

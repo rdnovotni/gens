@@ -140,8 +140,26 @@ public sealed class InstitutionsOfRenownTests
         Assert.That(account, Is.EqualTo(Money.FromDenarii(1000) - institution.CostPerMonth));
     }
 
+    /// <summary>Runs <see cref="TravelProgressSystem"/> alongside <paramref name="system"/> (matching
+    /// production's own "travel.progress" prerequisite ordering) until <paramref name="tripId"/> reaches
+    /// <see cref="TravelTripStatus.Completed"/> — used to exercise the correctness fix that credential
+    /// grant/Chronicle now waits for the return leg, not just the stay itself.</summary>
+    private static void RunReturnLegToCompletion(WorldState state, StudyAbroadProgressSystem system, RuntimeId<TravelTrip> tripId, int startMonth)
+    {
+        var travel = new TravelProgressSystem();
+        var month = startMonth;
+        state.TravelTrips.TryGet(tripId, out var trip);
+        while (trip!.Status != TravelTripStatus.Completed)
+        {
+            month++;
+            travel.Tick(state, new MonthlyTickContext(new GameDate(month), new RandomStreamSet()));
+            system.Tick(state, new MonthlyTickContext(new GameDate(month), new RandomStreamSet()));
+            state.TravelTrips.TryGet(tripId, out trip);
+        }
+    }
+
     [Test]
-    public void StudyAbroadProgressSystemGrantsCredentialAcceleratesDriftAndTransitionsToReturning()
+    public void StudyAbroadProgressSystemAcceleratesDriftAndTransitionsToReturningOnceTheStayIsDone()
     {
         var (state, householdId, characterId) = HouseholdWithTraveler();
         Fund(state, householdId, Money.FromDenarii(2000));
@@ -157,8 +175,11 @@ public sealed class InstitutionsOfRenownTests
         {
             Assert.That(trip!.Status, Is.EqualTo(TravelTripStatus.Returning));
             Assert.That(trip.EncounterCompleted, Is.True);
-            Assert.That(StudyAbroadJourneyResolver.TryGet(state, tripId, out _), Is.False);
-            Assert.That(CharacterInstitutionCredentialResolver.HasCredentialFrom(state, characterId, KnownInstitutionsOfRenown.Massilia), Is.True);
+            // Correctness fix: the stay finishing does not yet grant the credential — the Journey side
+            // record survives, marked StudyCompleted, until the return leg itself finishes.
+            Assert.That(StudyAbroadJourneyResolver.TryGet(state, tripId, out var journey), Is.True);
+            Assert.That(journey.StudyCompleted, Is.True);
+            Assert.That(CharacterInstitutionCredentialResolver.HasCredentialFrom(state, characterId, KnownInstitutionsOfRenown.Massilia), Is.False);
             Assert.That(CulturalDriftResolver.TryGet(state, characterId, out var drift), Is.True);
             Assert.That(drift.TargetCultureId, Is.EqualTo(institution.PrimeCulturalAssociation));
             Assert.That(
@@ -168,16 +189,110 @@ public sealed class InstitutionsOfRenownTests
     }
 
     [Test]
-    public void RhodesCredentialSatisfiesTheMagistracyContestGate()
+    public void StudyAbroadProgressSystemGrantsTheCredentialOnlyOnceTheReturnLegCompletes()
     {
         var (state, householdId, characterId) = HouseholdWithTraveler();
         Fund(state, householdId, Money.FromDenarii(2000));
-        var institution = KnownInstitutionsOfRenown.Catalog.Get(KnownInstitutionsOfRenown.Rhodes);
-        BeginAndArrive(state, householdId, characterId, KnownInstitutionsOfRenown.Rhodes);
+        var institution = KnownInstitutionsOfRenown.Catalog.Get(KnownInstitutionsOfRenown.Massilia);
+        var tripId = BeginAndArrive(state, householdId, characterId, KnownInstitutionsOfRenown.Massilia);
 
         var system = new StudyAbroadProgressSystem();
         for (var i = 1; i <= institution.JourneyDurationMonths; i++)
             system.Tick(state, new MonthlyTickContext(new GameDate(i), new RandomStreamSet()));
+
+        // Mid-return: no credential yet, no completion event yet.
+        Assert.That(CharacterInstitutionCredentialResolver.HasCredentialFrom(state, characterId, KnownInstitutionsOfRenown.Massilia), Is.False);
+
+        RunReturnLegToCompletion(state, system, tripId, institution.JourneyDurationMonths);
+
+        state.TravelTrips.TryGet(tripId, out var trip);
+        Assert.Multiple(() =>
+        {
+            Assert.That(trip!.Status, Is.EqualTo(TravelTripStatus.Completed));
+            Assert.That(StudyAbroadJourneyResolver.TryGet(state, tripId, out _), Is.False);
+            Assert.That(CharacterInstitutionCredentialResolver.HasCredentialFrom(state, characterId, KnownInstitutionsOfRenown.Massilia), Is.True);
+        });
+    }
+
+    [Test]
+    public void StudyAbroadProgressSystemCancelsTheJourneyIfRecalledBeforeTheStayFinishes()
+    {
+        var (state, householdId, characterId) = HouseholdWithTraveler();
+        Fund(state, householdId, Money.FromDenarii(2000));
+        var tripId = BeginAndArrive(state, householdId, characterId, KnownInstitutionsOfRenown.Massilia);
+
+        // An early BeginReturnCommand-equivalent: leave Arrived before the stay duration elapses.
+        state.TravelTrips.TryGet(tripId, out var trip);
+        state.TravelTrips.Remove(tripId);
+        state.TravelTrips.Add(tripId, trip! with { Status = TravelTripStatus.Recalled, MonthsElapsed = 0, EncounterCompleted = false });
+
+        new StudyAbroadProgressSystem().Tick(state, new MonthlyTickContext(new GameDate(1), new RandomStreamSet()));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(StudyAbroadJourneyResolver.TryGet(state, tripId, out _), Is.False);
+            Assert.That(CharacterInstitutionCredentialResolver.HasCredentialFrom(state, characterId, KnownInstitutionsOfRenown.Massilia), Is.False);
+        });
+    }
+
+    [Test]
+    public void StudyAbroadProgressSystemCancelsTheJourneyIfTheTravelerDiesWhileArrived()
+    {
+        var (state, householdId, characterId) = HouseholdWithTraveler();
+        Fund(state, householdId, Money.FromDenarii(2000));
+        BeginAndArrive(state, householdId, characterId, KnownInstitutionsOfRenown.Massilia);
+
+        state.Characters.TryGet(characterId, out var character);
+        state.Characters.Remove(characterId);
+        state.Characters.Add(characterId, character! with { DeathRecord = new DeathRecord(new GameDate(1), DeathCause.OldAge, 40) });
+
+        new StudyAbroadProgressSystem().Tick(state, new MonthlyTickContext(new GameDate(1), new RandomStreamSet()));
+
+        Assert.That(state.StudyAbroadJourneys.Count, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void StudyAbroadProgressSystemCancelsAJourneyIfTheTravelerDiesDuringTheReturnLeg()
+    {
+        var (state, householdId, characterId) = HouseholdWithTraveler();
+        Fund(state, householdId, Money.FromDenarii(2000));
+        var institution = KnownInstitutionsOfRenown.Catalog.Get(KnownInstitutionsOfRenown.Massilia);
+        var tripId = BeginAndArrive(state, householdId, characterId, KnownInstitutionsOfRenown.Massilia);
+
+        var system = new StudyAbroadProgressSystem();
+        for (var i = 1; i <= institution.JourneyDurationMonths; i++)
+            system.Tick(state, new MonthlyTickContext(new GameDate(i), new RandomStreamSet()));
+
+        // Dies mid-return, before the trip reaches Completed.
+        state.Characters.TryGet(characterId, out var character);
+        state.Characters.Remove(characterId);
+        state.Characters.Add(
+            characterId, character! with { DeathRecord = new DeathRecord(new GameDate(institution.JourneyDurationMonths), DeathCause.OldAge, 40) });
+
+        system.Tick(state, new MonthlyTickContext(new GameDate(institution.JourneyDurationMonths + 1), new RandomStreamSet()));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(StudyAbroadJourneyResolver.TryGet(state, tripId, out _), Is.False);
+            Assert.That(CharacterInstitutionCredentialResolver.HasCredentialFrom(state, characterId, KnownInstitutionsOfRenown.Massilia), Is.False);
+        });
+    }
+
+    [Test]
+    public void RhodesCredentialSatisfiesTheMagistracyContestGateOnlyAfterTheReturnLegCompletes()
+    {
+        var (state, householdId, characterId) = HouseholdWithTraveler();
+        Fund(state, householdId, Money.FromDenarii(2000));
+        var institution = KnownInstitutionsOfRenown.Catalog.Get(KnownInstitutionsOfRenown.Rhodes);
+        var tripId = BeginAndArrive(state, householdId, characterId, KnownInstitutionsOfRenown.Rhodes);
+
+        var system = new StudyAbroadProgressSystem();
+        for (var i = 1; i <= institution.JourneyDurationMonths; i++)
+            system.Tick(state, new MonthlyTickContext(new GameDate(i), new RandomStreamSet()));
+
+        Assert.That(EducationGateResolver.CanContestMagistracyAboveLowestRung(state, characterId), Is.False);
+
+        RunReturnLegToCompletion(state, system, tripId, institution.JourneyDurationMonths);
 
         Assert.That(EducationGateResolver.CanContestMagistracyAboveLowestRung(state, characterId), Is.True);
     }
@@ -190,13 +305,19 @@ public sealed class InstitutionsOfRenownTests
         var (state, householdId, characterId) = HouseholdWithTraveler();
         CulturalPrestigeResolver.Apply(state, householdId, RenownAttractsRenownCatalog.RecognitionPrestigeThreshold);
 
-        var beforePatronage = new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(1), new RandomStreamSet()));
-        Assert.That(beforePatronage, Is.Empty);
+        var beforeBuilding = new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(1), new RandomStreamSet()));
+        Assert.That(beforeBuilding, Is.Empty);
 
+        // Correctness fix: an active Cultural Patronage commitment (used to be checked here) is not the
+        // condition — actual Academia/Schola ownership is.
         SetLiteraryPatronCommands.Pipeline.Execute(
             state, new SetLiteraryPatronCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, characterId));
+        var stillNoBuilding = new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(2), new RandomStreamSet()));
+        Assert.That(stillNoBuilding, Is.Empty);
 
-        var events = new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(2), new RandomStreamSet()));
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.Academia);
+
+        var events = new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(3), new RandomStreamSet()));
 
         Assert.Multiple(() =>
         {
@@ -206,7 +327,7 @@ public sealed class InstitutionsOfRenownTests
         });
 
         // Never re-fires once already active.
-        var again = new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(3), new RandomStreamSet()));
+        var again = new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(4), new RandomStreamSet()));
         Assert.That(again, Is.Empty);
     }
 
@@ -223,11 +344,11 @@ public sealed class InstitutionsOfRenownTests
         var system = new StudyAbroadProgressSystem();
         for (var i = 1; i <= institution.JourneyDurationMonths; i++)
             system.Tick(state, new MonthlyTickContext(new GameDate(i), new RandomStreamSet()));
+        RunReturnLegToCompletion(state, system, tripId, institution.JourneyDurationMonths);
 
         CulturalPrestigeResolver.Apply(state, householdId, RenownAttractsRenownCatalog.RecognitionPrestigeThreshold);
-        SetLiteraryPatronCommands.Pipeline.Execute(
-            state, new SetLiteraryPatronCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, characterId));
-        new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(30), new RandomStreamSet()));
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.Academia);
+        new RenownAttractsRenownSystem().Tick(state, new MonthlyTickContext(new GameDate(60), new RandomStreamSet()));
 
         var beforeHash = StateHasher.Hash(state);
         var dto = WorldStateMapper.ToDto(state);

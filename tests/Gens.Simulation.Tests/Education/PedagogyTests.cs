@@ -1,3 +1,4 @@
+using Gens.Simulation.Buildings;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Education;
@@ -23,6 +24,15 @@ public sealed class PedagogyTests
         var householdId = state.HouseholdIds.Issue();
         var characterId = state.CharacterIds.Issue();
         state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId, nomen: "Cornelius", household: householdId));
+
+        // Every Educational Track's own delivering building (Phase 17 item 2 correctness fix:
+        // StartEducationalTrackCommand now requires an operational one) so any track under test here can
+        // enroll without every single test needing to know which building its own track needs.
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.Schola);
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.Academia);
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.GymnasiumBuilding);
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.Palaestra);
+
         return (state, householdId, characterId);
     }
 
@@ -93,6 +103,40 @@ public sealed class PedagogyTests
             Is.EqualTo(StartEducationalTrackCommands.AlreadyEnrolled));
     }
 
+    [Test]
+    public void StartEducationalTrackCommandRejectsWithNoOperationalDeliveringBuilding()
+    {
+        var state = new WorldState(AdolescentDate);
+        var householdId = state.HouseholdIds.Issue();
+        var characterId = state.CharacterIds.Issue();
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId, nomen: "Cornelius", household: householdId));
+
+        Assert.That(
+            StartEducationalTrackCommands.Pipeline.Execute(
+                state,
+                new StartEducationalTrackCommand(
+                    state.CommandIds.Issue(), "player", AdolescentDate, null, characterId, KnownEducationTracks.Rhetoric))
+                .Error,
+            Is.EqualTo(StartEducationalTrackCommands.NoOperationalBuilding));
+
+        // A Ruined Schola doesn't count either — built, but no longer operational.
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.Schola);
+        var buildingEntry = state.Buildings.InAscendingOrder().First();
+        buildingEntry.Value.ApplyUpkeep(paid: false);
+        buildingEntry.Value.ApplyUpkeep(paid: false);
+        buildingEntry.Value.ApplyUpkeep(paid: false);
+        buildingEntry.Value.ApplyUpkeep(paid: false);
+        Assert.That(buildingEntry.Value.Condition, Is.EqualTo(BuildingCondition.Ruined));
+
+        Assert.That(
+            StartEducationalTrackCommands.Pipeline.Execute(
+                state,
+                new StartEducationalTrackCommand(
+                    state.CommandIds.Issue(), "player", AdolescentDate, null, characterId, KnownEducationTracks.Rhetoric))
+                .Error,
+            Is.EqualTo(StartEducationalTrackCommands.NoOperationalBuilding));
+    }
+
     // ---- EducationalTrackProgressSystem --------------------------------------------------------
 
     [Test]
@@ -143,6 +187,39 @@ public sealed class PedagogyTests
             Assert.That(EducationalTrackEnrollmentResolver.TryGet(state, characterId, out var enrollment), Is.True);
             Assert.That(enrollment.CompletedDate, Is.Not.Null);
             Assert.That(EducationalTrackEnrollmentResolver.HasCompleted(state, characterId, KnownEducationTracks.Rhetoric), Is.True);
+        });
+    }
+
+    [Test]
+    public void CompletedRhetoricSurvivesStartingADifferentTrackAfterward()
+    {
+        var (state, _, characterId) = AdolescentInAHousehold();
+        StartEducationalTrackCommands.Pipeline.Execute(
+            state,
+            new StartEducationalTrackCommand(
+                state.CommandIds.Issue(), "player", AdolescentDate, null, characterId, KnownEducationTracks.Rhetoric));
+
+        var rhetoric = KnownEducationTracks.Catalog.Get(KnownEducationTracks.Rhetoric);
+        var system = new EducationalTrackProgressSystem();
+        for (var i = 1; i <= rhetoric.CompletionMonths; i++)
+            system.Tick(state, new MonthlyTickContext(new GameDate(AdolescentDate.TotalMonths + i), new RandomStreamSet()));
+
+        Assert.That(EducationalTrackEnrollmentResolver.HasCompleted(state, characterId, KnownEducationTracks.Rhetoric), Is.True);
+
+        // Starting (and completing) a different Track replaces the active enrollment slot outright — but
+        // must not erase the earlier, permanent Rhetoric completion (correctness fix).
+        StartEducationalTrackCommands.Pipeline.Execute(
+            state,
+            new StartEducationalTrackCommand(
+                state.CommandIds.Issue(), "player", new GameDate(AdolescentDate.TotalMonths + rhetoric.CompletionMonths + 1), null,
+                characterId, KnownEducationTracks.Philosophy));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(EducationalTrackEnrollmentResolver.HasCompleted(state, characterId, KnownEducationTracks.Rhetoric), Is.True);
+            Assert.That(EducationalTrackEnrollmentResolver.TryGet(state, characterId, out var active), Is.True);
+            Assert.That(active.TrackId, Is.EqualTo(KnownEducationTracks.Philosophy));
+            Assert.That(active.CompletedDate, Is.Null);
         });
     }
 
@@ -312,6 +389,34 @@ public sealed class PedagogyTests
         Assert.That(
             drift.ProgressMonths,
             Is.EqualTo(EducationCulturalDriftCatalog.FastDriftMonthsPerMonth * EducationCulturalDriftCatalog.ForeignTutorAccelerationMultiplier));
+    }
+
+    [Test]
+    public void CulturalDriftSystemDoesNotAccelerateForADeceasedForeignTutor()
+    {
+        var (state, householdId, characterId) = AdolescentInAHousehold();
+        var targetCulture = new DefinitionId<Culture>("gallic");
+        var tutorId = state.CharacterIds.Issue();
+        state.Characters.Add(tutorId, CharacterTestFixtures.Minimal(tutorId, nomen: "Divico", household: null) with { Culture = targetCulture });
+        AssignEducationRoleCommands.Pipeline.Execute(
+            state, new AssignEducationRoleCommand(state.CommandIds.Issue(), "player", AdolescentDate, null, householdId, tutorId, EducationRole.ForeignTutor));
+        SetCulturalDriftTargetCommands.Pipeline.Execute(
+            state, new SetCulturalDriftTargetCommand(state.CommandIds.Issue(), "player", AdolescentDate, null, characterId, targetCulture));
+
+        // The tutor dies, but AssignEducationRoleCommand's own assignment record is never cleared —
+        // correctness fix: a dead tutor must stop accelerating drift even though the assignment lingers.
+        state.Characters.TryGet(tutorId, out var tutor);
+        state.Characters.Remove(tutorId);
+        state.Characters.Add(tutorId, tutor! with { DeathRecord = new DeathRecord(AdolescentDate, DeathCause.OldAge, 60) });
+
+        new CulturalDriftSystem().Tick(state, new MonthlyTickContext(new GameDate(AdolescentDate.TotalMonths + 1), new RandomStreamSet()));
+
+        CulturalDriftResolver.TryGet(state, characterId, out var drift);
+        Assert.Multiple(() =>
+        {
+            Assert.That(state.EducationRoleAssignments.TryGet(householdId, out _), Is.True, "the stale assignment record is still there");
+            Assert.That(drift.ProgressMonths, Is.EqualTo(EducationCulturalDriftCatalog.FastDriftMonthsPerMonth));
+        });
     }
 
     // ---- Save round trip & determinism --------------------------------------------------------

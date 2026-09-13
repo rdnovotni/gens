@@ -33,9 +33,11 @@ public sealed record CultureDriftedEvent(
 /// (Childhood/Adolescence) or <see cref="EducationCulturalDriftCatalog.SlowDriftMonthsPerMonth"/>
 /// (Adult/Elderly), doubled again by <see
 /// cref="EducationCulturalDriftCatalog.ForeignTutorAccelerationMultiplier"/> while that Character's own
-/// household holds an active <see cref="EducationRole.ForeignTutor"/> assignment whose tutor's own <see
-/// cref="Character.Culture"/> matches the drift's target (§3.3's "accelerated while an active Foreign
-/// Tutor assignment points at a different culture"). Study Abroad's own sharper acceleration (§4) is not
+/// household holds an active <see cref="EducationRole.ForeignTutor"/> assignment whose tutor is still
+/// alive (correctness fix: a deceased tutor's own assignment record lingers but must stop accelerating
+/// drift) and whose own <see cref="Character.Culture"/> matches the drift's target (§3.3's "accelerated
+/// while an active Foreign Tutor assignment points at a different culture"). Study Abroad's own sharper
+/// acceleration (§4) is not
 /// applied here — that hook belongs to this ticket's later Institutions of Renown slice, which reads and
 /// writes this same <see cref="CulturalDriftState"/> partition directly from its own system rather than
 /// this one needing to know about a Travel concept it has no dependency on.
@@ -71,7 +73,8 @@ public sealed class CulturalDriftSystem : IMonthlySystem<WorldState>
                 state.EducationRoleAssignments.TryGet(householdId, out var assignment) &&
                 assignment!.Role == EducationRole.ForeignTutor &&
                 state.Characters.TryGet(assignment.TutorId, out var tutor) &&
-                tutor!.Culture == drift.TargetCultureId)
+                tutor!.IsAlive &&
+                tutor.Culture == drift.TargetCultureId)
             {
                 rate *= EducationCulturalDriftCatalog.ForeignTutorAccelerationMultiplier;
             }

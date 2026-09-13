@@ -65,6 +65,7 @@ public sealed class EducationGateResolverTests
         var householdId = state.HouseholdIds.Issue();
         var characterId = state.CharacterIds.Issue();
         state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId, nomen: "Marcus", household: householdId));
+        EducationTestFixtures.AddOperationalBuilding(state, householdId, KnownEducationTracks.Schola);
 
         Assert.That(EducationGateResolver.CanContestMagistracyAboveLowestRung(state, characterId), Is.False);
 

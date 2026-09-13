@@ -48,7 +48,7 @@ public sealed class EducationalTrackProgressSystem : IMonthlySystem<WorldState>
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "educationalTrackEnrollments", "characters" };
     public IReadOnlyCollection<string> Writes { get; } =
-        new[] { "educationalTrackEnrollments", "characters", "householdCulturalPrestiges", "eventIds" };
+        new[] { "educationalTrackEnrollments", "completedEducationalTracks", "characters", "householdCulturalPrestiges", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -86,6 +86,7 @@ public sealed class EducationalTrackProgressSystem : IMonthlySystem<WorldState>
             {
                 state.EducationalTrackEnrollments.Remove(enrollment.CharacterId);
                 state.EducationalTrackEnrollments.Add(enrollment.CharacterId, enrollment with { CompletedDate = context.Date });
+                CompletedEducationalTracksResolver.Record(state, enrollment.CharacterId, enrollment.TrackId);
                 events.Add(new EducationalTrackCompletedEvent(
                     state.EventIds.Issue(), context.Date, enrollment.CharacterId, enrollment.TrackId, CausationId: null));
             }

@@ -18,12 +18,22 @@ namespace Gens.Simulation.Education;
 /// <see cref="TravelTrip.MonthsElapsed"/> already counts the outbound/return legs, so this domain tracks
 /// only the time actually spent at the institution.
 /// </summary>
+/// <param name="StudyCompleted">True once the full <see cref="InstitutionOfRenown.JourneyDurationMonths"/>
+/// stay has been completed and the underlying <see cref="TravelTrip"/> has been sent home on its return
+/// leg (correctness fix: <see cref="StudyAbroadProgressSystem"/> used to grant the permanent <see
+/// cref="CharacterInstitutionCredential"/> at this same moment — while the traveler was still mid-return,
+/// an entire travel leg outstanding). While this is false, an <see cref="TravelTripStatus"/> transition
+/// away from <see cref="TravelTripStatus.Arrived"/> means the trip left early (<c>RecallTravelCommand</c>
+/// or an early <c>BeginReturnCommand</c>, cut short before the stay finished) and this journey record is
+/// cleaned up with no credential; while true, the same system instead watches for the trip's return leg to
+/// reach <see cref="TravelTripStatus.Completed"/> before finally granting the credential and cleaning up.</param>
 public sealed record StudyAbroadJourney(
     RuntimeId<TravelTrip> TripId,
     RuntimeId<Character> CharacterId,
     DefinitionId<InstitutionOfRenown> InstitutionId,
     RuntimeId<Household> HouseholdId,
-    int MonthsAtInstitution = 0);
+    int MonthsAtInstitution = 0,
+    bool StudyCompleted = false);
 
 /// <summary>Read-side helpers over <see cref="WorldState.StudyAbroadJourneys"/>.</summary>
 public static class StudyAbroadJourneyResolver

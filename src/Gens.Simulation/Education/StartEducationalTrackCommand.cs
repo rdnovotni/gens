@@ -17,7 +17,21 @@ namespace Gens.Simulation.Education;
 /// for why a second, concurrent Track is out of scope). Deliberately never checks <see cref="Sex"/> —
 /// §10's own "daughters may take any Track" decision this ticket confirmed with the user: downstream
 /// framing differs for Rhetoric (marriage-negotiation leverage/Clientela/Symposium hosting rather than
-/// magistracy access), not eligibility to start.
+/// magistracy access), not eligibility to start. Also gated (correctness fix) on the student's own
+/// household actually owning/occupying an <see cref="EducationBuildingResolver.HasOperationalBuilding"/>
+/// building matching the Track's own <see cref="EducationTrackDefinition.DeliveringBuildingIds"/> — a
+/// Track has nowhere to be taught without one.
+///
+/// Deliberate scope decision: this check runs once, at enrollment. <see
+/// cref="EducationalTrackProgressSystem"/> does not re-check building availability every month and pause
+/// progress if the delivering building is later destroyed or loses its staffing — unlike <see
+/// cref="Companions.PositionVacancySystem"/>'s own monthly re-validation of its own preconditions, doing
+/// the same here would need <see cref="EducationalTrackEnrollment"/>'s completion timer to switch from a
+/// simple "months since <see cref="EducationalTrackEnrollment.StartedDate"/>" calculation to an
+/// incrementally-accumulated "months actually progressed" counter (so a paused month doesn't silently
+/// still count toward <see cref="EducationTrackDefinition.CompletionMonths"/>) — a materially larger,
+/// hash-shape-changing surgery than this fix's own scope. Left as an explicit follow-up rather than
+/// implemented here.
 /// </summary>
 public sealed record StartEducationalTrackCommand(
     RuntimeId<Command> CommandId,
@@ -49,6 +63,7 @@ public static class StartEducationalTrackCommands
     public static readonly ValidationErrorCode NotAdolescent = new("education.startTrack.notAdolescent");
     public static readonly ValidationErrorCode AlreadyEnrolled = new("education.startTrack.alreadyEnrolled");
     public static readonly ValidationErrorCode UnknownTrack = new("education.startTrack.unknownTrack");
+    public static readonly ValidationErrorCode NoOperationalBuilding = new("education.startTrack.noOperationalBuilding");
 
     public static readonly CommandPipeline<WorldState, StartEducationalTrackCommand> Pipeline = new(
         validate: Validate,
@@ -63,8 +78,14 @@ public static class StartEducationalTrackCommands
             return CharacterDeceased;
         if (character.GetLifecycleStage(state.Date) != LifecycleStage.Adolescent)
             return NotAdolescent;
-        if (!KnownEducationTracks.Catalog.TryGet(command.TrackId, out _))
+        if (!KnownEducationTracks.Catalog.TryGet(command.TrackId, out var track))
             return UnknownTrack;
+        if (character.Household is not { } householdId ||
+            !EducationBuildingResolver.HasOperationalBuilding(state, householdId, track!.DeliveringBuildingIds))
+        {
+            return NoOperationalBuilding;
+        }
+
         if (EducationalTrackEnrollmentResolver.TryGet(state, command.CharacterId, out var existing) &&
             EducationalTrackEnrollmentResolver.IsActive(existing))
         {

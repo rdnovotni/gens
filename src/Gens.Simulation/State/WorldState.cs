@@ -210,6 +210,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Household>, HouseholdCulturalPrestige> householdCulturalPrestiges,
         OrderedRegistry<RuntimeId<CulturalPatronageRecord>, CulturalPatronageRecord> culturalPatronageRecords,
         OrderedRegistry<RuntimeId<Character>, EducationalTrackEnrollment> educationalTrackEnrollments,
+        OrderedRegistry<RuntimeId<Character>, CompletedEducationalTracks> completedEducationalTracks,
         OrderedRegistry<RuntimeId<Character>, DistinguishedEducationInvestment> distinguishedEducationInvestments,
         OrderedRegistry<RuntimeId<Household>, EducationRoleAssignment> educationRoleAssignments,
         OrderedRegistry<RuntimeId<Character>, CulturalDriftState> culturalDriftStates,
@@ -420,6 +421,7 @@ public sealed class WorldState
         HouseholdCulturalPrestiges = householdCulturalPrestiges;
         CulturalPatronageRecords = culturalPatronageRecords;
         EducationalTrackEnrollments = educationalTrackEnrollments;
+        CompletedEducationalTracks = completedEducationalTracks;
         DistinguishedEducationInvestments = distinguishedEducationInvestments;
         EducationRoleAssignments = educationRoleAssignments;
         CulturalDriftStates = culturalDriftStates;
@@ -1040,6 +1042,13 @@ public sealed class WorldState
     /// entry, matching <see cref="LiteracyRecords"/>'s identical shape.</summary>
     public OrderedRegistry<RuntimeId<Character>, EducationalTrackEnrollment> EducationalTrackEnrollments { get; } = new();
 
+    /// <summary>Each named Character's permanent <see cref="Education.CompletedEducationalTracks"/>
+    /// history (Phase 17 item 2 correctness fix; §3), keyed by the Character it describes. Sparse: a
+    /// Character who has never completed a Track has no entry. Deliberately append-only, unlike <see
+    /// cref="EducationalTrackEnrollments"/>'s single replaceable active-enrollment slot — see <see
+    /// cref="Education.CompletedEducationalTracks"/>'s own doc comment for why.</summary>
+    public OrderedRegistry<RuntimeId<Character>, CompletedEducationalTracks> CompletedEducationalTracks { get; } = new();
+
     /// <summary>Each named Character's <see cref="Education.DistinguishedEducationInvestment"/> (Phase 17
     /// item 2; §3), keyed by the Character it upgrades. Sparse: a Character never upgraded to the
     /// Distinguished tier has no entry.</summary>
@@ -1590,6 +1599,7 @@ public sealed class WorldState
         ["householdCulturalPrestiges"] = HouseholdCulturalPrestiges.Version,
         ["culturalPatronageRecords"] = CulturalPatronageRecords.Version,
         ["educationalTrackEnrollments"] = EducationalTrackEnrollments.Version,
+        ["completedEducationalTracks"] = CompletedEducationalTracks.Version,
         ["distinguishedEducationInvestments"] = DistinguishedEducationInvestments.Version,
         ["educationRoleAssignments"] = EducationRoleAssignments.Version,
         ["culturalDriftStates"] = CulturalDriftStates.Version,
