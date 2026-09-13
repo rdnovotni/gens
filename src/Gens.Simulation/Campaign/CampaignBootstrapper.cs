@@ -104,6 +104,27 @@ public static class CampaignBootstrapper
     /// and discovery-risk advancement themselves are deterministic formulas and draw no random numbers.</summary>
     public const string SchemeProgressStreamName = "interactions.schemeProgress";
 
+    /// <summary>The named random stream <see cref="Romance.AutonomousRomanceSystem"/> reserves for its
+    /// monthly spontaneous-advance roll (Phase 17 item 3 slice 5; <c>gens-romance-sexuality-lineage-design.md</c>
+    /// §8), kept distinct from every other stream here for the same rule-8 reason.</summary>
+    public const string RomanceAutonomousInitiationStreamName = "romance.autonomousInitiation";
+
+    /// <summary>The named random stream <see cref="Romance.ConceptionSystem"/> reserves for its monthly
+    /// conception roll (Phase 17 item 3 slice 6; §9), kept distinct from every other stream here for the
+    /// same rule-8 reason.</summary>
+    public const string RomanceConceptionChanceStreamName = "romance.conceptionChance";
+
+    /// <summary>The named random stream <see cref="Romance.ChildbirthResolutionSystem"/> reserves for
+    /// its maternal-death-risk roll at term (Phase 17 item 3 slice 6; §9), kept distinct from <see
+    /// cref="RomanceChildbirthInfantRiskStreamName"/> so a change to one risk roll never perturbs the
+    /// other (rule 8).</summary>
+    public const string RomanceChildbirthMaternalRiskStreamName = "romance.childbirthMaternalRisk";
+
+    /// <summary>The named random stream <see cref="Romance.ChildbirthResolutionSystem"/> reserves for
+    /// its infant-death-risk roll at term, independent of <see
+    /// cref="RomanceChildbirthMaternalRiskStreamName"/> (Phase 17 item 3 slice 6; §9).</summary>
+    public const string RomanceChildbirthInfantRiskStreamName = "romance.childbirthInfantRisk";
+
     /// <summary>The named random stream <see cref="Interactions.SpyPlacementProgressSystem"/> reserves
     /// for its monthly resolution rolls (Discovery, then Traceability once discovered — Phase 16 item
     /// 1), kept distinct from every other stream here for the same rule-8 reason. Discovery-risk
@@ -247,6 +268,10 @@ public static class CampaignBootstrapper
         streams.AddDerived(RivalAmbitionStreamName, config.Seed);
         streams.AddDerived(ActorExtinctionStreamName, config.Seed);
         streams.AddDerived(SchemeProgressStreamName, config.Seed);
+        streams.AddDerived(RomanceAutonomousInitiationStreamName, config.Seed);
+        streams.AddDerived(RomanceConceptionChanceStreamName, config.Seed);
+        streams.AddDerived(RomanceChildbirthMaternalRiskStreamName, config.Seed);
+        streams.AddDerived(RomanceChildbirthInfantRiskStreamName, config.Seed);
         streams.AddDerived(SpyPlacementProgressStreamName, config.Seed);
         streams.AddDerived(CounterEspionageSweepStreamName, config.Seed);
         streams.AddDerived(RaidThreatStreamName, config.Seed);

@@ -150,6 +150,7 @@ public sealed class WorldState
         RuntimeIdCounter<FrontierTreaty> frontierTreatyIds,
         RuntimeIdCounter<OverseerAssignment> overseerAssignmentIds,
         RuntimeIdCounter<SeniorPositionAssignment> seniorPositionAssignmentIds,
+        RuntimeIdCounter<PregnancyRecord> pregnancyRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -157,6 +158,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Character>, Character> characters,
         OrderedRegistry<RelationshipKey, Relationship> relationships,
         OrderedRegistry<RomanticBondKey, RomanticBond> romanticBonds,
+        OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord> pregnancyRecords,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
@@ -286,6 +288,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<OverseerAssignment>, OverseerAssignment> overseerAssignments,
         OrderedRegistry<RuntimeId<SeniorPositionAssignment>, SeniorPositionAssignment> seniorPositionAssignments,
         OrderedRegistry<RuntimeId<Household>, GameDate> rationalisClusterActiveHouseholds,
+        RomanceContentSettings romanceContentSettings,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -310,6 +313,7 @@ public sealed class WorldState
         StewardshipAssignmentIds = stewardshipAssignmentIds;
         AutonomousDecisionLogIds = autonomousDecisionLogIds;
         SchemeIds = schemeIds;
+        PregnancyRecordIds = pregnancyRecordIds;
         SpyPlacementIds = spyPlacementIds;
         RaidThreatIds = raidThreatIds;
         SquadIds = squadIds;
@@ -368,6 +372,7 @@ public sealed class WorldState
         Characters = characters;
         Relationships = relationships;
         RomanticBonds = romanticBonds;
+        PregnancyRecords = pregnancyRecords;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
@@ -497,6 +502,7 @@ public sealed class WorldState
         OverseerAssignments = overseerAssignments;
         SeniorPositionAssignments = seniorPositionAssignments;
         RationalisClusterActiveHouseholds = rationalisClusterActiveHouseholds;
+        RomanceContentSettings = romanceContentSettings;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -535,6 +541,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Interactions.Scheme"/> (Phase 10 item 6).</summary>
     public RuntimeIdCounter<Scheme> SchemeIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Romance.PregnancyRecord"/> (Phase 17 item 3 slice 6).</summary>
+    public RuntimeIdCounter<PregnancyRecord> PregnancyRecordIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Interactions.SpyPlacement"/> (Phase 16 item 1).</summary>
     public RuntimeIdCounter<SpyPlacement> SpyPlacementIds { get; } = new();
@@ -722,6 +731,12 @@ public sealed class WorldState
     /// cref="Relationships"/>'s identical convention: a pair with no romantic history simply has no
     /// entry here at all.</summary>
     public OrderedRegistry<RomanticBondKey, RomanticBond> RomanticBonds { get; } = new();
+
+    /// <summary>Every conception-to-resolution pregnancy (Phase 17 item 3 slice 6; §9), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once resolved rather than removed,
+    /// matching <see cref="Schemes"/>'s identical "resolved or not, kept for the campaign's lifetime"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord> PregnancyRecords { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -1467,6 +1482,11 @@ public sealed class WorldState
     /// own doc comment for why this one narrow piece of memory is still needed).</summary>
     public OrderedRegistry<RuntimeId<Household>, GameDate> RationalisClusterActiveHouseholds { get; } = new();
 
+    /// <summary>One campaign-level content-intensity toggle (Phase 17 item 3 slice 6; §9, §17).
+    /// Mirrors <see cref="Date"/>'s own "private setter, defaulted at construction" shape — nothing
+    /// currently sets this away from its default; the setter exists for a future settings surface.</summary>
+    public RomanceContentSettings RomanceContentSettings { get; private set; } = new(FertilityRiskAbstracted: false);
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1505,6 +1525,7 @@ public sealed class WorldState
         ["stewardshipAssignmentIds"] = StewardshipAssignmentIds.Peek,
         ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["schemeIds"] = SchemeIds.Peek,
+        ["pregnancyRecordIds"] = PregnancyRecordIds.Peek,
         ["spyPlacementIds"] = SpyPlacementIds.Peek,
         ["raidThreatIds"] = RaidThreatIds.Peek,
         ["squadIds"] = SquadIds.Peek,
@@ -1546,6 +1567,7 @@ public sealed class WorldState
         ["characters"] = Characters.Version,
         ["relationships"] = Relationships.Version,
         ["romanticBonds"] = RomanticBonds.Version,
+        ["pregnancyRecords"] = PregnancyRecords.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,

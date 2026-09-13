@@ -32,6 +32,7 @@ using Gens.Simulation.PublicWorks;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Shipping;
 using Gens.Simulation.Societates;
@@ -362,6 +363,9 @@ internal static class RuntimeIdTagRegistry
         // entry: it's keyed by RuntimeId<Household>, not by its own RuntimeId, matching
         // HouseholdReligion's identical exemption.
         [typeof(CulturalPatronageRecord)] = "culturalpatronage",
+        // Phase 17 item 3 slice 6 — Gens.Simulation.Romance.PregnancyRecord, same "real record as its
+        // own tag" convention as CulturalPatronageRecord/MagistracyRecord above.
+        [typeof(PregnancyRecord)] = "pregnancyrecord",
     };
 
     public static string Resolve(Type type) =>

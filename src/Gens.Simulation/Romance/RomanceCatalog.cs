@@ -58,6 +58,71 @@ public static class RomanceCatalog
     /// per-pair monthly percent chance, invented baseline, flagged for future balancing."</summary>
     public const int AutonomousRomanceMonthlyChancePercent = 3;
 
+    /// <summary>The Affection/Attraction bump <see cref="AutonomousRomanceSystem"/> applies via <see
+    /// cref="RecordRomanticInteractionCommand"/> on a successful spontaneous-advance roll for a pair not
+    /// yet clearing <see cref="AutonomousRomanceMinimumScore"/> on both scores (§8.1) — sized on the same
+    /// small order as <see cref="FlirtAffectionDelta"/>/<see cref="FlirtAttractionDelta"/>, this
+    /// implementation's own "quiet, unprompted spark" magnitude rather than a full Courtship-interaction
+    /// investment.</summary>
+    public const int AutonomousRomanceNudgeAffectionDelta = 4;
+
+    public const int AutonomousRomanceNudgeAttractionDelta = 4;
+
+    // ---- Slice 6: Pregnancy, Fertility & Childbirth (§9) ------------------------------------------
+
+    /// <summary>Months from conception to due date <see cref="PregnancyRecord.Create"/> stamps —
+    /// §9's own gestation length, kept as a named constant rather than a magic <c>9</c> scattered at
+    /// each call site.</summary>
+    public const int PregnancyTermMonths = 9;
+
+    /// <summary>The floor maternal-death-risk percent <see cref="ChildbirthResolutionSystem"/> never
+    /// rolls below, regardless of how healthy the mother is — §9's own "genuine, non-trivial risk"
+    /// framing: real childbirth risk in this setting is never actually zero, so a maximally healthy
+    /// mother still clears this floor rather than a computed value reaching (or crossing) zero.</summary>
+    public const int ChildbirthMaternalRiskFloorPercent = 1;
+
+    /// <summary>The base maternal-death-risk percent <see cref="ChildbirthResolutionSystem"/> starts
+    /// from before <see cref="Characters.Condition.Health"/> reduces it — this implementation's own
+    /// untuned baseline, unsized per §17.</summary>
+    public const int ChildbirthBaseMaternalRiskPercent = 8;
+
+    /// <summary>How many maternal-risk percentage points <see cref="Characters.Condition.Health"/>
+    /// shaves off <see cref="ChildbirthBaseMaternalRiskPercent"/> per 100 Health points — i.e. a mother
+    /// at full Health reduces the base risk by this many points outright, scaled linearly below that.</summary>
+    public const int ChildbirthMaternalRiskHealthWeightPercent = 6;
+
+    /// <summary>How many further maternal-risk percentage points a filled <see
+    /// cref="Companions.SeniorPositionTitle.CourtPhysician"/> shaves off, on top of the Health-based
+    /// reduction — §9's "attended by someone skilled" mitigation, applied only when that Senior Position
+    /// (Phase 17 item 1) is actually filled and present at the mother's household.</summary>
+    public const int ChildbirthPhysicianRiskReductionPercent = 3;
+
+    /// <summary>The flat, untuned infant-death-risk percent <see cref="ChildbirthResolutionSystem"/>
+    /// rolls independently of the maternal roll (§9) — this implementation's own invented baseline,
+    /// unsized per §17.</summary>
+    public const int ChildbirthInfantRiskPercent = 5;
+
+    // ---- Slice 6 (cont'd): newborn naming -----------------------------------------------------------
+
+    /// <summary>Placeholder newborn <see cref="Characters.NamePool"/> <see
+    /// cref="ChildbirthResolutionSystem"/> passes to <see cref="Characters.BirthCharacterCommands"/>.
+    /// No production system in this codebase resolves a real content-driven NamePool from a Character's
+    /// culture yet — confirmed by inspection: today <see cref="Characters.BirthCharacterCommand"/>, <see
+    /// cref="Characters.PromoteToNamedCommand"/>, and <c>InstantiateWandererCommand</c> are all exercised
+    /// only by tests, each constructing its own small literal <see cref="Characters.NamePool"/> inline
+    /// (see e.g. <c>tests/.../Characters/NamePoolTestFixtures.cs</c>). This is the first production call
+    /// site that actually needs one, so it gets its own small, explicitly-flagged placeholder here rather
+    /// than inventing a fake "resolve from content" mechanism this item was never scoped to build. A later
+    /// item wiring real <c>names</c> content into a per-culture NamePool should replace this constant's
+    /// single use site in <see cref="ChildbirthResolutionSystem"/>.</summary>
+    public static readonly NamePool PlaceholderNewbornNamePool = new()
+    {
+        Praenomina = new[] { "Marcus", "Gaius", "Lucius", "Quintus" },
+        Nomina = new[] { "Aurelius", "Fabius", "Julius", "Cornelius" },
+        Cognomina = new[] { "Maximus", "Rufus", "Longus" },
+        GivenNames = new[] { "Bato", "Dagan", "Vercingetorix" },
+    };
+
     // ---- Slice 4: Seduce Scheme (§7) ----------------------------------------------------------------
 
     /// <summary>The weight <see cref="Interactions.SchemeProgressSystem"/> applies to the target's

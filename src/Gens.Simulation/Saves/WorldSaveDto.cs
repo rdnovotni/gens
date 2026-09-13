@@ -882,6 +882,19 @@ public sealed record WorldSaveDocument
     /// cref="RationalisClusterActiveHouseholds"/> above.</summary>
     [JsonPropertyOrder(132)]
     public IReadOnlyList<RomanticBondDto> RomanticBonds { get; init; } = Array.Empty<RomanticBondDto>();
+
+    /// <summary>Every conception-to-resolution <see cref="Gens.Simulation.Romance.PregnancyRecord"/>
+    /// (Phase 17 item 3 slice 6), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="RomanticBonds"/> above.</summary>
+    [JsonPropertyOrder(133)]
+    public IReadOnlyList<PregnancyRecordDto> PregnancyRecords { get; init; } = Array.Empty<PregnancyRecordDto>();
+
+    /// <summary>Campaign-level <see cref="Gens.Simulation.Romance.RomanceContentSettings"/> toggle
+    /// (Phase 17 item 3 slice 6). Not <c>required</c>; defaults to <c>false</c> so a pre-existing save
+    /// loads with full §9 risk modeling, matching that record's own default.</summary>
+    [JsonPropertyOrder(134)]
+    public bool RomanceFertilityRiskAbstracted { get; init; }
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1251,6 +1264,12 @@ public sealed record CounterSetDto
     /// cref="OverseerAssignmentIds"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(127)]
     public long SeniorPositionAssignmentIds { get; init; }
+
+    /// <summary>Not <c>required</c>, defaults to 0: a pre-Phase-17-item-3-slice-6 save has no
+    /// PregnancyRecords. Additive-only per ADR 0011, matching <see cref="SchemeIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(128)]
+    public long PregnancyRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1617,6 +1636,41 @@ public sealed record RomanticBondDto
 
     [JsonPropertyOrder(9)]
     public string? ProvenanceEventId { get; init; }
+}
+
+/// <summary>One conception-to-resolution <see cref="Gens.Simulation.Romance.PregnancyRecord"/>
+/// (Phase 17 item 3 slice 6; <c>gens-romance-sexuality-lineage-design.md</c> §9).</summary>
+public sealed record PregnancyRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PregnancyId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string MotherId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string FatherId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string ConceivedViaBondType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int ConceivedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int DueDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool Resolved { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool MaternalRiskResolved { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool InfantRiskResolved { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? BornChildId { get; init; }
 }
 
 /// <summary>One <see cref="Characters.MarriageRecord"/> (<c>gens-familia-design.md</c> §5, §5.1).</summary>

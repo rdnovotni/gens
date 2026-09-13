@@ -75,6 +75,7 @@ public static class StateHasher
         hash = MixLong(hash, state.HoldingIds.Peek);
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
         hash = MixLong(hash, state.SchemeIds.Peek);
+        hash = MixLong(hash, state.PregnancyRecordIds.Peek);
         hash = MixLong(hash, state.SpyPlacementIds.Peek);
         hash = MixLong(hash, state.RaidThreatIds.Peek);
         hash = MixLong(hash, state.FrontierTreatyIds.Peek);
@@ -1510,6 +1511,25 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.LastMeaningfulInteractionDate.TotalMonths);
             hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
         }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 6.
+        foreach (var entry in state.PregnancyRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.MotherId.Value);
+            hash = MixLong(hash, entry.Value.FatherId.Value);
+            hash = MixLong(hash, (long)entry.Value.ConceivedViaBondType);
+            hash = MixLong(hash, entry.Value.ConceivedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.DueDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.Resolved ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.MaternalRiskResolved ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.InfantRiskResolved ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.BornChildId?.Value ?? -1L);
+        }
+
+        // Phase 17 item 3 slice 6: a scalar campaign-level toggle that can affect ChildbirthResolutionSystem
+        // outcomes, so it belongs in the deterministic state hash (ADR 0004/0010).
+        hash = MixLong(hash, state.RomanceContentSettings.FertilityRiskAbstracted ? 1L : 0L);
 
         return hash;
     }
