@@ -239,7 +239,11 @@ public sealed class AffairsAndDiscoveryTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "romanticBonds", "characters", "affairRecords", "householdReputations" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "romanticBonds", "affairRecords", "householdReputations", "eventIds" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[]
+            {
+                "romanticBonds", "affairRecords", "householdReputations", "eventIds",
+                "characters", "commandIds", "commandSequence", "scandalRecords", "scandalRecordIds", "relationships",
+            }));
         });
     }
 

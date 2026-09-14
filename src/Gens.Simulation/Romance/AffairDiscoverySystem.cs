@@ -132,7 +132,21 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
     public string Id => "romance.affairDiscovery";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "romanticBonds", "characters", "affairRecords", "householdReputations" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "romanticBonds", "affairRecords", "householdReputations", "eventIds" };
+
+    /// <summary>Broader than this system's own <see cref="State.WorldState.RomanticBonds"/>/<see
+    /// cref="State.WorldState.AffairRecords"/> writes because an Escalated roll's own further
+    /// consequences — the reactive-trait grants this method applies directly to <see
+    /// cref="State.WorldState.Characters"/>, and (for the Status/Role Dignitas modifier and, for a
+    /// minor-stakes case, <see cref="Scandal.RecordScandalCommand"/>'s own composed pipeline, which can
+    /// additionally touch <see cref="State.WorldState.Relationships"/> when a scar target is supplied)
+    /// each mint their own command id and sequence number — all reach further than this system's two
+    /// headline partitions, mirroring <see cref="Legal.LegalCaseAdvancementSystem"/>'s own identical
+    /// "the write-set declared here must cover the counters those pipelines touch too" reasoning.</summary>
+    public IReadOnlyCollection<string> Writes { get; } = new[]
+    {
+        "romanticBonds", "affairRecords", "householdReputations", "eventIds",
+        "characters", "commandIds", "commandSequence", "scandalRecords", "scandalRecordIds", "relationships",
+    };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)

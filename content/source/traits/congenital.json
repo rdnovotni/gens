@@ -262,5 +262,41 @@
     "descriptionKey": "traits.gluttonous.description",
     "category": "congenital",
     "opposes": "temperate"
+  },
+  {
+    "id": "plain",
+    "status": "active",
+    "nameKey": "traits.plain.name",
+    "descriptionKey": "traits.plain.description",
+    "category": "congenital",
+    "spectrum": "beauty",
+    "tierPosition": 0
+  },
+  {
+    "id": "common",
+    "status": "active",
+    "nameKey": "traits.common.name",
+    "descriptionKey": "traits.common.description",
+    "category": "congenital",
+    "spectrum": "beauty",
+    "tierPosition": 1
+  },
+  {
+    "id": "fair",
+    "status": "active",
+    "nameKey": "traits.fair.name",
+    "descriptionKey": "traits.fair.description",
+    "category": "congenital",
+    "spectrum": "beauty",
+    "tierPosition": 2
+  },
+  {
+    "id": "striking",
+    "status": "active",
+    "nameKey": "traits.striking.name",
+    "descriptionKey": "traits.striking.description",
+    "category": "congenital",
+    "spectrum": "beauty",
+    "tierPosition": 3
   }
 ]

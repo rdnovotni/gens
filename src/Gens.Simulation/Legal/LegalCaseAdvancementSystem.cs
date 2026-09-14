@@ -56,11 +56,17 @@ public sealed class LegalCaseAdvancementSystem : IMonthlySystem<WorldState>
     /// <see cref="RecordInteractionCommand"/>, <see cref="EndMagistracyForConvictionCommand"/>, a
     /// <see cref="LedgerService.Post"/> fine) — each of those mints its own command id, sequence number,
     /// and (for the fine) ledger transaction id, so the write-set declared here must cover the counters
-    /// those pipelines touch too, not just the partitions this system's own code writes directly.</summary>
+    /// those pipelines touch too, not just the partitions this system's own code writes directly.
+    /// <c>"infamiaStatuses"</c> is this same reasoning applied to Phase 17 item 3 slice 9's later,
+    /// additive <see cref="Romance.AdulteryResolutionHook"/> call: a <see
+    /// cref="Legal.LegalCaseType.Adultery"/> conviction's own <see cref="Romance.GrantInfamiaCommand"/>
+    /// writes that partition too, on top of every ordinary conviction consequence already listed
+    /// here.</summary>
     public IReadOnlyCollection<string> Writes { get; } = new[]
     {
         "legalCases", "eventIds", "householdReputations", "relationships", "magistracyRecords",
         "characters", "ledgerAccounts", "ledgerTransactions", "commandIds", "commandSequence", "ledgerTransactionIds",
+        "infamiaStatuses",
     };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 

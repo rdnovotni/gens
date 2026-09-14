@@ -81,7 +81,14 @@ public sealed class AutonomousRomanceSystem : IMonthlySystem<WorldState>
     // households registry), so reading "characters" already covers everything this system needs to
     // know about household membership.
     public IReadOnlyCollection<string> Reads { get; } = new[] { "characters", "romanticBonds" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "romanticBonds", "eventIds" };
+
+    /// <summary>Includes <c>"commandIds"</c>/<c>"commandSequence"</c> alongside this system's own
+    /// headline <see cref="State.WorldState.RomanticBonds"/> write: every successful roll submits <see
+    /// cref="RecordRomanticInteractionCommand"/> through its own <see cref="Commands.CommandPipeline{TState,TCommand}"/>,
+    /// which mints a fresh command id and sequence number each time, mirroring <see
+    /// cref="Legal.LegalCaseAdvancementSystem"/>'s own identical "the write-set declared here must cover
+    /// the counters those pipelines touch too" reasoning.</summary>
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "romanticBonds", "eventIds", "commandIds", "commandSequence" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)

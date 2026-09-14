@@ -294,10 +294,38 @@ public static class RomanceCatalog
     /// other per-point Dignitas weights.</summary>
     public const int StatusRoleDignitasModifierMagnitude = 4;
 
-    // TODO(next slice): trait DefinitionId<Trait> references for faithful, infatuated/disillusioned,
-    // and the beauty spectrum (plain/common/fair/striking) once content/source/traits authors them (see
-    // the approved plan's "Content authoring" section) — adulterous/heartbroken/guarded above are the
-    // first exception to this file's own earlier "don't reference an undefined content ID" caution, now
-    // that granting an unauthored trait ID at runtime is confirmed safe (see AdulterousTraitId's own doc
-    // comment); the remaining ones stay deferred since nothing in this slice grants them yet.
+    // ---- Content-authoring pass: remaining Romance trait references (§3, §11) -----------------------
+
+    /// <summary>§11's opposite of <see cref="AdulterousTraitId"/> — now authored in
+    /// <c>content/source/traits/romance.json</c> as an opposed reactive pair. Not yet granted by any
+    /// system this pass (no code path currently marks a spouse "faithful" as a positive counterpart to
+    /// a discovered affair); reserved here for whichever later item adds that grant, matching this
+    /// file's own established "name the constant before the first caller exists" precedent.</summary>
+    public static readonly DefinitionId<Trait> FaithfulTraitId = new("faithful");
+
+    /// <summary>§4/§8's romantic-infatuation reactive trait — authored in
+    /// <c>content/source/traits/romance.json</c> as a genuine opposed pair with <see
+    /// cref="DisillusionedTraitId"/> (unlike <see cref="HeartbrokenTraitId"/>/<see
+    /// cref="GuardedTraitId"/>, which are granted together and so are deliberately NOT authored as
+    /// opposed). Not yet granted by any system this pass — reserved for a later Courtship/Autonomous
+    /// Romance refinement.</summary>
+    public static readonly DefinitionId<Trait> InfatuatedTraitId = new("infatuated");
+
+    /// <summary>The reactive counterpart to <see cref="InfatuatedTraitId"/> — see that constant's own
+    /// doc comment.</summary>
+    public static readonly DefinitionId<Trait> DisillusionedTraitId = new("disillusioned");
+
+    /// <summary>§3's "a character's Beauty tier... weight[s] Attraction directly" — the 4-tier
+    /// <c>beauty</c> spectrum authored in <c>content/source/traits/congenital.json</c>
+    /// (<c>plain</c>/<c>common</c>/<c>fair</c>/<c>striking</c>, tier positions 0-3). Not yet consumed
+    /// by <see cref="RecordRomanticInteractionCommand"/> or any other Attraction math this pass — §3's
+    /// own Beauty-weighting is content-authored here but left unwired, matching this document's
+    /// "reserve the constant, defer the caller" precedent elsewhere in this file.</summary>
+    public static readonly DefinitionId<Trait> PlainBeautyTraitId = new("plain");
+
+    public static readonly DefinitionId<Trait> CommonBeautyTraitId = new("common");
+
+    public static readonly DefinitionId<Trait> FairBeautyTraitId = new("fair");
+
+    public static readonly DefinitionId<Trait> StrikingBeautyTraitId = new("striking");
 }

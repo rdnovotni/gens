@@ -57,7 +57,7 @@ public sealed class AutonomousRomanceTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "characters", "romanticBonds" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "romanticBonds", "eventIds" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[] { "romanticBonds", "eventIds", "commandIds", "commandSequence" }));
         });
     }
 

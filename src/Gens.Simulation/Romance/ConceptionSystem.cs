@@ -58,7 +58,12 @@ public sealed class ConceptionSystem : IMonthlySystem<WorldState>
     public string Id => "romance.conception";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "romanticBonds", "characters", "pregnancyRecords" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "pregnancyRecords", "eventIds" };
+
+    /// <summary>Includes <c>"pregnancyRecordIds"</c> alongside the <see
+    /// cref="State.WorldState.PregnancyRecords"/> registry itself — a successful roll issues a fresh
+    /// <see cref="RuntimeId{T}"/> from that separate counter before adding the record, so both partition
+    /// tags change on the same tick.</summary>
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "pregnancyRecords", "pregnancyRecordIds", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
