@@ -5,6 +5,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
@@ -60,6 +61,41 @@ public sealed class AffairsAndDiscoveryTests
     {
         state.RomanticBonds.TryGet(RomanticBondKey.Create(a, b), out var bond);
         return bond;
+    }
+
+    /// <summary>Directly seeds an unresolved, high-stakes <see cref="AffairRecord"/> — bypassing <see
+    /// cref="AffairDiscoverySystem"/>'s own probabilistic escalation entirely, since <see
+    /// cref="ResolveAffairCommand"/>/<see cref="ExerciseExtremeLegalRemedyCommand"/> only ever consume an
+    /// already-created record and have no need to re-exercise that system's own already-covered discovery
+    /// roll.</summary>
+    private static (RuntimeId<AffairRecord> AffairId, AffairRecord Record) SeedHighStakesAffair(
+        WorldState state, RuntimeId<Character> offender, RuntimeId<Character> thirdParty, RuntimeId<Character> wrongedSpouse)
+    {
+        var affairId = state.AffairRecordIds.Issue();
+        var record = new AffairRecord(
+            affairId, offender, thirdParty, wrongedSpouse, AffairStakesLevel.HighStakes,
+            InvolvesRivalHouse: false, LegitimacyContested: false, ThreatensPoliticalMarriage: false,
+            Resolution: null, StatusRoleDignitasModifier: 0, DiscoveredDate: Epoch);
+        state.AffairRecords.Add(affairId, record);
+        return (affairId, record);
+    }
+
+    /// <summary>Establishes a real, bidirectional open marriage between two already-created Characters —
+    /// <see cref="AddAdult"/>'s own one-directional <c>maritalHistory</c> stub (only the offender's own
+    /// record points back at the wronged spouse) is enough for <see cref="AffairDiscoverySystem"/>'s own
+    /// tests, but <see cref="Characters.EndMarriageCommand"/>/<see
+    /// cref="ExerciseExtremeLegalRemedyCommand"/>'s own marriage-closing path reads <see
+    /// cref="Character.CurrentSpouseId"/> off both sides, so a real Divorced/extreme-remedy test needs
+    /// both records to agree.</summary>
+    private static void MarryEachOther(WorldState state, RuntimeId<Character> a, RuntimeId<Character> b, GameDate startDate)
+    {
+        state.Characters.TryGet(a, out var characterA);
+        state.Characters.Remove(a);
+        state.Characters.Add(a, characterA! with { MaritalHistory = new[] { new MarriageRecord(b, startDate, null, null) } });
+
+        state.Characters.TryGet(b, out var characterB);
+        state.Characters.Remove(b);
+        state.Characters.Add(b, characterB! with { MaritalHistory = new[] { new MarriageRecord(a, startDate, null, null) } });
     }
 
     [Test]
@@ -202,8 +238,234 @@ public sealed class AffairsAndDiscoveryTests
         Assert.Multiple(() =>
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
-            Assert.That(system.Reads, Is.EquivalentTo(new[] { "romanticBonds", "characters", "affairRecords" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "romanticBonds", "affairRecords", "eventIds" }));
+            Assert.That(system.Reads, Is.EquivalentTo(new[] { "romanticBonds", "characters", "affairRecords", "householdReputations" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[] { "romanticBonds", "affairRecords", "householdReputations", "eventIds" }));
         });
+    }
+
+    // ---- ResolveAffairCommand (§11) --------------------------------------------------------------
+
+    [Test]
+    public void ResolveAffairCommandForgivenGrantsTheRehabilitatedTraitAndAPositiveBondSwing()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var offender = AddAdult(state, intrigue: 10);
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        MarryEachOther(state, wrongedSpouse, offender, new GameDate(-24));
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+
+        var result = ResolveAffairCommands.CreatePipeline(new RandomStreamSet()).Execute(
+            state, new ResolveAffairCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, affairId, AffairResolution.Forgiven));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+
+        state.AffairRecords.TryGet(affairId, out var record);
+        state.Characters.TryGet(wrongedSpouse, out var wrongedCharacter);
+        var bond = GetBond(state, wrongedSpouse, offender);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(record!.Resolution, Is.EqualTo(AffairResolution.Forgiven));
+            Assert.That(wrongedCharacter!.Traits, Does.Contain(RomanceCatalog.RehabilitatedTraitId));
+            Assert.That(bond.Affection, Is.EqualTo(RomanceCatalog.AffairForgivenessAffectionDelta));
+            Assert.That(result.Events.OfType<AffairResolvedEvent>().Single().Resolution, Is.EqualTo(AffairResolution.Forgiven));
+        });
+    }
+
+    [Test]
+    public void ResolveAffairCommandDivorcedEndsTheMarriage()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var offender = AddAdult(state, intrigue: 10);
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        MarryEachOther(state, wrongedSpouse, offender, new GameDate(-24));
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+
+        var result = ResolveAffairCommands.CreatePipeline(new RandomStreamSet()).Execute(
+            state, new ResolveAffairCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, affairId, AffairResolution.Divorced));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+
+        state.Characters.TryGet(wrongedSpouse, out var wrongedCharacter);
+        state.Characters.TryGet(offender, out var offenderCharacter);
+        state.AffairRecords.TryGet(affairId, out var record);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(wrongedCharacter!.CurrentSpouseId, Is.Null);
+            Assert.That(offenderCharacter!.CurrentSpouseId, Is.Null);
+            Assert.That(record!.Resolution, Is.EqualTo(AffairResolution.Divorced));
+        });
+    }
+
+    [Test]
+    public void ResolveAffairCommandChallengedIsANoOpBeyondRecordingTheResolution()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var offender = AddAdult(state, intrigue: 10);
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        MarryEachOther(state, wrongedSpouse, offender, new GameDate(-24));
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+
+        var result = ResolveAffairCommands.CreatePipeline(new RandomStreamSet()).Execute(
+            state, new ResolveAffairCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, affairId, AffairResolution.Challenged));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+
+        state.Characters.TryGet(wrongedSpouse, out var wrongedCharacter);
+        state.Characters.TryGet(offender, out var offenderCharacter);
+        state.AffairRecords.TryGet(affairId, out var record);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(record!.Resolution, Is.EqualTo(AffairResolution.Challenged));
+            Assert.That(wrongedCharacter!.IsAlive, Is.True);
+            Assert.That(offenderCharacter!.IsAlive, Is.True);
+            Assert.That(wrongedCharacter.CurrentSpouseId, Is.EqualTo(offender));
+        });
+    }
+
+    [Test]
+    public void ResolveAffairCommandRejectsExtremeLegalRemedyResolutionValue()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var offender = AddAdult(
+            state, intrigue: 10, maritalHistory: new[] { new MarriageRecord(wrongedSpouse, new GameDate(-24), null, null) });
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+
+        var result = ResolveAffairCommands.CreatePipeline(new RandomStreamSet()).Execute(
+            state, new ResolveAffairCommand(
+                state.CommandIds.Issue(), "player", new GameDate(1), null, affairId, AffairResolution.ExtremeLegalRemedyExercised));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(ResolveAffairCommands.UseExerciseExtremeLegalRemedyCommand));
+    }
+
+    [Test]
+    public void ResolveAffairCommandRejectsAMinorStakesRecord()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var offender = AddAdult(
+            state, intrigue: 10, maritalHistory: new[] { new MarriageRecord(wrongedSpouse, new GameDate(-24), null, null) });
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var affairId = state.AffairRecordIds.Issue();
+        state.AffairRecords.Add(
+            affairId,
+            new AffairRecord(
+                affairId, offender, thirdParty, wrongedSpouse, AffairStakesLevel.Minor,
+                false, false, false, AffairResolution.QuietlyResolved, 0, Epoch));
+
+        var result = ResolveAffairCommands.CreatePipeline(new RandomStreamSet()).Execute(
+            state, new ResolveAffairCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, affairId, AffairResolution.Forgiven));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(ResolveAffairCommands.NotHighStakes));
+    }
+
+    [Test]
+    public void ResolveAffairCommandRejectsAnAlreadyResolvedHighStakesRecord()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var offender = AddAdult(
+            state, intrigue: 10, maritalHistory: new[] { new MarriageRecord(wrongedSpouse, new GameDate(-24), null, null) });
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var (affairId, record) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+        state.AffairRecords.Remove(affairId);
+        state.AffairRecords.Add(affairId, record with { Resolution = AffairResolution.Challenged });
+
+        var result = ResolveAffairCommands.CreatePipeline(new RandomStreamSet()).Execute(
+            state, new ResolveAffairCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, affairId, AffairResolution.Forgiven));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(ResolveAffairCommands.AlreadyResolved));
+    }
+
+    // ---- ExerciseExtremeLegalRemedyCommand (§12, §17) --------------------------------------------
+
+    [Test]
+    public void ExerciseExtremeLegalRemedyCommandKillsTheThirdPartyAndAppliesTheSevereDignitasHitRegardless()
+    {
+        var state = NewState();
+        var actorHouseholdId = state.HouseholdIds.Issue();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female, household: actorHouseholdId);
+        var offender = AddAdult(state, intrigue: 10);
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        MarryEachOther(state, wrongedSpouse, offender, new GameDate(-24));
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+
+        var result = ExerciseExtremeLegalRemedyCommands.Pipeline.Execute(
+            state, new ExerciseExtremeLegalRemedyCommand(
+                state.CommandIds.Issue(), wrongedSpouse.ToTaggedString(), new GameDate(1), null, affairId, AlsoOffender: false));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+
+        state.Characters.TryGet(thirdParty, out var deadThirdParty);
+        state.Characters.TryGet(offender, out var stillLivingOffender);
+        state.AffairRecords.TryGet(affairId, out var record);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(deadThirdParty!.IsAlive, Is.False);
+            Assert.That(stillLivingOffender!.IsAlive, Is.True);
+            Assert.That(
+                DignitasResolver.Current(state, actorHouseholdId),
+                Is.EqualTo(-RomanceCatalog.ExtremeLegalRemedyActorHouseholdDignitasPenalty));
+            Assert.That(record!.Resolution, Is.EqualTo(AffairResolution.ExtremeLegalRemedyExercised));
+        });
+    }
+
+    [Test]
+    public void ExerciseExtremeLegalRemedyCommandAlsoKillsTheOffenderOnlyWhenRequested()
+    {
+        var state = NewState();
+        var actorHouseholdId = state.HouseholdIds.Issue();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female, household: actorHouseholdId);
+        var offender = AddAdult(state, intrigue: 10);
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        MarryEachOther(state, wrongedSpouse, offender, new GameDate(-24));
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+
+        var result = ExerciseExtremeLegalRemedyCommands.Pipeline.Execute(
+            state, new ExerciseExtremeLegalRemedyCommand(
+                state.CommandIds.Issue(), wrongedSpouse.ToTaggedString(), new GameDate(1), null, affairId, AlsoOffender: true));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+
+        state.Characters.TryGet(offender, out var deadOffender);
+        state.Characters.TryGet(wrongedSpouse, out var actorAfter);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(deadOffender!.IsAlive, Is.False);
+            Assert.That(actorAfter!.CurrentSpouseId, Is.Null);
+            Assert.That(
+                DignitasResolver.Current(state, actorHouseholdId),
+                Is.EqualTo(-RomanceCatalog.ExtremeLegalRemedyActorHouseholdDignitasPenalty));
+        });
+    }
+
+    [Test]
+    public void ExerciseExtremeLegalRemedyCommandRejectsANonWrongedSpouseActor()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        var offender = AddAdult(state, intrigue: 10);
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female);
+        MarryEachOther(state, wrongedSpouse, offender, new GameDate(-24));
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+
+        var result = ExerciseExtremeLegalRemedyCommands.Pipeline.Execute(
+            state, new ExerciseExtremeLegalRemedyCommand(
+                state.CommandIds.Issue(), offender.ToTaggedString(), new GameDate(1), null, affairId, AlsoOffender: false));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(ExerciseExtremeLegalRemedyCommands.ActorNotWrongedSpouse));
     }
 }

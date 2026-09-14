@@ -161,6 +161,8 @@ public sealed class WorldState
         OrderedRegistry<RomanticBondKey, RomanticBond> romanticBonds,
         OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord> pregnancyRecords,
         OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord> affairRecords,
+        OrderedRegistry<RuntimeId<LegalCase>, AdulteryCaseLink> adulteryCaseLinks,
+        OrderedRegistry<RuntimeId<Character>, InfamiaStatus> infamiaStatuses,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
@@ -377,6 +379,8 @@ public sealed class WorldState
         RomanticBonds = romanticBonds;
         PregnancyRecords = pregnancyRecords;
         AffairRecords = affairRecords;
+        AdulteryCaseLinks = adulteryCaseLinks;
+        InfamiaStatuses = infamiaStatuses;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
@@ -751,6 +755,18 @@ public sealed class WorldState
     /// created rather than removed, matching <see cref="PregnancyRecords"/>'s identical "resolved or
     /// not, kept for the campaign's lifetime" convention.</summary>
     public OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord> AffairRecords { get; } = new();
+
+    /// <summary>Which <see cref="Romance.AffairRecord"/> a given §12 Adultery <see
+    /// cref="LegalCase.CaseId"/> is actually about (Phase 17 item 3 slice 9), sparse and keyed by that
+    /// already-issued case ID, matching <see cref="ActioProSocioLinks"/>'s/<see
+    /// cref="ContractFraudLegalLinks"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<LegalCase>, AdulteryCaseLink> AdulteryCaseLinks { get; } = new();
+
+    /// <summary>Every Character carrying a real Infamia mark (Phase 17 item 3 slice 9; §13), sparse and
+    /// keyed by Character — an orthogonal status a citizen can carry without ceasing to hold their own
+    /// <see cref="Characters.LegalStatus"/>, not a sixth value of that enum (<see
+    /// cref="Romance.InfamiaStatus"/>'s own doc comment).</summary>
+    public OrderedRegistry<RuntimeId<Character>, InfamiaStatus> InfamiaStatuses { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -1584,6 +1600,8 @@ public sealed class WorldState
         ["romanticBonds"] = RomanticBonds.Version,
         ["pregnancyRecords"] = PregnancyRecords.Version,
         ["affairRecords"] = AffairRecords.Version,
+        ["adulteryCaseLinks"] = AdulteryCaseLinks.Version,
+        ["infamiaStatuses"] = InfamiaStatuses.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,

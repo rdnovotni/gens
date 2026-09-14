@@ -61,6 +61,17 @@ public enum LegalCaseType
     /// cref="LegalCaseResolver.RollVerdict"/> — repetundae was historically a real, serious criminal
     /// charge, not an ordinary civil dispute.</summary>
     Repetundae,
+
+    /// <summary>§12's real Roman-law adultery prosecution (Phase 17 item 3 slice 9;
+    /// <c>gens-romance-sexuality-lineage-design.md</c> §12) — "conviction's standard consequence:
+    /// relegatio," a formal exile distinct from and more severe than the ordinary <see
+    /// cref="LegalSentence.Exile"/> other case types can roll. Which <see cref="Romance.AffairRecord"/> a
+    /// given case is actually about lives in a separate, sparse <see cref="Romance.AdulteryCaseLink"/>
+    /// partition keyed by this case's own ID, matching <see cref="Repetundae"/>'s own identical "a whole
+    /// partition instead of editing this record's shape" convention. Capital-shaped, per <see
+    /// cref="LegalCaseResolver.RollVerdict"/> — real Roman adultery law carried genuinely severe
+    /// consequences, not an ordinary civil dispute's shape.</summary>
+    Adultery,
 }
 
 /// <summary>§4 vs §5: a Quick case resolves in the single <see cref="FileLawsuitCommand"/> submission
@@ -111,6 +122,16 @@ public enum LegalSentence
     Exile,
     DebtBondage,
     Execution,
+
+    /// <summary>§12's own real, always-rolled sentence for a <see cref="LegalCaseType.Adultery"/>
+    /// conviction (Phase 17 item 3 slice 9) — "conviction's standard consequence: relegatio," a formal
+    /// exile with partial property confiscation, distinct from and more severe than <see cref="Exile"/>
+    /// (which stays exactly as-is, unchanged, for every other case type it already applies to). Unlike
+    /// <see cref="Fine"/>/<see cref="Exile"/>'s own margin-gated choice for every other convicted case
+    /// type, <see cref="LegalCaseResolver.RollVerdict"/> always rolls this sentence for an <see
+    /// cref="LegalCaseType.Adultery"/> conviction, regardless of margin — §12's own framing names this
+    /// as the standard, not a severity-gated escalation.</summary>
+    Relegatio,
 }
 
 /// <summary>Which side of a <see cref="LegalCase"/> a <see cref="SubmitTestimonyCommand"/> or <see
@@ -235,7 +256,7 @@ public static class LegalCaseResolver
         var margin = plaintiffScore - defendantScore;
 
         var roll = (int)randomStreams.NextUInt(streamName, 100);
-        var isCapital = legalCase.CaseType is LegalCaseType.Criminal or LegalCaseType.Political or LegalCaseType.Repetundae;
+        var isCapital = legalCase.CaseType is LegalCaseType.Criminal or LegalCaseType.Political or LegalCaseType.Repetundae or LegalCaseType.Adultery;
 
         if (roll < LegalCatalog.DismissalChancePercent)
             return (LegalCaseVerdict.Dismissed, null);
@@ -260,7 +281,11 @@ public static class LegalCaseResolver
         if (!plaintiffPrevails)
             return (LegalCaseVerdict.Acquitted, null);
 
-        var sentence = margin >= LegalCatalog.SevereConvictionMarginThreshold ? LegalSentence.Exile : LegalSentence.Fine;
+        // §12: an Adultery conviction always rolls Relegatio as its standard consequence, regardless of
+        // margin — unlike every other capital-shaped case type's own margin-gated Fine-vs-Exile choice.
+        var sentence = legalCase.CaseType == LegalCaseType.Adultery
+            ? LegalSentence.Relegatio
+            : margin >= LegalCatalog.SevereConvictionMarginThreshold ? LegalSentence.Exile : LegalSentence.Fine;
         return (LegalCaseVerdict.Convicted, sentence);
     }
 }

@@ -2,6 +2,7 @@ using System.Linq;
 #nullable enable
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Numerics;
 
 namespace Gens.Simulation.Romance;
 
@@ -250,6 +251,48 @@ public static class RomanceCatalog
     /// cref="Scandal.ScandalCatalog.ScandalMarkedTraitId"/> itself reuses <see
     /// cref="Legal.LegalCatalog.ScandalMarkedTraitId"/>.</summary>
     public static readonly DefinitionId<Trait> RehabilitatedTraitId = Scandal.ScandalCatalog.RehabilitatedTraitId;
+
+    // ---- Slice 8 (cont'd): ResolveAffairCommand consequences (§11) ---------------------------------
+
+    /// <summary>The small positive Affection bump <see cref="ResolveAffairCommand"/>'s <see
+    /// cref="AffairResolution.Forgiven"/> branch applies, via <see
+    /// cref="RecordRomanticInteractionCommand"/>, between the wronged spouse and the offender — sized on
+    /// the same small order as <see cref="ConfessFeelingsAffectionDelta"/>, this implementation's own
+    /// "a real, if partial, mending" magnitude rather than a full reset to trust.</summary>
+    public const int AffairForgivenessAffectionDelta = 15;
+
+    // ---- Slice 8 (cont'd): ExerciseExtremeLegalRemedyCommand (§12, §17) -----------------------------
+
+    /// <summary>§12's "regardless of the legal justification, this carries a real, guaranteed cost" —
+    /// the severe household Dignitas penalty <see cref="ExerciseExtremeLegalRemedyCommand"/> always
+    /// applies to the ACTOR's (the wronged spouse's) own household, deliberately sized above every other
+    /// Dignitas penalty this module or <see cref="Scandal.ScandalCatalog"/> applies (larger than <see
+    /// cref="Scandal.ScandalCatalog.PublicDisgraceDignitasPenalty"/>) — killing a fellow citizen outside
+    /// the courts is a graver act than an ordinary Scandal or Legal conviction, even one this
+    /// implementation's own narrow gate treats as "justified."</summary>
+    public const int ExtremeLegalRemedyActorHouseholdDignitasPenalty = 40;
+
+    /// <summary>The relationship-web hit <see cref="ExerciseExtremeLegalRemedyCommand"/> applies between
+    /// the actor and their own surviving spouse (the offender, when <c>AlsoOffender</c> is <c>false</c>
+    /// and that spouse is therefore still alive to record a scar against) — sized the same as <see
+    /// cref="Legal.LegalCatalog.RelationshipScarOpinionDelta"/>, this codebase's own comparable
+    /// "a household-shattering act leaves a lasting mark" magnitude. Already negative, passed directly.</summary>
+    public const int ExtremeLegalRemedyRelationshipScarOpinionDelta = -20;
+
+    // ---- Slice 9: Adultery legal case + Infamia (§12, §13) ------------------------------------------
+
+    /// <summary>§12's "partial property confiscation" on an Adultery conviction — <see
+    /// cref="AdulteryResolutionHook"/>'s own confiscation-posting fraction of the convicted household's
+    /// current Treasury balance, deliberately smaller than <see
+    /// cref="PublicContracts.PublicContractsCatalog.RestitutionFraction"/>'s own 0.5: §12 itself calls
+    /// this "partial," distinctly less than a full restitution.</summary>
+    public static readonly Fixed64 AdulteryConfiscationFraction = Fixed64.FromRaw(300_000); // 0.3
+
+    /// <summary>§13's per-rank-point magnitude <see cref="StatusRoleDignitasModifier.Calculate"/>
+    /// multiplies its two parties' <see cref="Characters.LegalStatus"/> rank gap by — this
+    /// implementation's own untuned baseline, unsized per §17, on the same small order as this module's
+    /// other per-point Dignitas weights.</summary>
+    public const int StatusRoleDignitasModifierMagnitude = 4;
 
     // TODO(next slice): trait DefinitionId<Trait> references for faithful, infatuated/disillusioned,
     // and the beauty spectrum (plain/common/fair/striking) once content/source/traits authors them (see

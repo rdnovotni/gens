@@ -1546,6 +1546,23 @@ public static class StateHasher
             hash = MixLong(hash, entry.Value.Resolution.HasValue ? (long)entry.Value.Resolution.Value : -1L);
             hash = MixLong(hash, entry.Value.StatusRoleDignitasModifier);
             hash = MixLong(hash, entry.Value.DiscoveredDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.LegalCaseId?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId (by case ID) order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 9.
+        foreach (var entry in state.AdulteryCaseLinks.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.AffairId.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 9.
+        foreach (var entry in state.InfamiaStatuses.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)entry.Value.Source);
+            foreach (var protection in entry.Value.LegalProtectionsLost)
+                hash = MixString(hash, protection);
         }
 
         return hash;

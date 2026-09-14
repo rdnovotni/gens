@@ -905,6 +905,19 @@ public sealed record WorldSaveDocument
     /// property picks a genuinely free number rather than adding to that pre-existing tally.</summary>
     [JsonPropertyOrder(138)]
     public IReadOnlyList<AffairRecordDto> AffairRecords { get; init; } = Array.Empty<AffairRecordDto>();
+
+    /// <summary>Every §12 <see cref="Gens.Simulation.Romance.AdulteryCaseLink"/> (Phase 17 item 3 slice
+    /// 9), already in ascending-<see cref="Identity.RuntimeId{T}"/> (by case ID) order. Not
+    /// <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="AffairRecords"/> above.</summary>
+    [JsonPropertyOrder(139)]
+    public IReadOnlyList<AdulteryCaseLinkDto> AdulteryCaseLinks { get; init; } = Array.Empty<AdulteryCaseLinkDto>();
+
+    /// <summary>Every §13 <see cref="Gens.Simulation.Romance.InfamiaStatus"/> (Phase 17 item 3 slice 9),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="AdulteryCaseLinks"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(140)]
+    public IReadOnlyList<InfamiaStatusDto> InfamiaStatuses { get; init; } = Array.Empty<InfamiaStatusDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1725,6 +1738,35 @@ public sealed record AffairRecordDto
 
     [JsonPropertyOrder(10)]
     public required int DiscoveredDateTotalMonths { get; init; }
+
+    /// <summary>Null until <see cref="Gens.Simulation.Romance.FileAdulteryCaseCommand"/> opens a real
+    /// §12 Adultery case for this record (Phase 17 item 3 slice 9).</summary>
+    [JsonPropertyOrder(11)]
+    public string? LegalCaseId { get; init; }
+}
+
+/// <summary>One §12 <see cref="Gens.Simulation.Romance.AdulteryCaseLink"/> (Phase 17 item 3 slice
+/// 9).</summary>
+public sealed record AdulteryCaseLinkDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CaseId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string AffairId { get; init; }
+}
+
+/// <summary>One §13 <see cref="Gens.Simulation.Romance.InfamiaStatus"/> (Phase 17 item 3 slice 9).</summary>
+public sealed record InfamiaStatusDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Source { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public IReadOnlyList<string> LegalProtectionsLost { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>One <see cref="Characters.MarriageRecord"/> (<c>gens-familia-design.md</c> §5, §5.1).</summary>

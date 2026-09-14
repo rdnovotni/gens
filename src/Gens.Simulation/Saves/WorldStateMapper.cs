@@ -450,6 +450,12 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             AffairRecords = state.AffairRecords.InAscendingOrder()
                 .Select(entry => ToAffairRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId (by case ID) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            AdulteryCaseLinks = state.AdulteryCaseLinks.InAscendingOrder()
+                .Select(entry => ToAdulteryCaseLinkDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            InfamiaStatuses = state.InfamiaStatuses.InAscendingOrder()
+                .Select(entry => ToInfamiaStatusDto(entry.Value)).ToArray(),
         };
     }
 
@@ -488,6 +494,20 @@ public static class WorldStateMapper
             {
                 var record = FromAffairRecordDto(a);
                 return new KeyValuePair<RuntimeId<AffairRecord>, AffairRecord>(record.AffairId, record);
+            }));
+
+        var adulteryCaseLinks = OrderedRegistry<RuntimeId<LegalCase>, AdulteryCaseLink>.Restore(
+            dto.AdulteryCaseLinks.Select(l =>
+            {
+                var link = FromAdulteryCaseLinkDto(l);
+                return new KeyValuePair<RuntimeId<LegalCase>, AdulteryCaseLink>(link.CaseId, link);
+            }));
+
+        var infamiaStatuses = OrderedRegistry<RuntimeId<Character>, InfamiaStatus>.Restore(
+            dto.InfamiaStatuses.Select(i =>
+            {
+                var status = FromInfamiaStatusDto(i);
+                return new KeyValuePair<RuntimeId<Character>, InfamiaStatus>(status.CharacterId, status);
             }));
 
         var romanceContentSettings = new RomanceContentSettings(dto.RomanceFertilityRiskAbstracted);
@@ -1464,6 +1484,8 @@ public static class WorldStateMapper
             romanticBonds: romanticBonds,
             pregnancyRecords: pregnancyRecords,
             affairRecords: affairRecords,
+            adulteryCaseLinks: adulteryCaseLinks,
+            infamiaStatuses: infamiaStatuses,
             scheduledActions: scheduledActions,
             popGroups: popGroups,
             householdRegimenDefaults: householdRegimenDefaults,
@@ -2922,6 +2944,7 @@ public static class WorldStateMapper
         Resolution = record.Resolution?.ToString(),
         StatusRoleDignitasModifier = record.StatusRoleDignitasModifier,
         DiscoveredDateTotalMonths = record.DiscoveredDate.TotalMonths,
+        LegalCaseId = record.LegalCaseId?.ToTaggedString(),
     };
 
     private static AffairRecord FromAffairRecordDto(AffairRecordDto dto) => new(
@@ -2935,7 +2958,30 @@ public static class WorldStateMapper
         dto.ThreatensPoliticalMarriage,
         dto.Resolution is null ? null : Enum.Parse<AffairResolution>(dto.Resolution),
         dto.StatusRoleDignitasModifier,
-        new GameDate(dto.DiscoveredDateTotalMonths));
+        new GameDate(dto.DiscoveredDateTotalMonths),
+        dto.LegalCaseId is null ? null : RuntimeId<LegalCase>.Parse(dto.LegalCaseId));
+
+    private static AdulteryCaseLinkDto ToAdulteryCaseLinkDto(AdulteryCaseLink link) => new()
+    {
+        CaseId = link.CaseId.ToTaggedString(),
+        AffairId = link.AffairId.ToTaggedString(),
+    };
+
+    private static AdulteryCaseLink FromAdulteryCaseLinkDto(AdulteryCaseLinkDto dto) => new(
+        RuntimeId<LegalCase>.Parse(dto.CaseId),
+        RuntimeId<AffairRecord>.Parse(dto.AffairId));
+
+    private static InfamiaStatusDto ToInfamiaStatusDto(InfamiaStatus status) => new()
+    {
+        CharacterId = status.CharacterId.ToTaggedString(),
+        Source = status.Source.ToString(),
+        LegalProtectionsLost = status.LegalProtectionsLost.ToArray(),
+    };
+
+    private static InfamiaStatus FromInfamiaStatusDto(InfamiaStatusDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        Enum.Parse<InfamiaSource>(dto.Source),
+        dto.LegalProtectionsLost.ToArray());
 
     private static PopGroupDto ToPopGroupDto(PopGroup popGroup) => new()
     {

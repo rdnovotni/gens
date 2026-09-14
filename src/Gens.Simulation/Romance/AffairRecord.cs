@@ -44,6 +44,16 @@ public enum AffairResolution
 /// cref="Scandal.ScandalRecord"/>'s and <see cref="Succession.SuccessionDispute"/>'s identical
 /// "resolved or not, kept for the campaign's lifetime" convention.
 ///
+/// <see cref="LegalCaseId"/> (Phase 17 item 3 slice 9) is populated only once <see
+/// cref="FileAdulteryCaseCommand"/> actually opens a real §12 Adultery <see cref="Legal.LegalCase"/> for
+/// this record — <c>null</c> for every affair this item's own <see cref="AffairDiscoverySystem"/>
+/// creates, and for any <see cref="AffairResolution"/> other than <see
+/// cref="AffairResolution.ProsecutedAdultery"/>. <see cref="FileAdulteryCaseCommand"/>, not <see
+/// cref="ResolveAffairCommand"/>, is the one place that sets both this field and <see cref="Resolution"/>
+/// together for the <see cref="AffairResolution.ProsecutedAdultery"/> path — see that command's own doc
+/// comment for why the two writes are kept in one place rather than split across it and <see
+/// cref="ResolveAffairCommand"/>'s own delegating branch.
+///
 /// <see cref="OffenderCharacterId"/> is whichever bond participant actually held the open outside
 /// marriage this affair betrays; <see cref="ThirdPartyCharacterId"/> is the other bond participant;
 /// <see cref="WrongedSpouseId"/> is that marriage's other side. When BOTH bond participants turn out to
@@ -54,9 +64,7 @@ public enum AffairResolution
 /// gets the same reactive trait grant as this record's own named one (see that system's own doc
 /// comment); this record's fixed, single-<see cref="WrongedSpouseId"/> shape is simply not rich enough
 /// to name a second one without inventing a plural field the approved plan's own schema does not ask
-/// for. <c>LegalCaseId</c> (a later slice's own field, once Adultery legal cases exist) is deliberately
-/// not modeled here yet — adding a field nobody sets would be a forward declaration this item has no
-/// need to make.
+/// for.
 /// </summary>
 /// <param name="StakesLevel">§11 — see <see cref="AffairStakesLevel"/>'s own doc comment.</param>
 /// <param name="InvolvesRivalHouse">Whether either bond participant is a tracked Rival House's own
@@ -79,6 +87,8 @@ public enum AffairResolution
 /// not yet built).</param>
 /// <param name="DiscoveredDate">When <see cref="AffairDiscoverySystem"/> rolled this affair as
 /// Escalated rather than Foiled.</param>
+/// <param name="LegalCaseId">Null until <see cref="FileAdulteryCaseCommand"/> opens a real §12
+/// Adultery <see cref="Legal.LegalCase"/> for this record — see this type's own doc comment.</param>
 public sealed record AffairRecord(
     RuntimeId<AffairRecord> AffairId,
     RuntimeId<Character> OffenderCharacterId,
@@ -90,4 +100,5 @@ public sealed record AffairRecord(
     bool ThreatensPoliticalMarriage,
     AffairResolution? Resolution,
     int StatusRoleDignitasModifier,
-    GameDate DiscoveredDate);
+    GameDate DiscoveredDate,
+    RuntimeId<Legal.LegalCase>? LegalCaseId = null);

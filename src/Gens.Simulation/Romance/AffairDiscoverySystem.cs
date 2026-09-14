@@ -8,6 +8,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Magistracies;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -130,8 +131,8 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
 
     public string Id => "romance.affairDiscovery";
     public TickPhase Phase => TickPhase.RelationshipsActors;
-    public IReadOnlyCollection<string> Reads { get; } = new[] { "romanticBonds", "characters", "affairRecords" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "romanticBonds", "affairRecords", "eventIds" };
+    public IReadOnlyCollection<string> Reads { get; } = new[] { "romanticBonds", "characters", "affairRecords", "householdReputations" };
+    public IReadOnlyCollection<string> Writes { get; } = new[] { "romanticBonds", "affairRecords", "householdReputations", "eventIds" };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -195,13 +196,30 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
                 ? AffairStakesLevel.HighStakes
                 : AffairStakesLevel.Minor;
 
+            // §13: the Status/Role Dignitas modifier is populated (and actually applied as a Dignitas
+            // delta) at discovery time too, not only at conviction — see StatusRoleDignitasModifier's
+            // own doc comment for why the penalty always lands on the higher-LegalStatus-ranked party's
+            // own household.
+            var statusRoleModifier = StatusRoleDignitasModifier.Calculate(state, offenderId, thirdPartyId);
+            var statusRoleHigherRankedPartyId = StatusRoleDignitasModifier.DetermineHigherRankedParty(state, offenderId, thirdPartyId);
+
             var affairId = state.AffairRecordIds.Issue();
             var record = new AffairRecord(
                 affairId, offenderId, thirdPartyId, primaryWrongedSpouseId.Value, stakesLevel,
                 involvesRivalHouse, legitimacyContested, threatensPoliticalMarriage,
                 Resolution: stakesLevel == AffairStakesLevel.Minor ? AffairResolution.QuietlyResolved : null,
-                StatusRoleDignitasModifier: 0, DiscoveredDate: context.Date);
+                StatusRoleDignitasModifier: statusRoleModifier, DiscoveredDate: context.Date);
             state.AffairRecords.Add(affairId, record);
+
+            if (statusRoleModifier != 0 && statusRoleHigherRankedPartyId is { } statusRoleHigherRankedId
+                && state.Characters.TryGet(statusRoleHigherRankedId, out var statusRoleHigherRankedCharacter)
+                && statusRoleHigherRankedCharacter!.Household is { } statusRoleHouseholdId)
+            {
+                events.AddRange(AdjustDignitasCommands.Pipeline.Execute(
+                    state, new AdjustDignitasCommand(
+                        state.CommandIds.Issue(), "system", context.Date, null, statusRoleHouseholdId, statusRoleModifier,
+                        $"affair {affairId.ToTaggedString()} discovered — status/role modifier")).Events);
+            }
 
             // §11: discovery itself produces the reactive traits regardless of stakes level — only the
             // FORMAL resolution path (a later slice) differs by stakes.
