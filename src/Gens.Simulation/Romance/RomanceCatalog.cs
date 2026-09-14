@@ -141,16 +141,98 @@ public static class RomanceCatalog
 
     public const int SeduceSuccessAttractionDelta = 8;
 
-    // ---- Slice 8 (forward-declared): Affairs & Discovery (§11) --------------------------------------
+    // ---- Slice 7: Legitimacy acknowledgment cost (§10) --------------------------------------------
 
-    /// <summary>How many points a later slice's <c>AffairDiscoverySystem</c> adds to an undiscovered
-    /// <see cref="RomanticBond.DiscoveryRisk"/> each month it remains undiscovered.</summary>
+    /// <summary>§10's real, visible Dignitas cost for <see
+    /// cref="Succession.AcknowledgeIllegitimateChildCommand"/> — sized on the same order as <see
+    /// cref="Scandal.ScandalCatalog.MinorEmbarrassmentDignitasPenalty"/>, this implementation's own
+    /// reading of "a deliberate, visible choice... not a quiet toggle" as a real but not
+    /// disgrace-grade household Dignitas hit.</summary>
+    public const int IllegitimateChildAcknowledgmentDignitasPenalty = 10;
+
+    /// <summary>§10's betrayed-spouse opinion swing — applied only when the acknowledging parent
+    /// currently holds an open marriage to someone other than the child's other parent (see <see
+    /// cref="Succession.AcknowledgeIllegitimateChildCommand"/>'s own doc comment for the exact
+    /// betrayal test). Sized on the same order as <see
+    /// cref="Scandal.ScandalCatalog.RelationshipScarOpinionDelta"/>, this codebase's own comparable
+    /// "a specific other party learns of a specific betrayal" magnitude. Already negative, passed
+    /// directly, never negated a second time.</summary>
+    public const int IllegitimateChildAcknowledgmentBetrayedSpouseOpinionDelta = -20;
+
+    // ---- Slice 8: Affairs & Discovery (§11) ---------------------------------------------------------
+
+    /// <summary>How many points <see cref="AffairDiscoverySystem"/> adds to an undiscovered <see
+    /// cref="RomanticBond.DiscoveryRisk"/> each month it remains undiscovered, before any Intrigue
+    /// term — mirrors <see cref="Interactions.SchemeProgressCatalog.BaseDiscoveryRiskPerMonthPercent"/>'s
+    /// identical "flat base, then an Intrigue-scaled addition" shape.</summary>
     public const int AffairMonthlyDiscoveryRiskGain = 4;
 
+    /// <summary>The additional monthly <see cref="RomanticBond.DiscoveryRisk"/> points <see
+    /// cref="AffairDiscoverySystem"/> adds, scaled by the most vigilant real wronged spouse's own <see
+    /// cref="Characters.CoreAttributes.Intrigue"/> (0-100) where one is resolvable — zero when no
+    /// wronged spouse exists to be vigilant at all (see that system's own doc comment for the
+    /// zero-wronged-spouse defensive case). Mirrors <see
+    /// cref="Interactions.SchemeProgressCatalog.MaxTargetIntrigueRiskBonusPercent"/>'s identical role,
+    /// scaled down to this mechanic's own smaller base gain above.</summary>
+    public const int AffairMonthlyDiscoveryRiskWrongedSpouseIntrigueWeightPercent = 4;
+
     /// <summary>The percent chance, once <see cref="RomanticBond.DiscoveryRisk"/> clears this
-    /// threshold, that a later slice's <c>AffairDiscoverySystem</c> rolls the affair as discovered
-    /// rather than foiled that month.</summary>
+    /// threshold, that <see cref="AffairDiscoverySystem"/> rolls the affair as discovered rather than
+    /// foiled that month.</summary>
     public const int AffairDiscoveryThresholdPercent = 70;
+
+    /// <summary>The base Escalated-vs-Foiled chance (0-100) <see cref="AffairDiscoverySystem"/> rolls
+    /// with once <see cref="AffairDiscoveryThresholdPercent"/> is crossed, before either side's
+    /// Intrigue is weighed — a coin-flip default, matching <see
+    /// cref="Interactions.SchemeProgressCatalog.BaseCounterPlayFoilChancePercent"/>'s identical
+    /// unsized baseline.</summary>
+    public const int AffairDiscoveryBaseEscalateChancePercent = 50;
+
+    /// <summary>How many percentage points the Escalate chance shifts per point of Intrigue
+    /// difference between the most vigilant real wronged spouse and the concealing pair's own average
+    /// Intrigue (wronged-spouse Intrigue minus the pair's average, then multiplied by this and divided
+    /// by 100) — a more Intrigue-capable wronged spouse is likelier to actually catch the affair, and a
+    /// more Intrigue-capable concealing pair is likelier to keep covering it up. This is the deliberate
+    /// mirror image of <see cref="Interactions.SchemeProgressCatalog.CounterPlayIntrigueDifferenceWeightPercent"/>'s
+    /// own sign: there, high target Intrigue raises the FOIL chance (good for the target); here, high
+    /// wronged-spouse Intrigue raises the ESCALATE chance (good for the wronged spouse, i.e. the
+    /// discovery actually lands) — the two mechanics assign the "benefits from being perceptive" role
+    /// to opposite sides of their own roll.</summary>
+    public const int AffairDiscoveryIntrigueDifferenceWeightPercent = 50;
+
+    /// <summary>What percent of an undiscovered affair's <see cref="RomanticBond.DiscoveryRisk"/>
+    /// survives a Foiled roll (the plan's own "reduce partway back down, e.g. to half") — this
+    /// implementation's own untuned choice of exactly half, rather than resetting to zero (a foiled
+    /// scare still leaves some residual suspicion behind) or leaving it unchanged (a foiled roll should
+    /// cost the concealing pair something, or the threshold would just be re-rolled unchanged next
+    /// month).</summary>
+    public const int AffairDiscoveryFoiledRiskRetentionPercent = 50;
+
+    // ---- Trait references for Slice 8's reactive grants (§11) — content not yet authored -----------
+
+    /// <summary>§11's reactive trait for a discovered affair's offending party. Not yet authored in
+    /// <c>content/source/traits/</c> (a later content-authoring slice adds it) — referenced here
+    /// anyway, unlike this file's own earlier "don't reference an undefined content ID" caution,
+    /// because granting an unrecognized <see cref="DefinitionId{T}"/> at runtime is confirmed safe by
+    /// direct inspection: <see cref="Character.Traits"/> is a bare list of definition-reference
+    /// strings with no catalog-membership check anywhere in the grant path (<see
+    /// cref="Scandal.RecordScandalCommand.ApplyScandalMarkedTrait"/>'s own remove-then-readd idiom,
+    /// which this module's <see cref="AffairDiscoverySystem"/> reuses, never consults a <see
+    /// cref="TraitCatalog"/> at all) — only <see cref="TraitCatalog.CheckExclusivity"/>/<see
+    /// cref="TraitCatalog.GetAxisScore"/>, and the offline content compiler's own authored-definition
+    /// validation, ever resolve a trait ID against a loaded catalog, and neither sits in this grant's
+    /// path.</summary>
+    public static readonly DefinitionId<Trait> AdulterousTraitId = new("adulterous");
+
+    /// <summary>§11's reactive trait for a discovered affair's real wronged spouse(s) — see <see
+    /// cref="AdulterousTraitId"/>'s own doc comment for why granting this unauthored ID at runtime is
+    /// safe.</summary>
+    public static readonly DefinitionId<Trait> HeartbrokenTraitId = new("heartbroken");
+
+    /// <summary>§11's second reactive trait for a discovered affair's real wronged spouse(s),
+    /// granted alongside <see cref="HeartbrokenTraitId"/> — see <see cref="AdulterousTraitId"/>'s own
+    /// doc comment for why granting this unauthored ID at runtime is safe.</summary>
+    public static readonly DefinitionId<Trait> GuardedTraitId = new("guarded");
 
     // ---- Trait references (only traits that already exist in content today) ------------------------
 
@@ -169,9 +251,10 @@ public static class RomanceCatalog
     /// cref="Legal.LegalCatalog.ScandalMarkedTraitId"/>.</summary>
     public static readonly DefinitionId<Trait> RehabilitatedTraitId = Scandal.ScandalCatalog.RehabilitatedTraitId;
 
-    // TODO(next slice): trait DefinitionId<Trait> references for faithful/adulterous,
-    // infatuated/disillusioned, heartbroken/guarded, and the beauty spectrum (plain/common/fair/striking)
-    // once content/source/traits authors them (see the approved plan's "Content authoring" section) —
-    // deliberately not added yet since referencing an undefined content ID would be a silent content-load
-    // failure waiting to happen, not a real forward declaration.
+    // TODO(next slice): trait DefinitionId<Trait> references for faithful, infatuated/disillusioned,
+    // and the beauty spectrum (plain/common/fair/striking) once content/source/traits authors them (see
+    // the approved plan's "Content authoring" section) — adulterous/heartbroken/guarded above are the
+    // first exception to this file's own earlier "don't reference an undefined content ID" caution, now
+    // that granting an unauthored trait ID at runtime is confirmed safe (see AdulterousTraitId's own doc
+    // comment); the remaining ones stay deferred since nothing in this slice grants them yet.
 }

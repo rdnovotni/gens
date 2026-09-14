@@ -3,9 +3,11 @@ using Gens.Simulation.Campaign;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Random;
+using Gens.Simulation.Reputation;
 using Gens.Simulation.Romance;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
+using Gens.Simulation.Succession;
 using Gens.Simulation.Time;
 using NUnit.Framework;
 using CharacterTestFixtures = Gens.Simulation.Tests.Characters.CharacterTestFixtures;
@@ -14,7 +16,8 @@ namespace Gens.Simulation.Tests.Romance;
 
 /// <summary>Phase 17 item 3 slice 6 coverage for the monthly conception roll (<see
 /// cref="ConceptionSystem"/>) and childbirth resolution (<see cref="ChildbirthResolutionSystem"/>) —
-/// <c>gens-romance-sexuality-lineage-design.md</c> §9.</summary>
+/// <c>gens-romance-sexuality-lineage-design.md</c> §9 — plus slice 7's Legitimacy acknowledgment cost
+/// (<see cref="AcknowledgeIllegitimateChildCommand"/>; §10).</summary>
 public sealed class PregnancyAndLegitimacyTests
 {
     private static readonly GameDate Epoch = new(0);
@@ -297,5 +300,118 @@ public sealed class PregnancyAndLegitimacyTests
         var dto = WorldStateMapper.ToDto(state);
         var abstractedDto = dto with { RomanceFertilityRiskAbstracted = true };
         return WorldStateMapper.ToWorldState(abstractedDto);
+    }
+
+    // ---- Slice 7: AcknowledgeIllegitimateChildCommand's real cost (§10) ------------------------------
+
+    private static RuntimeId<Household> EstablishHousehold(WorldState state, RuntimeId<Character> headId)
+    {
+        var householdId = state.HouseholdIds.Issue();
+        state.HouseholdHeadships.Add(householdId, new HouseholdHeadship(householdId, headId, Epoch));
+        return householdId;
+    }
+
+    [Test]
+    public void AcknowledgingAnIllegitimateChildAppliesARealHouseholdDignitasPenalty()
+    {
+        var state = NewState();
+        var father = AddAdult(state, Sex.Male);
+        var childId = state.CharacterIds.Issue();
+        state.Characters.Add(
+            childId,
+            CharacterTestFixtures.Minimal(childId, fatherId: father, legitimacy: Legitimacy.Illegitimate, birthDate: new GameDate(-240)));
+        var householdId = EstablishHousehold(state, father);
+
+        Assert.That(DignitasResolver.Current(state, householdId), Is.EqualTo(0));
+
+        var command = new AcknowledgeIllegitimateChildCommand(
+            state.CommandIds.Issue(), father.ToTaggedString(), Epoch, null, householdId, father, childId);
+        var result = AcknowledgeIllegitimateChildCommands.Pipeline.Execute(state, command);
+
+        Assert.That(result.Accepted, Is.True);
+        Assert.That(
+            DignitasResolver.Current(state, householdId),
+            Is.EqualTo(-RomanceCatalog.IllegitimateChildAcknowledgmentDignitasPenalty));
+    }
+
+    [Test]
+    public void AcknowledgingAnIllegitimateChildWhileMarriedToSomeoneElseSwingsTheBetrayedSpousesOpinionNegative()
+    {
+        var state = NewState();
+        var spouse = AddAdult(state, Sex.Female);
+        var father = AddAdult(
+            state, Sex.Male,
+            maritalHistory: new[] { new MarriageRecord(spouse, new GameDate(-24), null, null) });
+        var motherId = state.CharacterIds.Issue();
+        state.Characters.Add(motherId, CharacterTestFixtures.Minimal(motherId, sex: Sex.Female));
+        var childId = state.CharacterIds.Issue();
+        state.Characters.Add(
+            childId,
+            CharacterTestFixtures.Minimal(
+                childId, motherId: motherId, fatherId: father, legitimacy: Legitimacy.Illegitimate,
+                birthDate: new GameDate(-240)));
+        var householdId = EstablishHousehold(state, father);
+
+        var command = new AcknowledgeIllegitimateChildCommand(
+            state.CommandIds.Issue(), father.ToTaggedString(), Epoch, null, householdId, father, childId);
+        var result = AcknowledgeIllegitimateChildCommands.Pipeline.Execute(state, command);
+
+        Assert.That(result.Accepted, Is.True);
+        var found = state.Relationships.TryGet(new RelationshipKey(spouse, father), out var relationship);
+        Assert.That(found, Is.True);
+        Assert.That(
+            relationship.Opinion,
+            Is.EqualTo(RomanceCatalog.IllegitimateChildAcknowledgmentBetrayedSpouseOpinionDelta));
+    }
+
+    [Test]
+    public void AcknowledgingAnIllegitimateChildWhileUnmarriedRecordsNoSpouseOpinionSwing()
+    {
+        var state = NewState();
+        var father = AddAdult(state, Sex.Male);
+        var childId = state.CharacterIds.Issue();
+        state.Characters.Add(
+            childId,
+            CharacterTestFixtures.Minimal(childId, fatherId: father, legitimacy: Legitimacy.Illegitimate, birthDate: new GameDate(-240)));
+        var householdId = EstablishHousehold(state, father);
+
+        var command = new AcknowledgeIllegitimateChildCommand(
+            state.CommandIds.Issue(), father.ToTaggedString(), Epoch, null, householdId, father, childId);
+        var result = AcknowledgeIllegitimateChildCommands.Pipeline.Execute(state, command);
+
+        Assert.That(result.Accepted, Is.True);
+        Assert.That(state.Relationships.InAscendingOrder(), Is.Empty);
+    }
+
+    [Test]
+    public void AcknowledgingAnIllegitimateChildWhileMarriedToTheChildsOwnOtherParentRecordsNoSpouseOpinionSwing()
+    {
+        var state = NewState();
+        var motherId = state.CharacterIds.Issue();
+        var father = state.CharacterIds.Issue();
+        state.Characters.Add(
+            father,
+            CharacterTestFixtures.Minimal(
+                father, sex: Sex.Male,
+                maritalHistory: new[] { new MarriageRecord(motherId, new GameDate(-24), null, null) }));
+        state.Characters.Add(
+            motherId,
+            CharacterTestFixtures.Minimal(
+                motherId, sex: Sex.Female,
+                maritalHistory: new[] { new MarriageRecord(father, new GameDate(-24), null, null) }));
+        var childId = state.CharacterIds.Issue();
+        state.Characters.Add(
+            childId,
+            CharacterTestFixtures.Minimal(
+                childId, motherId: motherId, fatherId: father, legitimacy: Legitimacy.Illegitimate,
+                birthDate: new GameDate(-240)));
+        var householdId = EstablishHousehold(state, father);
+
+        var command = new AcknowledgeIllegitimateChildCommand(
+            state.CommandIds.Issue(), father.ToTaggedString(), Epoch, null, householdId, father, childId);
+        var result = AcknowledgeIllegitimateChildCommands.Pipeline.Execute(state, command);
+
+        Assert.That(result.Accepted, Is.True);
+        Assert.That(state.Relationships.InAscendingOrder(), Is.Empty);
     }
 }

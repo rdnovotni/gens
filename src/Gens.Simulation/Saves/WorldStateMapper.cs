@@ -99,6 +99,7 @@ public static class WorldStateMapper
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
                 SchemeIds = state.SchemeIds.Peek,
                 PregnancyRecordIds = state.PregnancyRecordIds.Peek,
+                AffairRecordIds = state.AffairRecordIds.Peek,
                 SpyPlacementIds = state.SpyPlacementIds.Peek,
                 RaidThreatIds = state.RaidThreatIds.Peek,
                 SquadIds = state.SquadIds.Peek,
@@ -446,6 +447,9 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             PregnancyRecords = state.PregnancyRecords.InAscendingOrder()
                 .Select(entry => ToPregnancyRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            AffairRecords = state.AffairRecords.InAscendingOrder()
+                .Select(entry => ToAffairRecordDto(entry.Value)).ToArray(),
         };
     }
 
@@ -477,6 +481,13 @@ public static class WorldStateMapper
             {
                 var record = FromPregnancyRecordDto(p);
                 return new KeyValuePair<RuntimeId<PregnancyRecord>, PregnancyRecord>(record.PregnancyId, record);
+            }));
+
+        var affairRecords = OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord>.Restore(
+            dto.AffairRecords.Select(a =>
+            {
+                var record = FromAffairRecordDto(a);
+                return new KeyValuePair<RuntimeId<AffairRecord>, AffairRecord>(record.AffairId, record);
             }));
 
         var romanceContentSettings = new RomanceContentSettings(dto.RomanceFertilityRiskAbstracted);
@@ -1443,6 +1454,7 @@ public static class WorldStateMapper
             overseerAssignmentIds: RuntimeIdCounter<OverseerAssignment>.Restore(dto.Counters.OverseerAssignmentIds),
             seniorPositionAssignmentIds: RuntimeIdCounter<SeniorPositionAssignment>.Restore(dto.Counters.SeniorPositionAssignmentIds),
             pregnancyRecordIds: RuntimeIdCounter<PregnancyRecord>.Restore(dto.Counters.PregnancyRecordIds),
+            affairRecordIds: RuntimeIdCounter<AffairRecord>.Restore(dto.Counters.AffairRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
@@ -1451,6 +1463,7 @@ public static class WorldStateMapper
             relationships: relationships,
             romanticBonds: romanticBonds,
             pregnancyRecords: pregnancyRecords,
+            affairRecords: affairRecords,
             scheduledActions: scheduledActions,
             popGroups: popGroups,
             householdRegimenDefaults: householdRegimenDefaults,
@@ -2895,6 +2908,34 @@ public static class WorldStateMapper
         dto.MaternalRiskResolved,
         dto.InfantRiskResolved,
         dto.BornChildId is null ? null : RuntimeId<Character>.Parse(dto.BornChildId));
+
+    private static AffairRecordDto ToAffairRecordDto(AffairRecord record) => new()
+    {
+        AffairId = record.AffairId.ToTaggedString(),
+        OffenderCharacterId = record.OffenderCharacterId.ToTaggedString(),
+        ThirdPartyCharacterId = record.ThirdPartyCharacterId.ToTaggedString(),
+        WrongedSpouseId = record.WrongedSpouseId.ToTaggedString(),
+        StakesLevel = record.StakesLevel.ToString(),
+        InvolvesRivalHouse = record.InvolvesRivalHouse,
+        LegitimacyContested = record.LegitimacyContested,
+        ThreatensPoliticalMarriage = record.ThreatensPoliticalMarriage,
+        Resolution = record.Resolution?.ToString(),
+        StatusRoleDignitasModifier = record.StatusRoleDignitasModifier,
+        DiscoveredDateTotalMonths = record.DiscoveredDate.TotalMonths,
+    };
+
+    private static AffairRecord FromAffairRecordDto(AffairRecordDto dto) => new(
+        RuntimeId<AffairRecord>.Parse(dto.AffairId),
+        RuntimeId<Character>.Parse(dto.OffenderCharacterId),
+        RuntimeId<Character>.Parse(dto.ThirdPartyCharacterId),
+        RuntimeId<Character>.Parse(dto.WrongedSpouseId),
+        Enum.Parse<AffairStakesLevel>(dto.StakesLevel),
+        dto.InvolvesRivalHouse,
+        dto.LegitimacyContested,
+        dto.ThreatensPoliticalMarriage,
+        dto.Resolution is null ? null : Enum.Parse<AffairResolution>(dto.Resolution),
+        dto.StatusRoleDignitasModifier,
+        new GameDate(dto.DiscoveredDateTotalMonths));
 
     private static PopGroupDto ToPopGroupDto(PopGroup popGroup) => new()
     {

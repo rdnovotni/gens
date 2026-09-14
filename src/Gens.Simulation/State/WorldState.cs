@@ -151,6 +151,7 @@ public sealed class WorldState
         RuntimeIdCounter<OverseerAssignment> overseerAssignmentIds,
         RuntimeIdCounter<SeniorPositionAssignment> seniorPositionAssignmentIds,
         RuntimeIdCounter<PregnancyRecord> pregnancyRecordIds,
+        RuntimeIdCounter<AffairRecord> affairRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
@@ -159,6 +160,7 @@ public sealed class WorldState
         OrderedRegistry<RelationshipKey, Relationship> relationships,
         OrderedRegistry<RomanticBondKey, RomanticBond> romanticBonds,
         OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord> pregnancyRecords,
+        OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord> affairRecords,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
@@ -314,6 +316,7 @@ public sealed class WorldState
         AutonomousDecisionLogIds = autonomousDecisionLogIds;
         SchemeIds = schemeIds;
         PregnancyRecordIds = pregnancyRecordIds;
+        AffairRecordIds = affairRecordIds;
         SpyPlacementIds = spyPlacementIds;
         RaidThreatIds = raidThreatIds;
         SquadIds = squadIds;
@@ -373,6 +376,7 @@ public sealed class WorldState
         Relationships = relationships;
         RomanticBonds = romanticBonds;
         PregnancyRecords = pregnancyRecords;
+        AffairRecords = affairRecords;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
@@ -544,6 +548,9 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Romance.PregnancyRecord"/> (Phase 17 item 3 slice 6).</summary>
     public RuntimeIdCounter<PregnancyRecord> PregnancyRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Romance.AffairRecord"/> (Phase 17 item 3 slice 8).</summary>
+    public RuntimeIdCounter<AffairRecord> AffairRecordIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Interactions.SpyPlacement"/> (Phase 16 item 1).</summary>
     public RuntimeIdCounter<SpyPlacement> SpyPlacementIds { get; } = new();
@@ -737,6 +744,13 @@ public sealed class WorldState
     /// matching <see cref="Schemes"/>'s identical "resolved or not, kept for the campaign's lifetime"
     /// convention.</summary>
     public OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord> PregnancyRecords { get; } = new();
+
+    /// <summary>Every discovered affair (Phase 17 item 3 slice 8; §11) — created only at the moment of
+    /// discovery, never before (an undiscovered affair is just a private, un-public <see
+    /// cref="RomanticBond"/>). In ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once
+    /// created rather than removed, matching <see cref="PregnancyRecords"/>'s identical "resolved or
+    /// not, kept for the campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord> AffairRecords { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -1526,6 +1540,7 @@ public sealed class WorldState
         ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["schemeIds"] = SchemeIds.Peek,
         ["pregnancyRecordIds"] = PregnancyRecordIds.Peek,
+        ["affairRecordIds"] = AffairRecordIds.Peek,
         ["spyPlacementIds"] = SpyPlacementIds.Peek,
         ["raidThreatIds"] = RaidThreatIds.Peek,
         ["squadIds"] = SquadIds.Peek,
@@ -1568,6 +1583,7 @@ public sealed class WorldState
         ["relationships"] = Relationships.Version,
         ["romanticBonds"] = RomanticBonds.Version,
         ["pregnancyRecords"] = PregnancyRecords.Version,
+        ["affairRecords"] = AffairRecords.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,

@@ -366,6 +366,9 @@ internal static class RuntimeIdTagRegistry
         // Phase 17 item 3 slice 6 — Gens.Simulation.Romance.PregnancyRecord, same "real record as its
         // own tag" convention as CulturalPatronageRecord/MagistracyRecord above.
         [typeof(PregnancyRecord)] = "pregnancyrecord",
+        // Phase 17 item 3 slice 8 — Gens.Simulation.Romance.AffairRecord, same "real record as its own
+        // tag" convention as PregnancyRecord above.
+        [typeof(AffairRecord)] = "affairrecord",
     };
 
     public static string Resolve(Type type) =>

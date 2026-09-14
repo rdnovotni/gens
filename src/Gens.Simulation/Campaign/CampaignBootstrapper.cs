@@ -125,6 +125,14 @@ public static class CampaignBootstrapper
     /// cref="RomanceChildbirthMaternalRiskStreamName"/> (Phase 17 item 3 slice 6; §9).</summary>
     public const string RomanceChildbirthInfantRiskStreamName = "romance.childbirthInfantRisk";
 
+    /// <summary>The named random stream <see cref="Romance.AffairDiscoverySystem"/> reserves for its
+    /// monthly Foiled-vs-Escalated resolution roll once an undiscovered affair's <see
+    /// cref="Romance.RomanticBond.DiscoveryRisk"/> crosses <see
+    /// cref="Romance.RomanceCatalog.AffairDiscoveryThresholdPercent"/> (Phase 17 item 3 slice 8; §11),
+    /// kept distinct from every other stream here for the same rule-8 reason. DiscoveryRisk's own
+    /// monthly advancement is a deterministic formula and draws no random numbers.</summary>
+    public const string RomanceAffairDiscoveryStreamName = "romance.affairDiscovery";
+
     /// <summary>The named random stream <see cref="Interactions.SpyPlacementProgressSystem"/> reserves
     /// for its monthly resolution rolls (Discovery, then Traceability once discovered — Phase 16 item
     /// 1), kept distinct from every other stream here for the same rule-8 reason. Discovery-risk
@@ -272,6 +280,7 @@ public static class CampaignBootstrapper
         streams.AddDerived(RomanceConceptionChanceStreamName, config.Seed);
         streams.AddDerived(RomanceChildbirthMaternalRiskStreamName, config.Seed);
         streams.AddDerived(RomanceChildbirthInfantRiskStreamName, config.Seed);
+        streams.AddDerived(RomanceAffairDiscoveryStreamName, config.Seed);
         streams.AddDerived(SpyPlacementProgressStreamName, config.Seed);
         streams.AddDerived(CounterEspionageSweepStreamName, config.Seed);
         streams.AddDerived(RaidThreatStreamName, config.Seed);

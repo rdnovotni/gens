@@ -895,6 +895,16 @@ public sealed record WorldSaveDocument
     /// loads with full §9 risk modeling, matching that record's own default.</summary>
     [JsonPropertyOrder(134)]
     public bool RomanceFertilityRiskAbstracted { get; init; }
+
+    /// <summary>Every discovered <see cref="Gens.Simulation.Romance.AffairRecord"/> (Phase 17 item 3
+    /// slice 8), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, for the same additive-only reason as <see cref="PregnancyRecords"/>
+    /// above. <c>138</c>, not <c>135</c>, since 129-135 are already double-booked between this item's
+    /// own earlier slices and Phase 17 item 2's own property block above — harmless for
+    /// <c>System.Text.Json</c> (it only orders serialization, uniqueness is not required), but this
+    /// property picks a genuinely free number rather than adding to that pre-existing tally.</summary>
+    [JsonPropertyOrder(138)]
+    public IReadOnlyList<AffairRecordDto> AffairRecords { get; init; } = Array.Empty<AffairRecordDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1270,6 +1280,12 @@ public sealed record CounterSetDto
     /// reasoning.</summary>
     [JsonPropertyOrder(128)]
     public long PregnancyRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, defaults to 0: a pre-Phase-17-item-3-slice-8 save has no
+    /// AffairRecords. Additive-only per ADR 0011, matching <see cref="PregnancyRecordIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(129)]
+    public long AffairRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1671,6 +1687,44 @@ public sealed record PregnancyRecordDto
 
     [JsonPropertyOrder(9)]
     public string? BornChildId { get; init; }
+}
+
+/// <summary>One discovered <see cref="Gens.Simulation.Romance.AffairRecord"/> (Phase 17 item 3 slice 8;
+/// <c>gens-romance-sexuality-lineage-design.md</c> §11).</summary>
+public sealed record AffairRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string AffairId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string OffenderCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string ThirdPartyCharacterId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string WrongedSpouseId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string StakesLevel { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool InvolvesRivalHouse { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool LegitimacyContested { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool ThreatensPoliticalMarriage { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? Resolution { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required int StatusRoleDignitasModifier { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int DiscoveredDateTotalMonths { get; init; }
 }
 
 /// <summary>One <see cref="Characters.MarriageRecord"/> (<c>gens-familia-design.md</c> §5, §5.1).</summary>

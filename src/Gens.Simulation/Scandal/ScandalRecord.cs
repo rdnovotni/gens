@@ -14,9 +14,11 @@ namespace Gens.Simulation.Scandal;
 /// by this item — see <see cref="RecordScandalCommand"/>'s own doc comment and each real call site
 /// (<see cref="Crime.ImprisonCommand"/>, <see cref="Crime.ApplySentenceCommand"/>, <see
 /// cref="DiscoverFabricationCommand"/>, <see cref="Legal.LegalCaseRuling"/>, <see
-/// cref="Collegia.DissolveCollegiumCommand"/>). <see cref="AffairDiscovery"/> needs Romance, Sexuality
-/// &amp; Lineage's own affair-discovery mechanic (Phase 17, unbuilt); <see
-/// cref="ScandalousPerformance"/> and <see cref="FameCollapse"/> both need Games &amp; Spectacle/
+/// cref="Collegia.DissolveCollegiumCommand"/>) — <see cref="AffairDiscovery"/> now joins that real,
+/// reachable list too (Phase 17 item 3 slice 8): <see cref="Romance.AffairDiscoverySystem"/>'s own
+/// minor-stakes escalation path is the wiring point this comment used to describe as still unbuilt,
+/// calling <see cref="RecordScandalCommand"/> directly the same way every other real source above
+/// does. <see cref="ScandalousPerformance"/> and <see cref="FameCollapse"/> both need Games &amp; Spectacle/
 /// Celebrities &amp; Influential Figures (Phase 17, unbuilt — Fame itself does not exist anywhere in
 /// this codebase, confirmed by direct search, matching Phase 12 item 1's own identical finding); <see
 /// cref="PublicanusCorruption"/> needs Land Ownership &amp; Real Estate's Publicanus Contract (Phase

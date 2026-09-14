@@ -76,6 +76,7 @@ public static class StateHasher
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
         hash = MixLong(hash, state.SchemeIds.Peek);
         hash = MixLong(hash, state.PregnancyRecordIds.Peek);
+        hash = MixLong(hash, state.AffairRecordIds.Peek);
         hash = MixLong(hash, state.SpyPlacementIds.Peek);
         hash = MixLong(hash, state.RaidThreatIds.Peek);
         hash = MixLong(hash, state.FrontierTreatyIds.Peek);
@@ -1530,6 +1531,22 @@ public static class StateHasher
         // Phase 17 item 3 slice 6: a scalar campaign-level toggle that can affect ChildbirthResolutionSystem
         // outcomes, so it belongs in the deterministic state hash (ADR 0004/0010).
         hash = MixLong(hash, state.RomanceContentSettings.FertilityRiskAbstracted ? 1L : 0L);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 8.
+        foreach (var entry in state.AffairRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.OffenderCharacterId.Value);
+            hash = MixLong(hash, entry.Value.ThirdPartyCharacterId.Value);
+            hash = MixLong(hash, entry.Value.WrongedSpouseId.Value);
+            hash = MixLong(hash, (long)entry.Value.StakesLevel);
+            hash = MixLong(hash, entry.Value.InvolvesRivalHouse ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.LegitimacyContested ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.ThreatensPoliticalMarriage ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.Resolution.HasValue ? (long)entry.Value.Resolution.Value : -1L);
+            hash = MixLong(hash, entry.Value.StatusRoleDignitasModifier);
+            hash = MixLong(hash, entry.Value.DiscoveredDate.TotalMonths);
+        }
 
         return hash;
     }
