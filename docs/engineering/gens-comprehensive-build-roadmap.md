@@ -4334,8 +4334,9 @@ lifts Scale to Grand, the Circus/amphitheatre/theatre to Lavish), duration, Gues
 and derives Scale once from guest count and Venue (§5.1: never rolled). `ActivityProgressSystem` (monthly)
 begins an Activity at its start month — answering still-pending RSVPs deterministically from the
 invitee's opinion of the host, kin/spouse/friend/patronage/rival bonds, Culture match with the host, and
-Scale's draw (a Nemesis always accepts, flagged as a troublemaker, §4.1's sharper case; a travelling
-invitee cannot attend), applying §4.2's exclusion snubs to anyone the host is tied to by marriage,
+Scale's draw (a Nemesis always accepts, flagged as a troublemaker, §4.1's sharper case; an invitee on an
+active trip can attend only once arrived at the Venue's own settlement, and one who leaves mid-Activity drops
+out of its Witness Pool), applying §4.2's exclusion snubs to anyone the host is tied to by marriage,
 kinship, friendship, or patronage (and the host household's own Adults) who was left off a Modest-or-larger
 gathering, as an ordinary `RecordInteractionCommand` opinion hit, and posting a household host's budget
 to the ledger — then runs each Phase as its scheduled month arrives (all in one tick for Quick; spread
@@ -4359,7 +4360,8 @@ badly-run Lavish gathering costs more than a badly-run Intimate one, §5.3); mov
 opinion of the host; and writes a one-paragraph Activity Record (§9) that `ChronicleProjector` projects
 for a household host, tiered by both axes. `ActivityWitnessPool` names §7's shared population — the host
 plus every attending guest — and `SchemeProgressSystem` is its first consumer: a Scheme whose initiator
-and target both attend the same in-progress Activity accrues extra, Scale-scaled discovery risk.
+and target both attend the same Activity held this month (in progress, or a Quick one concluded this month)
+accrues extra, Scale-scaled discovery risk.
 `NpcActivityHostingSystem` (monthly, own stream) lets a Noteworthy rival gens with a living head convene
 its own gathering through the same `PlanActivityCommand`, inviting the head's warmest ties — so the player
 receives an invitation (§8.1, answered through `RespondToActivityInvitationCommand`, where an explicit

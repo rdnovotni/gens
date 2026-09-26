@@ -188,12 +188,12 @@ public static class ActivityPhaseRunner
         int magnitude;
         if (kind == ActivityIncidentKind.Flirtation)
         {
-            magnitude = ActivityCatalog.FlirtationAffectionDelta;
+            magnitude = Amplify(activity.Scale, ActivityCatalog.FlirtationAffectionDelta);
             events.AddRange(RecordRomanticInteractionCommands.Pipeline.Execute(
                 state,
                 new RecordRomanticInteractionCommand(
                     state.CommandIds.Issue(), "system", context.Date, activityId.ToTaggedString(), firstId, secondId,
-                    ActivityCatalog.FlirtationAffectionDelta, ActivityCatalog.FlirtationAttractionDelta, null)).Events);
+                    magnitude, Amplify(activity.Scale, ActivityCatalog.FlirtationAttractionDelta), null)).Events);
         }
         else
         {

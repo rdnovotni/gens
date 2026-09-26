@@ -98,11 +98,14 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
             var progressDelta = SchemeProgressCatalog.BaseProgressPerMonthPercent
                 + initiator.Attributes.Intrigue * SchemeProgressCatalog.MaxIntrigueProgressBonusPercent / 100;
             // Phase 17 item 4 (gens-activities-activity-engine-design.md §7): initiator and target both
-            // present at the same in-progress Activity means more eyes — its Witness Pool raises the
-            // month's discovery risk, scaled by the gathering's own Scale. Zero when they are not.
+            // present at the same Activity held this month means more eyes — its Witness Pool raises
+            // the month's discovery risk, scaled by the gathering's own Scale. Zero when they are not.
+            // No prerequisite is declared (an unregistered one is a construction error): same-phase
+            // systems tie-break by ordinal ID, so "activities.progress" already runs first, and a Quick
+            // Activity it concluded this month still counts as "held this month".
             var riskDelta = SchemeProgressCatalog.BaseDiscoveryRiskPerMonthPercent
                 + target.Attributes.Intrigue * SchemeProgressCatalog.MaxTargetIntrigueRiskBonusPercent / 100
-                + Activities.ActivityWitnessPool.SchemeDiscoveryRiskBonus(state, scheme.InitiatorCharacterId, scheme.TargetCharacterId);
+                + Activities.ActivityWitnessPool.SchemeDiscoveryRiskBonus(state, scheme.InitiatorCharacterId, scheme.TargetCharacterId, context.Date);
 
             var newProgress = Math.Min(Scheme.MaxValue, scheme.Progress + progressDelta);
             var newRisk = Math.Min(Scheme.MaxValue, scheme.DiscoveryRisk + riskDelta);

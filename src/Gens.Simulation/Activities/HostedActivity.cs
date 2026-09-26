@@ -215,6 +215,14 @@ public static class ActivityResolver
             .Select(entry => entry.Value)
             .Where(activity => activity.Status == ActivityStatus.InProgress);
 
+    /// <summary>Every Activity held during <paramref name="month"/> — still in progress, or concluded
+    /// that month — in ascending ID order.</summary>
+    public static IEnumerable<HostedActivity> HeldIn(WorldState state, GameDate month) =>
+        state.Activities.InAscendingOrder()
+            .Select(entry => entry.Value)
+            .Where(activity => activity.Status == ActivityStatus.InProgress ||
+                               (activity.Status == ActivityStatus.Concluded && activity.EndDate == month));
+
     /// <summary>Replaces an Activity's stored record (remove then re-add).</summary>
     public static void Replace(WorldState state, HostedActivity activity)
     {

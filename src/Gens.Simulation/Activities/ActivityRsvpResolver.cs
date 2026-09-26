@@ -47,12 +47,14 @@ public static class ActivityRsvpResolver
     /// own opinion of the host, lifted by kinship/marriage/friendship/patronage and hurt by rivalry;
     /// sharing (or not) the host's Culture (the "properly Roman vs. heavily Hellenized" read); and the
     /// draw of a bigger gathering. A Nemesis always accepts — "specifically to cause trouble once
-    /// there", §4.1's sharper case. A dead or travelling invitee cannot attend at all.
+    /// there", §4.1's sharper case. A dead invitee, or one physically away (<see
+    /// cref="ActivityAvailability.CanAttend"/>), cannot attend at all.
     /// </summary>
     public static (ActivityRsvpStatus Status, bool AttendsToCauseTrouble) Resolve(
         WorldState state, HostedActivity activity, RuntimeId<Character> inviteeId)
     {
-        if (!state.Characters.TryGet(inviteeId, out var invitee) || !invitee.IsAlive || invitee.CurrentTravelLocation is not null)
+        if (!state.Characters.TryGet(inviteeId, out var invitee) || !invitee.IsAlive ||
+            !ActivityAvailability.CanAttend(state, inviteeId, activity.Venue.SettlementId))
             return (ActivityRsvpStatus.Declined, false);
 
         var hasTie = state.Relationships.TryGet(new RelationshipKey(inviteeId, activity.HostCharacterId), out var tie);

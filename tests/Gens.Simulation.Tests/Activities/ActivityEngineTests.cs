@@ -236,12 +236,7 @@ public sealed class ActivityEngineTests
         var stranger = Adult(world.State, null, world.SettlementId, "Stranger");
         var hellene = Adult(world.State, null, world.SettlementId, "Hellene", culture: "greek");
         var traveller = Adult(world.State, null, world.SettlementId, "Traveller");
-        world.State.Characters.TryGet(traveller, out var travellerCharacter);
-        world.State.Characters.Remove(traveller);
-        world.State.Characters.Add(traveller, travellerCharacter! with
-        {
-            CurrentTravelLocation = TravelLocation.Rome(),
-        });
+        StartTrip(world.State, traveller, TravelTripStatus.Traveling);
 
         Tie(world.State, friend, world.HostId, -10, BondTag.Friend);
         Tie(world.State, rival, world.HostId, 5, BondTag.Rival);
@@ -262,6 +257,61 @@ public sealed class ActivityEngineTests
             Assert.That(Invitation(world, id, traveller).RsvpStatus, Is.EqualTo(ActivityRsvpStatus.Declined));
             Assert.That(Invitation(world, id, friend).RespondedExplicitly, Is.False);
         });
+    }
+
+    /// <summary>Puts <paramref name="characterId"/> on an active trip. <see cref="BeginTravelCommand"/>
+    /// leaves <see cref="Character.CurrentTravelLocation"/> null while a leg is underway, so only an
+    /// Arrived trip carries a location — set here to <paramref name="arrivedAt"/>.</summary>
+    private static void StartTrip(
+        WorldState state, RuntimeId<Character> characterId, TravelTripStatus status, RuntimeId<Settlement>? arrivedAt = null)
+    {
+        var tripId = state.TravelTripIds.Issue();
+        state.TravelTrips.Add(tripId, TravelTrip.Restore(
+            tripId, TravelParty.Create(characterId), TravelLocation.Rome(), TravelLocation.Rome(), DistanceTier.Near,
+            RouteRiskLevel.Secure, 1, 0, Date0, status, false));
+        if (arrivedAt is { } settlementId)
+        {
+            state.Characters.TryGet(characterId, out var character);
+            state.Characters.Remove(characterId);
+            state.Characters.Add(characterId, character! with { CurrentTravelLocation = TravelLocation.Home(settlementId) });
+        }
+    }
+
+    [Test]
+    public void OnlyATravellerWhoHasArrivedAtTheVenuesSettlementCanAttend()
+    {
+        var world = NewWorld();
+        var inTransit = Adult(world.State, null, world.SettlementId, "InTransit");
+        var arrivedHere = Adult(world.State, null, world.SettlementId, "ArrivedHere");
+        var arrivedElsewhere = Adult(world.State, null, world.SettlementId, "ArrivedElsewhere");
+        var otherSettlementId = world.State.SettlementIds.Issue();
+        world.State.Settlements.Add(otherSettlementId, Settlement.Create(otherSettlementId, world.State.Regions.InAscendingOrder().First().Key));
+        StartTrip(world.State, inTransit, TravelTripStatus.Traveling);
+        StartTrip(world.State, arrivedHere, TravelTripStatus.Arrived, world.SettlementId);
+        StartTrip(world.State, arrivedElsewhere, TravelTripStatus.Arrived, otherSettlementId);
+
+        var id = Plan(world, new[] { inTransit, arrivedHere, arrivedElsewhere });
+        Tick(world.State, 1);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(Invitation(world, id, inTransit).RsvpStatus, Is.EqualTo(ActivityRsvpStatus.Declined));
+            Assert.That(Invitation(world, id, arrivedHere).RsvpStatus, Is.EqualTo(ActivityRsvpStatus.Accepted));
+            Assert.That(Invitation(world, id, arrivedElsewhere).RsvpStatus, Is.EqualTo(ActivityRsvpStatus.Declined));
+        });
+    }
+
+    [Test]
+    public void AGuestWhoLeavesOnATripDropsOutOfTheWitnessPool()
+    {
+        var world = NewWorld();
+        var guests = Guests(world, 2);
+        var id = Plan(world, guests, typeKey: "extendedGathering", durationMonths: 3);
+        Tick(world.State, 1);
+        Assert.That(ActivityWitnessPool.Of(world.State, Get(world, id)), Does.Contain(guests[0]));
+
+        StartTrip(world.State, guests[0], TravelTripStatus.Traveling);
+        Assert.That(ActivityWitnessPool.Of(world.State, Get(world, id)), Does.Not.Contain(guests[0]));
     }
 
     [Test]
@@ -643,13 +693,52 @@ public sealed class ActivityEngineTests
         Assert.That(atGathering - elsewhere, Is.EqualTo(ActivityCatalog.SharedActivityDiscoveryRiskBonus(ActivityScaleTier.Grand)));
     }
 
-    private static int AdvanceScheme(WorldState state, RuntimeId<Character> initiator, RuntimeId<Character> target)
+    [Test]
+    public void AQuickActivityConcludedThisMonthStillCountsAsWitnessesForSchemes()
+    {
+        var world = NewWorld();
+        var guests = Guests(world, 2);
+        var id = Plan(world, guests);
+        Tick(world.State, 1);
+        Assert.That(Get(world, id).Status, Is.EqualTo(ActivityStatus.Concluded));
+
+        var atGathering = AdvanceScheme(world.State, guests[0], guests[1]);
+        var outsider = Adult(world.State, null, world.SettlementId, "Outsider");
+        var elsewhere = AdvanceScheme(world.State, guests[0], outsider);
+        Assert.That(atGathering - elsewhere, Is.EqualTo(ActivityCatalog.SharedActivityDiscoveryRiskBonus(ActivityScaleTier.Intimate)));
+
+        // A later month no longer counts.
+        Assert.That(AdvanceScheme(world.State, guests[0], guests[1], month: 2), Is.EqualTo(elsewhere));
+    }
+
+    [Test]
+    public void InOneMonthlyTickAQuickGatheringRaisesTheRiskOfASchemeBetweenItsGuests()
+    {
+        var world = NewWorld();
+        var guests = Guests(world, 2);
+        Plan(world, guests);
+        var schemeId = world.State.SchemeIds.Issue();
+        world.State.Schemes.Add(schemeId, new Scheme(schemeId, guests[0], guests[1], SchemeType.Coercive, SchemeStatus.InProgress, 0, 0, Date0, Date0));
+
+        var simulation = new MonthlySimulation<WorldState>(new IMonthlySystem<WorldState>[] { new SchemeProgressSystem(), new ActivityProgressSystem() });
+        Assert.That(simulation.OrderedSystems.Select(s => s.Id), Is.EqualTo(new[] { "activities.progress", "interactions.schemeProgress" }));
+
+        var streams = Context(0).RandomStreams;
+        streams.AddDerived(CampaignBootstrapper.SchemeProgressStreamName, Seed);
+        simulation.Tick(world.State, new GameDate(1), streams);
+
+        world.State.Schemes.TryGet(schemeId, out var scheme);
+        Assert.That(scheme!.DiscoveryRisk, Is.EqualTo(
+            SchemeProgressCatalog.BaseDiscoveryRiskPerMonthPercent + ActivityCatalog.SharedActivityDiscoveryRiskBonus(ActivityScaleTier.Intimate)));
+    }
+
+    private static int AdvanceScheme(WorldState state, RuntimeId<Character> initiator, RuntimeId<Character> target, int month = 1)
     {
         var schemeId = state.SchemeIds.Issue();
         state.Schemes.Add(schemeId, new Scheme(schemeId, initiator, target, SchemeType.Coercive, SchemeStatus.InProgress, 0, 0, Date0, Date0));
         var streams = new RandomStreamSet();
         streams.AddDerived(CampaignBootstrapper.SchemeProgressStreamName, Seed);
-        new SchemeProgressSystem().Tick(state, new MonthlyTickContext(new GameDate(1), streams));
+        new SchemeProgressSystem().Tick(state, new MonthlyTickContext(new GameDate(month), streams));
         state.Schemes.TryGet(schemeId, out var scheme);
         state.Schemes.Remove(schemeId);
         return scheme!.DiscoveryRisk;
@@ -737,6 +826,39 @@ public sealed class ActivityEngineTests
             Assert.That(Invitation(world, activityId, world.HostId).WasExpectedInvite, Is.True);
             Assert.That(Opinion(world.State, world.HostId, rivalHeadId), Is.LessThan(0));
         });
+    }
+
+    [Test]
+    public void AFlirtationIncidentIsAmplifiedByScale()
+    {
+        // Find a seed whose first Phase-incident draws produce a Flirtation at a Lavish gathering between
+        // two romance-eligible guests; the search is itself deterministic.
+        for (ulong seed = 1; seed < 500; seed++)
+        {
+            var world = NewWorld();
+            var man = Adult(world.State, null, world.SettlementId, "Man");
+            var woman = Adult(world.State, null, world.SettlementId, "Woman", sex: Sex.Female);
+            var id = Plan(world, new[] { man, woman }, venueKind: ActivityVenueKind.CivicSpace, venueKey: "circus");
+            var streams = new RandomStreamSet();
+            streams.AddDerived(CampaignBootstrapper.ActivityPhaseIncidentStreamName, seed);
+            new ActivityProgressSystem().Tick(world.State, new MonthlyTickContext(new GameDate(1), streams));
+
+            var flirtations = Get(world, id).Phases.SelectMany(p => p.Moments)
+                .Where(m => m.IncidentKind == ActivityIncidentKind.Flirtation).ToArray();
+            if (flirtations.Length != 1)
+                continue;
+
+            var flirtation = flirtations[0];
+            var expectedAffection = ActivityPhaseRunner.Amplify(ActivityScaleTier.Lavish, ActivityCatalog.FlirtationAffectionDelta);
+            Assert.That(flirtation.Magnitude, Is.EqualTo(expectedAffection));
+            Assert.That(expectedAffection, Is.GreaterThan(ActivityCatalog.FlirtationAffectionDelta));
+            world.State.RomanticBonds.TryGet(Gens.Simulation.Romance.RomanticBondKey.Create(flirtation.PrimaryCharacterId, flirtation.SecondaryCharacterId!.Value), out var bond);
+            Assert.That(bond.Affection, Is.EqualTo(expectedAffection));
+            Assert.That(bond.Attraction, Is.EqualTo(ActivityPhaseRunner.Amplify(ActivityScaleTier.Lavish, ActivityCatalog.FlirtationAttractionDelta)));
+            return;
+        }
+
+        Assert.Fail("no seed produced exactly one Flirtation incident");
     }
 
     // ---- Chronicle ------------------------------------------------------------------------------

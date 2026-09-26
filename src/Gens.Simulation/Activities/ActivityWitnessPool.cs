@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Identity;
 using Gens.Simulation.State;
+using Gens.Simulation.Time;
 
 namespace Gens.Simulation.Activities;
 
@@ -14,12 +15,12 @@ namespace Gens.Simulation.Activities;
 /// population they check against whenever the triggering moment lands during a hosted Activity. It
 /// rebuilds none of their discovery formulas — it only answers who was there, and how public it was.
 /// <see cref="Interactions.SchemeProgressSystem"/> is the first consumer: a Scheme whose initiator and
-/// target are both attending the same in-progress Activity accrues extra discovery risk.
+/// target both attend the same Activity held this month accrues extra discovery risk.
 /// </summary>
 public static class ActivityWitnessPool
 {
-    /// <summary>Everyone present: the host plus every invitee who accepted and is still alive, in
-    /// ascending ID order.</summary>
+    /// <summary>Everyone present: the host plus every invitee who accepted, is still alive, and has not
+    /// since left on a trip (<see cref="ActivityAvailability.CanAttend"/>), in ascending ID order.</summary>
     public static IReadOnlyList<RuntimeId<Character>> Of(WorldState state, HostedActivity activity)
     {
         var present = new SortedSet<RuntimeId<Character>>();
@@ -27,7 +28,7 @@ public static class ActivityWitnessPool
             present.Add(activity.HostCharacterId);
 
         foreach (var invitation in ActivityInvitationResolver.ForActivity(state, activity.Id))
-            if (invitation.IsAttending && IsAlive(state, invitation.InviteeId))
+            if (IsPresent(state, activity, invitation.InviteeId))
                 present.Add(invitation.InviteeId);
 
         return present.ToArray();
@@ -41,16 +42,20 @@ public static class ActivityWitnessPool
         if (activity.HostCharacterId == characterId)
             return true;
 
-        return ActivityInvitationResolver.Get(state, activity.Id, characterId) is { IsAttending: true };
+        return ActivityInvitationResolver.Get(state, activity.Id, characterId) is { IsAttending: true }
+               && ActivityAvailability.CanAttend(state, characterId, activity.Venue.SettlementId);
     }
 
-    /// <summary>The largest-Scale in-progress Activity both Characters are currently present at, if
-    /// any — the "this happened in front of witnesses" check.</summary>
-    public static HostedActivity? SharedInProgressActivity(
-        WorldState state, RuntimeId<Character> firstId, RuntimeId<Character> secondId)
+    /// <summary>The largest-Scale Activity held in <paramref name="month"/> that both Characters are
+    /// present at, if any — the "this happened in front of witnesses" check. "Held" is either still
+    /// in progress or concluded this very month: a Quick Activity begins, runs every Phase, and
+    /// concludes inside one <see cref="ActivityProgressSystem"/> tick, so a consumer reading only
+    /// in-progress Activities would never see one.</summary>
+    public static HostedActivity? SharedActivityHeldIn(
+        WorldState state, RuntimeId<Character> firstId, RuntimeId<Character> secondId, GameDate month)
     {
         HostedActivity? best = null;
-        foreach (var activity in ActivityResolver.InProgress(state))
+        foreach (var activity in ActivityResolver.HeldIn(state, month))
         {
             if (!IsPresent(state, activity, firstId) || !IsPresent(state, activity, secondId))
                 continue;
@@ -62,9 +67,10 @@ public static class ActivityWitnessPool
     }
 
     /// <summary>§7 applied to a Scheme: the extra monthly discovery risk from initiator and target both
-    /// being present at the same in-progress Activity (zero when they are not).</summary>
-    public static int SchemeDiscoveryRiskBonus(WorldState state, RuntimeId<Character> initiatorId, RuntimeId<Character> targetId) =>
-        SharedInProgressActivity(state, initiatorId, targetId) is { } shared
+    /// being present at the same Activity held this month (zero when they are not).</summary>
+    public static int SchemeDiscoveryRiskBonus(
+        WorldState state, RuntimeId<Character> initiatorId, RuntimeId<Character> targetId, GameDate month) =>
+        SharedActivityHeldIn(state, initiatorId, targetId, month) is { } shared
             ? ActivityCatalog.SharedActivityDiscoveryRiskBonus(shared.Scale)
             : 0;
 
