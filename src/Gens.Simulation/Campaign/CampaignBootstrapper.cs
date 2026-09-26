@@ -133,6 +133,17 @@ public static class CampaignBootstrapper
     /// monthly advancement is a deterministic formula and draws no random numbers.</summary>
     public const string RomanceAffairDiscoveryStreamName = "romance.affairDiscovery";
 
+    /// <summary>The named random stream <see cref="Activities.ActivityPhaseRunner"/> reserves for its
+    /// per-Phase incident rolls (Phase 17 item 4; <c>gens-activities-activity-engine-design.md</c> §6.2),
+    /// kept distinct from every other stream here for the same rule-8 reason. RSVPs, exclusions, Scale,
+    /// and Quality are all deterministic formulas and draw no random numbers.</summary>
+    public const string ActivityPhaseIncidentStreamName = "activities.phaseIncident";
+
+    /// <summary>The named random stream <see cref="Activities.NpcActivityHostingSystem"/> reserves for
+    /// its monthly "does this rival house convene a gathering" roll (Phase 17 item 4; §8), kept distinct
+    /// from <see cref="ActivityPhaseIncidentStreamName"/> for the same rule-8 reason.</summary>
+    public const string ActivityNpcHostingStreamName = "activities.npcHosting";
+
     /// <summary>The named random stream <see cref="Interactions.SpyPlacementProgressSystem"/> reserves
     /// for its monthly resolution rolls (Discovery, then Traceability once discovered — Phase 16 item
     /// 1), kept distinct from every other stream here for the same rule-8 reason. Discovery-risk
@@ -281,6 +292,8 @@ public static class CampaignBootstrapper
         streams.AddDerived(RomanceChildbirthMaternalRiskStreamName, config.Seed);
         streams.AddDerived(RomanceChildbirthInfantRiskStreamName, config.Seed);
         streams.AddDerived(RomanceAffairDiscoveryStreamName, config.Seed);
+        streams.AddDerived(ActivityPhaseIncidentStreamName, config.Seed);
+        streams.AddDerived(ActivityNpcHostingStreamName, config.Seed);
         streams.AddDerived(SpyPlacementProgressStreamName, config.Seed);
         streams.AddDerived(CounterEspionageSweepStreamName, config.Seed);
         streams.AddDerived(RaidThreatStreamName, config.Seed);

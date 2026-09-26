@@ -2,6 +2,7 @@ using System.Linq;
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Gens.Simulation.Activities;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.BusinessCompetition;
@@ -163,6 +164,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord> affairRecords,
         OrderedRegistry<RuntimeId<LegalCase>, AdulteryCaseLink> adulteryCaseLinks,
         OrderedRegistry<RuntimeId<Character>, InfamiaStatus> infamiaStatuses,
+        OrderedRegistry<RuntimeId<Activity>, HostedActivity> activities,
+        OrderedRegistry<ActivityInvitationKey, ActivityInvitation> activityInvitations,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
@@ -381,6 +384,8 @@ public sealed class WorldState
         AffairRecords = affairRecords;
         AdulteryCaseLinks = adulteryCaseLinks;
         InfamiaStatuses = infamiaStatuses;
+        Activities = activities;
+        ActivityInvitations = activityInvitations;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
@@ -767,6 +772,17 @@ public sealed class WorldState
     /// <see cref="Characters.LegalStatus"/>, not a sixth value of that enum (<see
     /// cref="Romance.InfamiaStatus"/>'s own doc comment).</summary>
     public OrderedRegistry<RuntimeId<Character>, InfamiaStatus> InfamiaStatuses { get; } = new();
+
+    /// <summary>Every Activity ever convened (Phase 17 item 4; <c>gens-activities-activity-engine-design.md</c>
+    /// §2, §11), open or ended, keyed by the long-reserved <see cref="Activity"/> runtime ID kind issued
+    /// from <see cref="ActivityIds"/>. Kept forever once created, matching <see
+    /// cref="AffairRecords"/>'s "resolved or not, kept for the campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<Activity>, HostedActivity> Activities { get; } = new();
+
+    /// <summary>Every Guest List entry and §4.2 exclusion record (Phase 17 item 4; §4, §11's
+    /// <c>ActivityInvitation</c>), keyed (Activity, invitee) so one Activity's invitations are a
+    /// contiguous ascending scan (ADR 0004).</summary>
+    public OrderedRegistry<ActivityInvitationKey, ActivityInvitation> ActivityInvitations { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -1602,6 +1618,8 @@ public sealed class WorldState
         ["affairRecords"] = AffairRecords.Version,
         ["adulteryCaseLinks"] = AdulteryCaseLinks.Version,
         ["infamiaStatuses"] = InfamiaStatuses.Version,
+        ["activities"] = Activities.Version,
+        ["activityInvitations"] = ActivityInvitations.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,

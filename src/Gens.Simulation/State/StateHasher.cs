@@ -3,6 +3,7 @@ using System.Linq;
 using System;
 using System.Text;
 using System.Text.Json;
+using Gens.Simulation.Activities;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.BusinessCompetition;
@@ -1565,7 +1566,95 @@ public static class StateHasher
                 hash = MixString(hash, protection);
         }
 
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 4.
+        foreach (var entry in state.Activities.InAscendingOrder())
+            hash = MixHostedActivity(hash, entry.Value);
+
+        // Already ascending ActivityInvitationKey order (ADR 0004) via OrderedRegistry. Phase 17 item 4.
+        foreach (var entry in state.ActivityInvitations.InAscendingOrder())
+        {
+            var invitation = entry.Value;
+            hash = MixLong(hash, invitation.ActivityId.Value);
+            hash = MixLong(hash, invitation.InviteeId.Value);
+            hash = MixLong(hash, (long)invitation.RsvpStatus);
+            hash = MixLong(hash, invitation.WasExpectedInvite ? 1L : 0L);
+            hash = MixLong(hash, invitation.ExclusionInsultApplied ? 1L : 0L);
+            hash = MixLong(hash, invitation.RespondedExplicitly ? 1L : 0L);
+            hash = MixLong(hash, invitation.AttendsToCauseTrouble ? 1L : 0L);
+            hash = MixLong(hash, invitation.RespondedDate?.TotalMonths ?? long.MinValue);
+        }
+
         return hash;
+    }
+
+    /// <summary>Folds one <see cref="HostedActivity"/>'s full state, in field-declaration order
+    /// (Phase 17 item 4).</summary>
+    private static ulong MixHostedActivity(ulong hash, HostedActivity activity)
+    {
+        hash = MixLong(hash, activity.Id.Value);
+        hash = MixString(hash, activity.TypeKey);
+        hash = MixLong(hash, activity.HostCharacterId.Value);
+        hash = MixLong(hash, activity.HostHouseholdId?.Value ?? -1L);
+        hash = MixLong(hash, activity.HostActorId?.Value ?? -1L);
+        hash = MixLong(hash, (long)activity.Venue.Kind);
+        hash = MixString(hash, activity.Venue.VenueKey);
+        hash = MixLong(hash, activity.Venue.SettlementId.Value);
+        hash = MixLong(hash, activity.Venue.HoldingId?.Value ?? -1L);
+        hash = MixLong(hash, activity.Venue.Tier);
+        hash = MixLong(hash, (long)activity.DurationMode);
+        hash = MixLong(hash, activity.PlannedDate.TotalMonths);
+        hash = MixLong(hash, activity.StartDate.TotalMonths);
+        hash = MixLong(hash, activity.EndDate.TotalMonths);
+        hash = MixLong(hash, (long)activity.Scale);
+        foreach (var input in activity.QualityInputs)
+        {
+            hash = MixString(hash, input.Key);
+            hash = MixLong(hash, input.Score);
+        }
+
+        hash = MixLong(hash, activity.Budget.RawValue);
+        hash = MixLong(hash, (long)activity.Status);
+        foreach (var phase in activity.Phases)
+        {
+            hash = MixString(hash, phase.PhaseKey);
+            hash = MixLong(hash, phase.Sequence);
+            hash = MixLong(hash, phase.ScheduledDate.TotalMonths);
+            hash = MixLong(hash, phase.OccurredDate?.TotalMonths ?? long.MinValue);
+            foreach (var moment in phase.Moments)
+            {
+                hash = MixLong(hash, (long)moment.Kind);
+                hash = MixLong(hash, moment.PrimaryCharacterId.Value);
+                hash = MixLong(hash, moment.SecondaryCharacterId?.Value ?? -1L);
+                hash = MixLong(hash, moment.IncidentKind is { } kind ? (long)kind : -1L);
+                hash = MixLong(hash, moment.Magnitude);
+            }
+        }
+
+        foreach (var planned in activity.PlannedInteractions)
+        {
+            hash = MixLong(hash, planned.InitiatorId.Value);
+            hash = MixLong(hash, planned.TargetId.Value);
+            hash = MixString(hash, planned.PhaseKey);
+            hash = MixLong(hash, planned.OpinionDelta);
+            hash = MixLong(hash, (long)planned.BondsGranted);
+        }
+
+        if (activity.Outcome is { } outcome)
+        {
+            hash = MixLong(hash, outcome.QualityScore);
+            hash = MixLong(hash, (long)outcome.QualityTier);
+            hash = MixLong(hash, outcome.HostDignitasDelta);
+            hash = MixLong(hash, outcome.GuestOpinionDelta);
+            hash = MixLong(hash, outcome.AttendeeCount);
+            hash = MixLong(hash, outcome.WitnessCount);
+            hash = MixString(hash, outcome.NarrativeSummary);
+        }
+        else
+        {
+            hash = MixLong(hash, -1L);
+        }
+
+        return MixString(hash, activity.TerminationReason ?? string.Empty);
     }
 
     /// <summary>Folds one <see cref="Interactions.Scheme"/>'s full state, in field-declaration order

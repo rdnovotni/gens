@@ -4145,7 +4145,7 @@ new certainty-producing shortcut. "Military outcomes do not bypass the ordinary 
 mutation in this item (Dignitas, captive intake, retaliation losses, security investment) goes through a
 real `ICommand`/`IMonthlySystem.Tick`, never a direct field set. Phase 16 is complete.
 
-### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (items 1-3 complete)
+### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (items 1-4 complete)
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
 
@@ -4315,14 +4315,77 @@ marriage, Concubinage, a successful Seduce Scheme, autonomous romance maturing i
 conception and an Illegitimate birth, the Legitimacy-acknowledgment Dignitas cost, high-stakes discovery,
 and an Adultery conviction (Relegatio, confiscation, the Status/Role modifier, Infamia), plus a second,
 smaller scenario for the minor-stakes path — with save/load round trips and deterministic state-hash
-stability checked throughout. Items 4-10 remain unbuilt.
+stability checked throughout.
+
+**Item 4 progress:** The generic Activity Engine (`src/Gens.Simulation/Activities/`,
+`gens-activities-activity-engine-design.md`) is implemented as the shared third resolution tier between
+Group Interaction and the Scheme engine. Per the design doc's own "this pass builds the engine only"
+direction, no specific Activity Type is built: `ActivityTypeCatalog` ships two generic configurations
+(`gathering`, Quick; `extendedGathering`, Extended, 2-6 months), each filling §2's six slots (host, Type,
+Venue, Guest List, Duration, Phases) with the default Reception → Main Event → Aftermath sequence and Food
+Culture's three-input Quality shape (provisioning/hospitality/entertainment, weighted). Feasts (item 5),
+Games & Spectacle (item 6), and later Types add `ActivityTypeDefinition` entries here rather than a
+parallel gathering model. `HostedActivity` is keyed by the long-reserved `Activity` runtime ID kind (the
+existing `ActivityIds` counter, so no new counter or save-counter field), and `ActivityInvitation` holds
+every Guest List entry plus §4.2's exclusion records; both are wired through `WorldState`, save DTOs, and
+the state hash. `PlanActivityCommand` validates host (a household host, or a Living World Actor whose
+head is the host — exactly one), Type, Venue (a real Villa room's own tier feeds Quality; a civic space
+lifts Scale to Grand, the Circus/amphitheatre/theatre to Lavish), duration, Guest List, and Quality inputs,
+and derives Scale once from guest count and Venue (§5.1: never rolled). `ActivityProgressSystem` (monthly)
+begins an Activity at its start month — answering still-pending RSVPs deterministically from the
+invitee's opinion of the host, kin/spouse/friend/patronage/rival bonds, Culture match with the host, and
+Scale's draw (a Nemesis always accepts, flagged as a troublemaker, §4.1's sharper case; a travelling
+invitee cannot attend), applying §4.2's exclusion snubs to anyone the host is tied to by marriage,
+kinship, friendship, or patronage (and the host household's own Adults) who was left off a Modest-or-larger
+gathering, as an ordinary `RecordInteractionCommand` opinion hit, and posting a household host's budget
+to the ledger — then runs each Phase as its scheduled month arrives (all in one tick for Quick; spread
+across the real duration for Extended) and resolves §9's Outcome once the last Phase has run. Cancelling
+before the start month (`CancelActivityCommand`) costs nothing and snubs no one; the host's death, or a
+Severe-or-worse Natural Disaster in the Venue's settlement, interrupts an in-progress Activity through
+`InterruptActivityCommand` with no Outcome. Inside a Phase, `PerformActivityInteractionCommand` opens an
+ordinary Interaction between attendees at Scale-amplified effectiveness (§9's Witness-Pool
+amplification) — as a pre-declared intent for a named Phase against a Planned Activity (§12's "set an
+overall intent" answer for Quick Activities, whose Phases run inside one tick), or immediately between an
+Extended Activity's Phases; `ActivityPhaseRunner` also rolls one contextual incident per Phase (§6.2) on
+its own named stream — a Dispute or Toast through the ordinary relationship web, or a Flirtation through
+`RecordRomanticInteractionCommand` gated by `RomanceEligibility.CheckPair` (the "hosted gathering"
+romance opportunity source `AutonomousRomanceSystem` had deferred) — and has any troublemaker disrupt
+the Main Event. `ActivityOutcomeResolver` scores Quality from the weighted inputs, Venue tier, the host
+household's currently-filled Phase-quality operators (Symposiarch, Master of Hospitality, Head Cook —
+§10's Companions bullet, capped), and the Phases' own disruptions/disputes/toasts into the four
+Modest/Respectable/Refined/Legendary tiers; moves the host's Dignitas (via `AdjustDignitasCommand`, or an
+NPC host's own `LivingWorldActor.Dignitas`) by a Quality-based payoff multiplied by Scale's stakes (so a
+badly-run Lavish gathering costs more than a badly-run Intimate one, §5.3); moves each attending guest's
+opinion of the host; and writes a one-paragraph Activity Record (§9) that `ChronicleProjector` projects
+for a household host, tiered by both axes. `ActivityWitnessPool` names §7's shared population — the host
+plus every attending guest — and `SchemeProgressSystem` is its first consumer: a Scheme whose initiator
+and target both attend the same in-progress Activity accrues extra, Scale-scaled discovery risk.
+`NpcActivityHostingSystem` (monthly, own stream) lets a Noteworthy rival gens with a living head convene
+its own gathering through the same `PlanActivityCommand`, inviting the head's warmest ties — so the player
+receives an invitation (§8.1, answered through `RespondToActivityInvitationCommand`, where an explicit
+decline costs the host's opinion) exactly when the head likes them, and is pointedly snubbed by the same
+§4.2 check when tied to the head but not liked enough (§8.2; a Grand/Lavish snub's event is Public). §12's
+"NPC Phase depth" question is answered as "the same engine, inputs summarized from the house's wealth
+band". Every numeric (Scale thresholds, Quality weights/tiers, RSVP modifiers, snub penalty, incident
+odds, NPC hosting odds, Witness-Pool risk) is an explicit, untuned first pass in `ActivityCatalog`.
+**Scope notes, not done here:** Personal-scope Weighted Event Pool content is not yet anchored to Phases
+(§6.2's incidents stand in; anchoring authored events is left to the Activity Type passes); §8.2's
+Correspondence gossip-letter channel is not auto-wired (the snub event's own Visibility carries it);
+cross-Activity scheduling conflicts (§12) are not modeled beyond one open Activity per host; and neither
+`ActivityProgressSystem` nor `NpcActivityHostingSystem` is registered in the application's campaign
+tick, matching every other Phase 12-17 system. Covered in
+`tests/Gens.Simulation.Tests/Activities/ActivityEngineTests.cs` (planning validation, Scale derivation,
+RSVP, explicit response, exclusion snubs and their visibility, cancellation, Quick and Extended resolution,
+Quality math, troublemaker disruption, planned and immediate in-Phase Interactions, disaster and host-death
+interruption, Witness Pool and the Scheme discovery bonus, NPC hosting with invitation and snub, Chronicle
+projection, save round trip, hash sensitivity, and same-seed determinism). Items 5-10 remain unbuilt.
 
 Recommended internal order:
 
 1. ✅ Companions/court positions and travel retinues on top of duties, delegation, and relationships.
 2. ✅ Education, pedagogy, study, literacy, cultural patronage, and institutions.
 3. ✅ Full adult romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences. Preserve the document's hard Adult lifecycle gate and power-imbalance exclusions.
-4. The generic activity engine: invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting.
+4. ✅ The generic activity engine: invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting.
 5. Feasts as the first complete activity type.
 6. Games/spectacle, competitors, fame, hosting, wagering, and political payoff.
 7. Books/manuscripts: works vs. copies, authorship, reading, provenance, copying, loss, and libraries.
@@ -4381,7 +4444,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-4 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track; Legal & Court's case filing, presiding assignment, evidence/testimony/bribery, and verdict consequences) are now done too. Phases 12–16 have since been completed in full (see the phase checklist above), and Phase 17 items 1-3 (Companions/court positions and travel retinues; education, pedagogy, study, literacy, cultural patronage, and institutions; romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences) are now done too. **The next unimplemented work is Phase 17 item 4** — the generic activity engine (invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting).
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-4 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track; Legal & Court's case filing, presiding assignment, evidence/testimony/bribery, and verdict consequences) are now done too. Phases 12–16 have since been completed in full (see the phase checklist above), and Phase 17 items 1-4 (Companions/court positions and travel retinues; education, pedagogy, study, literacy, cultural patronage, and institutions; romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences; the generic activity engine — invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting) are now done too. **The next unimplemented work is Phase 17 item 5** — Feasts as the first complete activity type.
 
 ## Vertical-slice acceptance test
 

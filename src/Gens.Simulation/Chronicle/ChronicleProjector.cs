@@ -662,6 +662,29 @@ public static class ChronicleProjector
                 studyAbroadCompleted.EventId.ToTaggedString(),
                 HouseholdOf(state, studyAbroadCompleted.CharacterId)),
 
+            // Phase 17 item 4 (gens-activities-activity-engine-design.md §9): a household-hosted
+            // Activity's own readable Activity Record becomes the Chronicle entry. Tiered by both axes
+            // (§5.3): a Legendary gathering at Grand or Lavish Scale is Major; a Legendary one, or a
+            // Refined Lavish one, is Notable — and so is a Modest-quality failure at Grand or Lavish
+            // Scale, since "bigger is never simply better" cuts both ways. An NPC-hosted Activity has no
+            // player household to file under and is not chronicled here.
+            Activities.ActivityConcludedEvent concluded when concluded.HostHouseholdId is not null => new ChronicleEntryDraft(
+                concluded.OccurredDate,
+                ChronicleCategory.Other,
+                (concluded.Quality, concluded.Scale) switch
+                {
+                    (Activities.ActivityQualityTier.Legendary, >= Activities.ActivityScaleTier.Grand) => ChronicleTier.Major,
+                    (Activities.ActivityQualityTier.Legendary, _) => ChronicleTier.Notable,
+                    (Activities.ActivityQualityTier.Refined, Activities.ActivityScaleTier.Lavish) => ChronicleTier.Notable,
+                    (Activities.ActivityQualityTier.Modest, >= Activities.ActivityScaleTier.Grand) => ChronicleTier.Notable,
+                    _ => ChronicleTier.Minor,
+                },
+                concluded.NarrativeSummary,
+                new[] { concluded.HostCharacterId },
+                concluded.Type,
+                concluded.EventId.ToTaggedString(),
+                concluded.HostHouseholdId),
+
             _ => null,
         };
 

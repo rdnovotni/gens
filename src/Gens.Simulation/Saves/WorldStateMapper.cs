@@ -4,6 +4,7 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using Gens.Simulation.Activities;
 using Gens.Simulation.Actors;
 using Gens.Simulation.Buildings;
 using Gens.Simulation.BusinessCompetition;
@@ -456,6 +457,12 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             InfamiaStatuses = state.InfamiaStatuses.InAscendingOrder()
                 .Select(entry => ToInfamiaStatusDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            Activities = state.Activities.InAscendingOrder()
+                .Select(entry => ToHostedActivityDto(entry.Value)).ToArray(),
+            // Already ascending ActivityInvitationKey order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            ActivityInvitations = state.ActivityInvitations.InAscendingOrder()
+                .Select(entry => ToActivityInvitationDto(entry.Value)).ToArray(),
         };
     }
 
@@ -508,6 +515,20 @@ public static class WorldStateMapper
             {
                 var status = FromInfamiaStatusDto(i);
                 return new KeyValuePair<RuntimeId<Character>, InfamiaStatus>(status.CharacterId, status);
+            }));
+
+        var activities = OrderedRegistry<RuntimeId<Activity>, HostedActivity>.Restore(
+            dto.Activities.Select(a =>
+            {
+                var activity = FromHostedActivityDto(a);
+                return new KeyValuePair<RuntimeId<Activity>, HostedActivity>(activity.Id, activity);
+            }));
+
+        var activityInvitations = OrderedRegistry<ActivityInvitationKey, ActivityInvitation>.Restore(
+            dto.ActivityInvitations.Select(i =>
+            {
+                var invitation = FromActivityInvitationDto(i);
+                return new KeyValuePair<ActivityInvitationKey, ActivityInvitation>(invitation.Key, invitation);
             }));
 
         var romanceContentSettings = new RomanceContentSettings(dto.RomanceFertilityRiskAbstracted);
@@ -1486,6 +1507,8 @@ public static class WorldStateMapper
             affairRecords: affairRecords,
             adulteryCaseLinks: adulteryCaseLinks,
             infamiaStatuses: infamiaStatuses,
+            activities: activities,
+            activityInvitations: activityInvitations,
             scheduledActions: scheduledActions,
             popGroups: popGroups,
             householdRegimenDefaults: householdRegimenDefaults,
@@ -2982,6 +3005,136 @@ public static class WorldStateMapper
         RuntimeId<Character>.Parse(dto.CharacterId),
         Enum.Parse<InfamiaSource>(dto.Source),
         dto.LegalProtectionsLost.ToArray());
+
+    private static HostedActivityDto ToHostedActivityDto(HostedActivity activity) => new()
+    {
+        Id = activity.Id.ToTaggedString(),
+        TypeKey = activity.TypeKey,
+        HostCharacterId = activity.HostCharacterId.ToTaggedString(),
+        HostHouseholdId = activity.HostHouseholdId?.ToTaggedString(),
+        HostActorId = activity.HostActorId?.ToTaggedString(),
+        VenueKind = activity.Venue.Kind.ToString(),
+        VenueKey = activity.Venue.VenueKey,
+        VenueSettlementId = activity.Venue.SettlementId.ToTaggedString(),
+        VenueHoldingId = activity.Venue.HoldingId?.ToTaggedString(),
+        VenueTier = activity.Venue.Tier,
+        DurationMode = activity.DurationMode.ToString(),
+        PlannedDateTotalMonths = activity.PlannedDate.TotalMonths,
+        StartDateTotalMonths = activity.StartDate.TotalMonths,
+        EndDateTotalMonths = activity.EndDate.TotalMonths,
+        Scale = activity.Scale.ToString(),
+        QualityInputs = activity.QualityInputs
+            .Select(input => new ActivityQualityInputDto { Key = input.Key, Score = input.Score }).ToArray(),
+        BudgetMinorUnits = activity.Budget.RawValue,
+        Status = activity.Status.ToString(),
+        Phases = activity.Phases.Select(phase => new ActivityPhaseDto
+        {
+            PhaseKey = phase.PhaseKey,
+            Sequence = phase.Sequence,
+            ScheduledDateTotalMonths = phase.ScheduledDate.TotalMonths,
+            OccurredDateTotalMonths = phase.OccurredDate?.TotalMonths,
+            Moments = phase.Moments.Select(moment => new ActivityMomentDto
+            {
+                Kind = moment.Kind.ToString(),
+                PrimaryCharacterId = moment.PrimaryCharacterId.ToTaggedString(),
+                SecondaryCharacterId = moment.SecondaryCharacterId?.ToTaggedString(),
+                IncidentKind = moment.IncidentKind?.ToString(),
+                Magnitude = moment.Magnitude,
+            }).ToArray(),
+        }).ToArray(),
+        PlannedInteractions = activity.PlannedInteractions.Select(planned => new ActivityPlannedInteractionDto
+        {
+            InitiatorId = planned.InitiatorId.ToTaggedString(),
+            TargetId = planned.TargetId.ToTaggedString(),
+            PhaseKey = planned.PhaseKey,
+            OpinionDelta = planned.OpinionDelta,
+            BondsGranted = ToBondTagDto(planned.BondsGranted),
+        }).ToArray(),
+        Outcome = activity.Outcome is { } outcome
+            ? new ActivityOutcomeDto
+            {
+                QualityScore = outcome.QualityScore,
+                QualityTier = outcome.QualityTier.ToString(),
+                HostDignitasDelta = outcome.HostDignitasDelta,
+                GuestOpinionDelta = outcome.GuestOpinionDelta,
+                AttendeeCount = outcome.AttendeeCount,
+                WitnessCount = outcome.WitnessCount,
+                NarrativeSummary = outcome.NarrativeSummary,
+            }
+            : null,
+        TerminationReason = activity.TerminationReason,
+    };
+
+    private static HostedActivity FromHostedActivityDto(HostedActivityDto dto) => new(
+        RuntimeId<Activity>.Parse(dto.Id),
+        dto.TypeKey,
+        RuntimeId<Character>.Parse(dto.HostCharacterId),
+        dto.HostHouseholdId is null ? null : RuntimeId<Household>.Parse(dto.HostHouseholdId),
+        dto.HostActorId is null ? null : RuntimeId<Actor>.Parse(dto.HostActorId),
+        new ActivityVenue(
+            Enum.Parse<ActivityVenueKind>(dto.VenueKind),
+            dto.VenueKey,
+            RuntimeId<Settlement>.Parse(dto.VenueSettlementId),
+            dto.VenueHoldingId is null ? null : RuntimeId<Holding>.Parse(dto.VenueHoldingId),
+            dto.VenueTier),
+        Enum.Parse<ActivityDurationMode>(dto.DurationMode),
+        new GameDate(dto.PlannedDateTotalMonths),
+        new GameDate(dto.StartDateTotalMonths),
+        new GameDate(dto.EndDateTotalMonths),
+        Enum.Parse<ActivityScaleTier>(dto.Scale),
+        dto.QualityInputs.Select(input => new ActivityQualityInput(input.Key, input.Score)).ToArray(),
+        Money.FromMinorUnits(dto.BudgetMinorUnits),
+        Enum.Parse<ActivityStatus>(dto.Status),
+        dto.Phases.Select(phase => new ActivityPhase(
+            phase.PhaseKey,
+            phase.Sequence,
+            new GameDate(phase.ScheduledDateTotalMonths),
+            phase.OccurredDateTotalMonths is { } occurred ? new GameDate(occurred) : null,
+            phase.Moments.Select(moment => new ActivityMoment(
+                Enum.Parse<ActivityMomentKind>(moment.Kind),
+                RuntimeId<Character>.Parse(moment.PrimaryCharacterId),
+                moment.SecondaryCharacterId is null ? null : RuntimeId<Character>.Parse(moment.SecondaryCharacterId),
+                moment.IncidentKind is null ? null : Enum.Parse<ActivityIncidentKind>(moment.IncidentKind),
+                moment.Magnitude)).ToArray())).ToArray(),
+        dto.PlannedInteractions.Select(planned => new ActivityPlannedInteraction(
+            RuntimeId<Character>.Parse(planned.InitiatorId),
+            RuntimeId<Character>.Parse(planned.TargetId),
+            planned.PhaseKey,
+            planned.OpinionDelta,
+            FromBondTagDto(planned.BondsGranted))).ToArray(),
+        dto.Outcome is { } outcome
+            ? new ActivityOutcome(
+                outcome.QualityScore,
+                Enum.Parse<ActivityQualityTier>(outcome.QualityTier),
+                outcome.HostDignitasDelta,
+                outcome.GuestOpinionDelta,
+                outcome.AttendeeCount,
+                outcome.WitnessCount,
+                outcome.NarrativeSummary)
+            : null,
+        dto.TerminationReason);
+
+    private static ActivityInvitationDto ToActivityInvitationDto(ActivityInvitation invitation) => new()
+    {
+        ActivityId = invitation.ActivityId.ToTaggedString(),
+        InviteeId = invitation.InviteeId.ToTaggedString(),
+        RsvpStatus = invitation.RsvpStatus.ToString(),
+        WasExpectedInvite = invitation.WasExpectedInvite,
+        ExclusionInsultApplied = invitation.ExclusionInsultApplied,
+        RespondedExplicitly = invitation.RespondedExplicitly,
+        AttendsToCauseTrouble = invitation.AttendsToCauseTrouble,
+        RespondedDateTotalMonths = invitation.RespondedDate?.TotalMonths,
+    };
+
+    private static ActivityInvitation FromActivityInvitationDto(ActivityInvitationDto dto) => new(
+        RuntimeId<Activity>.Parse(dto.ActivityId),
+        RuntimeId<Character>.Parse(dto.InviteeId),
+        Enum.Parse<ActivityRsvpStatus>(dto.RsvpStatus),
+        dto.WasExpectedInvite,
+        dto.ExclusionInsultApplied,
+        dto.RespondedExplicitly,
+        dto.AttendsToCauseTrouble,
+        dto.RespondedDateTotalMonths is { } responded ? new GameDate(responded) : null);
 
     private static PopGroupDto ToPopGroupDto(PopGroup popGroup) => new()
     {
