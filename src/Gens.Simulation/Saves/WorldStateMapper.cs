@@ -23,6 +23,7 @@ using Gens.Simulation.Education;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
+using Gens.Simulation.Feasts;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Hazards;
@@ -463,6 +464,12 @@ public static class WorldStateMapper
             // Already ascending ActivityInvitationKey order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             ActivityInvitations = state.ActivityInvitations.InAscendingOrder()
                 .Select(entry => ToActivityInvitationDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            FeastRecords = state.FeastRecords.InAscendingOrder()
+                .Select(entry => ToFeastRecordDto(entry.Value)).ToArray(),
+            // Already ascending FeastSeatingKey order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            FeastSeatingAssignments = state.FeastSeatingAssignments.InAscendingOrder()
+                .Select(entry => ToFeastSeatingAssignmentDto(entry.Value)).ToArray(),
         };
     }
 
@@ -529,6 +536,20 @@ public static class WorldStateMapper
             {
                 var invitation = FromActivityInvitationDto(i);
                 return new KeyValuePair<ActivityInvitationKey, ActivityInvitation>(invitation.Key, invitation);
+            }));
+
+        var feastRecords = OrderedRegistry<RuntimeId<Activity>, FeastRecord>.Restore(
+            dto.FeastRecords.Select(f =>
+            {
+                var record = FromFeastRecordDto(f);
+                return new KeyValuePair<RuntimeId<Activity>, FeastRecord>(record.ActivityId, record);
+            }));
+
+        var feastSeatingAssignments = OrderedRegistry<FeastSeatingKey, FeastSeatingAssignment>.Restore(
+            dto.FeastSeatingAssignments.Select(s =>
+            {
+                var assignment = FromFeastSeatingAssignmentDto(s);
+                return new KeyValuePair<FeastSeatingKey, FeastSeatingAssignment>(assignment.Key, assignment);
             }));
 
         var romanceContentSettings = new RomanceContentSettings(dto.RomanceFertilityRiskAbstracted);
@@ -1509,6 +1530,8 @@ public static class WorldStateMapper
             infamiaStatuses: infamiaStatuses,
             activities: activities,
             activityInvitations: activityInvitations,
+            feastRecords: feastRecords,
+            feastSeatingAssignments: feastSeatingAssignments,
             scheduledActions: scheduledActions,
             popGroups: popGroups,
             householdRegimenDefaults: householdRegimenDefaults,
@@ -3135,6 +3158,36 @@ public static class WorldStateMapper
         dto.RespondedExplicitly,
         dto.AttendsToCauseTrouble,
         dto.RespondedDateTotalMonths is { } responded ? new GameDate(responded) : null);
+
+    private static FeastRecordDto ToFeastRecordDto(FeastRecord record) => new()
+    {
+        ActivityId = record.ActivityId.ToTaggedString(),
+        Purpose = record.Purpose.ToString(),
+        ArbiterBibendiId = record.ArbiterBibendiId?.ToTaggedString(),
+        EntertainmentDescription = record.EntertainmentDescription,
+    };
+
+    private static FeastRecord FromFeastRecordDto(FeastRecordDto dto) => new(
+        RuntimeId<Activity>.Parse(dto.ActivityId),
+        Enum.Parse<FeastPurpose>(dto.Purpose),
+        dto.ArbiterBibendiId is null ? null : RuntimeId<Character>.Parse(dto.ArbiterBibendiId),
+        dto.EntertainmentDescription);
+
+    private static FeastSeatingAssignmentDto ToFeastSeatingAssignmentDto(FeastSeatingAssignment assignment) => new()
+    {
+        ActivityId = assignment.ActivityId.ToTaggedString(),
+        GuestId = assignment.GuestId.ToTaggedString(),
+        Couch = assignment.Couch.ToString(),
+        Position = assignment.Position.ToString(),
+        Judgment = assignment.Judgment?.ToString(),
+    };
+
+    private static FeastSeatingAssignment FromFeastSeatingAssignmentDto(FeastSeatingAssignmentDto dto) => new(
+        RuntimeId<Activity>.Parse(dto.ActivityId),
+        RuntimeId<Character>.Parse(dto.GuestId),
+        Enum.Parse<FeastCouch>(dto.Couch),
+        Enum.Parse<FeastCouchPosition>(dto.Position),
+        dto.Judgment is null ? null : Enum.Parse<FeastSeatingJudgment>(dto.Judgment));
 
     private static PopGroupDto ToPopGroupDto(PopGroup popGroup) => new()
     {

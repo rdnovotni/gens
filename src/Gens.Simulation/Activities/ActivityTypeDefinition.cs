@@ -2,6 +2,7 @@ using System.Linq;
 #nullable enable
 using System;
 using System.Collections.Generic;
+using Gens.Simulation.Feasts;
 
 namespace Gens.Simulation.Activities;
 
@@ -112,7 +113,10 @@ public static class ActivityTypeCatalog
         minimumMonths: 2,
         maximumMonths: 6);
 
-    public static readonly IReadOnlyList<ActivityTypeDefinition> All = new[] { Gathering, ExtendedGathering };
+    /// <summary>Feasts (Phase 17 item 5) is the first real, specific Activity Type, added here per this
+    /// class's own invitation above rather than as a parallel gathering system — see <see
+    /// cref="FeastCatalog.FeastType"/> for its own configuration.</summary>
+    public static readonly IReadOnlyList<ActivityTypeDefinition> All = new[] { Gathering, ExtendedGathering, FeastCatalog.FeastType };
 
     public static bool TryGet(string key, out ActivityTypeDefinition definition)
     {

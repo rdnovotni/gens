@@ -4145,7 +4145,7 @@ new certainty-producing shortcut. "Military outcomes do not bypass the ordinary 
 mutation in this item (Dignitas, captive intake, retaliation losses, security investment) goes through a
 real `ICommand`/`IMonthlySystem.Tick`, never a direct field set. Phase 16 is complete.
 
-### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (items 1-4 complete)
+### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (items 1-4 complete; item 5 implemented, build/test verification pending)
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
 
@@ -4382,13 +4382,69 @@ Quality math, troublemaker disruption, planned and immediate in-Phase Interactio
 interruption, Witness Pool and the Scheme discovery bonus, NPC hosting with invitation and snub, Chronicle
 projection, save round trip, hash sensitivity, and same-seed determinism). Items 5-10 remain unbuilt.
 
+**Item 5 progress:** Feasts (`src/Gens.Simulation/Feasts/`, `gens-feasts-design.md`) is implemented as the
+Activity Engine's first real Activity Type, registered as `FeastCatalog.FeastType` in
+`ActivityTypeCatalog.All` — a pure, additive extension of item 4's own catalog, with no change to
+`ActivityProgressSystem`, `ActivityPhaseRunner`, `ActivityOutcomeResolver`, `ActivityWitnessPool`, or
+`ChronicleProjector` (all already worked generically for any `TypeKey`). **Corrected premise, disclosed
+here since it changes the item's own §5 framing:** the design doc's own §5 calls for reusing "Food
+Culture's own `BanquetRecord`" (Ingredient/Preparation/Venue Tier, Cuisine Match) unmodified — but no
+Food Culture domain exists anywhere in this codebase (no `BanquetRecord`, Cuisine Match, Ostentatious
+flag, or Sumptuary enforcement, despite roughly two dozen other design docs citing it as built). Feasts
+instead reuse the Activity Engine's own already-generalized 3-input Quality shape verbatim
+(`provisioning`/`hospitality`/`entertainment`, weights 2/1/1) — the same shape that item 4's own
+`ActivityCatalog.cs` doc comment already describes as "deliberately Food Culture's three-input Banquet
+Quality shape" — rather than inventing new, unbacked Ingredient/Preparation/Cuisine-Match fields.
+Ostentatious/Sumptuary enforcement is left an explicit, disclosed gap, matching every other Phase 17
+item's own precedent for a genuinely absent dependency.
+
+The Feast's own Phase sequence (Arrival & Seating → the Meal → the Comissatio → Departure) overrides the
+Engine's generic default; the Meal's own Phase key is deliberately the literal string
+`ActivityPhaseKeys.MainEvent` rather than a Feast-specific name, so `ActivityPhaseRunner`'s existing
+exact-string `DisruptionPhaseIndex` lookup still targets the Meal for a troublemaker's Disruption instead
+of silently falling back to the numeric-midpoint Comissatio. Seating (§4) — "the single most concrete new
+texture" the design doc itself calls out — is a new `FeastSeatingAssignment` side-table
+(`AssignFeastSeatingCommand`), keyed like `ActivityInvitation`, holding a 3-couch × 3-position rank (the
+locus consularis is rank 1); `FeastSeatingResolutionSystem` (a new monthly system dependent on
+`activities.progress`, the same piggyback pattern `NpcActivityHostingSystem` already established) judges
+each seated, attending guest's actual rank against their own expected rank — read from the real, existing
+`HouseholdReputation`/`DignitasResolver` primitive (Phase 12 item 1), with a `LivingWorldActor.Dignitas`
+fallback for an untracked rival house's own head — and applies §4's Insult/Honor/envy opinion and
+Dignitas consequences independently per guest (resolving §11's own open question), plus one new, minimal
+Scandal call site (`ScandalSourceType.FeastSeatingInsult`, purely additive per that enum's own established
+pattern) for a severe insult against a top-tier-expected guest. `FeastRecord` carries §6's Purpose as a
+tag-only field (informational Guest-List/Scale guidance in `FeastCatalog.PurposeGuidance`, no required
+link into Patronage/Funerary/Religion/Military/Euergetism — confirmed none of those five systems expose a
+real hostable-Feast hook today) and §3's Arbiter Bibendi (purely descriptive: `Symposiarch` is already one
+of the Engine's own `ActivityCatalog.HostOperatorTitles`, so no new Quality math was needed — the
+cleanest "wiring, not reinventing" instance in the item). `PlanFeastCommand` composes the existing
+`PlanActivityCommand` pipeline directly (`PlanActivityCommands.Validate` widened from `private` to
+`internal` for exactly this, `Pipeline.Execute` composed in `Mutate`) rather than duplicating its ~20-check
+validation gauntlet by hand. Covered in `tests/Gens.Simulation.Tests/Feasts/FeastEngineTests.cs`: planning
+(Purpose, Phase sequence, Arbiter Bibendi validation, reused engine validation), seating assignment
+validation, seating-judgment resolution (Insult/Honor/envy/Scandal, and idempotence against a repeated
+resolution), the Meal-phase disruption-targeting regression, a Comissatio-phase Interaction via the
+existing `PerformActivityInteractionCommand` with zero new code, Chronicle projection through the
+existing, unmodified generic path, save round trip, and state-hash stability/determinism.
+**Explicitly out of scope, disclosed as gaps:** deep Purpose integration beyond tag + guidance data; a
+Villa room catalog/construction command (Venue keys stay free-text, exactly matching
+`NpcActivityHostingSystem.NpcResidenceVenueKey`'s own precedent — a pre-existing gap from item 4 itself,
+not this item's); Masterworks/Wandering-Populations-as-Entertainment linkage (neither system exists yet);
+and NPC-hosted Feasts (`NpcActivityHostingSystem` stays hardwired to `Gathering` — a real, separable
+follow-up once an NPC seating/Purpose policy exists, not a parameter swap).
+**Verification note:** this item's code was written and manually traced line-by-line against the real
+source (constructor field orders, `cref` targets, namespace resolution, save/hash wiring) in a session
+whose container had no .NET SDK installed and whose network policy blocks
+`builds.dotnet.microsoft.com`, so `dotnet format`/`build`/`test` could not actually be run here — run the
+full gate from `CONTRIBUTING.md` before treating this item as verified.
+
 Recommended internal order:
 
 1. ✅ Companions/court positions and travel retinues on top of duties, delegation, and relationships.
 2. ✅ Education, pedagogy, study, literacy, cultural patronage, and institutions.
 3. ✅ Full adult romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences. Preserve the document's hard Adult lifecycle gate and power-imbalance exclusions.
 4. ✅ The generic activity engine: invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting.
-5. Feasts as the first complete activity type.
+5. Feasts as the first complete activity type — implemented, pending build/test verification (see progress note above).
 6. Games/spectacle, competitors, fame, hosting, wagering, and political payoff.
 7. Books/manuscripts: works vs. copies, authorship, reading, provenance, copying, loss, and libraries.
 8. Art/commissions and artists on the same provenance/object framework.

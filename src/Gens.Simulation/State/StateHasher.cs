@@ -13,6 +13,7 @@ using Gens.Simulation.Collegia;
 using Gens.Simulation.Companions;
 using Gens.Simulation.Correspondence;
 using Gens.Simulation.Diplomacy;
+using Gens.Simulation.Feasts;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Health;
@@ -1582,6 +1583,27 @@ public static class StateHasher
             hash = MixLong(hash, invitation.RespondedExplicitly ? 1L : 0L);
             hash = MixLong(hash, invitation.AttendsToCauseTrouble ? 1L : 0L);
             hash = MixLong(hash, invitation.RespondedDate?.TotalMonths ?? long.MinValue);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 5.
+        foreach (var entry in state.FeastRecords.InAscendingOrder())
+        {
+            var feast = entry.Value;
+            hash = MixLong(hash, feast.ActivityId.Value);
+            hash = MixLong(hash, (long)feast.Purpose);
+            hash = MixLong(hash, feast.ArbiterBibendiId?.Value ?? -1L);
+            hash = MixString(hash, feast.EntertainmentDescription ?? string.Empty);
+        }
+
+        // Already ascending FeastSeatingKey order (ADR 0004) via OrderedRegistry. Phase 17 item 5.
+        foreach (var entry in state.FeastSeatingAssignments.InAscendingOrder())
+        {
+            var seat = entry.Value;
+            hash = MixLong(hash, seat.ActivityId.Value);
+            hash = MixLong(hash, seat.GuestId.Value);
+            hash = MixLong(hash, (long)seat.Couch);
+            hash = MixLong(hash, (long)seat.Position);
+            hash = MixLong(hash, seat.Judgment is { } judgment ? (long)judgment : -1L);
         }
 
         return hash;

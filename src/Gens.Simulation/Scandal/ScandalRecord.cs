@@ -85,6 +85,17 @@ public enum ScandalSourceType
     /// nothing in this file's own already-shipped, already-tested <see cref="RecordScandalCommand"/>
     /// pipeline switches on <see cref="ScandalSourceType"/> at all.</summary>
     PublicWorksNeglect,
+
+    /// <summary>Phase 17 item 5's own real, reachable addition (<c>gens-feasts-design.md</c> §9: "a
+    /// badly-handled seating snub against a proud guest [is a] real, felt Scandal source"). A guest whose
+    /// own reasonably expected standing was among a Feast's highest, seated well below it, past <see
+    /// cref="Feasts.FeastCatalog.SevereInsultGapThreshold"/> — the seating-politics escalation §4 and §9
+    /// both describe, distinct from the milder, in-room opinion/Dignitas consequence <see
+    /// cref="Feasts.FeastSeatingResolutionSystem"/> already applies directly for every under-seating.
+    /// See <see cref="Feasts.FeastSeatingResolutionSystem"/>'s own call site. Purely additive, matching
+    /// every addition above: nothing in this file's already-shipped, already-tested <see
+    /// cref="RecordScandalCommand"/> pipeline switches on <see cref="ScandalSourceType"/> at all.</summary>
+    FeastSeatingInsult,
 }
 
 /// <summary>§6's severity ladder. <see cref="NotaCensoriaEligible"/> is kept for schema completeness
