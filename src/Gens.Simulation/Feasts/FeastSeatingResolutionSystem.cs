@@ -139,7 +139,7 @@ public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
 
     private static void ApplyOverSeated(
         WorldState state, HostedActivity activity, RuntimeId<Character> guestId, int effectiveGap, int actualRank,
-        IReadOnlyList<FeastSeatingAssignment> ranked, GameDate date, List<IDomainEvent> events)
+        FeastSeatingAssignment[] ranked, GameDate date, List<IDomainEvent> events)
     {
         var opinionBonus = Math.Min(FeastCatalog.OverSeatingOpinionBonusPerRank * effectiveGap, FeastCatalog.MaxSeatingOpinionMagnitude);
         events.AddRange(RecordInteractionCommands.Pipeline.Execute(
@@ -161,7 +161,7 @@ public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
         // §4's "at the real risk of a corresponding envy... from whoever was thereby displaced": the
         // guest whose own expected rank matches the seat this honored guest actually took.
         var displacedIndex = actualRank - 1;
-        if (displacedIndex >= 0 && displacedIndex < ranked.Count && ranked[displacedIndex].GuestId != guestId)
+        if (displacedIndex >= 0 && displacedIndex < ranked.Length && ranked[displacedIndex].GuestId != guestId)
         {
             var displacedGuestId = ranked[displacedIndex].GuestId;
             var envyPenalty = Math.Min(FeastCatalog.OverSeatingEnvyOpinionPenaltyPerRank * effectiveGap, FeastCatalog.MaxSeatingOpinionMagnitude);
