@@ -100,7 +100,7 @@ public sealed class FeastEngineTests
 
     private static PlanFeastCommand PlanCommand(
         World world,
-        IReadOnlyList<RuntimeId<Character>> guests,
+        RuntimeId<Character>[] guests,
         FeastPurpose purpose = FeastPurpose.OrdinarySocial,
         RuntimeId<Character>? arbiterBibendiId = null,
         ActivityVenueKind venueKind = ActivityVenueKind.VillaRoom,
@@ -112,7 +112,7 @@ public sealed class FeastEngineTests
             new GameDate(1), guests, Inputs(quality), Money.Zero, purpose, arbiterBibendiId, null);
 
     private static RuntimeId<Activity> Plan(
-        World world, IReadOnlyList<RuntimeId<Character>> guests, FeastPurpose purpose = FeastPurpose.OrdinarySocial,
+        World world, RuntimeId<Character>[] guests, FeastPurpose purpose = FeastPurpose.OrdinarySocial,
         RuntimeId<Character>? arbiterBibendiId = null, ActivityVenueKind venueKind = ActivityVenueKind.VillaRoom,
         string venueKey = FeastCatalog.DefaultVenueKey, int quality = 60)
     {
@@ -135,7 +135,7 @@ public sealed class FeastEngineTests
         return new MonthlyTickContext(new GameDate(month), streams);
     }
 
-    private static IReadOnlyList<IDomainEvent> Tick(WorldState state, int month)
+    private static List<IDomainEvent> Tick(WorldState state, int month)
     {
         var context = Context(month);
         var events = new List<IDomainEvent>(new ActivityProgressSystem().Tick(state, context));
