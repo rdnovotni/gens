@@ -4,6 +4,8 @@ using Gens.Simulation.Campaign;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Land;
+using Gens.Simulation.Legal;
 using Gens.Simulation.Random;
 using Gens.Simulation.Reputation;
 using Gens.Simulation.Romance;
@@ -205,6 +207,79 @@ public sealed class AffairsAndDiscoveryTests
         });
     }
 
+    /// <summary>Regression coverage: an unresolved Affair-conceived pregnancy between an UNRELATED pair
+    /// (sharing only the offender's own identity, not the third party) must never mark THIS discovered
+    /// pair's own affair as legitimacy-contested — the match requires both parents to be exactly this
+    /// pair, not a same-side OR across four independent identities.</summary>
+    [Test]
+    public void AnUnrelatedPregnancyInvolvingOnlyOneSharedPartyDoesNotContestLegitimacy()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 100, sex: Sex.Female);
+        var householdId = state.HouseholdIds.Issue();
+        var offender = AddAdult(
+            state, intrigue: 0, household: householdId,
+            maritalHistory: new[] { new MarriageRecord(wrongedSpouse, new GameDate(-24), null, null) });
+        var thirdParty = AddAdult(state, intrigue: 0, sex: Sex.Female);
+        SeedAffairBond(state, offender, thirdParty);
+
+        // An unrelated Affair-conceived pregnancy sharing only the offender's own identity — a
+        // different mother entirely, not this pair's own thirdParty.
+        var unrelatedMother = AddAdult(state, intrigue: 0, sex: Sex.Female);
+        var pregnancyId = state.PregnancyRecordIds.Issue();
+        state.PregnancyRecords.Add(
+            pregnancyId, PregnancyRecord.Create(pregnancyId, unrelatedMother, offender, RomanticBondType.Affair, Epoch));
+
+        var system = new AffairDiscoverySystem();
+        var streams = Streams();
+        AffairRecord? record = null;
+        for (var month = 1; month <= 20 && record is null; month++)
+        {
+            system.Tick(state, new MonthlyTickContext(new GameDate(month), streams));
+            record = state.AffairRecords.InAscendingOrder().Select(entry => entry.Value).FirstOrDefault();
+        }
+
+        Assert.That(record, Is.Not.Null, "Expected the affair to escalate within the test's month budget.");
+        Assert.That(record!.LegitimacyContested, Is.False, "An unrelated pregnancy must never contest THIS pair's own affair.");
+    }
+
+    /// <summary>Regression coverage: granting the new <c>adulterous</c> reactive trait must remove the
+    /// opposed <c>faithful</c> trait if the offender already held it, since content authors the two as an
+    /// opposed pair (<c>content/source/traits/romance.json</c>) and this direct-append grant has no
+    /// compiled <see cref="TraitCatalog"/> available to enforce that exclusivity on its own.</summary>
+    [Test]
+    public void DiscoveryReplacesAnExistingFaithfulTraitWithAdulterousRatherThanCarryingBoth()
+    {
+        var state = NewState();
+        var wrongedSpouse = AddAdult(state, intrigue: 100, sex: Sex.Female);
+        var householdId = state.HouseholdIds.Issue();
+        var offenderId = AddAdult(
+            state, intrigue: 0, household: householdId,
+            maritalHistory: new[] { new MarriageRecord(wrongedSpouse, new GameDate(-24), null, null) });
+        var thirdParty = AddAdult(state, intrigue: 0, sex: Sex.Female);
+        SeedAffairBond(state, offenderId, thirdParty);
+
+        state.Characters.TryGet(offenderId, out var offender);
+        state.Characters.Remove(offenderId);
+        state.Characters.Add(offenderId, offender! with { Traits = new[] { RomanceCatalog.FaithfulTraitId } });
+
+        var system = new AffairDiscoverySystem();
+        var streams = Streams();
+        for (var month = 1; month <= 20; month++)
+        {
+            system.Tick(state, new MonthlyTickContext(new GameDate(month), streams));
+            if (state.AffairRecords.InAscendingOrder().Any())
+                break;
+        }
+
+        state.Characters.TryGet(offenderId, out var offenderAfter);
+        Assert.Multiple(() =>
+        {
+            Assert.That(offenderAfter!.Traits, Does.Contain(RomanceCatalog.AdulterousTraitId));
+            Assert.That(offenderAfter.Traits, Does.Not.Contain(RomanceCatalog.FaithfulTraitId));
+        });
+    }
+
     [Test]
     public void AFoiledOutcomeLeavesTheBondStillPrivateWithReducedRisk()
     {
@@ -241,7 +316,7 @@ public sealed class AffairsAndDiscoveryTests
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "romanticBonds", "characters", "affairRecords", "householdReputations" }));
             Assert.That(system.Writes, Is.EquivalentTo(new[]
             {
-                "romanticBonds", "affairRecords", "householdReputations", "eventIds",
+                "romanticBonds", "affairRecords", "affairRecordIds", "householdReputations", "eventIds",
                 "characters", "commandIds", "commandSequence", "scandalRecords", "scandalRecordIds", "relationships",
             }));
         });
@@ -389,6 +464,47 @@ public sealed class AffairsAndDiscoveryTests
 
         Assert.That(result.Accepted, Is.False);
         Assert.That(result.Error, Is.EqualTo(ResolveAffairCommands.AlreadyResolved));
+    }
+
+    /// <summary>Regression coverage for the ProsecutedAdultery branch's own composition contract: the
+    /// nested <see cref="FileAdulteryCaseCommand"/> call must be guaranteed to succeed by the time
+    /// <c>Mutate</c> runs, so a real precondition failure (here: the accusing household cannot afford
+    /// <see cref="LegalCatalog.MajorFilingCost"/>) rejects the OUTER command too, rather than
+    /// silently discarding the nested rejection while still emitting <see
+    /// cref="AffairResolvedEvent"/>(ProsecutedAdultery) with no case ever filed and <see
+    /// cref="AffairRecord.Resolution"/> still <c>null</c>.</summary>
+    [Test]
+    public void ResolveAffairCommandProsecutedAdulteryRejectsWhenTheAccusingHouseholdCannotAffordFiling()
+    {
+        var state = NewState();
+        var accusingHouseholdId = state.HouseholdIds.Issue();
+        var defendantHouseholdId = state.HouseholdIds.Issue();
+        var regionId = state.RegionIds.Issue();
+        state.Regions.Add(regionId, Region.Create(regionId, "Latium"));
+        var settlementId = state.SettlementIds.Issue();
+        state.Settlements.Add(settlementId, Settlement.Create(settlementId, regionId, SettlementStage.Vicus));
+
+        var wrongedSpouse = state.CharacterIds.Issue();
+        state.Characters.Add(
+            wrongedSpouse,
+            CharacterTestFixtures.Minimal(
+                wrongedSpouse, sex: Sex.Female, birthDate: new GameDate(-30 * 12), household: accusingHouseholdId, location: settlementId));
+        var offender = AddAdult(state, intrigue: 10, household: defendantHouseholdId);
+        var thirdParty = AddAdult(state, intrigue: 10, sex: Sex.Female, household: defendantHouseholdId);
+        var (affairId, _) = SeedHighStakesAffair(state, offender, thirdParty, wrongedSpouse);
+        // Deliberately unfunded: no LedgerAccount exists for accusingHouseholdId, defaulting to zero —
+        // below LegalCatalog.MajorFilingCost.
+
+        var result = ResolveAffairCommands.CreatePipeline(new RandomStreamSet()).Execute(
+            state, new ResolveAffairCommand(
+                state.CommandIds.Issue(), wrongedSpouse.ToTaggedString(), new GameDate(1), null, affairId, AffairResolution.ProsecutedAdultery));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(result.Error, Is.EqualTo(FileAdulteryCaseCommands.InsufficientTreasury));
+
+        state.AffairRecords.TryGet(affairId, out var recordAfter);
+        Assert.That(recordAfter!.Resolution, Is.Null, "A rejected filing must leave the AffairRecord unresolved, not silently 'accepted'.");
+        Assert.That(recordAfter.LegalCaseId, Is.Null);
     }
 
     // ---- ExerciseExtremeLegalRemedyCommand (§12, §17) --------------------------------------------

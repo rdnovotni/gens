@@ -70,7 +70,20 @@ public sealed class SchemeProgressSystem : IMonthlySystem<WorldState>
     public string Id => "interactions.schemeProgress";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "schemes", "characters", "actors", "romanticBonds" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "schemes", "eventIds", "rivalDossiers" };
+
+    /// <summary>Includes <c>"romanticBonds"</c>, <c>"relationships"</c>, <c>"commandIds"</c>, and
+    /// <c>"commandSequence"</c> alongside this system's own headline writes — a successful <see
+    /// cref="SchemeType.Seduce"/> resolution hands off to <see cref="Romance.SeduceSchemeResolutionHook"/>
+    /// (from <see cref="Resolve"/>), which grants <see cref="Characters.BondTag.BlackmailLeverage"/> via
+    /// <see cref="Characters.RecordInteractionCommand"/> and advances the pair's <see
+    /// cref="Romance.RomanticBond"/> via <see cref="Romance.RecordRomanticInteractionCommand"/> — each
+    /// composed command mints its own command id and sequence number, mirroring <see
+    /// cref="Legal.LegalCaseAdvancementSystem"/>'s own "the write-set declared here must cover the
+    /// counters those pipelines touch too" reasoning.</summary>
+    public IReadOnlyCollection<string> Writes { get; } = new[]
+    {
+        "schemes", "eventIds", "rivalDossiers", "romanticBonds", "relationships", "commandIds", "commandSequence",
+    };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)

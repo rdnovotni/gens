@@ -80,7 +80,10 @@ public sealed class SchemeProgressSystemTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "schemes", "characters", "actors", "romanticBonds" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "schemes", "eventIds", "rivalDossiers" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[]
+            {
+                "schemes", "eventIds", "rivalDossiers", "romanticBonds", "relationships", "commandIds", "commandSequence",
+            }));
         });
     }
 

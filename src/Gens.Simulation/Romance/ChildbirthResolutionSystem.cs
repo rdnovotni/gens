@@ -71,7 +71,18 @@ public sealed class ChildbirthResolutionSystem : IMonthlySystem<WorldState>
     public string Id => "romance.childbirthResolution";
     public TickPhase Phase => TickPhase.RelationshipsActors;
     public IReadOnlyCollection<string> Reads { get; } = new[] { "pregnancyRecords", "characters" };
-    public IReadOnlyCollection<string> Writes { get; } = new[] { "pregnancyRecords", "characters", "eventIds" };
+
+    /// <summary>Includes <c>"commandIds"</c>, <c>"commandSequence"</c>, and <c>"characterIds"</c>
+    /// alongside this system's own headline writes: a surviving birth issues a command ID for the
+    /// composed <see cref="Characters.BirthCharacterCommand"/> call, that pipeline's own acceptance
+    /// advances the shared command sequence, and <see cref="Characters.BirthCharacterCommands"/> itself
+    /// issues a fresh <see cref="RuntimeId{T}"/> for the newborn — mirroring <see
+    /// cref="Legal.LegalCaseAdvancementSystem"/>'s own "the write-set declared here must cover the
+    /// counters those pipelines touch too" reasoning.</summary>
+    public IReadOnlyCollection<string> Writes { get; } = new[]
+    {
+        "pregnancyRecords", "characters", "eventIds", "commandIds", "commandSequence", "characterIds",
+    };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
 
     public IReadOnlyList<IDomainEvent> Tick(WorldState state, MonthlyTickContext context)
@@ -155,7 +166,7 @@ public sealed class ChildbirthResolutionSystem : IMonthlySystem<WorldState>
                 // here rather than reuse the pre-birth snapshot.
                 state.Characters.TryGet(pregnancy.MotherId, out var motherBeforeDeath);
                 if (motherBeforeDeath is { } livingMother)
-                    ApplyMaternalDeath(state, livingMother, context.Date);
+                    events.AddRange(ApplyMaternalDeath(state, livingMother, context.Date));
             }
 
             ResolvePregnancy(state, pregnancyId, pregnancy, bornChildId);
@@ -184,13 +195,17 @@ public sealed class ChildbirthResolutionSystem : IMonthlySystem<WorldState>
         return Math.Max(RomanceCatalog.ChildbirthMaternalRiskFloorPercent, risk);
     }
 
-    /// <summary>Records the mother's death by childbirth and closes any open marriage — mirrors <see
-    /// cref="Characters.CharacterLifecycleSystem"/>'s own idiom for a death mid-tick exactly (small
-    /// per-system idioms are restated rather than shared in this codebase; see e.g. how
+    /// <summary>Records the mother's death by childbirth and closes any open marriage, emitting the same
+    /// <see cref="Characters.CharacterDiedEvent"/>/<see cref="Characters.MarriageEndedEvent"/> pair <see
+    /// cref="Characters.CharacterLifecycleSystem"/>'s own identical death-mid-tick idiom produces — event-
+    /// driven consumers (the Dynasty Chronicle, funeral handling) read those events regardless of which
+    /// system caused the death, and a childbirth death must remain observable to them exactly like any
+    /// other (small per-system idioms are restated rather than shared in this codebase; see e.g. how
     /// RomanticBondDecaySystem/SchemeProgressSystem/AutonomousRomanceSystem each separately restate
     /// "materialize before mutate").</summary>
-    private static void ApplyMaternalDeath(WorldState state, Character mother, GameDate date)
+    private static List<IDomainEvent> ApplyMaternalDeath(WorldState state, Character mother, GameDate date)
     {
+        var events = new List<IDomainEvent>();
         var deathRecord = new DeathRecord(date, DeathCause.Childbirth, mother.AgeInYears(date));
         var updatedMother = mother with { DeathRecord = deathRecord };
 
@@ -204,10 +219,15 @@ public sealed class ChildbirthResolutionSystem : IMonthlySystem<WorldState>
                 state.Characters.Remove(spouse);
                 state.Characters.Add(spouse, updatedSpouse);
             }
+
+            events.Add(new MarriageEndedEvent(state.EventIds.Issue(), date, mother.Id, spouse, MarriageEndReason.Death, CausationId: null));
         }
 
         state.Characters.Remove(mother.Id);
         state.Characters.Add(mother.Id, updatedMother);
+
+        events.Add(new CharacterDiedEvent(state.EventIds.Issue(), date, mother.Id, spouseId, deathRecord));
+        return events;
     }
 
     private static Character CloseOpenMarriage(Character character, RuntimeId<Character> spouseId, GameDate endDate)

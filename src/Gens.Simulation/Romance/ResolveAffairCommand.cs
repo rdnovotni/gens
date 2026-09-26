@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using Gens.Simulation.Characters;
 using Gens.Simulation.Commands;
 using Gens.Simulation.Identity;
+using Gens.Simulation.Ledger;
+using Gens.Simulation.Legal;
 using Gens.Simulation.Random;
 using Gens.Simulation.State;
 using Gens.Simulation.Time;
@@ -108,6 +110,35 @@ public static class ResolveAffairCommands
             return QuietlyResolvedIsSystemOnly;
         if (command.Resolution == AffairResolution.ExtremeLegalRemedyExercised)
             return UseExerciseExtremeLegalRemedyCommand;
+
+        // The ProsecutedAdultery branch delegates entirely to FileAdulteryCaseCommand (this type's own
+        // doc comment) — its Mutate call must be guaranteed to succeed, since a rejected nested command
+        // whose CommandResult is silently discarded would otherwise leave this command "accepted" with
+        // no legal case actually filed and AffairRecord.Resolution still null, contradicting the
+        // AffairResolvedEvent(ProsecutedAdultery) already emitted. So every precondition
+        // FileAdulteryCaseCommands.Validate itself checks is re-verified here, up front, reusing that
+        // command's own ValidationErrorCode values rather than declaring a parallel set.
+        if (command.Resolution == AffairResolution.ProsecutedAdultery)
+        {
+            if (!state.Characters.TryGet(record.WrongedSpouseId, out var wrongedSpouse) ||
+                wrongedSpouse!.Household is not { } accusingHouseholdId)
+                return FileAdulteryCaseCommands.WrongedSpouseHasNoHousehold;
+            if (!state.Characters.TryGet(record.OffenderCharacterId, out var offender) ||
+                offender!.Household is not { } defendantHouseholdId)
+                return FileAdulteryCaseCommands.OffenderHasNoHousehold;
+            if (accusingHouseholdId == defendantHouseholdId)
+                return FileAdulteryCaseCommands.SameHousehold;
+            if (!wrongedSpouse.IsAlive)
+                return FileAdulteryCaseCommands.FilingCharacterDeceased;
+            if (!state.Settlements.TryGet(wrongedSpouse.Location, out _))
+                return FileAdulteryCaseCommands.SettlementNotFound;
+
+            var balance = state.LedgerAccounts.TryGet(LedgerAccountKey.ForHousehold(accusingHouseholdId), out var account)
+                ? account!.Balance
+                : Money.Zero;
+            if (balance < LegalCatalog.MajorFilingCost)
+                return FileAdulteryCaseCommands.InsufficientTreasury;
+        }
 
         return null;
     }

@@ -44,7 +44,13 @@ public sealed record SchemeInitiatedEvent(
     public Visibility Visibility => Visibility.Private(InitiatorCharacterId.ToTaggedString(), TargetCharacterId.ToTaggedString());
 }
 
-/// <summary>The validate/mutate pipeline for <see cref="InitiateSchemeCommand"/> (ADR 0006).</summary>
+/// <summary>The validate/mutate pipeline for <see cref="InitiateSchemeCommand"/> (ADR 0006). For <see
+/// cref="SchemeType.Seduce"/>, <see cref="Validate"/> itself enforces <see
+/// cref="Romance.RomanceEligibility.CheckPair"/> — the Adult-lifecycle and Enslaved power-imbalance
+/// exclusion is a hard, data-layer gate (<c>gens-romance-sexuality-lineage-design.md</c> §2), so it
+/// cannot live only in <see cref="InteractionActionDefinitions.SeduceEligibility"/>'s own action-catalog
+/// callback: any caller can submit this command directly to this public pipeline, bypassing that
+/// callback entirely.</summary>
 public static class InitiateSchemeCommands
 {
     public static readonly ValidationErrorCode SelfTargeted = new("interactions.initiateScheme.selfTargeted");
@@ -83,6 +89,14 @@ public static class InitiateSchemeCommands
             entry.Value.Type == command.Type);
         if (alreadyInProgress)
             return AlreadyInProgress;
+
+        if (command.Type == SchemeType.Seduce)
+        {
+            var romanceError = Romance.RomanceEligibility.CheckPair(
+                state, command.InitiatorCharacterId, command.TargetCharacterId, command.SubmittedDate);
+            if (romanceError is not null)
+                return romanceError;
+        }
 
         return null;
     }

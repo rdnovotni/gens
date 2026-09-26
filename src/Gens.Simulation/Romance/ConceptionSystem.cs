@@ -101,6 +101,15 @@ public sealed class ConceptionSystem : IMonthlySystem<WorldState>
             if (characterA.Sex == characterB.Sex)
                 continue;
 
+            // A Marriage-type bond is flavor/tracking data alongside Character.MaritalHistory (that
+            // record's own doc comment) — the true source of "still married" — and EndMarriageCommand
+            // closes MaritalHistory without ever retagging the parallel RomanticBond. Without this
+            // check, a bond left at BondType.Marriage after a divorce (or after either party remarries
+            // someone else) would keep rolling conception between former spouses indefinitely.
+            if (bond.BondType == RomanticBondType.Marriage &&
+                (characterA.CurrentSpouseId != characterB.Id || characterB.CurrentSpouseId != characterA.Id))
+                continue;
+
             var mother = characterA.Sex == Sex.Female ? characterA : characterB;
             var father = characterA.Sex == Sex.Female ? characterB : characterA;
 

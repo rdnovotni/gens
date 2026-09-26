@@ -42,15 +42,16 @@ public sealed class PregnancyAndLegitimacyTests
 
     private static RuntimeId<Character> AddAdult(
         WorldState state, Sex sex, int fertility = 50, int health = 80,
-        MarriageRecord[]? maritalHistory = null, RuntimeId<Household>? household = null)
+        MarriageRecord[]? maritalHistory = null, RuntimeId<Household>? household = null,
+        RuntimeId<Character>? id = null)
     {
-        var id = state.CharacterIds.Issue();
+        var characterId = id ?? state.CharacterIds.Issue();
         state.Characters.Add(
-            id,
+            characterId,
             CharacterTestFixtures.Minimal(
-                id, sex: sex, birthDate: new GameDate(-30 * 12), household: household,
+                characterId, sex: sex, birthDate: new GameDate(-30 * 12), household: household,
                 condition: new Condition(health, 0, 50, 20, fertility), maritalHistory: maritalHistory));
-        return id;
+        return characterId;
     }
 
     private static void SeedBond(WorldState state, RuntimeId<Character> a, RuntimeId<Character> b, RomanticBondType bondType)
@@ -72,8 +73,20 @@ public sealed class PregnancyAndLegitimacyTests
         RomanticBondType bondType)
     {
         var state = NewState();
-        var mother = AddAdult(state, Sex.Female, fertility: 100);
-        var father = AddAdult(state, Sex.Male, fertility: 100);
+        // A Marriage-type bond only conceives while the two parties are actually still married to each
+        // other (ConceptionSystem's own defensive check, since a RomanticBond is flavor/tracking data
+        // alongside the real Character.MaritalHistory source of truth) — seed mutual MaritalHistory for
+        // that case; Concubinage/Affair have no such requirement.
+        var motherId = state.CharacterIds.Issue();
+        var fatherId = state.CharacterIds.Issue();
+        var maritalHistory = bondType == RomanticBondType.Marriage
+            ? new[] { new MarriageRecord(fatherId, Epoch, null, null) }
+            : null;
+        var fatherMaritalHistory = bondType == RomanticBondType.Marriage
+            ? new[] { new MarriageRecord(motherId, Epoch, null, null) }
+            : null;
+        var mother = AddAdult(state, Sex.Female, fertility: 100, maritalHistory: maritalHistory, id: motherId);
+        var father = AddAdult(state, Sex.Male, fertility: 100, maritalHistory: fatherMaritalHistory, id: fatherId);
         SeedBond(state, mother, father, bondType);
 
         var system = new ConceptionSystem();
@@ -219,7 +232,10 @@ public sealed class PregnancyAndLegitimacyTests
         {
             Assert.That(system.Phase, Is.EqualTo(TickPhase.RelationshipsActors));
             Assert.That(system.Reads, Is.EquivalentTo(new[] { "pregnancyRecords", "characters" }));
-            Assert.That(system.Writes, Is.EquivalentTo(new[] { "pregnancyRecords", "characters", "eventIds" }));
+            Assert.That(system.Writes, Is.EquivalentTo(new[]
+            {
+                "pregnancyRecords", "characters", "eventIds", "commandIds", "commandSequence", "characterIds",
+            }));
         });
     }
 
@@ -286,6 +302,140 @@ public sealed class PregnancyAndLegitimacyTests
 
         Assert.That(deathCount, Is.GreaterThan(0),
             "Expected at least one maternal death across 200 maximally unhealthy mothers under full risk modeling.");
+    }
+
+    [Test]
+    public void MaternalDeathClosesTheOpenMarriageAndEmitsCharacterDiedAndMarriageEndedEvents()
+    {
+        // Fix 2 regression: ApplyMaternalDeath must actually emit CharacterDiedEvent/MarriageEndedEvent
+        // (mirroring CharacterLifecycleSystem's own death-mid-tick idiom) rather than silently mutating
+        // state with no observable event — Chronicle/funeral consumers only ever see this death through
+        // those events, never through a bare state diff.
+        const int trialCount = 200;
+        var state = NewState();
+        var pairs = new (RuntimeId<Character> Mother, RuntimeId<Character> Father)[trialCount];
+        for (var i = 0; i < trialCount; i++)
+        {
+            var fatherId = state.CharacterIds.Issue();
+            var motherId = state.CharacterIds.Issue();
+            AddAdult(
+                state, Sex.Male, fertility: 100, health: 0,
+                maritalHistory: new[] { new MarriageRecord(motherId, new GameDate(-24), null, null) }, id: fatherId);
+            AddAdult(
+                state, Sex.Female, fertility: 100, health: 0,
+                maritalHistory: new[] { new MarriageRecord(fatherId, new GameDate(-24), null, null) }, id: motherId);
+            pairs[i] = (motherId, fatherId);
+
+            var pregnancyId = state.PregnancyRecordIds.Issue();
+            state.PregnancyRecords.Add(
+                pregnancyId, PregnancyRecord.Create(pregnancyId, motherId, fatherId, RomanticBondType.Marriage, Epoch));
+        }
+
+        // No round trip: RomanceContentSettings.FertilityRiskAbstracted defaults to false, so the full
+        // §9 risk model applies and a maternal death is reachable at maximally poor Health.
+        var events = new ChildbirthResolutionSystem().Tick(
+            state, new MonthlyTickContext(new GameDate(RomanceCatalog.PregnancyTermMonths), ChildbirthStreams()));
+
+        var diedMothers = pairs.Where(pair =>
+        {
+            state.Characters.TryGet(pair.Mother, out var mother);
+            return !mother.IsAlive;
+        }).ToArray();
+
+        Assert.That(diedMothers, Is.Not.Empty, "Expected at least one maternal death across 200 maximally unhealthy mothers.");
+
+        foreach (var (motherId, fatherId) in diedMothers)
+        {
+            var diedEvent = events.OfType<CharacterDiedEvent>().SingleOrDefault(e => e.CharacterId == motherId);
+            Assert.That(diedEvent, Is.Not.Null, $"Expected a CharacterDiedEvent for mother {motherId}.");
+            Assert.That(diedEvent!.DeathRecord.Cause, Is.EqualTo(DeathCause.Childbirth));
+            Assert.That(diedEvent.SpouseId, Is.EqualTo(fatherId));
+
+            var marriageEndedEvent = events.OfType<MarriageEndedEvent>()
+                .SingleOrDefault(e => e.CharacterId == motherId && e.SpouseId == fatherId);
+            Assert.That(marriageEndedEvent, Is.Not.Null, $"Expected a MarriageEndedEvent closing {motherId}'s marriage to {fatherId}.");
+            Assert.That(marriageEndedEvent!.Reason, Is.EqualTo(MarriageEndReason.Death));
+
+            state.Characters.TryGet(motherId, out var mother);
+            Assert.That(mother.MaritalHistory.Single(r => r.SpouseId == fatherId).EndDate, Is.Not.Null);
+        }
+    }
+
+    [Test]
+    public void ChildbirthStillProducesALiveChildWhenTheRecordedFatherHasAlreadyDied()
+    {
+        // Fix 3 regression: BirthCharacterCommand used to reject any birth whose father was already
+        // dead (FatherDeceased), which silently swallowed every childbirth resolution for a pregnancy
+        // conceived before the father's death — a real, reachable historical outcome that must still
+        // produce a child.
+        var state = NewState();
+        var father = AddAdult(state, Sex.Male, fertility: 100, health: 100);
+        var mother = AddAdult(
+            state, Sex.Female, fertility: 100, health: 100,
+            maritalHistory: new[] { new MarriageRecord(father, new GameDate(-9), null, null) });
+        state.Characters.TryGet(father, out var fatherCharacter);
+        state.Characters.Remove(father);
+        state.Characters.Add(
+            father, fatherCharacter! with { DeathRecord = new DeathRecord(new GameDate(1), DeathCause.Violence, 40) });
+
+        var abstractedState = WithFertilityRiskAbstracted(state);
+        abstractedState.Characters.TryGet(mother, out var abstractedMother);
+
+        var pregnancyId = abstractedState.PregnancyRecordIds.Issue();
+        abstractedState.PregnancyRecords.Add(
+            pregnancyId,
+            PregnancyRecord.Create(pregnancyId, abstractedMother.Id, father, RomanticBondType.Marriage, Epoch));
+
+        var events = new ChildbirthResolutionSystem().Tick(
+            abstractedState, new MonthlyTickContext(new GameDate(RomanceCatalog.PregnancyTermMonths), ChildbirthStreams()));
+
+        var bornEvent = events.OfType<CharacterBornEvent>().SingleOrDefault();
+        Assert.That(bornEvent, Is.Not.Null, "Expected a live birth despite the recorded father having already died.");
+
+        abstractedState.PregnancyRecords.TryGet(pregnancyId, out var resolved);
+        Assert.Multiple(() =>
+        {
+            Assert.That(resolved.Resolved, Is.True);
+            Assert.That(resolved.BornChildId, Is.EqualTo(bornEvent!.CharacterId));
+        });
+    }
+
+    [Test]
+    public void AMarriageTypedBondStopsRollingConceptionOnceTheRealMarriageHasEnded()
+    {
+        // Fix 9 regression: a RomanticBond is flavor/tracking data alongside Character.MaritalHistory's
+        // own source of truth — EndMarriageCommand never retags the parallel RomanticBond, so
+        // ConceptionSystem must independently confirm the marriage is still open rather than trusting
+        // the bond's stale BondType.
+        var state = NewState();
+        var husband = AddAdult(
+            state, Sex.Male, fertility: 100);
+        var wife = AddAdult(
+            state, Sex.Female, fertility: 100);
+        state.Characters.TryGet(husband, out var husbandCharacter);
+        state.Characters.Remove(husband);
+        state.Characters.Add(
+            husband, husbandCharacter! with { MaritalHistory = new[] { new MarriageRecord(wife, new GameDate(-24), null, null) } });
+        state.Characters.TryGet(wife, out var wifeCharacter);
+        state.Characters.Remove(wife);
+        state.Characters.Add(
+            wife, wifeCharacter! with { MaritalHistory = new[] { new MarriageRecord(husband, new GameDate(-24), null, null) } });
+        SeedBond(state, husband, wife, RomanticBondType.Marriage);
+
+        var endResult = EndMarriageCommands.Pipeline.Execute(
+            state, new EndMarriageCommand(state.CommandIds.Issue(), husband.ToTaggedString(), Epoch, null, husband, MarriageEndReason.Divorce));
+        Assert.That(endResult.Accepted, Is.True, $"Rejected: {endResult.Error}");
+
+        state.RomanticBonds.TryGet(RomanticBondKey.Create(husband, wife), out var bond);
+        Assert.That(bond.BondType, Is.EqualTo(RomanticBondType.Marriage), "The bond must still be stale-tagged Marriage for this regression to be meaningful.");
+
+        var system = new ConceptionSystem();
+        var streams = ConceptionStreams();
+        for (var month = 1; month <= 5; month++)
+            system.Tick(state, new MonthlyTickContext(new GameDate(month), streams));
+
+        Assert.That(HasAnyPregnancy(state, husband), Is.False);
+        Assert.That(HasAnyPregnancy(state, wife), Is.False);
     }
 
     /// <summary>Round-trips <paramref name="state"/> through <see cref="WorldStateMapper"/> with <see

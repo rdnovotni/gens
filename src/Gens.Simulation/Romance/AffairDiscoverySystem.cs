@@ -144,7 +144,7 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
     /// "the write-set declared here must cover the counters those pipelines touch too" reasoning.</summary>
     public IReadOnlyCollection<string> Writes { get; } = new[]
     {
-        "romanticBonds", "affairRecords", "householdReputations", "eventIds",
+        "romanticBonds", "affairRecords", "affairRecordIds", "householdReputations", "eventIds",
         "characters", "commandIds", "commandSequence", "scandalRecords", "scandalRecordIds", "relationships",
     };
     public IReadOnlyCollection<string> Prerequisites { get; } = Array.Empty<string>();
@@ -236,8 +236,13 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
             }
 
             // §11: discovery itself produces the reactive traits regardless of stakes level — only the
-            // FORMAL resolution path (a later slice) differs by stakes.
-            GrantTrait(state, offenderId, RomanceCatalog.AdulterousTraitId);
+            // FORMAL resolution path (a later slice) differs by stakes. Adulterous/Faithful are authored
+            // as an opposed pair (content/source/traits/romance.json); this direct-append grant has no
+            // compiled TraitCatalog to consult for exclusivity (that type is deliberately independent of
+            // WorldState — see its own doc comment — and nothing threads a loaded catalog into a monthly
+            // system), so the one opposed trait this method could ever collide with is stripped by name
+            // instead, rather than building general exclusivity plumbing for a single known pair.
+            GrantTrait(state, offenderId, RomanceCatalog.AdulterousTraitId, removeIfPresent: RomanceCatalog.FaithfulTraitId);
             foreach (var wrongedId in wrongedSpouseIds)
             {
                 GrantTrait(state, wrongedId, RomanceCatalog.HeartbrokenTraitId);
@@ -333,6 +338,12 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
         return false;
     }
 
+    /// <summary>Whether THIS discovered pair (<paramref name="aId"/>/<paramref name="bId"/>, in either
+    /// mother/father order) has an unresolved Affair-conceived pregnancy between the two of them
+    /// specifically — not merely a pregnancy involving one of them and some unrelated third or fourth
+    /// Character. §11's "Legitimacy genuinely contested" trigger is about a real child this exact affair
+    /// may have produced, so the match requires both parents to be this pair, not a same-side OR across
+    /// four independent identities.</summary>
     private static bool HasUnresolvedAffairConceivedPregnancy(
         WorldState state, RuntimeId<Character> aId, RuntimeId<Character> bId)
     {
@@ -341,7 +352,8 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
             var pregnancy = entry.Value;
             if (pregnancy.Resolved || pregnancy.ConceivedViaBondType != RomanticBondType.Affair)
                 continue;
-            if (pregnancy.MotherId == aId || pregnancy.FatherId == aId || pregnancy.MotherId == bId || pregnancy.FatherId == bId)
+            if ((pregnancy.MotherId == aId && pregnancy.FatherId == bId) ||
+                (pregnancy.MotherId == bId && pregnancy.FatherId == aId))
                 return true;
         }
 
@@ -370,15 +382,24 @@ public sealed class AffairDiscoverySystem : IMonthlySystem<WorldState>
     /// <summary>Grants <paramref name="traitId"/> directly on <paramref name="characterId"/>, matching
     /// <see cref="Scandal.RecordScandalCommand.ApplyScandalMarkedTrait"/>'s own remove-then-readd
     /// plumbing exactly — see <see cref="RomanceCatalog.AdulterousTraitId"/>'s own doc comment for why
-    /// this direct-append idiom is safe for a trait ID content has not authored yet.</summary>
-    private static void GrantTrait(WorldState state, RuntimeId<Character> characterId, DefinitionId<Trait> traitId)
+    /// this direct-append idiom is safe for a trait ID content has not authored yet. When <paramref
+    /// name="removeIfPresent"/> is supplied, that trait (an authored opposed counterpart to <paramref
+    /// name="traitId"/>) is dropped first if the Character currently holds it, so a grant here never
+    /// leaves both sides of an opposed pair on the same Character.</summary>
+    private static void GrantTrait(
+        WorldState state, RuntimeId<Character> characterId, DefinitionId<Trait> traitId,
+        DefinitionId<Trait>? removeIfPresent = null)
     {
         if (!state.Characters.TryGet(characterId, out var character) || character is null || !character.IsAlive)
             return;
         if (character.Traits.Contains(traitId))
             return;
 
-        var updatedTraits = character.Traits.Append(traitId).ToArray();
+        var traits = removeIfPresent is { } opposed
+            ? character.Traits.Where(t => t != opposed)
+            : character.Traits.AsEnumerable();
+
+        var updatedTraits = traits.Append(traitId).ToArray();
         state.Characters.Remove(characterId);
         state.Characters.Add(characterId, character with { Traits = updatedTraits });
     }

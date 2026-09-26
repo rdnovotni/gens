@@ -155,4 +155,50 @@ public sealed class SeduceSchemeTests
             Assert.That(seduceScheme.Progress, Is.EqualTo(coerciveScheme.Progress));
         });
     }
+
+    // ---- RomanceEligibility enforced in the pipeline itself, not only the action-catalog layer ------
+
+    /// <summary>Regression coverage: §2's Adult-lifecycle/Enslaved hard exclusion is a data-layer gate,
+    /// not merely an <see cref="Interactions.InteractionActionDefinitions.SeduceEligibility"/> UI-callback
+    /// suggestion — a caller submitting <see cref="InitiateSchemeCommand"/> directly to the public <see
+    /// cref="InitiateSchemeCommands.Pipeline"/> with <see cref="SchemeType.Seduce"/> must be rejected the
+    /// same way, since nothing forces every caller through the action-catalog layer first.</summary>
+    [Test]
+    public void ThePublicPipelineRejectsASeduceSchemeAgainstAnEnslavedTarget()
+    {
+        var state = NewState();
+        var initiatorId = AddCharacter(state);
+        var targetId = state.CharacterIds.Issue();
+        state.Characters.Add(
+            targetId,
+            CharacterTestFixtures.Minimal(
+                targetId, birthDate: new GameDate(-30 * 12), status: LegalStatus.Enslaved,
+                attributes: new CoreAttributes(10, 10, 10, 10, 10)));
+
+        var result = InitiateSchemeCommands.Pipeline.Execute(
+            state, new InitiateSchemeCommand(state.CommandIds.Issue(), "player", new GameDate(0), null, initiatorId, targetId, SchemeType.Seduce));
+
+        Assert.That(result.Accepted, Is.False);
+        Assert.That(state.Schemes.InAscendingOrder(), Is.Empty);
+    }
+
+    [Test]
+    public void ThePublicPipelineStillAcceptsACoerciveSchemeAgainstAnEnslavedTarget()
+    {
+        // Confirms the new gate is scoped to SchemeType.Seduce only — RomanceEligibility has no bearing
+        // on the pre-existing, unrelated Coercive scheme type.
+        var state = NewState();
+        var initiatorId = AddCharacter(state);
+        var targetId = state.CharacterIds.Issue();
+        state.Characters.Add(
+            targetId,
+            CharacterTestFixtures.Minimal(
+                targetId, birthDate: new GameDate(-30 * 12), status: LegalStatus.Enslaved,
+                attributes: new CoreAttributes(10, 10, 10, 10, 10)));
+
+        var result = InitiateSchemeCommands.Pipeline.Execute(
+            state, new InitiateSchemeCommand(state.CommandIds.Issue(), "player", new GameDate(0), null, initiatorId, targetId, SchemeType.Coercive));
+
+        Assert.That(result.Accepted, Is.True, $"Rejected: {result.Error}");
+    }
 }
