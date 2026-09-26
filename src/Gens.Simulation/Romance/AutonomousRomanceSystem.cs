@@ -44,7 +44,10 @@ public sealed record AutonomousRomanceTriggeredEvent(
 /// covers §8.1's worked example's first two tiers (an unprompted spark between household members,
 /// then that spark maturing into something the household itself has to reckon with). A later pass can
 /// add the other two opportunity sources as their own additional pair-enumeration strategies feeding
-/// the same roll-and-advance logic below, without disturbing this one.
+/// the same roll-and-advance logic below, without disturbing this one. (The hosted-gathering source
+/// now exists in a different shape: Phase 17 item 4's <see cref="Activities.ActivityPhaseRunner"/>
+/// rolls a Flirtation incident between two attendees of an Activity's Phase, routed through the same
+/// <see cref="RecordRomanticInteractionCommand"/> and gated by the same <see cref="RomanceEligibility.CheckPair"/>.)
 ///
 /// Each tick, for every unordered pair of Characters sharing a household: <see
 /// cref="RomanceEligibility.CheckPair"/> gates the pair first (Adult floor, power-imbalance exclusion),

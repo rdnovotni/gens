@@ -56,7 +56,9 @@ public enum ActionDurationMode
 
     /// <summary>Occupies a fixed number of months before its outcome resolves — the shape a future
     /// Extended Activity (<c>gens-activities-activity-engine-design.md</c> §3) or a multi-month Edict
-    /// effect will need; nothing in this pass yet produces one.</summary>
+    /// effect will need. Phase 17 item 4's Extended Activities track their own real duration on <see
+    /// cref="Activities.HostedActivity.StartDate"/>/<see cref="Activities.HostedActivity.EndDate"/> rather
+    /// than through this action-definition layer, so nothing yet produces this mode.</summary>
     FixedMonths,
 }
 

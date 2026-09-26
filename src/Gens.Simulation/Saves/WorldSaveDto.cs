@@ -918,6 +918,18 @@ public sealed record WorldSaveDocument
     /// to empty, matching <see cref="AdulteryCaseLinks"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(140)]
     public IReadOnlyList<InfamiaStatusDto> InfamiaStatuses { get; init; } = Array.Empty<InfamiaStatusDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Activities.HostedActivity"/> (Phase 17 item 4), already
+    /// in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to
+    /// empty, for the same additive-only reason as <see cref="InfamiaStatuses"/> above.</summary>
+    [JsonPropertyOrder(141)]
+    public IReadOnlyList<HostedActivityDto> Activities { get; init; } = Array.Empty<HostedActivityDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Activities.ActivityInvitation"/> (Phase 17 item 4),
+    /// already in ascending <see cref="Gens.Simulation.Activities.ActivityInvitationKey"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="Activities"/>.</summary>
+    [JsonPropertyOrder(142)]
+    public IReadOnlyList<ActivityInvitationDto> ActivityInvitations { get; init; } = Array.Empty<ActivityInvitationDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -5373,3 +5385,88 @@ public sealed record RationalisClusterActiveHouseholdDto
 }
 
 #endif
+
+/// <summary>One <see cref="Gens.Simulation.Activities.HostedActivity"/> (Phase 17 item 4;
+/// <c>gens-activities-activity-engine-design.md</c> §11).</summary>
+public sealed record HostedActivityDto
+{
+    [JsonPropertyOrder(0)] public required string Id { get; init; }
+    [JsonPropertyOrder(1)] public required string TypeKey { get; init; }
+    [JsonPropertyOrder(2)] public required string HostCharacterId { get; init; }
+    [JsonPropertyOrder(3)] public string? HostHouseholdId { get; init; }
+    [JsonPropertyOrder(4)] public string? HostActorId { get; init; }
+    [JsonPropertyOrder(5)] public required string VenueKind { get; init; }
+    [JsonPropertyOrder(6)] public required string VenueKey { get; init; }
+    [JsonPropertyOrder(7)] public required string VenueSettlementId { get; init; }
+    [JsonPropertyOrder(8)] public string? VenueHoldingId { get; init; }
+    [JsonPropertyOrder(9)] public required int VenueTier { get; init; }
+    [JsonPropertyOrder(10)] public required string DurationMode { get; init; }
+    [JsonPropertyOrder(11)] public required int PlannedDateTotalMonths { get; init; }
+    [JsonPropertyOrder(12)] public required int StartDateTotalMonths { get; init; }
+    [JsonPropertyOrder(13)] public required int EndDateTotalMonths { get; init; }
+    [JsonPropertyOrder(14)] public required string Scale { get; init; }
+    [JsonPropertyOrder(15)] public required IReadOnlyList<ActivityQualityInputDto> QualityInputs { get; init; }
+    [JsonPropertyOrder(16)] public required long BudgetMinorUnits { get; init; }
+    [JsonPropertyOrder(17)] public required string Status { get; init; }
+    [JsonPropertyOrder(18)] public required IReadOnlyList<ActivityPhaseDto> Phases { get; init; }
+    [JsonPropertyOrder(19)] public required IReadOnlyList<ActivityPlannedInteractionDto> PlannedInteractions { get; init; }
+    [JsonPropertyOrder(20)] public ActivityOutcomeDto? Outcome { get; init; }
+    [JsonPropertyOrder(21)] public string? TerminationReason { get; init; }
+}
+
+public sealed record ActivityQualityInputDto
+{
+    [JsonPropertyOrder(0)] public required string Key { get; init; }
+    [JsonPropertyOrder(1)] public required int Score { get; init; }
+}
+
+public sealed record ActivityPhaseDto
+{
+    [JsonPropertyOrder(0)] public required string PhaseKey { get; init; }
+    [JsonPropertyOrder(1)] public required int Sequence { get; init; }
+    [JsonPropertyOrder(2)] public required int ScheduledDateTotalMonths { get; init; }
+    [JsonPropertyOrder(3)] public int? OccurredDateTotalMonths { get; init; }
+    [JsonPropertyOrder(4)] public required IReadOnlyList<ActivityMomentDto> Moments { get; init; }
+}
+
+public sealed record ActivityMomentDto
+{
+    [JsonPropertyOrder(0)] public required string Kind { get; init; }
+    [JsonPropertyOrder(1)] public required string PrimaryCharacterId { get; init; }
+    [JsonPropertyOrder(2)] public string? SecondaryCharacterId { get; init; }
+    [JsonPropertyOrder(3)] public string? IncidentKind { get; init; }
+    [JsonPropertyOrder(4)] public required int Magnitude { get; init; }
+}
+
+public sealed record ActivityPlannedInteractionDto
+{
+    [JsonPropertyOrder(0)] public required string InitiatorId { get; init; }
+    [JsonPropertyOrder(1)] public required string TargetId { get; init; }
+    [JsonPropertyOrder(2)] public required string PhaseKey { get; init; }
+    [JsonPropertyOrder(3)] public required int OpinionDelta { get; init; }
+    [JsonPropertyOrder(4)] public required IReadOnlyList<string> BondsGranted { get; init; }
+}
+
+public sealed record ActivityOutcomeDto
+{
+    [JsonPropertyOrder(0)] public required int QualityScore { get; init; }
+    [JsonPropertyOrder(1)] public required string QualityTier { get; init; }
+    [JsonPropertyOrder(2)] public required int HostDignitasDelta { get; init; }
+    [JsonPropertyOrder(3)] public required int GuestOpinionDelta { get; init; }
+    [JsonPropertyOrder(4)] public required int AttendeeCount { get; init; }
+    [JsonPropertyOrder(5)] public required int WitnessCount { get; init; }
+    [JsonPropertyOrder(6)] public required string NarrativeSummary { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Activities.ActivityInvitation"/> (Phase 17 item 4; §4, §11).</summary>
+public sealed record ActivityInvitationDto
+{
+    [JsonPropertyOrder(0)] public required string ActivityId { get; init; }
+    [JsonPropertyOrder(1)] public required string InviteeId { get; init; }
+    [JsonPropertyOrder(2)] public required string RsvpStatus { get; init; }
+    [JsonPropertyOrder(3)] public required bool WasExpectedInvite { get; init; }
+    [JsonPropertyOrder(4)] public required bool ExclusionInsultApplied { get; init; }
+    [JsonPropertyOrder(5)] public required bool RespondedExplicitly { get; init; }
+    [JsonPropertyOrder(6)] public required bool AttendsToCauseTrouble { get; init; }
+    [JsonPropertyOrder(7)] public int? RespondedDateTotalMonths { get; init; }
+}
