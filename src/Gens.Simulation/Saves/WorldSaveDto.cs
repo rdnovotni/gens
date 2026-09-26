@@ -875,6 +875,49 @@ public sealed record WorldSaveDocument
     [JsonPropertyOrder(131)]
     public IReadOnlyList<RationalisClusterActiveHouseholdDto> RationalisClusterActiveHouseholds { get; init; } =
         Array.Empty<RationalisClusterActiveHouseholdDto>();
+
+    /// <summary>Every undirected <see cref="Gens.Simulation.Romance.RomanticBond"/> (Phase 17 item 3),
+    /// already in ascending <see cref="Gens.Simulation.Romance.RomanticBondKey"/> order. Not
+    /// <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="RationalisClusterActiveHouseholds"/> above.</summary>
+    [JsonPropertyOrder(132)]
+    public IReadOnlyList<RomanticBondDto> RomanticBonds { get; init; } = Array.Empty<RomanticBondDto>();
+
+    /// <summary>Every conception-to-resolution <see cref="Gens.Simulation.Romance.PregnancyRecord"/>
+    /// (Phase 17 item 3 slice 6), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not
+    /// <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="RomanticBonds"/> above.</summary>
+    [JsonPropertyOrder(133)]
+    public IReadOnlyList<PregnancyRecordDto> PregnancyRecords { get; init; } = Array.Empty<PregnancyRecordDto>();
+
+    /// <summary>Campaign-level <see cref="Gens.Simulation.Romance.RomanceContentSettings"/> toggle
+    /// (Phase 17 item 3 slice 6). Not <c>required</c>; defaults to <c>false</c> so a pre-existing save
+    /// loads with full §9 risk modeling, matching that record's own default.</summary>
+    [JsonPropertyOrder(134)]
+    public bool RomanceFertilityRiskAbstracted { get; init; }
+
+    /// <summary>Every discovered <see cref="Gens.Simulation.Romance.AffairRecord"/> (Phase 17 item 3
+    /// slice 8), already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>,
+    /// and defaults to empty, for the same additive-only reason as <see cref="PregnancyRecords"/>
+    /// above. <c>138</c>, not <c>135</c>, since 129-135 are already double-booked between this item's
+    /// own earlier slices and Phase 17 item 2's own property block above — harmless for
+    /// <c>System.Text.Json</c> (it only orders serialization, uniqueness is not required), but this
+    /// property picks a genuinely free number rather than adding to that pre-existing tally.</summary>
+    [JsonPropertyOrder(138)]
+    public IReadOnlyList<AffairRecordDto> AffairRecords { get; init; } = Array.Empty<AffairRecordDto>();
+
+    /// <summary>Every §12 <see cref="Gens.Simulation.Romance.AdulteryCaseLink"/> (Phase 17 item 3 slice
+    /// 9), already in ascending-<see cref="Identity.RuntimeId{T}"/> (by case ID) order. Not
+    /// <c>required</c>, and defaults to empty, for the same additive-only reason as <see
+    /// cref="AffairRecords"/> above.</summary>
+    [JsonPropertyOrder(139)]
+    public IReadOnlyList<AdulteryCaseLinkDto> AdulteryCaseLinks { get; init; } = Array.Empty<AdulteryCaseLinkDto>();
+
+    /// <summary>Every §13 <see cref="Gens.Simulation.Romance.InfamiaStatus"/> (Phase 17 item 3 slice 9),
+    /// already in ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults
+    /// to empty, matching <see cref="AdulteryCaseLinks"/>'s identical reasoning.</summary>
+    [JsonPropertyOrder(140)]
+    public IReadOnlyList<InfamiaStatusDto> InfamiaStatuses { get; init; } = Array.Empty<InfamiaStatusDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -1244,6 +1287,18 @@ public sealed record CounterSetDto
     /// cref="OverseerAssignmentIds"/>'s identical reasoning.</summary>
     [JsonPropertyOrder(127)]
     public long SeniorPositionAssignmentIds { get; init; }
+
+    /// <summary>Not <c>required</c>, defaults to 0: a pre-Phase-17-item-3-slice-6 save has no
+    /// PregnancyRecords. Additive-only per ADR 0011, matching <see cref="SchemeIds"/>'s identical
+    /// reasoning.</summary>
+    [JsonPropertyOrder(128)]
+    public long PregnancyRecordIds { get; init; }
+
+    /// <summary>Not <c>required</c>, defaults to 0: a pre-Phase-17-item-3-slice-8 save has no
+    /// AffairRecords. Additive-only per ADR 0011, matching <see cref="PregnancyRecordIds"/>'s
+    /// identical reasoning.</summary>
+    [JsonPropertyOrder(129)]
+    public long AffairRecordIds { get; init; }
 }
 
 /// <summary>One <see cref="State.KnowledgeState"/> entry. <see cref="ValueJson"/> holds the fact's
@@ -1573,6 +1628,145 @@ public sealed record RelationshipDto
 
     [JsonPropertyOrder(7)]
     public string? ProvenanceEventId { get; init; }
+}
+
+/// <summary>One undirected <see cref="Gens.Simulation.Romance.RomanticBond"/> (Phase 17 item 3;
+/// <c>gens-romance-sexuality-lineage-design.md</c> §3, §16), keyed by its <see
+/// cref="Gens.Simulation.Romance.RomanticBondKey"/>'s canonically-ordered (CharacterAId, CharacterBId)
+/// pair.</summary>
+public sealed record RomanticBondDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterAId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string CharacterBId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string BondType { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required int Affection { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int Attraction { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool IsKnownPublicly { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required int DiscoveryRisk { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required int FormedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required int LastMeaningfulInteractionDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? ProvenanceEventId { get; init; }
+}
+
+/// <summary>One conception-to-resolution <see cref="Gens.Simulation.Romance.PregnancyRecord"/>
+/// (Phase 17 item 3 slice 6; <c>gens-romance-sexuality-lineage-design.md</c> §9).</summary>
+public sealed record PregnancyRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string PregnancyId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string MotherId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string FatherId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string ConceivedViaBondType { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required int ConceivedDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required int DueDateTotalMonths { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool Resolved { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool MaternalRiskResolved { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public required bool InfantRiskResolved { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public string? BornChildId { get; init; }
+}
+
+/// <summary>One discovered <see cref="Gens.Simulation.Romance.AffairRecord"/> (Phase 17 item 3 slice 8;
+/// <c>gens-romance-sexuality-lineage-design.md</c> §11).</summary>
+public sealed record AffairRecordDto
+{
+    [JsonPropertyOrder(0)]
+    public required string AffairId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string OffenderCharacterId { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public required string ThirdPartyCharacterId { get; init; }
+
+    [JsonPropertyOrder(3)]
+    public required string WrongedSpouseId { get; init; }
+
+    [JsonPropertyOrder(4)]
+    public required string StakesLevel { get; init; }
+
+    [JsonPropertyOrder(5)]
+    public required bool InvolvesRivalHouse { get; init; }
+
+    [JsonPropertyOrder(6)]
+    public required bool LegitimacyContested { get; init; }
+
+    [JsonPropertyOrder(7)]
+    public required bool ThreatensPoliticalMarriage { get; init; }
+
+    [JsonPropertyOrder(8)]
+    public string? Resolution { get; init; }
+
+    [JsonPropertyOrder(9)]
+    public required int StatusRoleDignitasModifier { get; init; }
+
+    [JsonPropertyOrder(10)]
+    public required int DiscoveredDateTotalMonths { get; init; }
+
+    /// <summary>Null until <see cref="Gens.Simulation.Romance.FileAdulteryCaseCommand"/> opens a real
+    /// §12 Adultery case for this record (Phase 17 item 3 slice 9).</summary>
+    [JsonPropertyOrder(11)]
+    public string? LegalCaseId { get; init; }
+}
+
+/// <summary>One §12 <see cref="Gens.Simulation.Romance.AdulteryCaseLink"/> (Phase 17 item 3 slice
+/// 9).</summary>
+public sealed record AdulteryCaseLinkDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CaseId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string AffairId { get; init; }
+}
+
+/// <summary>One §13 <see cref="Gens.Simulation.Romance.InfamiaStatus"/> (Phase 17 item 3 slice 9).</summary>
+public sealed record InfamiaStatusDto
+{
+    [JsonPropertyOrder(0)]
+    public required string CharacterId { get; init; }
+
+    [JsonPropertyOrder(1)]
+    public required string Source { get; init; }
+
+    [JsonPropertyOrder(2)]
+    public IReadOnlyList<string> LegalProtectionsLost { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>One <see cref="Characters.MarriageRecord"/> (<c>gens-familia-design.md</c> §5, §5.1).</summary>

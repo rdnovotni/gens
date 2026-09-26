@@ -51,13 +51,14 @@ public static class CharacterTestFixtures
         PursuitRecord? pursuit = null,
         ManumissionPlan? manumissionPlan = null,
         CoreAttributes? attributes = null,
-        TravelLocation? currentTravelLocation = null) =>
+        TravelLocation? currentTravelLocation = null,
+        Sex sex = Sex.Male) =>
         Character.Create(
             id: id,
             praenomen: praenomen,
             nomen: nomen,
             cognomen: null,
-            sex: Sex.Male,
+            sex: sex,
             birthDate: birthDate ?? new GameDate(0),
             visualProfile: visualProfile ?? MinimalVisualProfile,
             status: status,

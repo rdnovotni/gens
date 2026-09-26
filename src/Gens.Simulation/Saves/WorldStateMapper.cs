@@ -48,6 +48,7 @@ using Gens.Simulation.RealEstate;
 using Gens.Simulation.Regions;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Societates;
 using Gens.Simulation.State;
@@ -74,6 +75,7 @@ public static class WorldStateMapper
         {
             DateTotalMonths = state.Date.TotalMonths,
             NextCommandSequenceNumber = state.NextCommandSequenceNumber,
+            RomanceFertilityRiskAbstracted = state.RomanceContentSettings.FertilityRiskAbstracted,
             Counters = new CounterSetDto
             {
                 RegionIds = state.RegionIds.Peek,
@@ -96,6 +98,8 @@ public static class WorldStateMapper
                 StewardshipAssignmentIds = state.StewardshipAssignmentIds.Peek,
                 AutonomousDecisionLogIds = state.AutonomousDecisionLogIds.Peek,
                 SchemeIds = state.SchemeIds.Peek,
+                PregnancyRecordIds = state.PregnancyRecordIds.Peek,
+                AffairRecordIds = state.AffairRecordIds.Peek,
                 SpyPlacementIds = state.SpyPlacementIds.Peek,
                 RaidThreatIds = state.RaidThreatIds.Peek,
                 SquadIds = state.SquadIds.Peek,
@@ -437,6 +441,21 @@ public static class WorldStateMapper
             // Already ascending-RuntimeId (by household) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
             RationalisClusterActiveHouseholds = state.RationalisClusterActiveHouseholds.InAscendingOrder()
                 .Select(entry => ToRationalisClusterActiveHouseholdDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending RomanticBondKey order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            RomanticBonds = state.RomanticBonds.InAscendingOrder()
+                .Select(entry => ToRomanticBondDto(entry.Key, entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            PregnancyRecords = state.PregnancyRecords.InAscendingOrder()
+                .Select(entry => ToPregnancyRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            AffairRecords = state.AffairRecords.InAscendingOrder()
+                .Select(entry => ToAffairRecordDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId (by case ID) order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            AdulteryCaseLinks = state.AdulteryCaseLinks.InAscendingOrder()
+                .Select(entry => ToAdulteryCaseLinkDto(entry.Value)).ToArray(),
+            // Already ascending-RuntimeId order (ADR 0001/0004) via OrderedRegistry.InAscendingOrder.
+            InfamiaStatuses = state.InfamiaStatuses.InAscendingOrder()
+                .Select(entry => ToInfamiaStatusDto(entry.Value)).ToArray(),
         };
     }
 
@@ -459,6 +478,39 @@ public static class WorldStateMapper
 
         var relationships = OrderedRegistry<RelationshipKey, Relationship>.Restore(
             dto.Relationships.Select(FromRelationshipDto));
+
+        var romanticBonds = OrderedRegistry<RomanticBondKey, RomanticBond>.Restore(
+            dto.RomanticBonds.Select(FromRomanticBondDto));
+
+        var pregnancyRecords = OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord>.Restore(
+            dto.PregnancyRecords.Select(p =>
+            {
+                var record = FromPregnancyRecordDto(p);
+                return new KeyValuePair<RuntimeId<PregnancyRecord>, PregnancyRecord>(record.PregnancyId, record);
+            }));
+
+        var affairRecords = OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord>.Restore(
+            dto.AffairRecords.Select(a =>
+            {
+                var record = FromAffairRecordDto(a);
+                return new KeyValuePair<RuntimeId<AffairRecord>, AffairRecord>(record.AffairId, record);
+            }));
+
+        var adulteryCaseLinks = OrderedRegistry<RuntimeId<LegalCase>, AdulteryCaseLink>.Restore(
+            dto.AdulteryCaseLinks.Select(l =>
+            {
+                var link = FromAdulteryCaseLinkDto(l);
+                return new KeyValuePair<RuntimeId<LegalCase>, AdulteryCaseLink>(link.CaseId, link);
+            }));
+
+        var infamiaStatuses = OrderedRegistry<RuntimeId<Character>, InfamiaStatus>.Restore(
+            dto.InfamiaStatuses.Select(i =>
+            {
+                var status = FromInfamiaStatusDto(i);
+                return new KeyValuePair<RuntimeId<Character>, InfamiaStatus>(status.CharacterId, status);
+            }));
+
+        var romanceContentSettings = new RomanceContentSettings(dto.RomanceFertilityRiskAbstracted);
 
         var popGroups = OrderedRegistry<PopGroupKey, PopGroup>.Restore(
             dto.PopGroups.Select(FromPopGroupDto));
@@ -1421,12 +1473,19 @@ public static class WorldStateMapper
             frontierTreatyIds: RuntimeIdCounter<FrontierTreaty>.Restore(dto.Counters.FrontierTreatyIds),
             overseerAssignmentIds: RuntimeIdCounter<OverseerAssignment>.Restore(dto.Counters.OverseerAssignmentIds),
             seniorPositionAssignmentIds: RuntimeIdCounter<SeniorPositionAssignment>.Restore(dto.Counters.SeniorPositionAssignmentIds),
+            pregnancyRecordIds: RuntimeIdCounter<PregnancyRecord>.Restore(dto.Counters.PregnancyRecordIds),
+            affairRecordIds: RuntimeIdCounter<AffairRecord>.Restore(dto.Counters.AffairRecordIds),
             regions: regions,
             settlements: settlements,
             plots: plots,
             holdings: holdings,
             characters: characters,
             relationships: relationships,
+            romanticBonds: romanticBonds,
+            pregnancyRecords: pregnancyRecords,
+            affairRecords: affairRecords,
+            adulteryCaseLinks: adulteryCaseLinks,
+            infamiaStatuses: infamiaStatuses,
             scheduledActions: scheduledActions,
             popGroups: popGroups,
             householdRegimenDefaults: householdRegimenDefaults,
@@ -1556,6 +1615,7 @@ public static class WorldStateMapper
             overseerAssignments: overseerAssignments,
             seniorPositionAssignments: seniorPositionAssignments,
             rationalisClusterActiveHouseholds: rationalisClusterActiveHouseholds,
+            romanceContentSettings: romanceContentSettings,
             knowledge: knowledge,
             nextCommandSequenceNumber: dto.NextCommandSequenceNumber);
     }
@@ -2815,6 +2875,113 @@ public static class WorldStateMapper
             dto.ProvenanceEventId);
         return new KeyValuePair<RelationshipKey, Relationship>(key, relationship);
     }
+
+    private static RomanticBondDto ToRomanticBondDto(RomanticBondKey key, RomanticBond bond) => new()
+    {
+        CharacterAId = key.CharacterAId.ToTaggedString(),
+        CharacterBId = key.CharacterBId.ToTaggedString(),
+        BondType = bond.BondType.ToString(),
+        Affection = bond.Affection,
+        Attraction = bond.Attraction,
+        IsKnownPublicly = bond.IsKnownPublicly,
+        DiscoveryRisk = bond.DiscoveryRisk,
+        FormedDateTotalMonths = bond.FormedDate.TotalMonths,
+        LastMeaningfulInteractionDateTotalMonths = bond.LastMeaningfulInteractionDate.TotalMonths,
+        ProvenanceEventId = bond.ProvenanceEventId,
+    };
+
+    private static KeyValuePair<RomanticBondKey, RomanticBond> FromRomanticBondDto(RomanticBondDto dto)
+    {
+        var key = RomanticBondKey.Create(RuntimeId<Character>.Parse(dto.CharacterAId), RuntimeId<Character>.Parse(dto.CharacterBId));
+        var bond = new RomanticBond(
+            Enum.Parse<RomanticBondType>(dto.BondType),
+            dto.Affection,
+            dto.Attraction,
+            dto.IsKnownPublicly,
+            dto.DiscoveryRisk,
+            new GameDate(dto.FormedDateTotalMonths),
+            new GameDate(dto.LastMeaningfulInteractionDateTotalMonths),
+            dto.ProvenanceEventId);
+        return new KeyValuePair<RomanticBondKey, RomanticBond>(key, bond);
+    }
+
+    private static PregnancyRecordDto ToPregnancyRecordDto(PregnancyRecord record) => new()
+    {
+        PregnancyId = record.PregnancyId.ToTaggedString(),
+        MotherId = record.MotherId.ToTaggedString(),
+        FatherId = record.FatherId.ToTaggedString(),
+        ConceivedViaBondType = record.ConceivedViaBondType.ToString(),
+        ConceivedDateTotalMonths = record.ConceivedDate.TotalMonths,
+        DueDateTotalMonths = record.DueDate.TotalMonths,
+        Resolved = record.Resolved,
+        MaternalRiskResolved = record.MaternalRiskResolved,
+        InfantRiskResolved = record.InfantRiskResolved,
+        BornChildId = record.BornChildId?.ToTaggedString(),
+    };
+
+    private static PregnancyRecord FromPregnancyRecordDto(PregnancyRecordDto dto) => new(
+        RuntimeId<PregnancyRecord>.Parse(dto.PregnancyId),
+        RuntimeId<Character>.Parse(dto.MotherId),
+        RuntimeId<Character>.Parse(dto.FatherId),
+        Enum.Parse<RomanticBondType>(dto.ConceivedViaBondType),
+        new GameDate(dto.ConceivedDateTotalMonths),
+        new GameDate(dto.DueDateTotalMonths),
+        dto.Resolved,
+        dto.MaternalRiskResolved,
+        dto.InfantRiskResolved,
+        dto.BornChildId is null ? null : RuntimeId<Character>.Parse(dto.BornChildId));
+
+    private static AffairRecordDto ToAffairRecordDto(AffairRecord record) => new()
+    {
+        AffairId = record.AffairId.ToTaggedString(),
+        OffenderCharacterId = record.OffenderCharacterId.ToTaggedString(),
+        ThirdPartyCharacterId = record.ThirdPartyCharacterId.ToTaggedString(),
+        WrongedSpouseId = record.WrongedSpouseId.ToTaggedString(),
+        StakesLevel = record.StakesLevel.ToString(),
+        InvolvesRivalHouse = record.InvolvesRivalHouse,
+        LegitimacyContested = record.LegitimacyContested,
+        ThreatensPoliticalMarriage = record.ThreatensPoliticalMarriage,
+        Resolution = record.Resolution?.ToString(),
+        StatusRoleDignitasModifier = record.StatusRoleDignitasModifier,
+        DiscoveredDateTotalMonths = record.DiscoveredDate.TotalMonths,
+        LegalCaseId = record.LegalCaseId?.ToTaggedString(),
+    };
+
+    private static AffairRecord FromAffairRecordDto(AffairRecordDto dto) => new(
+        RuntimeId<AffairRecord>.Parse(dto.AffairId),
+        RuntimeId<Character>.Parse(dto.OffenderCharacterId),
+        RuntimeId<Character>.Parse(dto.ThirdPartyCharacterId),
+        RuntimeId<Character>.Parse(dto.WrongedSpouseId),
+        Enum.Parse<AffairStakesLevel>(dto.StakesLevel),
+        dto.InvolvesRivalHouse,
+        dto.LegitimacyContested,
+        dto.ThreatensPoliticalMarriage,
+        dto.Resolution is null ? null : Enum.Parse<AffairResolution>(dto.Resolution),
+        dto.StatusRoleDignitasModifier,
+        new GameDate(dto.DiscoveredDateTotalMonths),
+        dto.LegalCaseId is null ? null : RuntimeId<LegalCase>.Parse(dto.LegalCaseId));
+
+    private static AdulteryCaseLinkDto ToAdulteryCaseLinkDto(AdulteryCaseLink link) => new()
+    {
+        CaseId = link.CaseId.ToTaggedString(),
+        AffairId = link.AffairId.ToTaggedString(),
+    };
+
+    private static AdulteryCaseLink FromAdulteryCaseLinkDto(AdulteryCaseLinkDto dto) => new(
+        RuntimeId<LegalCase>.Parse(dto.CaseId),
+        RuntimeId<AffairRecord>.Parse(dto.AffairId));
+
+    private static InfamiaStatusDto ToInfamiaStatusDto(InfamiaStatus status) => new()
+    {
+        CharacterId = status.CharacterId.ToTaggedString(),
+        Source = status.Source.ToString(),
+        LegalProtectionsLost = status.LegalProtectionsLost.ToArray(),
+    };
+
+    private static InfamiaStatus FromInfamiaStatusDto(InfamiaStatusDto dto) => new(
+        RuntimeId<Character>.Parse(dto.CharacterId),
+        Enum.Parse<InfamiaSource>(dto.Source),
+        dto.LegalProtectionsLost.ToArray());
 
     private static PopGroupDto ToPopGroupDto(PopGroup popGroup) => new()
     {

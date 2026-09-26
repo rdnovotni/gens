@@ -29,6 +29,7 @@ using Gens.Simulation.PrivateInfrastructure;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Societates;
 using Gens.Simulation.Stewardship;
@@ -74,6 +75,8 @@ public static class StateHasher
         hash = MixLong(hash, state.HoldingIds.Peek);
         hash = MixLong(hash, state.LedgerTransactionIds.Peek);
         hash = MixLong(hash, state.SchemeIds.Peek);
+        hash = MixLong(hash, state.PregnancyRecordIds.Peek);
+        hash = MixLong(hash, state.AffairRecordIds.Peek);
         hash = MixLong(hash, state.SpyPlacementIds.Peek);
         hash = MixLong(hash, state.RaidThreatIds.Peek);
         hash = MixLong(hash, state.FrontierTreatyIds.Peek);
@@ -1493,6 +1496,73 @@ public static class StateHasher
         {
             hash = MixLong(hash, entry.Key.Value);
             hash = MixLong(hash, entry.Value.TotalMonths);
+        }
+
+        // Already ascending RomanticBondKey order (ADR 0004) via OrderedRegistry. Phase 17 item 3.
+        foreach (var entry in state.RomanticBonds.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.CharacterAId.Value);
+            hash = MixLong(hash, entry.Key.CharacterBId.Value);
+            hash = MixLong(hash, (long)entry.Value.BondType);
+            hash = MixLong(hash, entry.Value.Affection);
+            hash = MixLong(hash, entry.Value.Attraction);
+            hash = MixLong(hash, entry.Value.IsKnownPublicly ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.DiscoveryRisk);
+            hash = MixLong(hash, entry.Value.FormedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.LastMeaningfulInteractionDate.TotalMonths);
+            hash = MixString(hash, entry.Value.ProvenanceEventId ?? string.Empty);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 6.
+        foreach (var entry in state.PregnancyRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.MotherId.Value);
+            hash = MixLong(hash, entry.Value.FatherId.Value);
+            hash = MixLong(hash, (long)entry.Value.ConceivedViaBondType);
+            hash = MixLong(hash, entry.Value.ConceivedDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.DueDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.Resolved ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.MaternalRiskResolved ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.InfantRiskResolved ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.BornChildId?.Value ?? -1L);
+        }
+
+        // Phase 17 item 3 slice 6: a scalar campaign-level toggle that can affect ChildbirthResolutionSystem
+        // outcomes, so it belongs in the deterministic state hash (ADR 0004/0010).
+        hash = MixLong(hash, state.RomanceContentSettings.FertilityRiskAbstracted ? 1L : 0L);
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 8.
+        foreach (var entry in state.AffairRecords.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.OffenderCharacterId.Value);
+            hash = MixLong(hash, entry.Value.ThirdPartyCharacterId.Value);
+            hash = MixLong(hash, entry.Value.WrongedSpouseId.Value);
+            hash = MixLong(hash, (long)entry.Value.StakesLevel);
+            hash = MixLong(hash, entry.Value.InvolvesRivalHouse ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.LegitimacyContested ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.ThreatensPoliticalMarriage ? 1L : 0L);
+            hash = MixLong(hash, entry.Value.Resolution.HasValue ? (long)entry.Value.Resolution.Value : -1L);
+            hash = MixLong(hash, entry.Value.StatusRoleDignitasModifier);
+            hash = MixLong(hash, entry.Value.DiscoveredDate.TotalMonths);
+            hash = MixLong(hash, entry.Value.LegalCaseId?.Value ?? -1L);
+        }
+
+        // Already ascending-RuntimeId (by case ID) order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 9.
+        foreach (var entry in state.AdulteryCaseLinks.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, entry.Value.AffairId.Value);
+        }
+
+        // Already ascending-RuntimeId order (ADR 0004) via OrderedRegistry. Phase 17 item 3 slice 9.
+        foreach (var entry in state.InfamiaStatuses.InAscendingOrder())
+        {
+            hash = MixLong(hash, entry.Key.Value);
+            hash = MixLong(hash, (long)entry.Value.Source);
+            foreach (var protection in entry.Value.LegalProtectionsLost)
+                hash = MixString(hash, protection);
         }
 
         return hash;

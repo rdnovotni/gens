@@ -44,6 +44,7 @@ using Gens.Simulation.PurchasingPower;
 using Gens.Simulation.RealEstate;
 using Gens.Simulation.Religion;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Shipping;
 using Gens.Simulation.Societates;
@@ -149,12 +150,19 @@ public sealed class WorldState
         RuntimeIdCounter<FrontierTreaty> frontierTreatyIds,
         RuntimeIdCounter<OverseerAssignment> overseerAssignmentIds,
         RuntimeIdCounter<SeniorPositionAssignment> seniorPositionAssignmentIds,
+        RuntimeIdCounter<PregnancyRecord> pregnancyRecordIds,
+        RuntimeIdCounter<AffairRecord> affairRecordIds,
         OrderedRegistry<RuntimeId<Region>, Region> regions,
         OrderedRegistry<RuntimeId<Settlement>, Settlement> settlements,
         OrderedRegistry<RuntimeId<Plot>, Plot> plots,
         OrderedRegistry<RuntimeId<Holding>, Holding> holdings,
         OrderedRegistry<RuntimeId<Character>, Character> characters,
         OrderedRegistry<RelationshipKey, Relationship> relationships,
+        OrderedRegistry<RomanticBondKey, RomanticBond> romanticBonds,
+        OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord> pregnancyRecords,
+        OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord> affairRecords,
+        OrderedRegistry<RuntimeId<LegalCase>, AdulteryCaseLink> adulteryCaseLinks,
+        OrderedRegistry<RuntimeId<Character>, InfamiaStatus> infamiaStatuses,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
@@ -284,6 +292,7 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<OverseerAssignment>, OverseerAssignment> overseerAssignments,
         OrderedRegistry<RuntimeId<SeniorPositionAssignment>, SeniorPositionAssignment> seniorPositionAssignments,
         OrderedRegistry<RuntimeId<Household>, GameDate> rationalisClusterActiveHouseholds,
+        RomanceContentSettings romanceContentSettings,
         KnowledgeState knowledge,
         long nextCommandSequenceNumber)
     {
@@ -308,6 +317,8 @@ public sealed class WorldState
         StewardshipAssignmentIds = stewardshipAssignmentIds;
         AutonomousDecisionLogIds = autonomousDecisionLogIds;
         SchemeIds = schemeIds;
+        PregnancyRecordIds = pregnancyRecordIds;
+        AffairRecordIds = affairRecordIds;
         SpyPlacementIds = spyPlacementIds;
         RaidThreatIds = raidThreatIds;
         SquadIds = squadIds;
@@ -365,6 +376,11 @@ public sealed class WorldState
         Holdings = holdings;
         Characters = characters;
         Relationships = relationships;
+        RomanticBonds = romanticBonds;
+        PregnancyRecords = pregnancyRecords;
+        AffairRecords = affairRecords;
+        AdulteryCaseLinks = adulteryCaseLinks;
+        InfamiaStatuses = infamiaStatuses;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
@@ -494,6 +510,7 @@ public sealed class WorldState
         OverseerAssignments = overseerAssignments;
         SeniorPositionAssignments = seniorPositionAssignments;
         RationalisClusterActiveHouseholds = rationalisClusterActiveHouseholds;
+        RomanceContentSettings = romanceContentSettings;
         Knowledge = knowledge;
         _nextCommandSequenceNumber = nextCommandSequenceNumber;
     }
@@ -532,6 +549,12 @@ public sealed class WorldState
 
     /// <summary>Issues IDs for <see cref="Interactions.Scheme"/> (Phase 10 item 6).</summary>
     public RuntimeIdCounter<Scheme> SchemeIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Romance.PregnancyRecord"/> (Phase 17 item 3 slice 6).</summary>
+    public RuntimeIdCounter<PregnancyRecord> PregnancyRecordIds { get; } = new();
+
+    /// <summary>Issues IDs for <see cref="Romance.AffairRecord"/> (Phase 17 item 3 slice 8).</summary>
+    public RuntimeIdCounter<AffairRecord> AffairRecordIds { get; } = new();
 
     /// <summary>Issues IDs for <see cref="Interactions.SpyPlacement"/> (Phase 16 item 1).</summary>
     public RuntimeIdCounter<SpyPlacement> SpyPlacementIds { get; } = new();
@@ -712,6 +735,38 @@ public sealed class WorldState
     /// interaction simply has no entry here at all, rather than every possible pair pre-allocating a
     /// zero-opinion slot.</summary>
     public OrderedRegistry<RelationshipKey, Relationship> Relationships { get; } = new();
+
+    /// <summary>Every undirected romantic pairing's Affection/Attraction record (Phase 17 item 3;
+    /// <c>gens-romance-sexuality-lineage-design.md</c> §3, §16), in ascending <see
+    /// cref="Romance.RomanticBondKey"/> order (ADR 0004). Sparse by construction, matching <see
+    /// cref="Relationships"/>'s identical convention: a pair with no romantic history simply has no
+    /// entry here at all.</summary>
+    public OrderedRegistry<RomanticBondKey, RomanticBond> RomanticBonds { get; } = new();
+
+    /// <summary>Every conception-to-resolution pregnancy (Phase 17 item 3 slice 6; §9), in
+    /// ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once resolved rather than removed,
+    /// matching <see cref="Schemes"/>'s identical "resolved or not, kept for the campaign's lifetime"
+    /// convention.</summary>
+    public OrderedRegistry<RuntimeId<PregnancyRecord>, PregnancyRecord> PregnancyRecords { get; } = new();
+
+    /// <summary>Every discovered affair (Phase 17 item 3 slice 8; §11) — created only at the moment of
+    /// discovery, never before (an undiscovered affair is just a private, un-public <see
+    /// cref="RomanticBond"/>). In ascending-<see cref="RuntimeId{T}"/> order (ADR 0004). Kept once
+    /// created rather than removed, matching <see cref="PregnancyRecords"/>'s identical "resolved or
+    /// not, kept for the campaign's lifetime" convention.</summary>
+    public OrderedRegistry<RuntimeId<AffairRecord>, AffairRecord> AffairRecords { get; } = new();
+
+    /// <summary>Which <see cref="Romance.AffairRecord"/> a given §12 Adultery <see
+    /// cref="LegalCase.CaseId"/> is actually about (Phase 17 item 3 slice 9), sparse and keyed by that
+    /// already-issued case ID, matching <see cref="ActioProSocioLinks"/>'s/<see
+    /// cref="ContractFraudLegalLinks"/>'s identical convention.</summary>
+    public OrderedRegistry<RuntimeId<LegalCase>, AdulteryCaseLink> AdulteryCaseLinks { get; } = new();
+
+    /// <summary>Every Character carrying a real Infamia mark (Phase 17 item 3 slice 9; §13), sparse and
+    /// keyed by Character — an orthogonal status a citizen can carry without ceasing to hold their own
+    /// <see cref="Characters.LegalStatus"/>, not a sixth value of that enum (<see
+    /// cref="Romance.InfamiaStatus"/>'s own doc comment).</summary>
+    public OrderedRegistry<RuntimeId<Character>, InfamiaStatus> InfamiaStatuses { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -1457,6 +1512,11 @@ public sealed class WorldState
     /// own doc comment for why this one narrow piece of memory is still needed).</summary>
     public OrderedRegistry<RuntimeId<Household>, GameDate> RationalisClusterActiveHouseholds { get; } = new();
 
+    /// <summary>One campaign-level content-intensity toggle (Phase 17 item 3 slice 6; §9, §17).
+    /// Mirrors <see cref="Date"/>'s own "private setter, defaulted at construction" shape — nothing
+    /// currently sets this away from its default; the setter exists for a future settings surface.</summary>
+    public RomanceContentSettings RomanceContentSettings { get; private set; } = new(FertilityRiskAbstracted: false);
+
     public KnowledgeState Knowledge { get; } = new();
 
     public GameDate Date { get; private set; }
@@ -1495,6 +1555,8 @@ public sealed class WorldState
         ["stewardshipAssignmentIds"] = StewardshipAssignmentIds.Peek,
         ["autonomousDecisionLogIds"] = AutonomousDecisionLogIds.Peek,
         ["schemeIds"] = SchemeIds.Peek,
+        ["pregnancyRecordIds"] = PregnancyRecordIds.Peek,
+        ["affairRecordIds"] = AffairRecordIds.Peek,
         ["spyPlacementIds"] = SpyPlacementIds.Peek,
         ["raidThreatIds"] = RaidThreatIds.Peek,
         ["squadIds"] = SquadIds.Peek,
@@ -1535,6 +1597,11 @@ public sealed class WorldState
         ["holdings"] = Holdings.Version,
         ["characters"] = Characters.Version,
         ["relationships"] = Relationships.Version,
+        ["romanticBonds"] = RomanticBonds.Version,
+        ["pregnancyRecords"] = PregnancyRecords.Version,
+        ["affairRecords"] = AffairRecords.Version,
+        ["adulteryCaseLinks"] = AdulteryCaseLinks.Version,
+        ["infamiaStatuses"] = InfamiaStatuses.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,

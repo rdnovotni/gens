@@ -135,15 +135,13 @@ Marriage isn't a permanent lock-in. Consistent with the comparative ease of elit
 
 ### 5.2 Legitimacy
 
-A child's **legitimacy** is tracked explicitly rather than assumed: children born within a recognized marriage are legitimate by default; children resulting from an affair (Romance & Seduction) are not, unless the *paterfamilias* explicitly acknowledges and legitimizes them — a deliberate, visible choice with its own social cost (a Dignitas risk, a relationship-web hit from the betrayed spouse) rather than a quiet toggle. Legitimacy status directly gates default eligibility in Succession & Dynasty (§6.9): illegitimate children aren't barred from ever inheriting, but require the same explicit intervention (acknowledgment, or the Adoption mechanic) that a legitimate heir doesn't need.
+Legitimacy is now specified in [`gens-romance-sexuality-lineage-design.md`](gens-romance-sexuality-lineage-design.md) §10, which absorbed this section in full — see that document rather than this one.
 
 ---
 
 ## 6. Fertility & Childbirth
 
-- Fertility (a Core Condition stat, §2.3) combined with an active marriage/relationship determines pregnancy chance per relevant time tick.
-- Pregnancy and childbirth carry **real, period-appropriate stakes** by default: a health cost during pregnancy, and a genuine risk of death at childbirth for the mother (moderated by Health, and improved by Learning-driven medical care, tying into Education & Culture and the Court Physician position) and a separate risk for the infant.
-- A **player-configurable toggle** (set at game start alongside the other difficulty/content choices) lets a player dial this down to a more abstracted, lower-risk mode without removing the fertility system entirely — consistent with treating this as a legitimate accessibility axis rather than softening the setting's default frankness.
+Fertility and childbirth are now specified in [`gens-romance-sexuality-lineage-design.md`](gens-romance-sexuality-lineage-design.md) §9, which absorbed this section in full — see that document rather than this one.
 
 ---
 

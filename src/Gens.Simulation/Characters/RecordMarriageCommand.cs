@@ -10,7 +10,12 @@ using Gens.Simulation.Time;
 namespace Gens.Simulation.Characters;
 
 /// <summary>Records a new marriage between two living, currently-unmarried Characters
-/// (<c>gens-familia-design.md</c> §5).</summary>
+/// (<c>gens-familia-design.md</c> §5). Opposite-sex only: <c>gens-romance-sexuality-lineage-design.md</c>
+/// §5 requires that a same-sex romantic relationship, however genuinely tracked elsewhere in the Romance
+/// module, "never plug into Familia's marriage... mechanics" — this is the one, correct enforcement
+/// point for that rule, since every caller (including <see cref="Romance.ProposeMarriageCommand"/>)
+/// routes through this same pipeline and so inherits the same protection rather than each needing to
+/// reimplement it.</summary>
 public sealed record RecordMarriageCommand(
     RuntimeId<Command> CommandId,
     string ActorId,
@@ -43,6 +48,10 @@ public static class RecordMarriageCommands
     public static readonly ValidationErrorCode AlreadyMarried = new("characters.marriage.alreadyMarried");
     public static readonly ValidationErrorCode SelfMarriage = new("characters.marriage.selfMarriage");
 
+    /// <summary><c>gens-romance-sexuality-lineage-design.md</c> §5's exclusion — see this class's own
+    /// doc comment.</summary>
+    public static readonly ValidationErrorCode SameSexNotSupported = new("characters.marriage.sameSexNotSupported");
+
     public static readonly CommandPipeline<WorldState, RecordMarriageCommand> Pipeline = new(
         validate: Validate,
         mutate: Mutate,
@@ -62,6 +71,8 @@ public static class RecordMarriageCommands
             return SpouseDeceased;
         if (character.CurrentSpouseId is not null || spouse.CurrentSpouseId is not null)
             return AlreadyMarried;
+        if (character.Sex == spouse.Sex)
+            return SameSexNotSupported;
 
         return null;
     }

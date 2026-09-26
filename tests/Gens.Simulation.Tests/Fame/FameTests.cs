@@ -6,6 +6,7 @@ using Gens.Simulation.Magistracies;
 using Gens.Simulation.Queries;
 using Gens.Simulation.Random;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Saves;
 using Gens.Simulation.State;
 using Gens.Simulation.Tests.Characters;
@@ -124,7 +125,7 @@ public sealed class FameTests
     }
 
     [Test]
-    public void FameDivergenceQueryReadsFamousAndDisreputableForHighFameLowDignitas()
+    public void FameDivergenceQueryReadsFamousAndDisreputableForFamousCharacterCarryingRealInfamia()
     {
         var (state, characterId) = OneCharacter();
         var householdId = state.HouseholdIds.Issue();
@@ -136,6 +137,7 @@ public sealed class FameTests
             state, new AdjustFameCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, characterId, 60, FameSourceType.ArenaOrCircusOrTheatre));
         AdjustDignitasCommands.Pipeline.Execute(
             state, new AdjustDignitasCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, -10, "Infamia-adjacent"));
+        state.InfamiaStatuses.Add(characterId, new InfamiaStatus(characterId, InfamiaSource.Gladiatorial, new[] { "barred from holding public office" }));
 
         var reading = new FameDivergenceQuery(characterId).Execute(state, observerId: "player");
 
@@ -145,6 +147,28 @@ public sealed class FameTests
             Assert.That(reading.Dignitas, Is.EqualTo(-10));
             Assert.That(reading.DivergenceCategory, Is.EqualTo(FameDivergenceCategory.FamousAndDisreputable));
         });
+    }
+
+    [Test]
+    public void FameDivergenceQueryReadsNeitherYetForFamousCharacterWithLowDignitasButNoRealInfamia()
+    {
+        // Phase 17 item 3 slice 9: since a real InfamiaStatus now exists, an ordinary Famous Character
+        // with merely low Dignitas — but no real Infamia mark — is no longer conflated with a genuinely
+        // disreputable one (the query's own former Dignitas-threshold proxy is gone).
+        var (state, characterId) = OneCharacter();
+        var householdId = state.HouseholdIds.Issue();
+        state.Characters.TryGet(characterId, out var character);
+        state.Characters.Remove(characterId);
+        state.Characters.Add(characterId, character! with { Household = householdId });
+
+        AdjustFameCommands.Pipeline.Execute(
+            state, new AdjustFameCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, characterId, 60, FameSourceType.ArenaOrCircusOrTheatre));
+        AdjustDignitasCommands.Pipeline.Execute(
+            state, new AdjustDignitasCommand(state.CommandIds.Issue(), "player", new GameDate(1), null, householdId, -10, "unrelated"));
+
+        var reading = new FameDivergenceQuery(characterId).Execute(state, observerId: "player");
+
+        Assert.That(reading.DivergenceCategory, Is.EqualTo(FameDivergenceCategory.NeitherYet));
     }
 
     [Test]

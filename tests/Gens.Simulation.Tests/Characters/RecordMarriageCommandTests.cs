@@ -13,8 +13,8 @@ public sealed class RecordMarriageCommandTests
         var state = new WorldState(new GameDate(10));
         var characterId = state.CharacterIds.Issue();
         var spouseId = state.CharacterIds.Issue();
-        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId));
-        state.Characters.Add(spouseId, CharacterTestFixtures.Minimal(spouseId));
+        state.Characters.Add(characterId, CharacterTestFixtures.Minimal(characterId, sex: Sex.Male));
+        state.Characters.Add(spouseId, CharacterTestFixtures.Minimal(spouseId, sex: Sex.Female));
 
         var command = new RecordMarriageCommand(state.CommandIds.Issue(), "player", new GameDate(10), null, characterId, spouseId);
         var result = RecordMarriageCommands.Pipeline.Execute(state, command);

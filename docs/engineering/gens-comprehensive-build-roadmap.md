@@ -4145,7 +4145,7 @@ new certainty-producing shortcut. "Military outcomes do not bypass the ordinary 
 mutation in this item (Dignitas, captive intake, retaliation losses, security investment) goes through a
 real `ICommand`/`IMonthlySystem.Tick`, never a direct field set. Phase 16 is complete.
 
-### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (items 1-2 complete)
+### Phase 17 — Add deep relationships, activities, culture, and legacy objects — 🔶 IN PROGRESS (items 1-3 complete)
 
 **Outcome:** the mature simulation gains its richest personal and cultural expression after its shared engines are stable.
 
@@ -4224,14 +4224,104 @@ the appointee already belong to the household (`NotHouseholdMember`), while this
 `EducationRole.ForeignTutor` deliberately allows (and needs) a tutor from outside it, so swapping the
 placeholder for `SeniorPositionTitle.Tutor` is a genuine validation-model change, not a mechanical rename;
 it is left as its own follow-up (likely a household-membership override or a dedicated external-tutor
-allowance on `AppointSeniorPositionCommand`) rather than attempted as part of this merge. Items 3-10
-remain unbuilt.
+allowance on `AppointSeniorPositionCommand`) rather than attempted as part of this merge.
+
+**Item 3 progress:** Romance, Sexuality & Lineage (`src/Gens.Simulation/Romance/`,
+`gens-romance-sexuality-lineage-design.md`) is implemented across nine vertical slices, each building on
+the shared `RomanceEligibility.CheckPair` primitive (§2's two Hard Exclusions — the Adult lifecycle floor
+and the Enslaved power-imbalance exclusion, both enforced once and reused by every command/system below,
+never reimplemented per mechanic). Two scope-defining discoveries shaped the whole item: Legal & Court
+already had a real, generic case-type extension template (`LegalCaseType.PartnershipDispute`/`Repetundae`'s
+own `...Link` partition + `File...Command` + `...ResolutionHook` shape), so the new Adultery case type
+needed no new infrastructure; and Characters' own "Duel" mechanic (§9.6, cited by §11's Challenge
+resolution option) does not exist anywhere in this codebase, so `AffairResolution.Challenged` is
+recorded but deliberately left unreached, matching this codebase's own repeated "modeled in the enum
+until a later pass wires it" precedent (e.g. `LegalSentence.DebtBondage`/`Execution`).
+
+`RomanticBond`/`RomanticBondKey` track Affection/Attraction (0-100, an undirected pair key, unlike the
+directed `Relationship`) with `RomanticBondDecaySystem` drifting both toward zero monthly unless the bond
+is `Marriage`/`Concubinage` (sticky) or was just touched; `CourtshipInteractionCommand` (Flirt/Court-Woo/
+Confess-Feelings/Rebuke) and `ProposeMarriageCommand`'s love-match path build on this directly, with
+`RecordMarriageCommand` now rejecting a same-sex pair (§5: same-sex relationships are fully tracked but
+never plug into Familia's marriage mechanics) via a new `SameSexNotSupported` error. `EstablishConcubinageCommand`/
+`EndConcubinageCommand` add Concubinage as its own tracked bond type between Spouse and Affair — no dowry
+parameter at all, never subject to Divorce, publicly known by construction (§6, §17). `SchemeType.Seduce`
+extends the existing Scheme engine: `SchemeProgressSystem`'s success-chance formula reads the target's
+real `RomanticBond.Attraction` toward the initiator for this type only, and `SeduceSchemeResolutionHook`
+grants the long-reserved `BondTag.BlackmailLeverage` on success — the primitive Espionage's own future
+Recruitment/Information consumption needs, not built here. `AutonomousRomanceSystem` lets any two eligible
+same-household Adults independently build a bond without player involvement, promoting it to `Affair`
+when either party is married elsewhere — only the same-household opportunity source is implemented (§8
+also names Travel-party and hosted-gathering opportunities, explicitly deferred, disclosed in the
+system's own doc comment). `ConceptionSystem`/`ChildbirthResolutionSystem` roll conception from the
+mother's real `GetEffectiveFertility()` for Marriage/Concubinage/Affair bonds (never same-sex ones) and
+resolve each pregnancy at term through the existing `BirthCharacterCommand` (which already derives
+`Legitimacy` correctly with no change needed), applying maternal/infant risk moderated by Health and a
+filled Court Physician, skippable via the new `RomanceContentSettings.FertilityRiskAbstracted` toggle
+(§9, §14). `AcknowledgeIllegitimateChildCommand` (Succession) now carries the real, visible cost §10 calls
+for — a household Dignitas penalty and, when the acknowledging parent is married to someone other than
+the child's other parent, a relationship hit from that betrayed spouse — replacing what had been a bare,
+consequence-free `HeirDesignation` toggle.
+
+`AffairDiscoverySystem` advances discovery risk monthly for undiscovered `Affair`-type bonds and rolls
+Foiled-vs-Escalated past threshold, classifying an escalated affair's stakes by Rival House involvement
+(a tracked house's own head only, not "notable member" — no membership roster exists to check against),
+a contested-Legitimacy pregnancy, or a politically significant wronged spouse (an active Magistracy or a
+Patron/Client tie). A minor-stakes discovery auto-resolves through `ScandalSourceType.AffairDiscovery` —
+the entry point `Scandal/ScandalRecord.cs` had reserved, unused, since the day it was added — into the
+real, already-shipped Scandal engine; a high-stakes discovery creates an unresolved `AffairRecord`
+awaiting `ResolveAffairCommand` (Forgiven/Divorced/Challenged/ProsecutedAdultery) or the separate, far
+more narrowly-gated `ExerciseExtremeLegalRemedyCommand` (§12, §17's extreme-remedy answer: invocable only
+by the wronged spouse, never autonomously triggered, always carrying a severe guaranteed Dignitas/
+relationship cost on the actor's own household regardless of legal justification). Both discovery tiers
+grant new `Adulterous`/`Heartbroken`/`Guarded` reactive traits directly. `ProsecutedAdultery` drives
+`FileAdulteryCaseCommand` (the new `LegalCaseType.Adultery`, always `LegalCaseDepth.Major`) and
+`AdulteryResolutionHook` (called additively from `LegalCaseRuling.Apply`, mirroring `RepetundaeResolutionHook`
+exactly): a conviction always sentences the new `LegalSentence.Relegatio` — regardless of margin, unlike
+the Fine-vs-Exile choice every other capital case type rolls — applies a partial-property-confiscation
+ledger posting, stacks `StatusRoleDignitasModifier`'s additional Dignitas penalty on top of the ordinary
+conviction consequence, and grants a real `InfamiaStatus`. `StatusRoleDignitasModifier` (§13) reads the
+two parties' relative `LegalStatus` and applies its penalty to whichever party ranks higher — never
+branching on `Character.Sex` at all, by construction rather than by a no-op branch — at both discovery
+time and conviction time. `InfamiaStatus` (`GrantInfamiaCommand`) is a new, orthogonal Legal-Status-adjacent
+mark a citizen can carry without losing citizenship; only `InfamiaSource.ConvictedAdultery` is actually
+reachable this pass (no Brothel/theatre/arena caller was wired for `Prostitution`/`Acting`/`Gladiatorial`,
+left modeled-but-unreached in the enum) — `Queries/FameDivergenceQuery.cs` now reads this real primitive
+directly, replacing the household-Dignitas proxy its own doc comment had explicitly flagged as a stand-in
+since Phase 12 item 8.
+
+§17's other open questions: multiple simultaneous romantic interests are allowed and unconstrained (no
+jealousy/exclusivity mechanic — a second bond while married is exactly what routes into Affair territory,
+the intended outcome); manus vs. sine manu (§4.1) is explicitly out of scope, flagged in `RomanticBond`'s
+own doc comment as future Familia-only work; and the old, superseded `gens-romance-seduction-design.md`'s
+Education-boosts-courtship linkage is deliberately not carried forward, since the FINAL design doc's own
+§15 integration list omits Education & Culture even though it now exists (`RomanceCatalog`'s own
+class-level doc comment records this as a conscious decision). `FaithfulTraitId`/`InfatuatedTraitId`/
+`DisillusionedTraitId` and the new 4-tier `beauty` spectrum (`plain`/`common`/`fair`/`striking`) are
+authored in content this pass (`content/source/traits/romance.json`, `congenital.json`) but not yet
+consumed by any system — reserved for a later refinement, per `RomanceCatalog.cs`'s own doc comments.
+Doc-comment fast-follows already applied in code: `Scandal/ScandalRecord.cs` (`AffairDiscovery` no
+longer reads as unbuilt), `Succession/DeclareHeirCommand.cs` (its stale "no personal Dignitas stat exists
+yet" claim corrected — both household Dignitas and Character Fame now exist), `Queries/FameDivergenceQuery.cs`,
+and `Interactions/Scheme.cs`. `docs/design/gens-familia-design.md`'s own former §5.2 (Legitimacy) and §6
+(Fertility & Childbirth) sections are updated in this same change to point at this document rather than
+carrying their own copy, per §15's "Familia itself is updated to point here" framing.
+
+Covered in `tests/Gens.Simulation.Tests/Romance/` (`RomanceEligibilityTests.cs`, `CourtshipAndMarriageTests.cs`,
+`SeduceSchemeTests.cs`, `AutonomousRomanceTests.cs`, `PregnancyAndLegitimacyTests.cs`, `AffairsAndDiscoveryTests.cs`,
+`AdulteryLegalCaseTests.cs`, `InfamiaAndStatusRoleTests.cs`) plus `tests/Gens.Simulation.Tests/ExitGate/RomanceLineageExitGateTests.cs`,
+which drives the full vertical slice together in one continuous run — courtship through a love-match
+marriage, Concubinage, a successful Seduce Scheme, autonomous romance maturing into a real Affair,
+conception and an Illegitimate birth, the Legitimacy-acknowledgment Dignitas cost, high-stakes discovery,
+and an Adultery conviction (Relegatio, confiscation, the Status/Role modifier, Infamia), plus a second,
+smaller scenario for the minor-stakes path — with save/load round trips and deterministic state-hash
+stability checked throughout. Items 4-10 remain unbuilt.
 
 Recommended internal order:
 
 1. ✅ Companions/court positions and travel retinues on top of duties, delegation, and relationships.
 2. ✅ Education, pedagogy, study, literacy, cultural patronage, and institutions.
-3. Full adult romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences. Preserve the document's hard Adult lifecycle gate and power-imbalance exclusions.
+3. ✅ Full adult romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences. Preserve the document's hard Adult lifecycle gate and power-imbalance exclusions.
 4. The generic activity engine: invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting.
 5. Feasts as the first complete activity type.
 6. Games/spectacle, competitors, fame, hosting, wagering, and political payoff.
@@ -4291,7 +4381,7 @@ These are the recommended first issues or narrowly scoped pull requests, in orde
 23. [x] Add goods, stockpiles, building instances, and production recipes.
 24. [x] Add labor assignment and the first three compact production chains.
 
-Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-4 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track; Legal & Court's case filing, presiding assignment, evidence/testimony/bribery, and verdict consequences) are now done too. Phases 12–16 have since been completed in full (see the phase checklist above), and Phase 17 item 1 (Companions/court positions and travel retinues) is now done as well. **The next unimplemented work is Phase 17 item 2** — education, pedagogy, study, literacy, cultural patronage, and institutions.
+Background population, market clearing, the Unity vertical slice, the rest of Phases 7–9, Phase 10's delegation/autonomous-action/rival-houses work, and Phase 11's dynasty-continuity/historical-memory work have also since been implemented (see the phase checklist above), and Phase 12 items 1-4 (Dignitas/reputation/favor-obligation primitive; patronage/clientela and office/appointment foundations; Religion's Favor meter, rites, Omens/Auspices, and the Priesthood track; Legal & Court's case filing, presiding assignment, evidence/testimony/bribery, and verdict consequences) are now done too. Phases 12–16 have since been completed in full (see the phase checklist above), and Phase 17 items 1-3 (Companions/court positions and travel retinues; education, pedagogy, study, literacy, cultural patronage, and institutions; romance, sexuality, affection/attraction, courtship, autonomous relationships, pregnancy, legitimacy, affairs, and consequences) are now done too. **The next unimplemented work is Phase 17 item 4** — the generic activity engine (invitations, guest lists, phases, quality/scale, witness pools, resolution, and NPC hosting).
 
 ## Vertical-slice acceptance test
 

@@ -10,6 +10,7 @@ using Gens.Simulation.Ledger;
 using Gens.Simulation.Magistracies;
 using Gens.Simulation.PublicContracts;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.Scandal;
 using Gens.Simulation.Societates;
 using Gens.Simulation.State;
@@ -137,6 +138,9 @@ internal static class LegalCaseRuling
         if (legalCase.CaseType == LegalCaseType.Repetundae)
             events.AddRange(RepetundaeResolutionHook.Apply(state, legalCase, verdict, date, causationId));
 
+        if (legalCase.CaseType == LegalCaseType.Adultery)
+            events.AddRange(AdulteryResolutionHook.Apply(state, legalCase, verdict, date, causationId));
+
         events.Add(new LegalCaseRuledEvent(
             state.EventIds.Issue(), date, legalCase.CaseId, legalCase.CaseType, legalCase.PlaintiffId, legalCase.DefendantId,
             verdict, sentence, legalCase.IsPatriaPotestasCase, causationId));
@@ -183,7 +187,7 @@ internal static class LegalCaseRuling
         if (!state.Characters.TryGet(headship!.HeadCharacterId, out var head) || !head!.IsAlive)
             return Array.Empty<IDomainEvent>();
 
-        var severity = legalCase.CaseType is LegalCaseType.Criminal or LegalCaseType.Political or LegalCaseType.Repetundae
+        var severity = legalCase.CaseType is LegalCaseType.Criminal or LegalCaseType.Political or LegalCaseType.Repetundae or LegalCaseType.Adultery
             ? OffenseSeverity.Capital
             : OffenseSeverity.Serious;
 

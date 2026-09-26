@@ -1,0 +1,52 @@
+[
+  {
+    "id": "faithful",
+    "status": "active",
+    "nameKey": "traits.faithful.name",
+    "descriptionKey": "traits.faithful.description",
+    "category": "reactive",
+    "axis": "honor",
+    "axisNudge": 15,
+    "opposes": "adulterous"
+  },
+  {
+    "id": "adulterous",
+    "status": "active",
+    "nameKey": "traits.adulterous.name",
+    "descriptionKey": "traits.adulterous.description",
+    "category": "reactive",
+    "axis": "honor",
+    "axisNudge": -15,
+    "opposes": "faithful"
+  },
+  {
+    "id": "infatuated",
+    "status": "active",
+    "nameKey": "traits.infatuated.name",
+    "descriptionKey": "traits.infatuated.description",
+    "category": "reactive",
+    "opposes": "disillusioned"
+  },
+  {
+    "id": "disillusioned",
+    "status": "active",
+    "nameKey": "traits.disillusioned.name",
+    "descriptionKey": "traits.disillusioned.description",
+    "category": "reactive",
+    "opposes": "infatuated"
+  },
+  {
+    "id": "heartbroken",
+    "status": "active",
+    "nameKey": "traits.heartbroken.name",
+    "descriptionKey": "traits.heartbroken.description",
+    "category": "reactive"
+  },
+  {
+    "id": "guarded",
+    "status": "active",
+    "nameKey": "traits.guarded.name",
+    "descriptionKey": "traits.guarded.description",
+    "category": "reactive"
+  }
+]

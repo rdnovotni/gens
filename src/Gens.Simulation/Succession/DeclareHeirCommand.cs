@@ -12,11 +12,16 @@ namespace Gens.Simulation.Succession;
 
 /// <summary>§2.2's Formal Declaration — a Curia announcement naming this heir over any bare <see
 /// cref="HeirDesignation.PreferredHeirId"/>, and over the default agnatic-line fallback (§2.4).
-/// Replaces any prior Formal Declaration outright — this implementation does not model §2.2's Dignitas
-/// cost for reversing a still-eligible declared heir (no personal Dignitas stat exists on <see
-/// cref="Character"/> yet, only the Household/Actor-level standing <see cref="Actors.LivingWorldActor"/>
-/// tracks — deferred pending that stat's own future item, matching how <see
-/// cref="Characters.PunishCommand"/> defers the same missing consequence).</summary>
+/// Replaces any prior Formal Declaration outright — this implementation still does not model §2.2's
+/// Dignitas cost for reversing a still-eligible declared heir. That is no longer because no such stat
+/// exists: household Dignitas (<see cref="Reputation.AdjustDignitasCommand"/>) and Character-level Fame
+/// (<see cref="Fame.AdjustFameCommand"/>) both exist today (Phase 17 item 3 slice 7 closed that gap for
+/// <see cref="AcknowledgeIllegitimateChildCommand"/>, its neighboring Succession command). Reversing a
+/// declared heir simply remains out of THIS command's own scope — no design-doc section asks for a
+/// reversal-specific cost here the way §10 asks for one on acknowledgment, and bolting one on would be
+/// inventing a new cost mechanic rather than fixing a stale claim. A future Succession-focused pass
+/// could add one using the exact same <see cref="Reputation.AdjustDignitasCommand"/> pattern this
+/// command's own neighbor now uses, if a later design pass actually calls for it.</summary>
 public sealed record DeclareHeirCommand(
     RuntimeId<Command> CommandId,
     string ActorId,

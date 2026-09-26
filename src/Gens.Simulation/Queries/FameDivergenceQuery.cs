@@ -5,6 +5,7 @@ using Gens.Simulation.Characters;
 using Gens.Simulation.Fame;
 using Gens.Simulation.Identity;
 using Gens.Simulation.Reputation;
+using Gens.Simulation.Romance;
 using Gens.Simulation.State;
 
 namespace Gens.Simulation.Queries;
@@ -13,10 +14,10 @@ namespace Gens.Simulation.Queries;
 /// matching that section's own four-way vocabulary exactly.</summary>
 public enum FameDivergenceCategory
 {
-    /// <summary>§2's "the gladiator, the actor, the charioteer" — Famous, and the Character's own
-    /// household reads as disreputable by this item's Dignitas-proxy reading (see <see
-    /// cref="FameDivergenceQuery"/>'s own doc comment for why Dignitas, not a real Infamia flag,
-    /// stands in here).</summary>
+    /// <summary>§2's "the gladiator, the actor, the charioteer" — Famous, and the Character carries a
+    /// real <see cref="Romance.InfamiaStatus"/> (Phase 17 item 3 slice 9's own real primitive, replacing
+    /// this query's former Dignitas-threshold proxy — see <see cref="FameDivergenceQuery"/>'s own doc
+    /// comment).</summary>
     FamousAndDisreputable,
 
     /// <summary>§2's "the quiet, respected senator or magistrate" — the household reads as respected,
@@ -50,21 +51,23 @@ public readonly record struct FameDivergenceReading(
 /// <c>*ChangedEvent</c> <see cref="Commands.Visibility"/>.
 ///
 /// <b>Scope note:</b> §2's own "famous and disreputable at once" divergence is really about Infamia
-/// (Crime &amp; Punishment §13, Romance, Sexuality &amp; Lineage §13), not Dignitas directly — but no
-/// Infamia status exists anywhere in this codebase yet (both are Phase 17, unbuilt, confirmed by direct
-/// search). This query reads a Character's own household Dignitas against <see
-/// cref="FameCatalog.LowDignitasThreshold"/>/<see cref="FameCatalog.RespectedDignitasThreshold"/>
-/// instead — Dignitas and Infamia move in the same real direction for most of §2's own worked examples
-/// (a gladiator's household is rarely also a Dignitas powerhouse), so this is a real, reasoned proxy
-/// rather than an invented mechanic, and this doc comment says so directly rather than silently
-/// conflating the two. A single threshold, not a three-way band, decides "respected" versus not: a
-/// Famous Character whose household falls short of it reads <see
-/// cref="FameDivergenceCategory.FamousAndDisreputable"/> even at merely-ordinary Dignitas, since §2's
-/// own "Dignitas without Fame is... entirely respectable... the default" framing already treats
-/// ordinary/default Dignitas as outside the "genuinely respected" tier that makes <see
-/// cref="FameDivergenceCategory.FamousAndRespected"/> "genuinely rare." A Character with no <see
-/// cref="Character.Household"/> reads at Dignitas 0, matching every other household-Dignitas read
-/// site's identical "no household means no standing to draw on" default.</summary>
+/// (Crime &amp; Punishment §13, Romance, Sexuality &amp; Lineage §13). Phase 17 item 3 slice 9 built that
+/// real primitive (<see cref="Romance.InfamiaStatus"/>), so this query now reads <see
+/// cref="WorldState.InfamiaStatuses"/> directly for <see cref="FameDivergenceCategory.FamousAndDisreputable"/>
+/// instead of the Dignitas-threshold proxy this query used before that status existed — a Famous
+/// Character carrying any real Infamia mark reads disreputable regardless of Dignitas (an
+/// infamia-marked citizen can still hold real, even high, Dignitas in this codebase's own model; the
+/// mark is orthogonal, not merely "low Dignitas restated"). Every other combination still reads
+/// Dignitas against <see cref="FameCatalog.RespectedDignitasThreshold"/> exactly as before: <see
+/// cref="FameDivergenceCategory.FamousAndRespected"/> and <see
+/// cref="FameDivergenceCategory.RespectedAndObscure"/> are unchanged, and a Famous Character with
+/// neither a real Infamia mark nor Respected-tier Dignitas now reads <see
+/// cref="FameDivergenceCategory.NeitherYet"/> — this implementation's own decisive call: an ordinary,
+/// unmarked Famous Character is no longer conflated with a genuinely disreputable one now that a real
+/// primitive exists to tell the two apart, even though that leaves such a Character sharing a category
+/// label with someone Fame has not touched at all. A Character with no <see cref="Character.Household"/>
+/// reads at Dignitas 0, matching every other household-Dignitas read site's identical "no household
+/// means no standing to draw on" default.</summary>
 public sealed class FameDivergenceQuery : IWorldQuery<FameDivergenceReading>
 {
     private readonly RuntimeId<Character> _characterId;
@@ -83,13 +86,14 @@ public sealed class FameDivergenceQuery : IWorldQuery<FameDivergenceReading>
 
         var isFamous = fame >= FameCatalog.FamousFameThreshold;
         var isRespected = dignitas >= FameCatalog.RespectedDignitasThreshold;
+        var hasInfamia = state.InfamiaStatuses.TryGet(_characterId, out _);
 
-        var category = (isFamous, isRespected) switch
+        var category = (isFamous, isRespected, hasInfamia) switch
         {
-            (true, true) => FameDivergenceCategory.FamousAndRespected,
-            (true, false) => FameDivergenceCategory.FamousAndDisreputable,
-            (false, true) => FameDivergenceCategory.RespectedAndObscure,
-            (false, false) => FameDivergenceCategory.NeitherYet,
+            (true, _, true) => FameDivergenceCategory.FamousAndDisreputable,
+            (true, true, false) => FameDivergenceCategory.FamousAndRespected,
+            (false, true, _) => FameDivergenceCategory.RespectedAndObscure,
+            _ => FameDivergenceCategory.NeitherYet,
         };
 
         return new FameDivergenceReading(_characterId.ToTaggedString(), fame, dignitas, category);
