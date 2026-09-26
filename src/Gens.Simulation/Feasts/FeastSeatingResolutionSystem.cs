@@ -29,9 +29,10 @@ namespace Gens.Simulation.Feasts;
 ///
 /// §11's own open question ("independently or as one composite impression?") is resolved here as
 /// "independently": each seated guest's actual seat rank is compared to their own expected rank among
-/// the Feast's other seated, attending guests, with a slack (<see
-/// cref="FeastCatalog.SeatingJudgmentSlack"/>) before a placement reads as a felt Insult or a deliberate
-/// Honor rather than an ordinary, unremarkable seat.
+/// every attending guest — seated or not, since a large Feast can't seat everyone in the 9 represented
+/// seats and an unseated high-standing guest still has to occupy their own expected rank — with a slack
+/// (<see cref="FeastCatalog.SeatingJudgmentSlack"/>) before a placement reads as a felt Insult or a
+/// deliberate Honor rather than an ordinary, unremarkable seat.
 /// </summary>
 public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
 {
@@ -61,7 +62,8 @@ public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
         foreach (var entry in state.Activities.InAscendingOrder())
         {
             var activity = entry.Value;
-            if (!string.Equals(activity.TypeKey, FeastCatalog.FeastType.Key, StringComparison.Ordinal))
+            if (!string.Equals(activity.TypeKey, FeastCatalog.FeastType.Key, StringComparison.Ordinal) ||
+                FeastRecordResolver.Get(state, activity.Id) is null)
                 continue;
 
             var seatingPhase = activity.Phases.FirstOrDefault(phase => phase.PhaseKey == FeastCatalog.FeastPhaseKeys.ArrivalAndSeating);
@@ -76,17 +78,23 @@ public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
 
     private static void ResolveSeating(WorldState state, HostedActivity activity, GameDate date, List<IDomainEvent> events)
     {
-        var ranked = FeastSeatingResolver.ForActivity(state, activity.Id)
-            .Where(assignment => ActivityInvitationResolver.Get(state, activity.Id, assignment.GuestId) is { IsAttending: true })
-            .Where(assignment => state.Characters.TryGet(assignment.GuestId, out var guest) && guest!.IsAlive)
-            .OrderByDescending(assignment => ExpectedStanding(state, assignment.GuestId))
-            .ThenBy(assignment => assignment.GuestId)
+        // Expected rank is read from the FULL attending Guest List, not just whoever happens to have a
+        // seat assignment — a large Feast can't seat every guest in the 9 represented seats, and a
+        // high-standing attendee the host simply never got around to seating still has to occupy their
+        // own expected rank, or a lower-standing seated guest would be misjudged against a thinner field.
+        var attendees = ActivityInvitationResolver.GuestList(state, activity.Id)
+            .Where(invitation => invitation.IsAttending)
+            .Select(invitation => invitation.InviteeId)
+            .Where(guestId => state.Characters.TryGet(guestId, out var guest) && guest!.IsAlive)
+            .OrderByDescending(guestId => ExpectedStanding(state, guestId))
+            .ThenBy(guestId => guestId)
             .ToArray();
 
-        for (var i = 0; i < ranked.Length; i++)
+        for (var i = 0; i < attendees.Length; i++)
         {
-            var assignment = ranked[i];
-            if (assignment.Judgment is not null)
+            var guestId = attendees[i];
+            var assignment = FeastSeatingResolver.Get(state, activity.Id, guestId);
+            if (assignment is null || assignment.Judgment is not null)
                 continue;
 
             var expectedPosition = i + 1;
@@ -100,9 +108,9 @@ public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
             FeastSeatingResolver.Replace(state, assignment with { Judgment = judgment });
 
             if (judgment == FeastSeatingJudgment.UnderSeated)
-                ApplyUnderSeated(state, activity, assignment.GuestId, expectedPosition, gap - FeastCatalog.SeatingJudgmentSlack, date, events);
+                ApplyUnderSeated(state, activity, guestId, expectedPosition, gap - FeastCatalog.SeatingJudgmentSlack, date, events);
             else if (judgment == FeastSeatingJudgment.OverSeated)
-                ApplyOverSeated(state, activity, assignment.GuestId, -gap - FeastCatalog.SeatingJudgmentSlack, actualRank, ranked, date, events);
+                ApplyOverSeated(state, activity, guestId, -gap - FeastCatalog.SeatingJudgmentSlack, actualRank, attendees, date, events);
         }
     }
 
@@ -139,7 +147,7 @@ public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
 
     private static void ApplyOverSeated(
         WorldState state, HostedActivity activity, RuntimeId<Character> guestId, int effectiveGap, int actualRank,
-        FeastSeatingAssignment[] ranked, GameDate date, List<IDomainEvent> events)
+        RuntimeId<Character>[] rankedGuestIds, GameDate date, List<IDomainEvent> events)
     {
         var opinionBonus = Math.Min(FeastCatalog.OverSeatingOpinionBonusPerRank * effectiveGap, FeastCatalog.MaxSeatingOpinionMagnitude);
         events.AddRange(RecordInteractionCommands.Pipeline.Execute(
@@ -161,9 +169,9 @@ public sealed class FeastSeatingResolutionSystem : IMonthlySystem<WorldState>
         // §4's "at the real risk of a corresponding envy... from whoever was thereby displaced": the
         // guest whose own expected rank matches the seat this honored guest actually took.
         var displacedIndex = actualRank - 1;
-        if (displacedIndex >= 0 && displacedIndex < ranked.Length && ranked[displacedIndex].GuestId != guestId)
+        if (displacedIndex >= 0 && displacedIndex < rankedGuestIds.Length && rankedGuestIds[displacedIndex] != guestId)
         {
-            var displacedGuestId = ranked[displacedIndex].GuestId;
+            var displacedGuestId = rankedGuestIds[displacedIndex];
             var envyPenalty = Math.Min(FeastCatalog.OverSeatingEnvyOpinionPenaltyPerRank * effectiveGap, FeastCatalog.MaxSeatingOpinionMagnitude);
             events.AddRange(RecordInteractionCommands.Pipeline.Execute(
                 state,

@@ -70,7 +70,8 @@ public static class AssignFeastSeatingCommands
     {
         if (!state.Activities.TryGet(command.ActivityId, out var activity))
             return ActivityNotFound;
-        if (!string.Equals(activity!.TypeKey, FeastCatalog.FeastType.Key, StringComparison.Ordinal))
+        if (!string.Equals(activity!.TypeKey, FeastCatalog.FeastType.Key, StringComparison.Ordinal) ||
+            FeastRecordResolver.Get(state, command.ActivityId) is null)
             return NotAFeast;
         if (activity.Status != ActivityStatus.Planned)
             return FeastNotPlanned;
@@ -79,8 +80,12 @@ public static class AssignFeastSeatingCommands
         if (FeastSeatingResolver.Get(state, command.ActivityId, command.GuestId) is not null)
             return DuplicateSeatForGuest;
 
+        // A guest who has since declined or died no longer holds their seat against a new assignment —
+        // there is no separate remove/reassign command, so a stale assignment must not permanently block
+        // its physical seat from going to someone who is actually still coming.
         foreach (var existing in FeastSeatingResolver.ForActivity(state, command.ActivityId))
-            if (existing.Couch == command.Couch && existing.Position == command.Position)
+            if (existing.Couch == command.Couch && existing.Position == command.Position &&
+                IsStillViableOccupant(state, command.ActivityId, existing.GuestId))
                 return SeatAlreadyTaken;
 
         return null;
@@ -98,4 +103,10 @@ public static class AssignFeastSeatingCommands
                 command.Position, command.CommandId.ToTaggedString()),
         };
     }
+
+    /// <summary>Matches <see cref="PerformActivityInteractionCommand"/>'s own identical
+    /// "the host, or any invitee who has not declined" reading of who is still a real participant.</summary>
+    private static bool IsStillViableOccupant(WorldState state, RuntimeId<Activity> activityId, RuntimeId<Character> guestId) =>
+        ActivityInvitationResolver.Get(state, activityId, guestId) is { RsvpStatus: ActivityRsvpStatus.Pending or ActivityRsvpStatus.Accepted } &&
+        state.Characters.TryGet(guestId, out var guest) && guest!.IsAlive;
 }

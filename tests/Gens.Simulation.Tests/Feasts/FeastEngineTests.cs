@@ -237,6 +237,24 @@ public sealed class FeastEngineTests
     }
 
     [Test]
+    public void ADeclinedGuestsStaleSeatCanBeReassigned()
+    {
+        var world = NewWorld();
+        var guestA = Adult(world.State, null, world.SettlementId, "GuestA");
+        var guestB = Adult(world.State, null, world.SettlementId, "GuestB");
+        var activityId = Plan(world, new[] { guestA, guestB });
+        Assign(world, activityId, guestA, FeastCouch.Medius, FeastCouchPosition.Highest);
+
+        var declined = RespondToActivityInvitationCommands.Pipeline.Execute(
+            world.State,
+            new RespondToActivityInvitationCommand(world.State.CommandIds.Issue(), "player", Date0, null, activityId, guestA, Accept: false));
+        Assert.That(declined.Accepted, Is.True, declined.Error?.Code);
+
+        var reassigned = Assign(world, activityId, guestB, FeastCouch.Medius, FeastCouchPosition.Highest);
+        Assert.That(reassigned.Accepted, Is.True, reassigned.Error?.Code);
+    }
+
+    [Test]
     public void SeatingIsRejectedForAGenericGatheringOrOnceTheFeastLeavesPlanned()
     {
         var world = NewWorld();
@@ -335,6 +353,37 @@ public sealed class FeastEngineTests
 
         Assert.That(first.OfType<RelationshipInteractionRecordedEvent>(), Is.Not.Empty);
         Assert.That(second, Is.Empty);
+    }
+
+    [Test]
+    public void UnassignedAttendeesStillAnchorTheExpectedRanking()
+    {
+        var world = NewWorld();
+        var unassignedHigh = GuestWithStanding(world, "UnassignedHigh", 200);
+        var unassignedMid = GuestWithStanding(world, "UnassignedMid", 100);
+        var seatedLow = GuestWithStanding(world, "SeatedLow", 0);
+        var activityId = Plan(world, new[] { unassignedHigh, unassignedMid, seatedLow });
+
+        // Only the lowest-standing guest is ever assigned a seat — at the seat of honor. The other two
+        // attend but are never assigned any seat at all.
+        Assign(world, activityId, seatedLow, FeastCouch.Medius, FeastCouchPosition.Highest);
+
+        var context = Context(1);
+        new ActivityProgressSystem().Tick(world.State, context);
+        var events = new FeastSeatingResolutionSystem().Tick(world.State, context);
+
+        Assert.Multiple(() =>
+        {
+            // Ranked against only the one seated guest, seatedLow would read as rank #1 and be judged
+            // AppropriatelySeated; ranked against every attendee (the fix), the two unseated
+            // higher-standing guests still occupy their own expected rank ahead of them, so seatedLow is
+            // correctly judged OverSeated instead.
+            Assert.That(FeastSeatingResolver.Get(world.State, activityId, seatedLow)!.Judgment, Is.EqualTo(FeastSeatingJudgment.OverSeated));
+
+            var envyOpinion = events.OfType<RelationshipInteractionRecordedEvent>()
+                .Single(e => e.CharacterId == unassignedHigh && e.TargetId == seatedLow);
+            Assert.That(envyOpinion.OpinionAfter, Is.LessThan(envyOpinion.OpinionBefore));
+        });
     }
 
     // ---- Disruption targeting (regression for the mainEvent key reuse) ------------------------------
