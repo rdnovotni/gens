@@ -21,6 +21,7 @@ using Gens.Simulation.Education;
 using Gens.Simulation.Epithets;
 using Gens.Simulation.Events;
 using Gens.Simulation.Fame;
+using Gens.Simulation.Feasts;
 using Gens.Simulation.Funerary;
 using Gens.Simulation.Goods;
 using Gens.Simulation.Hazards;
@@ -166,6 +167,8 @@ public sealed class WorldState
         OrderedRegistry<RuntimeId<Character>, InfamiaStatus> infamiaStatuses,
         OrderedRegistry<RuntimeId<Activity>, HostedActivity> activities,
         OrderedRegistry<ActivityInvitationKey, ActivityInvitation> activityInvitations,
+        OrderedRegistry<RuntimeId<Activity>, FeastRecord> feastRecords,
+        OrderedRegistry<FeastSeatingKey, FeastSeatingAssignment> feastSeatingAssignments,
         OrderedRegistry<ScheduledActionKey, ScheduledActionEntry> scheduledActions,
         OrderedRegistry<PopGroupKey, PopGroup> popGroups,
         OrderedRegistry<HouseholdRegimenKey, RegimenSettings> householdRegimenDefaults,
@@ -386,6 +389,8 @@ public sealed class WorldState
         InfamiaStatuses = infamiaStatuses;
         Activities = activities;
         ActivityInvitations = activityInvitations;
+        FeastRecords = feastRecords;
+        FeastSeatingAssignments = feastSeatingAssignments;
         ScheduledActions = scheduledActions;
         PopGroups = popGroups;
         HouseholdRegimenDefaults = householdRegimenDefaults;
@@ -783,6 +788,17 @@ public sealed class WorldState
     /// <c>ActivityInvitation</c>), keyed (Activity, invitee) so one Activity's invitations are a
     /// contiguous ascending scan (ADR 0004).</summary>
     public OrderedRegistry<ActivityInvitationKey, ActivityInvitation> ActivityInvitations { get; } = new();
+
+    /// <summary>Every Feast's own Purpose/Arbiter Bibendi/Entertainment facts (Phase 17 item 5;
+    /// <c>gens-feasts-design.md</c> §6, §7, §10), a 1:1 sidecar keyed on the same <see
+    /// cref="Activity"/> runtime ID as <see cref="Activities"/> itself — present only for a Feast, never
+    /// a new ID kind.</summary>
+    public OrderedRegistry<RuntimeId<Activity>, FeastRecord> FeastRecords { get; } = new();
+
+    /// <summary>Every Feast guest's own seat (Phase 17 item 5; §4, §10's <c>seatingAssignments</c>),
+    /// keyed (Activity, guest) so one Feast's seating chart is a contiguous ascending scan (ADR 0004),
+    /// mirroring <see cref="ActivityInvitations"/>'s identical two-field key shape.</summary>
+    public OrderedRegistry<FeastSeatingKey, FeastSeatingAssignment> FeastSeatingAssignments { get; } = new();
 
     /// <summary>The calendar queue (Phase 4 item 4): future-dated work not yet due. Ordered by
     /// (due date, action ID) so draining it is a deterministic ascending scan (ADR 0004). Systems and
@@ -1620,6 +1636,8 @@ public sealed class WorldState
         ["infamiaStatuses"] = InfamiaStatuses.Version,
         ["activities"] = Activities.Version,
         ["activityInvitations"] = ActivityInvitations.Version,
+        ["feastRecords"] = FeastRecords.Version,
+        ["feastSeatingAssignments"] = FeastSeatingAssignments.Version,
         ["scheduledActions"] = ScheduledActions.Version,
         ["popGroups"] = PopGroups.Version,
         ["householdRegimenDefaults"] = HouseholdRegimenDefaults.Version,

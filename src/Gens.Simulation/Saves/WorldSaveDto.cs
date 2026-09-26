@@ -930,6 +930,18 @@ public sealed record WorldSaveDocument
     /// <c>required</c>, and defaults to empty, matching <see cref="Activities"/>.</summary>
     [JsonPropertyOrder(142)]
     public IReadOnlyList<ActivityInvitationDto> ActivityInvitations { get; init; } = Array.Empty<ActivityInvitationDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Feasts.FeastRecord"/> (Phase 17 item 5), already in
+    /// ascending-<see cref="Identity.RuntimeId{T}"/> order. Not <c>required</c>, and defaults to empty,
+    /// matching <see cref="Activities"/>.</summary>
+    [JsonPropertyOrder(143)]
+    public IReadOnlyList<FeastRecordDto> FeastRecords { get; init; } = Array.Empty<FeastRecordDto>();
+
+    /// <summary>Every <see cref="Gens.Simulation.Feasts.FeastSeatingAssignment"/> (Phase 17 item 5),
+    /// already in ascending <see cref="Gens.Simulation.Feasts.FeastSeatingKey"/> order. Not
+    /// <c>required</c>, and defaults to empty, matching <see cref="FeastRecords"/>.</summary>
+    [JsonPropertyOrder(144)]
+    public IReadOnlyList<FeastSeatingAssignmentDto> FeastSeatingAssignments { get; init; } = Array.Empty<FeastSeatingAssignmentDto>();
 }
 
 /// <summary>The next-value of every per-entity-kind <see cref="Identity.RuntimeIdCounter{T}"/> (ADR
@@ -5469,4 +5481,23 @@ public sealed record ActivityInvitationDto
     [JsonPropertyOrder(5)] public required bool RespondedExplicitly { get; init; }
     [JsonPropertyOrder(6)] public required bool AttendsToCauseTrouble { get; init; }
     [JsonPropertyOrder(7)] public int? RespondedDateTotalMonths { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Feasts.FeastRecord"/> (Phase 17 item 5; §6, §7, §10).</summary>
+public sealed record FeastRecordDto
+{
+    [JsonPropertyOrder(0)] public required string ActivityId { get; init; }
+    [JsonPropertyOrder(1)] public required string Purpose { get; init; }
+    [JsonPropertyOrder(2)] public string? ArbiterBibendiId { get; init; }
+    [JsonPropertyOrder(3)] public string? EntertainmentDescription { get; init; }
+}
+
+/// <summary>One <see cref="Gens.Simulation.Feasts.FeastSeatingAssignment"/> (Phase 17 item 5; §4, §10).</summary>
+public sealed record FeastSeatingAssignmentDto
+{
+    [JsonPropertyOrder(0)] public required string ActivityId { get; init; }
+    [JsonPropertyOrder(1)] public required string GuestId { get; init; }
+    [JsonPropertyOrder(2)] public required string Couch { get; init; }
+    [JsonPropertyOrder(3)] public required string Position { get; init; }
+    [JsonPropertyOrder(4)] public string? Judgment { get; init; }
 }

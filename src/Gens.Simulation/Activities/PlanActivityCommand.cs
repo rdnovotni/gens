@@ -103,7 +103,13 @@ public static class PlanActivityCommands
         mutate: Mutate,
         issueSequenceNumber: static state => state.IssueCommandSequenceNumber());
 
-    private static ValidationErrorCode? Validate(WorldState state, PlanActivityCommand command)
+    /// <summary>Internal rather than private so <see cref="Feasts.PlanFeastCommands"/> (Phase 17 item 5)
+    /// can pre-validate the equivalent inner command before composing this command's own <see
+    /// cref="Pipeline"/> into its Mutate step — guaranteeing that inner <see cref="Pipeline"/> call can
+    /// never reject, since <see cref="Commands.CommandPipeline{TState,TCommand}"/> has no mechanism for
+    /// an outer command to un-accept itself after a composed sub-command's own Mutate-time Validate
+    /// fails. Zero behavior change: same logic, same assembly, just reachable from a sibling file.</summary>
+    internal static ValidationErrorCode? Validate(WorldState state, PlanActivityCommand command)
     {
         if (!ActivityTypeCatalog.TryGet(command.TypeKey, out var type))
             return UnknownType;
